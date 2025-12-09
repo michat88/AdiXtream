@@ -210,3 +210,98 @@ dependencies {
     implementation(libs.colorpicker) // Subtitle Color Picker
     implementation(libs.newpipeextractor) // For Trailers
     implementation(libs.juniversalchardet) // Subtitle Decoding
+    // UI Stuff
+    implementation(libs.shimmer) // Shimmering Effect (Loading Skeleton)
+    implementation(libs.palette.ktx) // Palette for Images -> Colors
+    implementation(libs.tvprovider)
+    implementation(libs.overlappingpanels) // Gestures
+    implementation(libs.biometric) // Fingerprint Authentication
+    implementation(libs.previewseekbar.media3) // SeekBar Preview
+    implementation(libs.qrcode.kotlin) // QR Code for PIN Auth on TV
+
+    // Extensions & Other Libs
+    implementation(libs.jsoup) // HTML Parser
+    implementation(libs.rhino) // Run JavaScript
+    implementation(libs.quickjs)
+    implementation(libs.fuzzywuzzy) // Library/Ext Searching with Levenshtein Distance
+    implementation(libs.safefile) // To Prevent the URI File Fu*kery
+    coreLibraryDesugaring(libs.desugar.jdk.libs.nio) // NIO Flavor Needed for NewPipeExtractor
+    implementation(libs.conscrypt.android) // To Fix SSL Fu*kery on Android 9
+    implementation(libs.jackson.module.kotlin) // JSON Parser
+
+    // Torrent Support
+    implementation(libs.torrentserver)
+
+    // Downloading & Networking
+    implementation(libs.work.runtime.ktx)
+    implementation(libs.nicehttp) // HTTP Lib
+
+    implementation(project(":library") {
+        // There does not seem to be a good way of getting the android flavor.
+        val isDebug = gradle.startParameter.taskRequests.any { task ->
+            task.args.any { arg ->
+                arg.contains("debug", true)
+            }
+        }
+
+        this.extra.set("isDebug", isDebug)
+    })
+} // <--- Kurung kurawal ini yang dicari-cari error tadi (Penutup Dependencies)
+
+tasks.register<Jar>("androidSourcesJar") {
+    archiveClassifier.set("sources")
+    from(android.sourceSets.getByName("main").java.srcDirs) // Full Sources
+}
+
+tasks.register<Copy>("copyJar") {
+    dependsOn("build", ":library:jvmJar")
+    from(
+        "build/intermediates/compile_app_classes_jar/prereleaseDebug/bundlePrereleaseDebugClassesToCompileJar",
+        "../library/build/libs"
+    )
+    into("build/app-classes")
+    include("classes.jar", "library-jvm*.jar")
+    // Remove the version
+    rename("library-jvm.*.jar", "library-jvm.jar")
+}
+
+// Merge the app classes and the library classes into classes.jar
+tasks.register<Jar>("makeJar") {
+    // Duplicates cause hard to catch errors, better to fail at compile time.
+    duplicatesStrategy = DuplicatesStrategy.FAIL
+    dependsOn(tasks.getByName("copyJar"))
+    from(
+        zipTree("build/app-classes/classes.jar"),
+        zipTree("build/app-classes/library-jvm.jar")
+    )
+    destinationDirectory.set(layout.buildDirectory)
+    archiveBaseName = "classes"
+}
+
+tasks.withType<KotlinJvmCompile> {
+    compilerOptions {
+        jvmTarget.set(javaTarget)
+        jvmDefault.set(JvmDefaultMode.ENABLE)
+        optIn.add("com.lagradost.cloudstream3.Prerelease")
+        freeCompilerArgs.add("-Xannotation-default-target=param-property")
+    }
+}
+
+dokka {
+    moduleName = "App"
+    dokkaSourceSets {
+        main {
+            analysisPlatform = KotlinPlatform.JVM
+            documentedVisibilities(
+                VisibilityModifier.Public,
+                VisibilityModifier.Protected
+            )
+
+            sourceLink {
+                localDirectory = file("..")
+                remoteUrl("https://github.com/recloudstream/cloudstream/tree/master")
+                remoteLineSuffix = "#L"
+            }
+        }
+    }
+}
