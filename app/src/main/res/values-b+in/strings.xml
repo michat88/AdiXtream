@@ -409,3 +409,326 @@
     <string name="extension_rating" formatted="true">Peringkat: %s</string>
     <string name="extension_authors">Pembuat</string>
     <string name="extension_language">Bahasa</string>
+    <string name="player_pref">Pemutar video utama</string>
+    <string name="player_settings_play_in_app">Pemutar Bawaan</string>
+    <string name="batch_download_finish_format" formatted="true">Terunduh %1$d %2$s</string>
+    <string name="batch_download_start_format" formatted="true">Memulai mengunduh %1$d %2$s…</string>
+    <string name="safe_mode_description">Semua fitur tambahkan dimatikan karena crash, untuk memudahkanmu mencari penyebab crash.</string>
+    <string name="example_lang_name">Kode bahasa (en)</string>
+    <string name="player_load_subtitles_online">Ambil dari internet</string>
+    <string name="provider_languages_tip">Putar video di bahasa ini</string>
+    <string name="add_repository">Tambah Repositori</string>
+    <string name="delete_repository_plugins">Pilih ini untuk menghapus semua repositori plugin</string>
+    <string name="skip_setup">Lewati pengaturan</string>
+    <string name="error_invalid_url">Alamat salah</string>
+    <string name="network_adress_example">https://contoh.com/contoh.mp4</string>
+    <string name="next">Selanjutnya</string>
+    <string name="previous">Sebelumnya</string>
+    <string name="app_layout_subtext">Ubah tampilan aplikasi</string>
+    <string name="setup_done">Selesai</string>
+    <string name="extensions">Ekstensi</string>
+    <string name="delete_repository">Hapus Repositori</string>
+    <string name="setup_extensions_subtext">Unduh semua situs yang ingin digunakan</string>
+    <string name="extension_size">Ukuran</string>
+    <string name="error_invalid_id">ID salah</string>
+    <string name="history">Riwayat</string>
+    <string name="action_mark_as_watched">Telah ditonton</string>
+    <string name="error_invalid_data">Data salah</string>
+    <string name="subtitles_remove_captions">Hapus teks tertutup dari subtitel</string>
+    <string name="subtitles_remove_bloat">Hapus karakter sampah dari subtitel</string>
+    <string name="audio_tracks">Audio Trek</string>
+    <string name="video_tracks">Video Trek</string>
+    <string name="extension_types">Dukungan</string>
+    <string name="hls_playlist">Daftar putar HLS</string>
+    <string name="apk_installer_settings">Penginstal APK</string>
+    <string name="subtitles_encoding">Teknik menampilkan subtitel</string>
+    <string name="pref_category_gestures">Gerakan</string>
+    <string name="apk_installer_settings_des">Beberapa perangkat tidak mendukung penginstal paket mode baru. Coba mode lama jika pembaruan tidak dapat diinstal.</string>
+    <string name="pref_category_actions">Aksi</string>
+    <string name="referer">Memberi referensi (opsional)</string>
+    <string name="yes">Ya</string>
+    <string name="extension_install_first">Install ekstensi terlebih dahulu</string>
+    <string name="all_languages_preference">Semua Bahasa</string>
+    <string name="skip_type_format" formatted="true">Lewati %s</string>
+    <string name="skip_type_op">Pembuka</string>
+    <string name="skip_type_ed">Sesi Akhir</string>
+    <string name="skip_type_recap">Sinopsis</string>
+    <string name="skip_type_mixed_ed">Sesi akhir ganda</string>
+    <string name="skip_type_creddits">Sesi Kredit</string>
+    <string name="skip_type_intro">Sesi Intro</string>
+    <string name="clipboard_too_large">Terlalu banyak karakter, tidak dapat menyimpan di clipboard.</string>
+    <string name="confirm_exit_dialog">Yakin ingin keluar?</string>
+    <string name="no">Tidak</string>
+    <string name="update_notification_installing">Memasang pembaruan…</string>
+    <string name="update_notification_failed">Tidak dapat memasang versi terbaru</string>
+    <string name="app_not_found_error">Aplikasi tidak ditemukan</string>
+    <string name="clear_history">Hapus Riwayat</string>
+    <string name="enable_skip_op_from_database_des">Tampilkan popup untuk skip sesi pembuka/akhir</string>
+    <string name="update_notification_downloading">Mengunduh pembaruan…</string>
+    <string name="apk_installer_legacy">Versi lama</string>
+    <string name="skip_type_mixed_op">Sesi pembuka ganda</string>
+    <string name="apk_installer_package_installer">Penginstal Paket</string>
+    <string name="plugin_downloaded">Plugin Terunduh</string>
+    <string name="delayed_update_notice">Aplikasi akan diperbaharui pada saat keluar</string>
+    <string name="update_started">Pembaharuan Dimulai</string>
+    <string name="action_remove_from_watched">Hapus dari tontonan</string>
+    <string name="browser">Peramban</string>
+    <string name="select_library">Pilih pustaka</string>
+    <string name="empty_library_no_accounts_message">Yahh daftar pustaka kamu kosong :(
+\nMasuk ke akun pustaka atau tambah perlihatkan ke lokal pustaka kamu.</string>
+    <string name="library">Pustaka</string>
+    <string name="sort_by">Urutkan berdasar</string>
+    <string name="sort">Urutkan</string>
+    <string name="sort_rating_asc">Peringkat (Rendah ke Tinggi)</string>
+    <string name="sort_updated_old">Update (Lama ke Terbaru)</string>
+    <string name="sort_rating_desc">Peringkat (Tinggi ke Rendah)</string>
+    <string name="sort_updated_new">Update (Terbaru ke Lama)</string>
+    <string name="sort_alphabetical_a">Abjad (A ke Z)</string>
+    <string name="sort_alphabetical_z">Abjad (Z ke A)</string>
+    <string name="open_with">Buka dengan</string>
+    <string name="empty_library_logged_in_message">Yahh daftar ini kosong. Coba ganti ke yang lain.</string>
+    <string name="safe_mode_file">Mode aman file ditemukan!
+\nTidak memuat ekstensi pada startup sampai berkas dihapus.</string>
+    <string name="android_tv_interface_off_seek_settings">Sembunyikan Pemutaran - Geser</string>
+    <string name="android_tv_interface_on_seek_settings">Pemutar terlihat - Geser</string>
+    <string name="android_tv_interface_on_seek_settings_summary">Geser untuk menghilangkan</string>
+    <string name="android_tv_interface_off_seek_settings_summary">Geser untuk menghilangkan</string>
+    <string name="pref_category_android_tv">Android TV</string>
+    <string name="test_log">Log</string>
+    <string name="test_passed">Berhasil</string>
+    <string name="category_provider_test">Tes penyedia</string>
+    <string name="stop">Berhenti</string>
+    <string name="start">Mulai</string>
+    <string name="restart">Mulai lagi</string>
+    <string name="test_failed">Gagal</string>
+    <string name="subscription_in_progress_notification">Memperbarui acara langganan</string>
+    <string name="subscription_list_name">Berlangganan</string>
+    <string name="subscription_new">Berlangganan ke %s</string>
+    <string name="subscription_deleted">Berhenti berlangganan di %s</string>
+    <string name="subscription_episode_released">Episode %d telah rilis!</string>
+    <string name="jsdelivr_proxy">Proxy GitHub</string>
+    <string name="jsdelivr_enabled">Tidak dapat menjangkau GitHub. Mengaktifkan proxy jsDelivr…</string>
+    <string name="jsdelivr_proxy_summary">Lewati pemblokiran raw URL github menggunakan jsDelivr. Dapat menyebabkan pembaruan tertunda selama beberapa hari.</string>
+    <string name="pref_category_bypass">Bypass ISP</string>
+    <string name="revert">Pulihkan</string>
+    <string name="watch_quality_pref_data">Kualitas nonton yang diinginkan (Data Seluler)</string>
+    <string name="mobile_data">Data seluler</string>
+    <string name="help">Bantuan</string>
+    <string name="quality_profile_help">Di sini anda dapat mengubah sumber yang diurutkan. Jika video memiliki prioritas lebih tinggi, video tersebut akan muncul lebih tinggi dalam pemilihan sumber. Jumlah prioritas sumber dan prioritas kualitas adalah prioritas video.
+\n
+\nSumber A: 3
+\nKualitas B: 7
+\nAkan memiliki prioritas video yang digabung 10.
+\n
+\nCATATAN: Jika jumlahnya 10 atau lebih, pemain akan melewatkan pemuatan secara otomatis saat tautan dimuat!</string>
+    <string name="profile_number">Profil %d</string>
+    <string name="wifi">Wifi</string>
+    <string name="set_default">Pengaturan default</string>
+    <string name="use">Gunakan</string>
+    <string name="edit">Edit</string>
+    <string name="profiles">Profil</string>
+    <string name="qualities">Kualitas</string>
+    <string name="profile_background_des">Latar belakang profil</string>
+    <string name="unable_to_inflate">UI tidak dapat dibuat dengan benar, ini adalah BUG UTAMA dan harus segera dilaporkan %s</string>
+    <string name="disable">Nonaktif</string>
+    <string name="automatic_plugin_download_mode_title">Pilih mode untuk memfilter unduhan plugin</string>
+    <string name="no_plugins_found_error">Tidak ada plugin yang ditemukan di repositori</string>
+    <string name="no_repository_found_error">Repositori tidak ditemukan, periksa URL dan coba VPN</string>
+    <string name="already_voted">Kamu sudah voting</string>
+    <string name="favorite_removed">%s dihapus dari favorit</string>
+    <string name="favorites_list_name">Favorit</string>
+    <string name="favorite_added">%s Ditambahkan ke favorit</string>
+    <string name="duplicate_message_multiple" formatted="true">Item duplikat potensial telah ditemukan di perpustakaan Anda:
+\n
+\n%s
+\n
+\nApakah Anda tetap ingin menambahkan item ini, mengganti item yang sudah ada, atau membatalkan tindakan?</string>
+    <string name="backup_frequency">Frekuensi pencadangan</string>
+    <string name="duplicate_title">Potensi Duplikat Ditemukan</string>
+    <string name="lock_profile">Kunci Profil</string>
+    <string name="action_add_to_favorites">Tambahkan ke favorit</string>
+    <string name="duplicate_replace_all">Mengganti Semua</string>
+    <string name="pin_error_incorrect">PIN Salah. Silahkan coba lagi.</string>
+    <string name="action_unsubscribe">Unsubscribe</string>
+    <string name="pin_error_length">PIN harus terdiri 4 karakter</string>
+    <string name="duplicate_replace">Mengganti</string>
+    <string name="duplicate_add">Tambahkan</string>
+    <string name="action_subscribe">Subscribe</string>
+    <string name="action_remove_from_favorites">Hapus dari favorit</string>
+    <string name="select_an_account">Pilih Akun</string>
+    <string name="duplicate_message_single" formatted="true">Tampaknya item yang berpotensi duplikat sudah ada di perpustakaan Anda: \'%s.\'
+\n
+\nApakah Anda tetap ingin menambahkan item ini, mengganti item yang sudah ada, atau membatalkan tindakan?</string>
+    <string name="enter_pin">Masukan PIN</string>
+    <string name="pin">PIN</string>
+    <string name="enter_current_pin">Masukkan PIN Saat Ini</string>
+    <string name="logged_account" formatted="true">Masuk sebagai %s</string>
+    <string name="enter_pin_with_name" formatted="true">Masukan PIN untuk %s</string>
+    <string name="use_default_account">Gunakan Akun Default</string>
+    <string name="skip_startup_account_select_pref">Lewati pemilihan akun saat startup</string>
+    <string name="manage_accounts">Kelola Akun</string>
+    <string name="edit_account">Edit akun</string>
+    <string name="rotate_video">Putar</string>
+    <string name="rotate_video_desc">Menampilkan tombol sakelar untuk orientasi layar</string>
+    <string name="links_reloaded_toast">Tautan Dimuat Ulang</string>
+    <string name="auto_rotate_video_desc">Mengaktifkan peralihan otomatis orientasi layar berdasarkan orientasi video</string>
+    <string name="auto_rotate_video">Putar otomatis</string>
+    <string name="result_search_tooltip">Cari di ekstensi lainnya</string>
+    <string name="speed_setting_summary">Menambahkan opsi kecepatan di pemutar</string>
+    <string name="test_extensions_summary">Tes ini hanya ditujukan untuk pengembang dan tidak memverifikasi atau menolak kerja ekstensi apa pun.</string>
+    <string name="subscribe_tooltip">Notifikasi episode baru</string>
+    <string name="recommendations_tooltip">Tampilkan rekomendasi</string>
+    <string name="test_extensions">Menguji semua Ekstensi</string>
+    <string name="biometric_warning">Data AdiXtream Anda telah dicadangkan. Meskipun peluang terjadinya kasus ini sangat kecil dan jarang terjadi, tetapi semua perangkat berperilaku berbeda. Jika Anda ada dalam situasi terburuk, misalnya gagal untuk mengakses aplikasi, segera hapus data aplikasi sepenuhnya dan pulihkan data cadangan. Kami mohon maaf atas segala ketidaknyamanan yang mungkin ditimbulkan.</string>
+    <string name="password_pin_authentication_title">Otentikasi Kata Sandi/PIN</string>
+    <string name="biometric_unsupported">Otentikasi biometrik tidak didukung di perangkat ini</string>
+    <string name="biometric_setting_summary">Buka kunci aplikasi dengan Sidik Jari, ID Wajah, PIN, Pola, dan Kata Sandi.</string>
+    <string name="biometric_prompt_description">Setelah beberapa kali gagal, perintah akan ditutup. Cukup mulai ulang aplikasi untuk mencoba lagi.</string>
+    <string name="unfavorite">Batalkan favorit</string>
+    <string name="biometric_authentication_title">Buka kunci AdiXtream</string>
+    <string name="resume_remaining" formatted="true">%s
+\ntersisa</string>
+    <string name="favorite">Favorit</string>
+    <string name="biometric_setting">Kunci dengan Biometrik</string>
+    <string name="repo_copy_label">Nama dan URL repositori</string>
+    <string name="clipboard_permission_error">Gagal mengakses Papan Klip, mohon coba lagi.</string>
+    <string name="toast_copied">disalin!</string>
+    <string name="clipboard_unknown_error">Gagal menyalin, mohon salin logcat dan hubungi pengembang aplikasi.</string>
+    <string name="ok">Oke</string>
+    <string name="battery_dialog_title">Matikan pengoptimalan Baterai</string>
+    <string name="app_unrestricted_toast">Pemakaian baterai untuk aplikasi ini sudah diatur menjadi tidak dibatasi</string>
+    <string name="app_info_intent_error">Gagal membuka info aplikasi AdiXtream.</string>
+    <string name="music_singlar">Musik</string>
+    <string name="audio_book_singular">Buku Audio</string>
+    <string name="custom_media_singluar">Media</string>
+    <string name="battery_dialog_message">Untuk memastikan unduhan dan pemberitahuan tanpa gangguan untuk acara TV berlangganan, AdiXtream memerlukan izin untuk berjalan di latar belakang. Dengan menekan OK, Anda akan diperlihatkan dialog permintaan. Silakan tekan ‘Izinkan’.\n\nHarap dicatat, izin ini tidak berarti AdiXtream akan menguras baterai Anda. Aplikasi ini hanya akan beroperasi di latar belakang jika diperlukan, misalnya saat menerima notifikasi atau mengunduh video dari ekstensi resmi.</string>
+    <string name="reset_btn">Mengatur ulang</string>
+    <string name="next_season_episode_format" formatted="true">Musim %1$d Episode %2$d akan dirilis pada</string>
+    <string name="episode_upcoming_format" formatted="true">Akan datang di %s</string>
+    <string name="episode_action_cast_mirror">Cermin Cast</string>
+    <string name="player_settings_select_cast_device">Pilih perangkat cast</string>
+    <string name="cs3wiki">AdiXtream Wiki</string>
+    <string name="pref_category_security">Keamanan</string>
+    <string name="pref_category_accounts">Akun</string>
+    <string name="hide_player_control_names_key" translatable="false">hide_player_control_names_key</string>
+    <string name="test_warning">Hati hati</string>
+    <string name="device_pin_expired_message">Kode PIN kini telah kedaluwarsa!</string>
+    <string name="qr_image">Gambar Kode QR</string>
+    <string name="dismiss">Mengabaikan</string>
+    <string name="device_pin_counter_text">Kode kedaluwarsa dalam %1$dm %2$ds</string>
+    <string name="auth_locally">Otorisasi Lokal</string>
+    <string name="device_pin_url_message">Kunjungi <b>%s</b> di ponsel pintar atau komputer Anda dan masukkan kode di atas</string>
+    <string name="preview_seekbar">Pratinjau bilah pencarian</string>
+    <string name="preview_seekbar_desc">Aktifkan pratinjau gambar mini di bilah pencarian</string>
+    <string name="hide_player_control_names">Sembunyikan Nama Kontrol Pemain</string>
+    <string name="open_downloaded_repo">Buka arsip</string>
+    <string name="play_from_beginning_img_des">Mainkan dari Awal</string>
+    <string name="downloads_empty">Tidak ada unduhan.</string>
+    <string name="open_local_video">Buka video lokal</string>
+    <string name="sort_release_date_old">Tanggal Rilis (Lama ke Baru)</string>
+    <string name="sort_release_date_new">Tanggal Rilis (Baru ke Lama)</string>
+    <string name="downloads_delete_select">Pilih item untuk Dihapus</string>
+    <string name="offline_file">Tersedia untuk menonton luring</string>
+    <string name="select_all">Pilih Semua</string>
+    <string name="deselect_all">Batal Pilih Semua</string>
+    <string name="delete_files">Hapus File</string>
+    <string name="delete_message_multiple" formatted="true">Apakah Anda yakin ingin menghapus item berikut secara permanen?
+\n
+\n%s</string>
+    <string name="delete_message_series_episodes" formatted="true">Apakah Anda yakin ingin menghapus episode berikut di %1$s secara permanen?
+\n
+\n%2$s</string>
+    <string name="delete_message_series_section" formatted="true">Anda juga akan menghapus semua episode dalam seri berikut secara permanen:
+\n
+\n%s</string>
+    <string name="delete_message_series_only" formatted="true">Apakah Anda yakin ingin menghapus semua episode dalam seri berikut secara permanen?
+\n
+\n%s</string>
+    <string name="delete_format" formatted="true">Hapus (%1$d | %2$s)</string>
+    <string name="delete_plugin">Hapus Plugin</string>
+    <string name="device_pin_error_message">Tidak bisa mendapatkan kode PIN perangkat, coba autentikasi lokal</string>
+    <string name="no_subtitles_loaded">Belum ada subtitel yang dimuat</string>
+    <string name="subs_edge_size">Ukuran Tepi</string>
+    <string name="torrent_info">Video ini berformat Torrent, artinya aktivitas video Anda dapat dilacak.\nPastikan Anda memahami Torrent sebelum melanjutkan.</string>
+    <string name="backup_path_title">Lokasi folder cadangan</string>
+    <string name="custom">Pilihan sendiri</string>
+    <string name="confirm_before_exiting_title">Konfirmasi sebelum keluar</string>
+    <string name="confirm_before_exiting_desc">Tampilkan dialog sebelum keluar dari aplikasi</string>
+    <string name="dont_show">Jangan Tampilkan</string>
+    <string name="show">Perlihatkan</string>
+    <string name="audio_singluar">Audio</string>
+    <string name="podcast_singluar">Podcast</string>
+    <string name="encoding_error">Pengkodean error</string>
+    <string name="unsupported_error">Error yang tidak didukung</string>
+    <string name="player_load_one_subtitle_online">Muat yang pertama tersedia</string>
+    <string name="torrent_preferred_media">Aktifkan torrent di dalam Pengaturan/Penyedia/Media pilihan</string>
+    <string name="torrent_not_accepted">Mulai ulang aplikasi dan terima pop-up Stream Torrent untuk melanjutkan.</string>
+    <string name="software_decoding_desc">Dekode perangkat lunak memungkinkan pemutar memainkan berkas video yang tidak didukung perangkat Anda, tetapi dapat memperburuk performa atau pemutaran yang tidak stabil pada resolusi tinggi.</string>
+    <string name="software_decoding">Dekode perangkat lunak</string>
+    <string name="sort_episodes_rating_low_high">Rating (terendah)</string>
+    <string name="sort_button_date">Tanggal %s</string>
+    <string name="sort_episodes_number_asc">Episode (Naik)</string>
+    <string name="sort_episodes_number_desc">Episode (Menurun)</string>
+    <string name="sort_episodes_rating_high_low">Rating (terbesar)</string>
+    <string name="sort_episodes_date_newest">Tanggal Tayang (Terbaru)</string>
+    <string name="sort_episodes_date_oldest">Tanggal Tayang (Paling Lama)</string>
+    <string name="sort_button_episode">Ep %s</string>
+    <string name="sort_button_rating">Rating %s</string>
+    <string name="update_plugins">Pembaruan Plugin²</string>
+    <string name="starting_plugin_update_manually">Mulai proses pembaruan plugin!</string>
+    <string name="plugins_updated_manually">Berhasil mengapdate %d plugin²(s)!</string>
+    <string name="update_plugins_manually">Pembaruan Plugin² manual</string>
+    <string name="no_plugins_updated_manually">Tidak ada plugin² yang perlu pembaruan.</string>
+    <string name="player_notification_channel_description">Pemberitahuan pemutar untuk mengontrol pemutaran dari latar belakang</string>
+    <string name="subtitles_from_online">Daring</string>
+    <string name="begin_speaking">Mulai bicara…</string>
+    <string name="subtitles_from_embedded">Tertanam</string>
+    <string name="player_notification_channel_name">Notifikasi pemain</string>
+    <string name="speech_recognition_unavailable">Pengenalan ucapan tidak tersedia</string>
+    <string name="all_subtitles_bold">Membuat semua subtitle menjadi tebal</string>
+    <string name="all_subtitles_italic">Membuat semua subtitle menjadi miring</string>
+    <string name="background_radius">Radius Latar Belakang</string>
+    <string name="volume_exceeded_100">Volume telah melebihi 100%</string>
+    <string name="slide_up_again_to_exceed_100">Geser ke atas lagi untuk melampaui 100%</string>
+    <string name="player_settings_always_ask">Selalu tanya</string>
+    <string name="download_parallel_settings_des">Berapa banyak item yang bisa diunduh secara paralel</string>
+    <string name="parallel_downloads">Pengunduhan paralel</string>
+    <string name="poster_size_settings_des">Ubah ukuran poster</string>
+    <string name="poster_size_settings">Ukuran poster</string>
+    <string name="speedup_summary">Tahan untuk kecepatan 2x</string>
+    <string name="no_internet_connection">Sambungan internet tidak tersedia.\n\nSilakan sambung ke internet dan coba lagi, atau tonton unduhan Anda saat sedang luring.</string>
+    <string name="overscan_settings_des">Ubah batas layar</string>
+    <string name="go_to_downloads">Kunjungi Unduhan</string>
+    <string name="concurrent_connections_settings_des">Jumlah sambungan yang bisa digunakan secara bersamaan saat mengunduh</string>
+    <string name="download_time_left_hour_min_sec_format" formatted="true">%1$dh %2$dm %3$ds</string>
+    <string name="download_time_left_min_sec_format" formatted="true">%1$dm %2$ds</string>
+    <string name="download_time_left_sec_format" formatted="true">%1$dd</string>
+    <string name="show_rating">Label Penilaian</string>
+    <string name="no_account">Tidak ada akun</string>
+    <string name="concurrent_connections">Koneksi bersamaan</string>
+    <string name="overscan_settings">Pemotongan Layar Berlebih</string>
+    <string name="speedup_title">Alih Kecepatan (tekan lama)</string>
+    <string name="edit_profile_image_title">Sunting Gambar Profil</string>
+    <string name="edit_profile_image_hint">Masukkan URL Gambar Profil</string>
+    <string name="edit_profile_image_error_empty">URL Tidak Ditemukan</string>
+    <string name="edit_profile_image_error_invalid">URL atau Gambar Tidak Valid</string>
+    <string name="edit_profile_image_success">Gambar Profil Berhasil Diperbarui</string>
+    <string name="action_mark_watched_up_to_this_episode">Tandai sebagai telah ditonton hingga episode ini</string>
+    <string name="action_remove_mark_watched_up_to_this_episode">Hapus penandaan telah ditonton hingga episode ini</string>
+    <string name="action_reload">Dimuat Ulang</string>
+    <string name="reload_provider">Muat Ulang Penyedia</string>
+    <string name="episode_action_play_mirror">Putar mirror</string>"
+    <string name="name">Nama</string>
+    <string name="resolution_and_name">Resolusi dan nama</string>
+    <string name="subs_subtitle_alignment">Penyelarasan Subtitle</string>
+    <string name="bottom_left">Bawah kiri</string>
+    <string name="bottom_center">Bawah tengah</string>
+    <string name="bottom_right">Bawah kanan</string>
+    <string name="middle_left">Tengah kiri</string>
+    <string name="middle_center">Tengah tengah</string>
+    <string name="middle_right">Tengah kanan</string>
+    <string name="top_left">Atas kiri</string>
+    <string name="top_center">Atas tengah</string>
+    <string name="top_right">Atas kanan</string>
+    <string name="play_full_series_button">Putar Seri Penuh</string>
+</resources>
