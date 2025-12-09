@@ -1,0 +1,36 @@
+name: Buat APK AdiXtream
+
+on:
+  workflow_dispatch: # Mengizinkan Anda menekan tombol "Run" manual
+  push:
+    branches:
+      - master # Akan jalan otomatis setiap Anda update kode di master
+
+jobs:
+  build:
+    name: Build APK
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Siapkan Java (JDK 17)
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Izinkan Gradle untuk dijalankan
+        run: chmod +x gradlew
+
+      - name: Mulai Proses Build APK (Tunggu agak lama)
+        # Perintah ini akan membuat APK mode Release
+        run: ./gradlew app:assembleRelease --stacktrace
+
+      - name: Upload APK ke GitHub
+        uses: actions/upload-artifact@v4
+        with:
+          name: AdiXtream-APK
+          # Mengambil semua file .apk yang berhasil dibuat
+          path: app/build/outputs/apk/release/*.apk
