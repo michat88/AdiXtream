@@ -1,10 +1,10 @@
-name: Buat APK AdiXtream
+name: Buat APK AdiXtream (FIX)
 
 on:
-  workflow_dispatch: # Mengizinkan Anda menekan tombol "Run" manual
+  workflow_dispatch:
   push:
     branches:
-      - master # Akan jalan otomatis setiap Anda update kode di master
+      - master
 
 jobs:
   build:
@@ -24,13 +24,13 @@ jobs:
       - name: Izinkan Gradle untuk dijalankan
         run: chmod +x gradlew
 
-      - name: Mulai Proses Build APK (Tunggu agak lama)
-        # Perintah ini akan membuat APK mode Release
-        run: ./gradlew app:assembleRelease --stacktrace
+      - name: Mulai Proses Build (Debug Mode)
+        # Menggunakan assembleDebug agar tidak perlu kunci rahasia
+        run: ./gradlew assembleDebug --stacktrace
 
       - name: Upload APK ke GitHub
         uses: actions/upload-artifact@v4
         with:
           name: AdiXtream-APK
-          # Mengambil semua file .apk yang berhasil dibuat
-          path: app/build/outputs/apk/release/*.apk
+          # Tanda bintang ganda (**) artinya cari di folder manapun sampai ketemu
+          path: app/build/outputs/apk/**/*.apk
