@@ -1,15 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="colorPrimary">#1A0524</color>
+    <color name="colorPrimary">#0F0510</color>
     
-    <color name="colorPrimaryDark">#0D0012</color>
+    <color name="colorPrimaryDark">#000000</color>
     
     <color name="colorAccent">#FF2E63</color> 
     
-    <color name="colorOngoing">#8A2BE2</color>
+    <color name="colorOngoing">#FF0055</color>
 
-    <color name="colorPrimarySecond">@color/colorPrimary</color> 
-    
+    <color name="colorPrimarySecond">@color/colorPrimary</color>
+
     <color name="colorSearch">#303135</color>
     <color name="primaryGrayBackground">#2B2C30</color>
     <color name="primaryBlackBackground">#111111</color>
@@ -26,14 +26,13 @@
     <color name="blackText">#000</color>
     <color name="progressBackgroundColor">#1AFFFFFF</color>
 
-    <color name="dubColorText">#7C4DFF</color> 
-    <color name="amoledModeLight">#121213</color>
+    <color name="dubColorText">#FF2E63</color> <color name="amoledModeLight">#121213</color>
     <color name="dubColorBg">#3B65F5</color>
-    <color name="subColorText">#FF2E63</color> 
-    <color name="subColorBg">#F53B66</color>
-    <color name="typeColorText">#BEC8FF</color>
-    <color name="typeColorBg">#3700B3</color>
+    <color name="subColorText">#FF2E63</color> <color name="subColorBg">#F53B66</color>
+    <color name="typeColorText">#FFDEE9</color> <color name="typeColorBg">#B71C1C</color>
+    
     <color name="adultColor">#FF6F63</color>
+
     <color name="video_ripple">#80FFFFFF</color>
     <color name="video_button_ripple">#32FFFFFF</color>
     <color name="black_overlay">#66000000</color>
