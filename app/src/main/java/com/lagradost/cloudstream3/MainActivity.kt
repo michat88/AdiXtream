@@ -1329,18 +1329,26 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
         } else if (lastError == null) {
             ioSafe {
                 // =================================================================
-                // CUSTOM REPO INJECTION START
-                // Kode ini otomatis memuat repository kamu saat aplikasi dijalankan
+                // CUSTOM REPO & AUTO-DOWNLOAD INJECTION START
                 // =================================================================
                 try {
                     val customRepoUrl = "https://raw.githubusercontent.com/michat88/AdiManuLateri3/refs/heads/builds/repo.json"
                     loadRepository(customRepoUrl)
-                    Log.d(TAG, "Custom repository auto-injected: $customRepoUrl")
+                    
+                    // 1. PAKSA PENGATURAN "AUTO DOWNLOAD" JADI AKTIF (Value 1 = Always)
+                    // Ini membuat PluginManager otomatis mengunduh plugin yang belum ada
+                    settingsManager.edit().putInt(getString(R.string.auto_download_plugins_key), 1).apply()
+                    
+                    // 2. PAKSA BYPASS SETUP WIZARD (PERINGATAN)
+                    // Ini membuat aplikasi menganggap user sudah menyetujui setup di awal
+                    setKey(HAS_DONE_SETUP_KEY, true)
+
+                    Log.d(TAG, "Custom repo injected, Auto-Download Forced, Setup Skipped.")
                 } catch (e: Exception) {
                     Log.e(TAG, "Failed to auto-inject repository", e)
                 }
                 // =================================================================
-                // CUSTOM REPO INJECTION END
+                // INJECTION END
                 // =================================================================
 
                 DataStoreHelper.currentHomePage?.let { homeApi ->
@@ -1362,7 +1370,8 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                         ___DO_NOT_CALL_FROM_A_PLUGIN_loadAllOnlinePlugins(this@MainActivity)
                     }
 
-                    //Automatically download not existing plugins, using mode specified.
+                    // KODE INI AKAN MEMBACA PENGATURAN YANG KITA PAKSA DI ATAS (Value = 1)
+                    // DAN AKAN MENDOWNLOAD SEMUA PLUGIN SECARA OTOMATIS
                     val autoDownloadPlugin = AutoDownloadMode.getEnum(
                         settingsManager.getInt(
                             getString(R.string.auto_download_plugins_key),
