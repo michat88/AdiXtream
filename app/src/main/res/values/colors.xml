@@ -1,46 +1,41 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="colorPrimary">#0F0510</color>
-    
+    <color name="colorPrimary">#000000</color>
     <color name="colorPrimaryDark">#000000</color>
-    
-    <color name="colorAccent">#FF2E63</color> 
-    
-    <color name="colorOngoing">#FF0055</color>
+
+    <color name="colorAccent">#E50914</color>
+    <color name="colorOngoing">#E50914</color>
+
+    <color name="primaryGrayBackground">#141414</color> <color name="primaryBlackBackground">#000000</color> <color name="iconGrayBackground">#333333</color>
+    <color name="boxItemBackground">#191919</color>
+
+    <color name="textColor">#FFFFFF</color> <color name="grayTextColor">#B3B3B3</color> <color name="whiteText">#FFFFFF</color>
 
     <color name="colorPrimarySecond">@color/colorPrimary</color>
 
-    <color name="colorSearch">#303135</color>
-    <color name="primaryGrayBackground">#2B2C30</color>
-    <color name="primaryBlackBackground">#111111</color>
-    <color name="iconGrayBackground">#1C1C20</color>
-    <color name="boxItemBackground">#161616</color>
-    <color name="textColor">#e9eaee</color>
-    <color name="grayTextColor">#9ba0a4</color>
-    <color name="grayShimmer">#DCDCDC</color>
+    <color name="dubColorText">#E50914</color> <color name="dubColorBg">#200000</color>   <color name="subColorText">#FFFFFF</color>
+    <color name="subColorBg">#E50914</color>
+
+    <color name="colorSearch">#141414</color>
+    <color name="grayShimmer">#404040</color>
     <color name="searchColorTransparent">#1AFFFFFF</color>
     <color name="transparent">#00000000</color>
     <color name="white">#FFF</color>
     <color name="black">#000</color>
-    <color name="whiteText">#FFF</color>
     <color name="blackText">#000</color>
     <color name="progressBackgroundColor">#1AFFFFFF</color>
-
-    <color name="dubColorText">#FF2E63</color> <color name="amoledModeLight">#121213</color>
-    <color name="dubColorBg">#3B65F5</color>
-    <color name="subColorText">#FF2E63</color> <color name="subColorBg">#F53B66</color>
-    <color name="typeColorText">#FFDEE9</color> <color name="typeColorBg">#B71C1C</color>
-    
-    <color name="adultColor">#FF6F63</color>
-
+    <color name="amoledModeLight">#121213</color>
+    <color name="typeColorText">#E5E5E5</color>
+    <color name="typeColorBg">#E50914</color>
+    <color name="adultColor">#E50914</color>
     <color name="video_ripple">#80FFFFFF</color>
     <color name="video_button_ripple">#32FFFFFF</color>
-    <color name="black_overlay">#66000000</color>
-    <color name="darkBarTransparent">#C0121212</color>
-    <color name="skipOpTransparent">#4D121212</color>
+    <color name="black_overlay">#99000000</color>
+    <color name="darkBarTransparent">#C0000000</color>
+    <color name="skipOpTransparent">#4D000000</color>
     <color name="darkBar">#121212</color>
-    <color name="videoProgress">#66B5B5B5</color>
-    <color name="iconColor">#9ba0a6</color>
+    <color name="videoProgress">#E50914</color>
+    <color name="iconColor">#B3B3B3</color>
 
     <color name="lightPrimaryGrayBackground">#f1f1f1</color>
     <color name="lightBitDarkerGrayBackground">#fff</color>
@@ -49,7 +44,6 @@
     <color name="lightTextColor">#202125</color>
     <color name="lightGrayTextColor">#5f6267</color>
     <color name="lightIconColor">#5f6267</color>
-
     <color name="DraculaPrimaryGrayBackground">#414450</color>
     <color name="DraculaBitDarkerGrayBackground">#282a36</color>
     <color name="DraculaGrayBackground">#44475A</color>
@@ -57,7 +51,6 @@
     <color name="DraculaTextColor">#F8F8F2</color>
     <color name="DraculaGrayTextColor">#6272A4</color>
     <color name="DraculaIconColor">#6272A4</color>
-
     <color name="LavenderPrimaryGrayBackground">#f7eefc</color>
     <color name="LavenderBitDarkerGrayBackground">#fdf0fb</color>
     <color name="LavenderGrayBackground">#b794f6</color>
@@ -65,7 +58,6 @@
     <color name="LavenderTextColor">#2d1b47</color>
     <color name="LavenderGrayTextColor">#9ab3ff</color>
     <color name="LavenderIconColor">#7c3aed</color>
-
     <color name="colorPrimaryBlue">#5664B7</color>
     <color name="colorPrimaryRed">#D50000</color>
     <color name="colorPrimaryPurple">#6200EA</color>
