@@ -167,7 +167,6 @@ import com.lagradost.cloudstream3.utils.UIHelper.checkWrite
 import com.lagradost.cloudstream3.utils.UIHelper.dismissSafe
 import com.lagradost.cloudstream3.utils.UIHelper.enableEdgeToEdgeCompat
 import com.lagradost.cloudstream3.utils.UIHelper.fixSystemBarsPadding
-import com.lagradost.cloudstream3.utils.UIHelper.getResourceColor
 import com.lagradost.cloudstream3.utils.UIHelper.hideKeyboard
 import com.lagradost.cloudstream3.utils.UIHelper.navigate
 import com.lagradost.cloudstream3.utils.UIHelper.requestRW
@@ -197,6 +196,10 @@ import android.content.ContentUris
 
 import com.lagradost.cloudstream3.ui.home.HomeFragment
 import com.lagradost.cloudstream3.utils.TvChannelUtils
+
+// IMPORT BARU YANG SAYA TAMBAHKAN UNTUK AUTO-REPO
+import com.lagradost.cloudstream3.repositories.RepositoryManager
+import com.lagradost.cloudstream3.repositories.RepositoryData
 
 class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCallback {
     companion object {
@@ -412,27 +415,6 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                 }
                 return false
             }
-
-
-        fun centerView(view: View?) {
-            if (view == null) return
-            try {
-                Log.v(TAG, "centerView: $view")
-                val r = Rect(0, 0, 0, 0)
-                view.getDrawingRect(r)
-                val x = r.centerX()
-                val y = r.centerY()
-                val dx = r.width() / 2 //screenWidth / 2
-                val dy = screenHeight / 2
-                val r2 = Rect(x - dx, y - dy, x + dx, y + dy)
-                view.requestRectangleOnScreen(r2, false)
-                // TvFocus.current =TvFocus.current.copy(y=y.toFloat())
-            } catch (_: Throwable) {
-            }
-        }
-    }
-
-
     var lastPopup: SearchResponse? = null
     fun loadPopup(result: SearchResponse, load: Boolean = true) {
         lastPopup = result
@@ -960,7 +942,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
         private var animator: ValueAnimator? = null
 
         /** if this is enabled it will keep the focus unmoving
-         *  during listview move */
+         * during listview move */
         private const val NO_MOVE_LIST: Boolean = false
 
         /** If this is enabled then it will try to move the
@@ -1159,11 +1141,43 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
             }
         }
     }
-
     @Suppress("DEPRECATION_ERROR")
     override fun onCreate(savedInstanceState: Bundle?) {
         app.initClient(this)
         val settingsManager = PreferenceManager.getDefaultSharedPreferences(this)
+
+        // ==============================================================================
+        // --- ADIXTREAM AUTO REPO INJECTOR (START) ---
+        // Kode ini akan berjalan otomatis saat aplikasi dibuka
+        try {
+            // Cek apakah repo sudah pernah ditambahkan (menggunakan flag versi 'v1')
+            val isRepoAdded = settingsManager.getBoolean("adixtream_repo_auto_added_v1", false)
+
+            if (!isRepoAdded) {
+                val repoUrl = "https://raw.githubusercontent.com/michat88/AdiManuLateri3/refs/heads/builds/repo.json"
+                val repoName = "AdiXtream Official"
+
+                // Cek repository yang aktif sekarang
+                val currentRepos = RepositoryManager.getRepositories()
+                
+                // Jika URL repo belum ada di daftar, tambahkan!
+                if (currentRepos.none { it.url == repoUrl }) {
+                    val newRepo = RepositoryData(repoName, repoUrl)
+                    RepositoryManager.addRepository(newRepo)
+                    
+                    // Opsional: Tampilkan pesan kecil bahwa repo berhasil dimuat
+                    // Toast.makeText(this, "AdiXtream Repo Loaded!", Toast.LENGTH_LONG).show()
+                }
+
+                // Simpan tanda bahwa kita sudah menambahkan repo, agar tidak looping terus
+                settingsManager.edit().putBoolean("adixtream_repo_auto_added_v1", true).apply()
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            // Lanjut saja jika error, jangan sampai app crash
+        }
+        // --- ADIXTREAM AUTO REPO INJECTOR (END) ---
+        // ==============================================================================
 
         val errorFile = filesDir.resolve("last_error")
         if (errorFile.exists() && errorFile.isFile) {
