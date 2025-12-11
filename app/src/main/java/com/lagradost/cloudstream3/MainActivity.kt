@@ -160,7 +160,6 @@ import com.lagradost.cloudstream3.utils.DataStoreHelper.migrateResumeWatching
 import com.lagradost.cloudstream3.utils.Event
 import com.lagradost.cloudstream3.utils.ImageLoader.loadImage
 import com.lagradost.cloudstream3.utils.InAppUpdater.Companion.runAutoUpdate
-import com.lagradost.cloudstream3.utils.RepositoryParser
 import com.lagradost.cloudstream3.utils.SingleSelectionHelper.showBottomDialog
 import com.lagradost.cloudstream3.utils.SnackbarHelper.showSnackbar
 import com.lagradost.cloudstream3.utils.UIHelper.changeStatusBarState
@@ -168,6 +167,7 @@ import com.lagradost.cloudstream3.utils.UIHelper.checkWrite
 import com.lagradost.cloudstream3.utils.UIHelper.dismissSafe
 import com.lagradost.cloudstream3.utils.UIHelper.enableEdgeToEdgeCompat
 import com.lagradost.cloudstream3.utils.UIHelper.fixSystemBarsPadding
+import com.lagradost.cloudstream3.utils.UIHelper.getResourceColor
 import com.lagradost.cloudstream3.utils.UIHelper.hideKeyboard
 import com.lagradost.cloudstream3.utils.UIHelper.navigate
 import com.lagradost.cloudstream3.utils.UIHelper.requestRW
@@ -197,6 +197,8 @@ import android.content.ContentUris
 
 import com.lagradost.cloudstream3.ui.home.HomeFragment
 import com.lagradost.cloudstream3.utils.TvChannelUtils
+// Import penting untuk auto install plugin
+import com.lagradost.cloudstream3.ui.settings.AutoDownloadMode
 
 class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCallback {
     companion object {
@@ -619,7 +621,6 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
         override fun onSessionResuming(session: Session, s: String) {
         }
     }
-
     override fun onResume() {
         super.onResume()
         afterPluginsLoadedEvent += ::onAllPluginsLoaded
@@ -726,6 +727,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
 
     private fun NavDestination.matchDestination(@IdRes destId: Int): Boolean =
         hierarchy.any { it.id == destId }
+
     private var lastNavTime = 0L
     private fun onNavDestinationSelected(item: MenuItem, navController: NavController): Boolean {
         val currentTime = System.currentTimeMillis()
@@ -1130,29 +1132,6 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                         updateFocusView(lastFocus.get(), same = true)
                     }, 200)
                 }
-
-                /*
-
-                the following is working, but somewhat bad code code
-
-                if (!wasGone) {
-                    (focusOutline.parent as? ViewGroup)?.let {
-                        TransitionManager.endTransitions(it)
-                        TransitionManager.beginDelayedTransition(
-                            it,
-                            TransitionSet().addTransition(ChangeBounds())
-                                .addTransition(ChangeTransform())
-                                .setDuration(100)
-                        )
-                    }
-                }
-
-                focusOutline.layoutParams = focusOutline.layoutParams?.apply {
-                    width = newFocus.measuredWidth
-                    height = newFocus.measuredHeight
-                }
-                focusOutline.translationX = x.toFloat()
-                focusOutline.translationY = y.toFloat()*/
             }
         }
     }
@@ -1276,63 +1255,39 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
             )
         }
 
-        // --- KODE MODIFIKASI: AUTO REPO & BYPASS SETUP & AUTO INSTALL PLUGINS ---
+        // --- KODE MODIFIKASI: AUTO REPO & AUTO INSTALL ---
         
-        // 1. Auto Load Repository & Install Plugins (Hanya jalan sekali saat instalasi awal)
         ioSafe {
-            val repoAddedKey = "HAS_ADDED_MY_REPO_AND_PLUGINS"
+            val repoAddedKey = "HAS_ADDED_MY_REPO"
+            val customRepoUrl = "https://raw.githubusercontent.com/michat88/AdiManuLateri3/refs/heads/builds/repo.json"
+            
+            // Cek apakah ini pertama kali atau kita ingin memaksa cek ulang
             if (getKey(repoAddedKey, false) != true) {
                 try {
-                    val customRepoUrl = "https://raw.githubusercontent.com/michat88/AdiManuLateri3/refs/heads/builds/repo.json"
-                    
-                    // A. Memuat repository ke sistem
+                    // 1. Load Repository
                     loadRepository(customRepoUrl)
-                    Log.i(TAG, "Auto-loaded repo: $customRepoUrl")
+                    Log.i(TAG, "Auto-loaded custom repository: $customRepoUrl")
 
-                    // B. Mengambil daftar plugin dari repo dan menginstalnya
-                    val plugins = RepositoryParser.getRepoPlugins(customRepoUrl)
-                    
-                    if (!plugins.isNullOrEmpty()) {
-                        plugins.forEach { plugin ->
-                            // Logika download plugin
-                            PluginManager.downloadPlugin(
-                                this@MainActivity, 
-                                plugin.url, 
-                                "${plugin.name}.cs3", 
-                                true
-                            )
-                            Log.i(TAG, "Auto-installing plugin: ${plugin.name}")
-                        }
-                        
-                        // Menampilkan notifikasi kecil ke user
-                        runOnUiThread {
-                            showToast("Repository & Plugins installed successfully", Toast.LENGTH_LONG)
-                        }
+                    // 2. PAKSA Settingan "Auto Download Plugins" menjadi ON (1 = Always)
+                    // Kita akses SharedPreferences langsung agar settingan berubah
+                    settingsManager.edit().putInt(getString(R.string.auto_download_plugins_key), 1).apply()
 
-                        // Reload plugin lokal agar langsung muncul tanpa restart
-                        PluginManager.___DO_NOT_CALL_FROM_A_PLUGIN_loadAllLocalPlugins(
-                            this@MainActivity,
-                            false
-                        )
-                    }
+                    // 3. TRIGGER INSTALL OTOMATIS
+                    // Fungsi ini akan mengecek plugin apa yang ada di repo tapi belum terinstal, lalu mendownloadnya
+                    PluginManager.___DO_NOT_CALL_FROM_A_PLUGIN_downloadNotExistingPluginsAndLoad(
+                        this@MainActivity,
+                        AutoDownloadMode.Always
+                    )
 
-                    // Menandai selesai
+                    // 4. Tandai selesai
                     setKey(repoAddedKey, true) 
                     
                 } catch (e: Exception) {
                     logError(e)
-                    runOnUiThread {
-                        showToast("Failed to auto-install plugins: ${e.message}", Toast.LENGTH_SHORT)
-                    }
                 }
             }
         }
         
-        // 2. Bypass/Lewati Setup Wizard (Bahasa & Tema)
-        if (getKey(HAS_DONE_SETUP_KEY, false) != true) {
-             setKey(HAS_DONE_SETUP_KEY, true)
-             updateLocale() 
-        }
         // -------------------------------------------------
 
         // overscan
@@ -1425,6 +1380,9 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                         false
                     )
                 }
+
+// Add your channel creation here
+
             }
         } else {
             val builder: AlertDialog.Builder = AlertDialog.Builder(this)
@@ -1650,6 +1608,16 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
             }
         }
 
+//        ioSafe {
+//            val plugins =
+//                RepositoryParser.getRepoPlugins("https://raw.githubusercontent.com/recloudstream/TestPlugin/master/repo.json")
+//                    ?: emptyList()
+//            plugins.map {
+//                println("Load plugin: ${it.name} ${it.url}")
+//                RepositoryParser.loadSiteTemp(applicationContext, it.url, it.name)
+//            }
+//        }
+
         // init accounts
         ioSafe {
             // we need to run this after we init all apis, otherwise currentSyncApi will fuck itself
@@ -1710,6 +1678,17 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
             } else detachBackPressedCallback("MainActivity")
         }
 
+        //val navController = findNavController(R.id.nav_host_fragment)
+
+        /*navOptions = NavOptions.Builder()
+            .setLaunchSingleTop(true)
+            .setEnterAnim(R.anim.nav_enter_anim)
+            .setExitAnim(R.anim.nav_exit_anim)
+            .setPopEnterAnim(R.anim.nav_pop_enter)
+            .setPopExitAnim(R.anim.nav_pop_exit)
+            .setPopUpTo(navController.graph.startDestination, false)
+            .build()*/
+
         val rippleColor = ColorStateList.valueOf(getResourceColor(R.attr.colorPrimary, 0.1f))
 
         binding?.navView?.apply {
@@ -1738,7 +1717,12 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                 itemActiveIndicatorColor = rippleColor
             }
             setupWithNavController(navController)
-           
+            /*if (isLayout(TV or EMULATOR)) {
+                background?.alpha = 200
+            } else {
+                background?.alpha = 255
+            }*/
+
             setOnItemSelectedListener { item ->
                 onNavDestinationSelected(
                     item,
@@ -1811,6 +1795,29 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
 
                 prevView = view
                 prevId = id
+                // Uncomment for focus expand
+                /*if (!isLayout(TV)) {
+                    view.onFocusChangeListener = null
+                } else {
+                    view.onFocusChangeListener =
+                        View.OnFocusChangeListener { v, hasFocus ->
+                            if (hasFocus) {
+                                focus += id
+                                binding?.navRailView?.labelVisibilityMode =
+                                    NavigationRailView.LABEL_VISIBILITY_LABELED
+                                binding?.navRailView?.expand()
+                            } else {
+                                focus -= id
+                                v.post {
+                                    if (focus.isEmpty()) {
+                                        binding?.navRailView?.labelVisibilityMode =
+                                            NavigationRailView.LABEL_VISIBILITY_UNLABELED
+                                        binding?.navRailView?.collapse()
+                                    }
+                                }
+                            }
+                        }
+                }*/
             }
         }
 
@@ -1862,12 +1869,94 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
 
         loadCache()
         updateHasTrailers()
-       
+        /*nav_view.setOnNavigationItemSelectedListener { item ->
+            when (item.itemId) {
+                R.id.navigation_home -> {
+                    navController.navigate(R.id.navigation_home, null, navOptions)
+                }
+                R.id.navigation_search -> {
+                    navController.navigate(R.id.navigation_search, null, navOptions)
+                }
+                R.id.navigation_downloads -> {
+                    navController.navigate(R.id.navigation_downloads, null, navOptions)
+                }
+                R.id.navigation_settings -> {
+                    navController.navigate(R.id.navigation_settings, null, navOptions)
+                }
+            }
+            true
+        }*/
+
+
         if (!checkWrite()) {
             requestRW()
             if (checkWrite()) return
         }
-        
+        //CastButtonFactory.setUpMediaRouteButton(this, media_route_button)
+
+        // THIS IS CURRENTLY REMOVED BECAUSE HIGHER VERS OF ANDROID NEEDS A NOTIFICATION
+        //if (!VideoDownloadManager.isMyServiceRunning(this, VideoDownloadKeepAliveService::class.java)) {
+        //    val mYourService = VideoDownloadKeepAliveService()
+        //    val mServiceIntent = Intent(this, mYourService::class.java).putExtra(START_VALUE_KEY, RESTART_ALL_DOWNLOADS_AND_QUEUE)
+        //    this.startService(mServiceIntent)
+        //}
+//settingsManager.getBoolean("disable_automatic_data_downloads", true) &&
+
+        // TODO RETURN TO TRUE
+        /*
+        if (isUsingMobileData()) {
+            Toast.makeText(this, "Downloads not resumed on mobile data", Toast.LENGTH_LONG).show()
+        } else {
+            val keys = getKeys(VideoDownloadManager.KEY_RESUME_PACKAGES)
+            val resumePkg = keys.mapNotNull { k -> getKey<VideoDownloadManager.DownloadResumePackage>(k) }
+
+            // To remove a bug where this is permanent
+            removeKeys(VideoDownloadManager.KEY_RESUME_PACKAGES)
+
+            for (pkg in resumePkg) { // ADD ALL CURRENT DOWNLOADS
+                VideoDownloadManager.downloadFromResume(this, pkg, false)
+            }
+
+            // ADD QUEUE
+            // array needed because List gets cast exception to linkedList for some unknown reason
+            val resumeQueue =
+                getKey<Array<VideoDownloadManager.DownloadQueueResumePackage>>(VideoDownloadManager.KEY_RESUME_QUEUE_PACKAGES)
+
+            resumeQueue?.sortedBy { it.index }?.forEach {
+                VideoDownloadManager.downloadFromResume(this, it.pkg)
+            }
+        }*/
+
+
+        /*
+        val castContext = CastContext.getSharedInstance(applicationContext)
+         fun buildMediaQueueItem(video: String): MediaQueueItem {
+           // val movieMetadata = MediaMetadata(MediaMetadata.MEDIA_TYPE_PHOTO)
+            //movieMetadata.putString(MediaMetadata.KEY_TITLE, "CloudStream")
+            val mediaInfo = MediaInfo.Builder(Uri.parse(video).toString())
+                .setStreamType(MediaInfo.STREAM_TYPE_NONE)
+                .setContentType(MimeTypes.IMAGE_JPEG)
+               // .setMetadata(movieMetadata).build()
+                .build()
+            return MediaQueueItem.Builder(mediaInfo).build()
+        }*/
+        /*
+        castContext.addCastStateListener { state ->
+            if (state == CastState.CONNECTED) {
+                println("TESTING")
+                val isCasting = castContext?.sessionManager?.currentCastSession?.remoteMediaClient?.currentItem != null
+                if(!isCasting) {
+                    val castPlayer = CastPlayer(castContext)
+                    println("LOAD ITEM")
+
+                    castPlayer.loadItem(buildMediaQueueItem("https://cdn.discordapp.com/attachments/551382684560261121/730169809408622702/ChromecastLogo6.png"),0)
+                }
+            }
+        }*/
+        /*thread {
+            createISO()
+        }*/
+
         if (BuildConfig.DEBUG) {
             var providersAndroidManifestString = "Current androidmanifest should be:\n"
             synchronized(allProviders) {
@@ -1922,17 +2011,38 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
             removeKey(USER_SELECTED_HOMEPAGE_API)
         }
 
-        // --- BYPASS SETUP: PASTIKAN KITA TIDAK TERJEBAK DI SETUP ---
+        // --- INI BAGIAN PENTING UNTUK BYPASS SETUP ---
+        // Jika kunci setup belum ada, kita buat TRUE dan JANGAN NAVIGASI KE SETUP LANGUAGE
         try {
             if (getKey(HAS_DONE_SETUP_KEY, false) != true) {
                 setKey(HAS_DONE_SETUP_KEY, true)
                 // Kita tidak memanggil navController.navigate(...)
                 // Jadi aplikasi akan tetap di HomeFragment
             } 
+            // Bagian ini biasanya mengarahkan ke setup extensions jika kosong, 
+            // tapi karena kita sudah load repo di atas, user akan baik-baik saja.
+            else if (PluginManager.getPluginsOnline().isEmpty()
+                && PluginManager.getPluginsLocal().isEmpty()
+            ) {
+                 // Opsional: Jika masih mau menampilkan halaman extensions jika kosong
+                 /* navController.navigate(
+                    R.id.navigation_setup_extensions,
+                    SetupFragmentExtensions.newInstance(false)
+                ) */
+            }
         } catch (e: Exception) {
             logError(e)
         }
         // ----------------------------------------------
+
+//        Used to check current focus for TV
+//        main {
+//            while (true) {
+//                delay(5000)
+//                println("Current focus: $currentFocus")
+//                showToast(this, currentFocus.toString(), Toast.LENGTH_LONG)
+//            }
+//        }
 
         onBackPressedDispatcher.addCallback(
             this,
@@ -1950,6 +2060,8 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                 }
             }
         )
+
+
     }
 
     /** Biometric stuff **/
