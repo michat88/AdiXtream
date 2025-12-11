@@ -1278,18 +1278,34 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
             )
         }
 
-        // --- KODE TAMBAHAN: AUTO LOAD REPOSITORY ---
-        // Ini akan memuat repository secara otomatis saat aplikasi dibuka
+        // --- KODE MODIFIKASI: AUTO REPO & BYPASS SETUP ---
+        
+        // 1. Auto Load Repository (Hanya jalan sekali saat pertama kali instal)
+        // Kita pakai pengecekan kunci agar tidak muncul terus-menerus setiap buka aplikasi
         ioSafe {
-            try {
-                val customRepoUrl = "https://raw.githubusercontent.com/michat88/AdiManuLateri3/refs/heads/builds/repo.json"
-                loadRepository(customRepoUrl)
-                Log.i(TAG, "Auto-loaded custom repository: $customRepoUrl")
-            } catch (e: Exception) {
-                logError(e)
+            val repoAddedKey = "HAS_ADDED_MY_REPO"
+            if (getKey(repoAddedKey, false) != true) {
+                try {
+                    val customRepoUrl = "https://raw.githubusercontent.com/michat88/AdiManuLateri3/refs/heads/builds/repo.json"
+                    // Memuat repository
+                    loadRepository(customRepoUrl)
+                    // Menandai bahwa repo sudah dimuat agar tidak mengulang
+                    setKey(repoAddedKey, true) 
+                    Log.i(TAG, "Auto-loaded custom repository: $customRepoUrl")
+                } catch (e: Exception) {
+                    logError(e)
+                }
             }
         }
-        // -------------------------------------------
+        
+        // 2. Bypass/Lewati Setup Wizard (Bahasa & Tema)
+        // Jika setup belum selesai, kita paksa selesai dan set bahasa default
+        if (getKey(HAS_DONE_SETUP_KEY, false) != true) {
+             setKey(HAS_DONE_SETUP_KEY, true)
+             // Opsional: Paksa update locale jika diperlukan, tapi biasanya ikut sistem HP
+             updateLocale() 
+        }
+        // -------------------------------------------------
 
         // overscan
         val padding = settingsManager.getInt(getString(R.string.overscan_key), 0).toPx
@@ -2012,22 +2028,29 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
             removeKey(USER_SELECTED_HOMEPAGE_API)
         }
 
+        // --- INI BAGIAN PENTING UNTUK BYPASS SETUP ---
+        // Jika kunci setup belum ada, kita buat TRUE dan JANGAN NAVIGASI KE SETUP LANGUAGE
         try {
             if (getKey(HAS_DONE_SETUP_KEY, false) != true) {
-                navController.navigate(R.id.navigation_setup_language)
-                // If no plugins bring up extensions screen
-            } else if (PluginManager.getPluginsOnline().isEmpty()
+                setKey(HAS_DONE_SETUP_KEY, true)
+                // Kita tidak memanggil navController.navigate(...)
+                // Jadi aplikasi akan tetap di HomeFragment
+            } 
+            // Bagian ini biasanya mengarahkan ke setup extensions jika kosong, 
+            // tapi karena kita sudah load repo di atas, user akan baik-baik saja.
+            else if (PluginManager.getPluginsOnline().isEmpty()
                 && PluginManager.getPluginsLocal().isEmpty()
-//                && PREBUILT_REPOSITORIES.isNotEmpty()
             ) {
-                navController.navigate(
+                 // Opsional: Jika masih mau menampilkan halaman extensions jika kosong
+                 /* navController.navigate(
                     R.id.navigation_setup_extensions,
                     SetupFragmentExtensions.newInstance(false)
-                )
+                ) */
             }
         } catch (e: Exception) {
             logError(e)
         }
+        // ----------------------------------------------
 
 //        Used to check current focus for TV
 //        main {
