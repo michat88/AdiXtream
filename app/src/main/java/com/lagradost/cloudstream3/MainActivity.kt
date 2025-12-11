@@ -1,6 +1,5 @@
 package com.lagradost.cloudstream3
 
-import com.fasterxml.jackson.module.kotlin.readValue
 import android.animation.ValueAnimator
 import android.annotation.SuppressLint
 import android.app.Dialog
@@ -1279,65 +1278,34 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
             )
         }
 
-        // --- KODE MODIFIKASI: AUTO INSTALL FULL (NO WARNING) ---
+        // --- KODE MODIFIKASI: AUTO REPO & BYPASS SETUP ---
+        
+        // 1. Auto Load Repository (Hanya jalan sekali saat pertama kali instal)
+        // Kita pakai pengecekan kunci agar tidak muncul terus-menerus setiap buka aplikasi
         ioSafe {
-            val autoSetupKey = "MY_AUTO_SETUP_V1" // Key unik agar cuma jalan sekali
-            if (getKey(autoSetupKey, false) != true) {
+            val repoAddedKey = "HAS_ADDED_MY_REPO"
+            if (getKey(repoAddedKey, false) != true) {
                 try {
-                    val repoUrl = "https://raw.githubusercontent.com/michat88/AdiManuLateri3/refs/heads/builds/repo.json"
-                    
-                    // 1. Tambahkan URL Repo ke daftar sistem secara diam-diam (Tanpa Dialog Peringatan)
-                    // Ini supaya repo tetap muncul di Pengaturan -> Extensions -> Repositories
-                    val currentRepos = getKey<Array<String>>("repositories") ?: emptyArray()
-                    if (!currentRepos.contains(repoUrl)) {
-                        setKey("repositories", currentRepos.plus(repoUrl))
-                    }
-
-                    // 2. Fetch JSON dan Install Semua Plugin Secara Paksa
-                    val jsonText = app.get(repoUrl).text
-                    // Parsing JSON manual menggunakan Mapper bawaan CloudStream
-                    val plugins = com.lagradost.cloudstream3.utils.DataStore.mapper.readValue<List<Map<String, String>>>(jsonText)
-                    
-                    var installedCount = 0
-                    plugins.forEach { plugin ->
-                        val url = plugin["url"]
-                        val name = plugin["name"] ?: "Unknown"
-                        val internalName = plugin["internalName"] ?: name
-                        
-                        // Download plugin jika url berakhiran .cs3
-                        if (url != null && url.endsWith(".cs3")) {
-                            // Fungsi downloadPlugin membutuhkan context, url, dan nama file
-                            PluginManager.downloadPlugin(
-                                this@MainActivity, 
-                                url, 
-                                "$internalName.cs3", 
-                                true // isOnline = true
-                            )
-                            installedCount++
-                        }
-                    }
-
-                    // 3. Tandai setup selesai & Bypass Wizard Bahasa
-                    setKey(autoSetupKey, true)
-                    setKey(HAS_DONE_SETUP_KEY, true)
-                    
-                    // Notifikasi kecil
-                    showToast("Auto-Installed $installedCount Plugins & Repository", Toast.LENGTH_LONG)
-                    
-                    // Reload agar plugin yang baru didownload langsung terbaca
-                    PluginManager.___DO_NOT_CALL_FROM_A_PLUGIN_loadAllLocalPlugins(this@MainActivity, false)
-
+                    val customRepoUrl = "https://raw.githubusercontent.com/michat88/AdiManuLateri3/refs/heads/builds/repo.json"
+                    // Memuat repository
+                    loadRepository(customRepoUrl)
+                    // Menandai bahwa repo sudah dimuat agar tidak mengulang
+                    setKey(repoAddedKey, true) 
+                    Log.i(TAG, "Auto-loaded custom repository: $customRepoUrl")
                 } catch (e: Exception) {
                     logError(e)
                 }
-            } else {
-                // Jika sudah pernah setup, pastikan kita tetap bypass wizard bahasa jika belum diset
-                if (getKey(HAS_DONE_SETUP_KEY, false) != true) {
-                    setKey(HAS_DONE_SETUP_KEY, true)
-                }
             }
         }
-        // -------------------------------------------------------
+        
+        // 2. Bypass/Lewati Setup Wizard (Bahasa & Tema)
+        // Jika setup belum selesai, kita paksa selesai dan set bahasa default
+        if (getKey(HAS_DONE_SETUP_KEY, false) != true) {
+             setKey(HAS_DONE_SETUP_KEY, true)
+             // Opsional: Paksa update locale jika diperlukan, tapi biasanya ikut sistem HP
+             updateLocale() 
+        }
+        // -------------------------------------------------
 
         // overscan
         val padding = settingsManager.getInt(getString(R.string.overscan_key), 0).toPx
@@ -2065,13 +2033,19 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
         try {
             if (getKey(HAS_DONE_SETUP_KEY, false) != true) {
                 setKey(HAS_DONE_SETUP_KEY, true)
+                // Kita tidak memanggil navController.navigate(...)
+                // Jadi aplikasi akan tetap di HomeFragment
             } 
+            // Bagian ini biasanya mengarahkan ke setup extensions jika kosong, 
+            // tapi karena kita sudah load repo di atas, user akan baik-baik saja.
             else if (PluginManager.getPluginsOnline().isEmpty()
                 && PluginManager.getPluginsLocal().isEmpty()
             ) {
-                 /* * Block ini biasanya membawa user ke halaman Extensions jika kosong.
-                  * Tapi karena kita sudah install repo di atas, user aman.
-                  */
+                 // Opsional: Jika masih mau menampilkan halaman extensions jika kosong
+                 /* navController.navigate(
+                    R.id.navigation_setup_extensions,
+                    SetupFragmentExtensions.newInstance(false)
+                ) */
             }
         } catch (e: Exception) {
             logError(e)
