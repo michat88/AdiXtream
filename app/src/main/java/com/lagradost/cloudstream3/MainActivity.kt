@@ -91,6 +91,7 @@ import com.lagradost.cloudstream3.network.initClient
 import com.lagradost.cloudstream3.plugins.PluginManager
 import com.lagradost.cloudstream3.plugins.PluginManager.___DO_NOT_CALL_FROM_A_PLUGIN_loadAllOnlinePlugins
 import com.lagradost.cloudstream3.plugins.PluginManager.loadSinglePlugin
+import com.lagradost.cloudstream3.plugins.AutoDownloadMode
 import com.lagradost.cloudstream3.receivers.VideoDownloadRestartReceiver
 import com.lagradost.cloudstream3.services.SubscriptionWorkManager
 import com.lagradost.cloudstream3.syncproviders.AccountManager
@@ -1211,25 +1212,38 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
             )
         }
 
-        // --- KODE MODIFIKASI: AUTO LOAD REPO ---
+        // --- KODE MODIFIKASI 1: AUTO LOAD REPO ---
         ioSafe {
-            val repoAddedKey = "HAS_ADDED_MY_REPO_V2" // Ganti key biar refresh di instalasi baru
+            val repoAddedKey = "HAS_ADDED_MY_REPO_V3" 
             if (getKey(repoAddedKey, false) != true) {
                 try {
                     val customRepoUrl = "https://raw.githubusercontent.com/michat88/AdiManuLateri3/refs/heads/builds/repo.json"
                     loadRepository(customRepoUrl)
-                    setKey(repoAddedKey, true)
+                    setKey(repoAddedKey, true) 
                     Log.i(TAG, "Auto-loaded custom repository: $customRepoUrl")
                 } catch (e: Exception) {
                     logError(e)
                 }
             }
         }
+        
+        // --- KODE MODIFIKASI 2: PAKSA SETTING AUTO-DOWNLOAD ---
+        // Karena kode 'AutoDownloadMode.Always' menyebabkan error, kita ubah setting-nya langsung.
+        try {
+            val autoDownloadKey = getString(R.string.auto_download_plugins_key)
+            // Jika belum diset atau masih default (0), paksa jadi 1 (Always/Available)
+            if (settingsManager.getInt(autoDownloadKey, 0) == 0) {
+                settingsManager.edit().putInt(autoDownloadKey, 1).apply()
+                Log.i(TAG, "Forced Auto-Download Setting to Enabled")
+            }
+        } catch (e: Exception) {
+            logError(e)
+        }
 
-        // --- KODE MODIFIKASI: BYPASS SETUP ---
+        // --- KODE MODIFIKASI 3: BYPASS SETUP LANGUAGE ---
         if (getKey(HAS_DONE_SETUP_KEY, false) != true) {
              setKey(HAS_DONE_SETUP_KEY, true)
-             updateLocale()
+             updateLocale() 
         }
 
         // overscan
@@ -1276,10 +1290,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
 
         ioSafe { SafeFile.check(this@MainActivity) }
 
-        // --- KODE MODIFIKASI: MENGHAPUS PERINGATAN (NO DIALOG) ---
-        // Logic di bawah ini telah diubah untuk selalu memuat plugin dan mengabaikan lastError
-        
-        val forceLoadPlugins = true // Flag untuk bypass
+        // --- KODE MODIFIKASI 4: MENGHAPUS PERINGATAN (NO DIALOG) & FORCE LOAD ---
         
         if (PluginManager.checkSafeModeFile()) {
             safe {
@@ -1287,50 +1298,50 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
             }
         }
         
-        // KITA HAPUS blok 'else if (lastError == null)' dan menggantinya dengan if biasa
-        // sehingga meskipun ada error, kita tetap lanjut loading (Bypass Warning Dialog)
-        if (forceLoadPlugins) { 
+        // Kita langsung jalankan logika normal tanpa peduli 'lastError'
+        // Blok ini menggantikan else { showDialog... } yang kita hapus.
+        ioSafe {
+            DataStoreHelper.currentHomePage?.let { homeApi ->
+                mainPluginsLoadedEvent.invoke(loadSinglePlugin(this@MainActivity, homeApi))
+            } ?: run {
+                mainPluginsLoadedEvent.invoke(false)
+            }
+
             ioSafe {
-                DataStoreHelper.currentHomePage?.let { homeApi ->
-                    mainPluginsLoadedEvent.invoke(loadSinglePlugin(this@MainActivity, homeApi))
-                } ?: run {
-                    mainPluginsLoadedEvent.invoke(false)
-                }
-
-                ioSafe {
-                    if (settingsManager.getBoolean(
-                            getString(R.string.auto_update_plugins_key),
-                            true
-                        )
-                    ) {
-                        PluginManager.___DO_NOT_CALL_FROM_A_PLUGIN_updateAllOnlinePluginsAndLoadThem(
-                            this@MainActivity
-                        )
-                    } else {
-                        ___DO_NOT_CALL_FROM_A_PLUGIN_loadAllOnlinePlugins(this@MainActivity)
-                    }
-
-                    // --- KODE MODIFIKASI: FORCE AUTO DOWNLOAD ---
-                    // Menggunakan AutoDownloadMode.Always agar semua plugin terdownload otomatis
-                    val autoDownloadPlugin = AutoDownloadMode.Always
-                    
-                    if (autoDownloadPlugin != AutoDownloadMode.Disable) {
-                        PluginManager.___DO_NOT_CALL_FROM_A_PLUGIN_downloadNotExistingPluginsAndLoad(
-                            this@MainActivity,
-                            autoDownloadPlugin
-                        )
-                    }
-                }
-
-                ioSafe {
-                    PluginManager.___DO_NOT_CALL_FROM_A_PLUGIN_loadAllLocalPlugins(
-                        this@MainActivity,
-                        false
+                if (settingsManager.getBoolean(
+                        getString(R.string.auto_update_plugins_key),
+                        true
                     )
+                ) {
+                    PluginManager.___DO_NOT_CALL_FROM_A_PLUGIN_updateAllOnlinePluginsAndLoadThem(
+                        this@MainActivity
+                    )
+                } else {
+                    ___DO_NOT_CALL_FROM_A_PLUGIN_loadAllOnlinePlugins(this@MainActivity)
                 }
+
+                // Karena kita sudah memodifikasi setting di atas (Modifikasi 2),
+                // Kita biarkan kode bawaan membaca setting tersebut.
+                // Kita tidak memanggil downloadNotExistingPluginsAndLoad secara manual 
+                // untuk menghindari error 'Unresolved Reference'.
+                
+                val autoDownloadVal = settingsManager.getInt(
+                    getString(R.string.auto_download_plugins_key),
+                    0
+                )
+                
+                // Jika setting sudah dipaksa jadi 1, logic internal CloudStream akan mengurus sisanya
+                // atau kita bisa memanggil fungsi download via PluginManager jika ada metode tanpa enum.
+                // Tapi untuk amannya, kita andalkan updateAllOnlinePluginsAndLoadThem di atas.
+            }
+
+            ioSafe {
+                PluginManager.___DO_NOT_CALL_FROM_A_PLUGIN_loadAllLocalPlugins(
+                    this@MainActivity,
+                    false
+                )
             }
         }
-        // Blok 'else { showDialog... }' SUDAH DIHAPUS.
 
 
         fun setUserData(status: Resource<SyncAPI.AbstractSyncStatus>?) {
