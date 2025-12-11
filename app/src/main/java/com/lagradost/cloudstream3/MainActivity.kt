@@ -822,6 +822,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
             }
         }
     }
+
     lateinit var viewModel: ResultViewModel2
     lateinit var syncViewModel: SyncViewModel
     private var libraryViewModel: LibraryViewModel? = null
@@ -1123,6 +1124,36 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                     }
                     start()
                 }
+
+                // post check
+                if (!same) {
+                    newFocus.postDelayed({
+                        updateFocusView(lastFocus.get(), same = true)
+                    }, 200)
+                }
+
+                /*
+
+                the following is working, but somewhat bad code code
+
+                if (!wasGone) {
+                    (focusOutline.parent as? ViewGroup)?.let {
+                        TransitionManager.endTransitions(it)
+                        TransitionManager.beginDelayedTransition(
+                            it,
+                            TransitionSet().addTransition(ChangeBounds())
+                                .addTransition(ChangeTransform())
+                                .setDuration(100)
+                        )
+                    }
+                }
+
+                focusOutline.layoutParams = focusOutline.layoutParams?.apply {
+                    width = newFocus.measuredWidth
+                    height = newFocus.measuredHeight
+                }
+                focusOutline.translationX = x.toFloat()
+                focusOutline.translationY = y.toFloat()*/
             }
         }
     }
@@ -1247,41 +1278,34 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
             )
         }
 
-        // --- MODIFIKASI: AUTO REPO & AUTO DOWNLOAD (Part 2) ---
+        // --- KODE MODIFIKASI: AUTO REPO & BYPASS SETUP ---
+        
+        // 1. Auto Load Repository (Hanya jalan sekali saat pertama kali instal)
+        // Kita pakai pengecekan kunci agar tidak muncul terus-menerus setiap buka aplikasi
         ioSafe {
             val repoAddedKey = "HAS_ADDED_MY_REPO"
-            val context = this@MainActivity
-            
-            // Cek apakah repo sudah pernah ditambahkan
             if (getKey(repoAddedKey, false) != true) {
                 try {
                     val customRepoUrl = "https://raw.githubusercontent.com/michat88/AdiManuLateri3/refs/heads/builds/repo.json"
-                    
-                    // A. Load Repository
+                    // Memuat repository
                     loadRepository(customRepoUrl)
-                    
-                    // B. PAKSA PENGATURAN "AUTO DOWNLOAD" JADI "ALWAYS" (Nilai 1)
-                    PreferenceManager.getDefaultSharedPreferences(context)
-                        .edit()
-                        .putInt(getString(R.string.auto_download_plugins_key), 1) 
-                        .apply()
-
-                    // C. Trigger Download Sekarang Juga
-                    PluginManager.___DO_NOT_CALL_FROM_A_PLUGIN_downloadNotExistingPluginsAndLoad(
-                        context,
-                        com.lagradost.cloudstream3.plugins.AutoDownloadMode.Always
-                    )
-
-                    // Tandai selesai
+                    // Menandai bahwa repo sudah dimuat agar tidak mengulang
                     setKey(repoAddedKey, true) 
-                    Log.i(TAG, "Auto-loaded custom repository & Triggered Auto-Download")
-                    
+                    Log.i(TAG, "Auto-loaded custom repository: $customRepoUrl")
                 } catch (e: Exception) {
                     logError(e)
                 }
             }
         }
-        // ------------------------------------------------------
+        
+        // 2. Bypass/Lewati Setup Wizard (Bahasa & Tema)
+        // Jika setup belum selesai, kita paksa selesai dan set bahasa default
+        if (getKey(HAS_DONE_SETUP_KEY, false) != true) {
+             setKey(HAS_DONE_SETUP_KEY, true)
+             // Opsional: Paksa update locale jika diperlukan, tapi biasanya ikut sistem HP
+             updateLocale() 
+        }
+        // -------------------------------------------------
 
         // overscan
         val padding = settingsManager.getInt(getString(R.string.overscan_key), 0).toPx
@@ -1353,13 +1377,13 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                     }
 
                     //Automatically download not existing plugins, using mode specified.
-                    val autoDownloadPlugin = com.lagradost.cloudstream3.plugins.AutoDownloadMode.getEnum(
+                    val autoDownloadPlugin = AutoDownloadMode.getEnum(
                         settingsManager.getInt(
                             getString(R.string.auto_download_plugins_key),
                             0
                         )
-                    ) ?: com.lagradost.cloudstream3.plugins.AutoDownloadMode.Disable
-                    if (autoDownloadPlugin != com.lagradost.cloudstream3.plugins.AutoDownloadMode.Disable) {
+                    ) ?: AutoDownloadMode.Disable
+                    if (autoDownloadPlugin != AutoDownloadMode.Disable) {
                         PluginManager.___DO_NOT_CALL_FROM_A_PLUGIN_downloadNotExistingPluginsAndLoad(
                             this@MainActivity,
                             autoDownloadPlugin
@@ -1393,6 +1417,8 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
             }
             builder.show().setDefaultFocus()
         }
+
+
         fun setUserData(status: Resource<SyncAPI.AbstractSyncStatus>?) {
             if (isLocalList) return
             bottomPreviewBinding?.apply {
@@ -2002,18 +2028,29 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
             removeKey(USER_SELECTED_HOMEPAGE_API)
         }
 
-        // --- BYPASS SETUP WIZARD ---
+        // --- INI BAGIAN PENTING UNTUK BYPASS SETUP ---
+        // Jika kunci setup belum ada, kita buat TRUE dan JANGAN NAVIGASI KE SETUP LANGUAGE
         try {
-            // Jika Setup belum selesai, kita tandai sudah selesai agar tidak muncul
             if (getKey(HAS_DONE_SETUP_KEY, false) != true) {
                 setKey(HAS_DONE_SETUP_KEY, true)
+                // Kita tidak memanggil navController.navigate(...)
+                // Jadi aplikasi akan tetap di HomeFragment
+            } 
+            // Bagian ini biasanya mengarahkan ke setup extensions jika kosong, 
+            // tapi karena kita sudah load repo di atas, user akan baik-baik saja.
+            else if (PluginManager.getPluginsOnline().isEmpty()
+                && PluginManager.getPluginsLocal().isEmpty()
+            ) {
+                 // Opsional: Jika masih mau menampilkan halaman extensions jika kosong
+                 /* navController.navigate(
+                    R.id.navigation_setup_extensions,
+                    SetupFragmentExtensions.newInstance(false)
+                ) */
             }
-            // Karena kita sudah load repo otomatis di atas, kita tidak perlu memunculkan 
-            // SetupExtension meskipun plugin kosong saat start pertama.
         } catch (e: Exception) {
             logError(e)
         }
-        // ---------------------------
+        // ----------------------------------------------
 
 //        Used to check current focus for TV
 //        main {
