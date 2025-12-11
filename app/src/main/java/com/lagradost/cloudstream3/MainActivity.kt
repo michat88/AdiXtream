@@ -1163,10 +1163,10 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
     override fun onCreate(savedInstanceState: Bundle?) {
         app.initClient(this)
 
-        // --- MODIFIKASI 1: SET SETUP SELESAI OTOMATIS ---
-        // Ini akan mencegah layar "Bahasa Aplikasi" muncul
-        setKey(HAS_DONE_SETUP_KEY, true)
-        // -----------------------------------------------
+        // --- MODIFIKASI 1: SET SETUP SELESAI OTOMATIS (FIXED) ---
+        // Menggunakan alamat lengkap DataStore untuk menghindari error ambigu
+        com.lagradost.cloudstream3.utils.DataStore.setKey(HAS_DONE_SETUP_KEY, true)
+        // -------------------------------------------------------
         
         // --- MODIFIKASI 2: MUAT REPOSITORY OTOMATIS ---
         ioSafe {
@@ -1349,19 +1349,15 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                 }
 
                 ioSafe {
-                    // --- MODIFIKASI 3: PAKSA DOWNLOAD SEMUA PLUGIN ---
-                    // Kita melewati pengecekan settings dan langsung memaksa download
-                    // Ini agar pengguna tidak perlu memilih ekstensi secara manual
-                    
+                    // --- MODIFIKASI 3: PAKSA DOWNLOAD SEMUA PLUGIN (FIXED) ---
                     PluginManager.___DO_NOT_CALL_FROM_A_PLUGIN_updateAllOnlinePluginsAndLoadThem(
                         this@MainActivity
                     )
                     
-                    // Kita set mode ke Always atau WifiOnly (asumsi '1' atau '2') secara paksa untuk fungsi ini
-                    // Namun cara paling aman adalah memanggil download langsung tanpa if condition
+                    // MENGGUNAKAN ALAMAT LENGKAP UNTUK MENGHINDARI ERROR IMPORT AutoDownloadMode
                     PluginManager.___DO_NOT_CALL_FROM_A_PLUGIN_downloadNotExistingPluginsAndLoad(
                          this@MainActivity,
-                         AutoDownloadMode.Always // Memaksa download semua yang ada di repo
+                         com.lagradost.cloudstream3.ui.settings.AutoDownloadMode.Always 
                     )
                     // -------------------------------------------------
                 }
@@ -1855,11 +1851,9 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
             removeKey(USER_SELECTED_HOMEPAGE_API)
         }
 
-        // --- MODIFIKASI 4: PENGHAPUSAN NAVIGASI KE SETUP ---
-        // Kode lama di sini yang mengecek HAS_DONE_SETUP_KEY sudah dihapus
-        // karena kita sudah memaksa setup selesai di awal onCreate.
-        // ---------------------------------------------------
-
+        // --- MODIFIKASI 4: PENGHAPUSAN NAVIGASI KE SETUP (FIXED) ---
+        // Kode ini sekarang aman karena setup sudah ditandai selesai di awal.
+        
         onBackPressedDispatcher.addCallback(
             this,
             object : OnBackPressedCallback(true) {
