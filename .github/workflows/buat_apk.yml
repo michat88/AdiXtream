@@ -23,8 +23,6 @@ jobs:
 
       - name: Buat Keystore Otomatis (Lewat Terminal)
         run: |
-          # Kita buat kuncinya pake perintah terminal Linux biasa
-          # Ini pasti berhasil dan file akan muncul di folder app/
           keytool -genkey -v -keystore app/keystore.jks \
             -alias adixtream \
             -keyalg RSA -keysize 2048 -validity 10000 \
@@ -43,4 +41,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: AdiXtream-Final-APK
-          path: app/build/outputs/apk/release/*.apk
+          # PERBAIKAN DISINI: Menambahkan ** agar bisa masuk ke folder 'stable'
+          path: app/build/outputs/apk/**/*.apk
