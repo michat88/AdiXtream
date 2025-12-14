@@ -43,36 +43,11 @@ android {
 
     signingConfigs {
         create("release") {
-            // --- BAGIAN AJAIB (AUTO-GENERATOR) ---
-            val ksFile = file("keystore.jks")
-            val pswd = "161105"
-            val myAlias = "adixtream"
-
-            // Cek: Kalau file kunci belum ada, kita BIKIN BARU SEKARANG JUGA!
-            if (!ksFile.exists()) {
-                println("⚠️ File Keystore tidak ditemukan. Membuat baru otomatis...")
-                try {
-                    project.exec {
-                        commandLine(
-                            "keytool", "-genkey", 
-                            "-v", "-keystore", ksFile.absolutePath,
-                            "-alias", myAlias,
-                            "-keyalg", "RSA", "-keysize", "2048", "-validity", "10000",
-                            "-storepass", pswd, "-keypass", pswd,
-                            "-dname", "CN=AdiXtream, OU=Dev, O=Adi, L=Indo, S=ID, C=ID"
-                        )
-                    }
-                    println("✅ Keystore baru berhasil dibuat!")
-                } catch (e: Exception) {
-                    println("❌ Gagal membuat keystore: ${e.message}")
-                }
-            }
-
-            storeFile = ksFile
-            storePassword = pswd
-            keyAlias = myAlias
-            keyPassword = pswd
-            // -------------------------------------
+            // Kita suruh Gradle baca file yang NANTI akan dibuat oleh Robot GitHub
+            storeFile = file("keystore.jks")
+            storePassword = "161105"  // Password Hardcode
+            keyAlias = "adixtream"    // Alias Hardcode
+            keyPassword = "161105"    // Password Hardcode
         }
     }
 
@@ -80,7 +55,6 @@ android {
 
     defaultConfig {
         applicationId = "com.adixtream.app" 
-        
         minSdk = libs.versions.minSdk.get().toInt()
         targetSdk = libs.versions.targetSdk.get().toInt()
         versionCode = 67
@@ -106,11 +80,8 @@ android {
         release {
             signingConfig = signingConfigs.getByName("release")
             isDebuggable = false
-            
-            // Minify OFF supaya aman
             isMinifyEnabled = false 
             isShrinkResources = false 
-            
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
         debug {
