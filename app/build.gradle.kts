@@ -13,8 +13,6 @@ plugins {
 }
 
 val javaTarget = JvmTarget.fromTarget(libs.versions.jvmTarget.get())
-val tmpFilePath = System.getProperty("user.home") + "/work/_temp/keystore/"
-val prereleaseStoreFile: File? = File(tmpFilePath).listFiles()?.first()
 
 fun getGitCommitHash(): String {
     return try {
@@ -64,15 +62,6 @@ android {
                 }
             }
         }
-
-        if (prereleaseStoreFile != null) {
-            create("prerelease") {
-                storeFile = file(prereleaseStoreFile)
-                storePassword = System.getenv("SIGNING_STORE_PASSWORD")
-                keyAlias = System.getenv("SIGNING_KEY_ALIAS")
-                keyPassword = System.getenv("SIGNING_KEY_PASSWORD")
-            }
-        }
     }
 
     compileSdk = libs.versions.compileSdk.get().toInt()
@@ -106,10 +95,9 @@ android {
             signingConfig = signingConfigs.getByName("release")
             isDebuggable = false
             
-            // --- BAGIAN INI SAYA MATIKAN AGAR TIDAK CRASH ---
-            isMinifyEnabled = false // Diubah jadi false
-            isShrinkResources = false // Diubah jadi false
-            // ------------------------------------------------
+            // Minify OFF agar aman dari error R8
+            isMinifyEnabled = false 
+            isShrinkResources = false 
             
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
@@ -126,17 +114,8 @@ android {
             dimension = "state"
             resValue("bool", "is_prerelease", "false")
         }
-        create("prerelease") {
-            dimension = "state"
-            resValue("bool", "is_prerelease", "true")
-            applicationIdSuffix = ".prerelease"
-            if (signingConfigs.names.contains("prerelease")) {
-                signingConfig = signingConfigs.getByName("prerelease")
-            }
-            versionNameSuffix = "-PRE"
-            buildConfigField("String", "APP_VERSION", "\"${defaultConfig.versionName}$versionNameSuffix\"")
-            versionCode = (System.currentTimeMillis() / 60000).toInt()
-        }
+        
+        // --- PRERELEASE SUDAH DIHAPUS TOTAL ---
     }
 
     compileOptions {
@@ -232,7 +211,8 @@ tasks.register<Jar>("androidSourcesJar") {
 tasks.register<Copy>("copyJar") {
     dependsOn("build", ":library:jvmJar")
     from(
-        "build/intermediates/compile_app_classes_jar/prereleaseDebug/bundlePrereleaseDebugClassesToCompileJar",
+        // PERBAIKAN: Mengganti prereleaseDebug ke stableDebug agar tidak error path not found
+        "build/intermediates/compile_app_classes_jar/stableDebug/bundleStableDebugClassesToCompileJar",
         "../library/build/libs"
     )
     into("build/app-classes")
