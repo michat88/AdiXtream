@@ -51,7 +51,6 @@ android {
             
             if (encodedKey != null) {
                 try {
-                    // Membersihkan karakter sampah (spasi/enter) agar tidak error illegal char
                     val cleanKey = encodedKey.trim().replace("\\s".toRegex(), "")
                     val decodedKey = Base64.getMimeDecoder().decode(cleanKey)
                     
@@ -89,10 +88,7 @@ android {
         resValue("string", "commit_hash", getGitCommitHash())
         resValue("bool", "is_prerelease", "false")
         resValue("string", "app_name", "AdiXtream") 
-        
-        // --- PERBAIKAN: Menambahkan warna yang hilang ---
         resValue("color", "blackBoarder", "#FF000000") 
-        // -----------------------------------------------
 
         manifestPlaceholders["target_sdk_version"] = libs.versions.targetSdk.get()
 
@@ -109,8 +105,12 @@ android {
         release {
             signingConfig = signingConfigs.getByName("release")
             isDebuggable = false
-            isMinifyEnabled = true 
-            isShrinkResources = true 
+            
+            // --- BAGIAN INI SAYA MATIKAN AGAR TIDAK CRASH ---
+            isMinifyEnabled = false // Diubah jadi false
+            isShrinkResources = false // Diubah jadi false
+            // ------------------------------------------------
+            
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
         debug {
