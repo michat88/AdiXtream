@@ -44,22 +44,31 @@ android {
 
     signingConfigs {
         create("release") {
+            // Kita masih ambil Keystore dari Secret karena kodenya terlalu panjang
             val encodedKey = System.getenv("SIGNING_KEY")
             val keystoreFile = file("keystore.jks")
             
             if (encodedKey != null) {
                 try {
+                    // Bersihkan dan buat file Keystore
                     val cleanKey = encodedKey.trim().replace("\\s".toRegex(), "")
                     val decodedKey = Base64.getMimeDecoder().decode(cleanKey)
-                    
                     keystoreFile.writeBytes(decodedKey)
+                    
+                    // Lokasi file keystore
                     storeFile = keystoreFile
-                    storePassword = System.getenv("KEY_STORE_PASSWORD")
-                    keyAlias = System.getenv("ALIAS")
-                    keyPassword = System.getenv("KEY_PASSWORD")
+                    
+                    // --- PERBAIKAN: PASSWORD DITULIS LANGSUNG BIAR TIDAK SALAH ---
+                    storePassword = "161105"  // Password Toko
+                    keyAlias = "adixtream"    // Nama Alias
+                    keyPassword = "161105"    // Password Kunci
+                    // -------------------------------------------------------------
+                    
                 } catch (e: Exception) {
                     println("Error decoding key: ${e.message}")
                 }
+            } else {
+                println("PERINGATAN: SIGNING_KEY tidak ditemukan di Secrets!")
             }
         }
     }
@@ -94,11 +103,8 @@ android {
         release {
             signingConfig = signingConfigs.getByName("release")
             isDebuggable = false
-            
-            // Minify OFF agar aman dari error R8
             isMinifyEnabled = false 
             isShrinkResources = false 
-            
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
         debug {
@@ -114,8 +120,6 @@ android {
             dimension = "state"
             resValue("bool", "is_prerelease", "false")
         }
-        
-        // --- PRERELEASE SUDAH DIHAPUS TOTAL ---
     }
 
     compileOptions {
@@ -211,7 +215,6 @@ tasks.register<Jar>("androidSourcesJar") {
 tasks.register<Copy>("copyJar") {
     dependsOn("build", ":library:jvmJar")
     from(
-        // PERBAIKAN: Mengganti prereleaseDebug ke stableDebug agar tidak error path not found
         "build/intermediates/compile_app_classes_jar/stableDebug/bundleStableDebugClassesToCompileJar",
         "../library/build/libs"
     )
