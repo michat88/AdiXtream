@@ -1,111 +1,74 @@
-# CloudStream
+# AdiXtream 🎬
 
-**⚠️ Warning: By default, this app doesn't provide any video sources; you have to install extensions to add functionality to the app.**
+<p align="center">
+  <img src="https://raw.githubusercontent.com/michat88/Zaneta/refs/heads/main/Icons/AdiXtream.png" alt="Logo AdiXtream" width="150" height="150" />
+  <br>
+  <strong>Nonton Film, Drakor, & Anime Tanpa Ribet.</strong>
+  <br>
+  <br>
+  <a href="https://github.com/michat88/AdiXtream/releases">
+    <img src="https://img.shields.io/github/v/release/michat88/AdiXtream?style=for-the-badge&color=blue" alt="Latest Release">
+  </a>
+  <a href="#">
+    <img src="https://img.shields.io/badge/Platform-Android-green?style=for-the-badge&logo=android" alt="Platform">
+  </a>
+</p>
 
-[![Discord](https://invidget.switchblade.xyz/5Hus6fM)](https://discord.gg/5Hus6fM)
+---
 
+## 📖 Tentang AdiXtream
 
-## Table of Contents: 
-+ [About Us:](#about_us)
-+ [Installation Steps:](#install_rules)
-+ [Contributing:](#contributing)
-+ [Issues:](#issues)
-  + [Bugs Reports:](#bug_report)
-  + [Enhancement:](#enhancment)
-+ [Extension Development:](#extensions)
-+ [Language Support:](#languages)
-+ [Further Sources](#contact_and_sources)
+**AdiXtream** adalah aplikasi streaming berbasis Android yang dimodifikasi khusus untuk kenyamanan pengguna Indonesia. Tujuan utama aplikasi ini adalah **kemudahan akses**.
 
+Tidak seperti aplikasi aslinya di mana pengguna harus mencari dan memasang repositori secara manual, **AdiXtream hadir dengan solusi "Siap Pakai".** Kami telah menanamkan repositori terbaik secara otomatis, menghapus peringatan yang mengganggu, dan menyederhanakan tampilan agar Anda bisa langsung menonton film favorit Anda segera setelah aplikasi terinstal.
 
-<a id="about_us"></a>
+## ✨ Fitur Modifikasi (Pro)
 
-## About us: 
+Versi ini telah dimodifikasi dari kode sumber aslinya (CloudStream) untuk pengalaman pengguna yang lebih instan:
 
-**CloudStream is a media center that prioritizes and emphasizes complete freedom and flexibility for users and developers.** 
+* ✅ **Repository Terintegrasi (Embedded):** Tidak perlu lagi mencari link repositori. Sumber tontonan (Provider) otomatis terinstal saat pertama kali buka.
+* ✅ **Auto-Setup:** Ekstensi otomatis siap digunakan tanpa konfigurasi manual.
+* ✅ **Bebas Gangguan:** Peringatan "Ekstensi Pihak Ketiga" yang mengganggu saat pembukaan aplikasi telah dihapus.
+* ✅ **Antarmuka Bersih:** Tombol pengaturan ekstensi yang rumit telah disembunyikan untuk mencegah kesalahan konfigurasi oleh pengguna awam.
+* ✅ **Bahasa Indonesia:** Prioritas sumber tontonan dengan subtitle dan konten Indonesia.
 
-CloudStream is an extension-based multimedia player with tracking support. There are extensions to view videos from: 
+## 📺 Daftar Penyedia (Provider)
 
-+ [Librevox (audio-books)](https://librivox.org/) 
-+ [Youtube](https://www.youtube.com/)
-+ [Twitch](https://www.twitch.tv/)
-+ [iptv-org (A collection of publicly available IPTV (Internet Protocol television) channels from all over the world.)](https://github.com/iptv-org/iptv) 
-+ [nginx](https://nginx.org/)
-+ And more... 
+Aplikasi ini sudah dilengkapi dengan penyedia konten populer, antara lain:
 
+* **AdiDrakor** (Drama Korea Terupdate)
+* **Adicinemax21** (Film Bioskop & Box Office)
+* **Idlix** (Streaming Film Populer)
+* **Adimoviebox**
+* **Lateri3Play**
+* *Dan banyak lagi...*
 
-**Please don't create illegal extensions or use any that host any copyrighted media.** For more details about our stance on the DMCA and EUCD, you can read about it on our organization: [reCloudStream](https://github.com/recloudstream)
+## 📥 Cara Instalasi
 
-#### Important Copyright Note: 
+1.  Unduh file **APK** terbaru dari halaman [Releases](https://github.com/michat88/AdiXtream/releases).
+2.  Buka file yang diunduh pada perangkat Android Anda.
+3.  Jika diminta, izinkan instalasi dari **"Sumber Tidak Dikenal"** (Unknown Sources).
+4.  Buka aplikasi **AdiXtream**.
+5.  Tunggu sebentar untuk proses inisialisasi, dan selamat menonton!
 
-Our documentation is unmaintained and open to contributions; therefore, apps and sources, extensions in recommended sources, and recommended apps are not officially moderated or endorsed by CloudStream; if you or another copyright owner identify an extension that breaches your copyright, please let us know. 
+## ⚠️ Disclaimer
 
+**AdiXtream** tidak menghosting konten apa pun di servernya sendiri. Aplikasi ini bekerja sebagai mesin pencari (scraper) yang mengambil konten dari situs web pihak ketiga yang tersedia untuk umum di internet.
 
-#### Features:
-+ **AdFree**, No ads whatsoever
-+ No tracking/analytics
-+ Bookmarks
-+ Phone and TV support
-+ Chromecast
-+ Extension system for personal customization
+Pengembang AdiXtream tidak bertanggung jawab atas konten yang ditampilkan oleh penyedia pihak ketiga. Gunakan aplikasi ini dengan bijak.
 
+---
 
-<a id="install_rules"></a>
+## ❤️ Kredit & Ucapan Terima Kasih (Special Thanks)
 
-## Installation: 
+Proyek **AdiXtream** ini sepenuhnya didasarkan pada proyek open-source yang luar biasa, **CloudStream**.
 
-Our documentation provides the steps to install and configure CloudStream for your streaming needs.
+Terima kasih yang sebesar-besarnya kami ucapkan kepada **Tim Pengembang CloudStream** dan seluruh kontributornya. **AdiXtream hanyalah sebuah modifikasi kecil yang dibangun di atas pondasi kokoh karya mereka.** Segala kecanggihan sistem di aplikasi ini adalah hasil jerih payah mereka.
 
-[Getting Started With CloudStream:](https://recloudstream.github.io/csdocs/)
+Kami sangat menghormati karya asli developer CloudStream. Modifikasi ini dibuat semata-mata untuk mempermudah konfigurasi bagi pengguna awam di Indonesia, tanpa bermaksud mengambil alih kredit atas kerja keras mereka.
 
-<a id="contributing"></a>
+Tolong dukung proyek asli mereka di sini:
+* 🔗 **[CloudStream Official Repository](https://github.com/recloudstream/cloudstream)**
 
-## Contributing:
-We **happily** accept any contributions to our project. To find out where you can start contributing towards the project, please look [at our issues tab](/cloudstream/issues)
-
-
-
-<a id="issues"></a> 
- 
-### Issues: 
-While we **actively** accept issues and pull requests, we do require you fill out an [template](https://github.com/recloudstream/cloudstream/issues/new/choose) for issues. These include the following:
-
-<a id="bug_report"></a>
-
-- [Bug Report Template: ](https://github.com/recloudstream/cloudstream/issues/new?assignees=&labels=bug&projects=&template=application-bug.yml)
-  - For bug reports, we want as much info as possible, including your downloaded version of CloudeStream, device and updated version (if possible, current API),
-    expected behavior of the program, and the actual behavior that the program did, most importantly we require clear, reproducible steps of the bug. If your bug can't be       reproduced, it is unlikely we'll work on your issue.
-    
-<a id="enhancment"></a>
-  
-- [Feature Request Template: ](https://github.com/recloudstream/cloudstream/issues/new?assignees=&labels=enhancement&projects=&template=feature-request.yml)
-  - Before adding a feature request, please check to see if a feature request already has been requested.  
-
-
-### Extensions:
- 
-**Further details on creating extensions for CloudStream are found in our documentation.**
-
-[Guide: For Extension Developers](https://recloudstream.github.io/csdocs/devs/gettingstarted/) 
-
-<a id="contact_and_sources"></a>
-
-## Further Sources: 
-
-As well as providing clear install steps, our [website](https://dweb.link/ipns/cloudstream.on.fleek.co/) includes a wide variety of other tools, such as: 
-- [Troubleshooting](https://recloudstream.github.io/csdocs/troubleshooting/)
-- [Further CloudStream Repositories](https://recloudstream.github.io/csdocs/repositories/) 
-- Set-Up for other devices, such as:
-  - [Android TV](https://recloudstream.github.io/csdocs/other-devices/tv/)
-  - [Windows](https://recloudstream.github.io/csdocs/other-devices/windows/)
-  - [Linux](https://recloudstream.github.io/csdocs/other-devices/linux/)
-- And more...
-
-<a id="languages"> </a>  
-
-### Supported languages:
-
-Even if you can't contribute to the code or documentation, we always look for those who can contribute to translation and language support. Your contribution is exceptionally appreciated; you can check our translation from the figure below. 
-
-<a href="https://hosted.weblate.org/engage/cloudstream/">
-  <img src="https://hosted.weblate.org/widgets/cloudstream/-/app/multi-auto.svg" alt="Translation status" />
-</a>
+---
+<p align="center">Dibuat dengan ❤️ untuk Penikmat Film Indonesia</p>
