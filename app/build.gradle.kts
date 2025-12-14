@@ -4,7 +4,6 @@ import org.jetbrains.dokka.gradle.engine.parameters.VisibilityModifier
 import org.jetbrains.kotlin.gradle.dsl.JvmDefaultMode
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.tasks.KotlinJvmCompile
-import java.util.Base64
 
 plugins {
     alias(libs.plugins.android.application)
@@ -44,32 +43,36 @@ android {
 
     signingConfigs {
         create("release") {
-            // Kita masih ambil Keystore dari Secret karena kodenya terlalu panjang
-            val encodedKey = System.getenv("SIGNING_KEY")
-            val keystoreFile = file("keystore.jks")
-            
-            if (encodedKey != null) {
+            // --- BAGIAN AJAIB (AUTO-GENERATOR) ---
+            val ksFile = file("keystore.jks")
+            val pswd = "161105"
+            val myAlias = "adixtream"
+
+            // Cek: Kalau file kunci belum ada, kita BIKIN BARU SEKARANG JUGA!
+            if (!ksFile.exists()) {
+                println("⚠️ File Keystore tidak ditemukan. Membuat baru otomatis...")
                 try {
-                    // Bersihkan dan buat file Keystore
-                    val cleanKey = encodedKey.trim().replace("\\s".toRegex(), "")
-                    val decodedKey = Base64.getMimeDecoder().decode(cleanKey)
-                    keystoreFile.writeBytes(decodedKey)
-                    
-                    // Lokasi file keystore
-                    storeFile = keystoreFile
-                    
-                    // --- PERBAIKAN: PASSWORD DITULIS LANGSUNG BIAR TIDAK SALAH ---
-                    storePassword = "161105"  // Password Toko
-                    keyAlias = "adixtream"    // Nama Alias
-                    keyPassword = "161105"    // Password Kunci
-                    // -------------------------------------------------------------
-                    
+                    project.exec {
+                        commandLine(
+                            "keytool", "-genkey", 
+                            "-v", "-keystore", ksFile.absolutePath,
+                            "-alias", myAlias,
+                            "-keyalg", "RSA", "-keysize", "2048", "-validity", "10000",
+                            "-storepass", pswd, "-keypass", pswd,
+                            "-dname", "CN=AdiXtream, OU=Dev, O=Adi, L=Indo, S=ID, C=ID"
+                        )
+                    }
+                    println("✅ Keystore baru berhasil dibuat!")
                 } catch (e: Exception) {
-                    println("Error decoding key: ${e.message}")
+                    println("❌ Gagal membuat keystore: ${e.message}")
                 }
-            } else {
-                println("PERINGATAN: SIGNING_KEY tidak ditemukan di Secrets!")
             }
+
+            storeFile = ksFile
+            storePassword = pswd
+            keyAlias = myAlias
+            keyPassword = pswd
+            // -------------------------------------
         }
     }
 
@@ -103,8 +106,11 @@ android {
         release {
             signingConfig = signingConfigs.getByName("release")
             isDebuggable = false
+            
+            // Minify OFF supaya aman
             isMinifyEnabled = false 
             isShrinkResources = false 
+            
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
         debug {
