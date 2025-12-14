@@ -22,7 +22,6 @@ import com.lagradost.cloudstream3.databinding.AddRepoInputBinding
 import com.lagradost.cloudstream3.databinding.FragmentExtensionsBinding
 import com.lagradost.cloudstream3.mvvm.observe
 import com.lagradost.cloudstream3.mvvm.observeNullable
-// import com.lagradost.cloudstream3.plugins.RepositoryData <-- INI DIHAPUS AGAR TIDAK BENTROK
 import com.lagradost.cloudstream3.plugins.RepositoryManager
 import com.lagradost.cloudstream3.ui.BaseFragment
 import com.lagradost.cloudstream3.ui.result.FOCUS_SELF
@@ -107,8 +106,10 @@ class ExtensionsFragment : BaseFragment<FragmentExtensionsBinding>(
                     }
                 }
             }
+            
+            // --- MODIFIKASI: BYPASS DIALOG PERINGATAN ---
             adapter = RepoAdapter(false, {
-                // MODIFIKASI: Saat item repo diklik, langsung masuk tanpa babibu dialog
+                // Di sini kuncinya: Langsung navigasi tanpa memanggil dialog apapun
                 findNavController().navigate(
                     R.id.navigation_settings_extensions_to_navigation_settings_plugins,
                     PluginsFragment.newInstance(
@@ -226,7 +227,8 @@ class ExtensionsFragment : BaseFragment<FragmentExtensionsBinding>(
 
                         val fixedName = if (!name.isNullOrBlank()) name
                         else repository.name
-                        // Disini kita gunakan RepositoryData dari package yang sama (ExtensionsViewModel)
+                        
+                        // Gunakan RepositoryData dari package yang sama untuk menghindari konflik
                         val newRepo = RepositoryData(repository.iconUrl, fixedName, url)
                         RepositoryManager.addRepository(newRepo)
                         extensionViewModel.loadStats()
@@ -236,7 +238,7 @@ class ExtensionsFragment : BaseFragment<FragmentExtensionsBinding>(
                         if (plugins.isNullOrEmpty()) {
                             showToast(R.string.no_plugins_found_error, Toast.LENGTH_LONG)
                         } else {
-                            // --- ADIXTREAM MODIFIKASI: BYPASS DIALOG PERINGATAN ---
+                            // --- MODIFIKASI: BYPASS DIALOG (Bagian Add Manual) ---
                             main {
                                 this@ExtensionsFragment.findNavController().navigate(
                                     R.id.navigation_settings_extensions_to_navigation_settings_plugins,
@@ -247,7 +249,6 @@ class ExtensionsFragment : BaseFragment<FragmentExtensionsBinding>(
                                     )
                                 )
                             }
-                            // ----------------------------------------------------
                         }
                     }
                 }
