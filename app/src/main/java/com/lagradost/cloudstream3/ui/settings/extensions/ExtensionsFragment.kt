@@ -22,6 +22,7 @@ import com.lagradost.cloudstream3.databinding.AddRepoInputBinding
 import com.lagradost.cloudstream3.databinding.FragmentExtensionsBinding
 import com.lagradost.cloudstream3.mvvm.observe
 import com.lagradost.cloudstream3.mvvm.observeNullable
+import com.lagradost.cloudstream3.plugins.RepositoryData
 import com.lagradost.cloudstream3.plugins.RepositoryManager
 import com.lagradost.cloudstream3.ui.BaseFragment
 import com.lagradost.cloudstream3.ui.result.FOCUS_SELF
@@ -31,7 +32,6 @@ import com.lagradost.cloudstream3.ui.settings.Globals.isLayout
 import com.lagradost.cloudstream3.ui.settings.SettingsFragment.Companion.setSystemBarsPadding
 import com.lagradost.cloudstream3.ui.settings.SettingsFragment.Companion.setToolBarScrollFlags
 import com.lagradost.cloudstream3.ui.settings.SettingsFragment.Companion.setUpToolbar
-// import com.lagradost.cloudstream3.utils.AppContextUtils.addRepositoryDialog // Baris ini tidak lagi digunakan
 import com.lagradost.cloudstream3.utils.AppContextUtils.setDefaultFocus
 import com.lagradost.cloudstream3.utils.Coroutines.ioSafe
 import com.lagradost.cloudstream3.utils.Coroutines.main
@@ -79,7 +79,7 @@ class ExtensionsFragment : BaseFragment<FragmentExtensionsBinding>(
         binding.repoRecyclerView.apply {
             setLinearListLayout(
                 isHorizontal = false,
-                nextUp = R.id.settings_toolbar, // FOCUS_SELF, // back has no id so we cant :pensive:
+                nextUp = R.id.settings_toolbar, 
                 nextDown = R.id.plugin_storage_appbar,
                 nextRight = FOCUS_SELF,
                 nextLeft = R.id.nav_rail_view
@@ -100,14 +100,15 @@ class ExtensionsFragment : BaseFragment<FragmentExtensionsBinding>(
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                 setOnScrollChangeListener { _, _, scrollY, _, oldScrollY ->
                     val dy = scrollY - oldScrollY
-                    if (dy > 0) { // check for scroll down
-                        binding.addRepoButton.shrink() // hide
+                    if (dy > 0) { 
+                        binding.addRepoButton.shrink() 
                     } else if (dy < -5) {
-                        binding.addRepoButton.extend() // show
+                        binding.addRepoButton.extend() 
                     }
                 }
             }
             adapter = RepoAdapter(false, {
+                // MODIFIKASI: Saat item repo diklik, langsung masuk tanpa babibu dialog
                 findNavController().navigate(
                     R.id.navigation_settings_extensions_to_navigation_settings_plugins,
                     PluginsFragment.newInstance(
@@ -117,7 +118,6 @@ class ExtensionsFragment : BaseFragment<FragmentExtensionsBinding>(
                     )
                 )
             }, { repo ->
-                // Prompt user before deleting repo
                 main {
                     val builder = AlertDialog.Builder(context ?: binding.root.context)
                     val dialogClickListener =
@@ -199,7 +199,6 @@ class ExtensionsFragment : BaseFragment<FragmentExtensionsBinding>(
                 0
             )?.text?.toString()?.let { copiedText ->
                 if (copiedText.contains(RepoAdapter.SHAREABLE_REPO_SEPARATOR)) {
-                    // text is of format <repository name> : <repository url>
                     val (name, url) = copiedText.split(RepoAdapter.SHAREABLE_REPO_SEPARATOR, limit = 2)
                     binding.repoUrlInput.setText(url.trim())
                     binding.repoNameInput.setText(name.trim())
@@ -220,7 +219,6 @@ class ExtensionsFragment : BaseFragment<FragmentExtensionsBinding>(
                     } else {
                         val repository = RepositoryManager.parseRepository(url)
 
-                        // Exit if wrong repository
                         if (repository == null) {
                             showToast(R.string.no_repository_found_error, Toast.LENGTH_LONG)
                             return@ioSafe
@@ -228,7 +226,7 @@ class ExtensionsFragment : BaseFragment<FragmentExtensionsBinding>(
 
                         val fixedName = if (!name.isNullOrBlank()) name
                         else repository.name
-                        val newRepo = RepositoryData(repository.iconUrl,fixedName, url)
+                        val newRepo = RepositoryData(repository.iconUrl, fixedName, url)
                         RepositoryManager.addRepository(newRepo)
                         extensionViewModel.loadStats()
                         extensionViewModel.loadRepositories()
@@ -237,8 +235,8 @@ class ExtensionsFragment : BaseFragment<FragmentExtensionsBinding>(
                         if (plugins.isNullOrEmpty()) {
                             showToast(R.string.no_plugins_found_error, Toast.LENGTH_LONG)
                         } else {
-                            // --- MODIFIKASI: BYPASS WARNING DIALOG ---
-                            // Kode lama (addRepositoryDialog) dihapus dan diganti dengan navigasi langsung
+                            // --- ADIXTREAM MODIFIKASI: BYPASS DIALOG PERINGATAN ---
+                            // Kita langsung navigasi ke PluginsFragment seolah-olah user menekan "Buka Arsip"
                             main {
                                 this@ExtensionsFragment.findNavController().navigate(
                                     R.id.navigation_settings_extensions_to_navigation_settings_plugins,
@@ -249,7 +247,7 @@ class ExtensionsFragment : BaseFragment<FragmentExtensionsBinding>(
                                     )
                                 )
                             }
-                            // -----------------------------------------
+                            // ----------------------------------------------------
                         }
                     }
                 }
@@ -265,7 +263,6 @@ class ExtensionsFragment : BaseFragment<FragmentExtensionsBinding>(
             addRepoButton.isGone = isTv
             addRepoButtonImageviewHolder.isVisible = isTv
 
-            // Band-aid for Fire TV
             pluginStorageAppbar.isFocusableInTouchMode = isTv
             addRepoButtonImageview.isFocusableInTouchMode = isTv
 
