@@ -6,21 +6,27 @@ import android.content.Context
 import android.content.ContextWrapper
 import android.content.Intent
 import android.os.Build
-import android.widget.Toast
+import android.util.Log
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
+import androidx.preference.PreferenceManager
 import coil3.ImageLoader
 import coil3.PlatformContext
 import coil3.SingletonImageLoader
 import com.lagradost.api.setContext
+import com.lagradost.cloudstream3.APIHolder.initAll
 import com.lagradost.cloudstream3.mvvm.safe
 import com.lagradost.cloudstream3.mvvm.safeAsync
 import com.lagradost.cloudstream3.plugins.PluginManager
 import com.lagradost.cloudstream3.ui.settings.Globals.EMULATOR
 import com.lagradost.cloudstream3.ui.settings.Globals.TV
 import com.lagradost.cloudstream3.ui.settings.Globals.isLayout
+import com.lagradost.cloudstream3.ui.setup.HAS_DONE_SETUP_KEY
+import com.lagradost.cloudstream3.utils.AppContextUtils.loadRepository
 import com.lagradost.cloudstream3.utils.AppContextUtils.openBrowser
+import com.lagradost.cloudstream3.utils.Coroutines.ioSafe
 import com.lagradost.cloudstream3.utils.Coroutines.runOnMainThread
+import com.lagradost.cloudstream3.utils.DataStore
 import com.lagradost.cloudstream3.utils.DataStore.getKey
 import com.lagradost.cloudstream3.utils.DataStore.getKeys
 import com.lagradost.cloudstream3.utils.DataStore.removeKey
@@ -80,6 +86,56 @@ class CloudStreamApp : Application(), SingletonImageLoader.Factory {
         }.also {
             exceptionHandler = it
             Thread.setDefaultUncaughtExceptionHandler(it)
+        }
+
+        // --- MODIFICATION START ---
+        // 1. Inisialisasi API Dasar & DataStore
+        initAll(this)
+        DataStore.init(this)
+
+        // 2. Jalankan Auto-Install Plugins & Repo
+        autoInstallPlugins(this)
+        // --- MODIFICATION END ---
+    }
+
+    // === MOD FUNCTION ===
+    private fun autoInstallPlugins(context: Context) {
+        // Gunakan ioSafe agar berjalan di background thread (tidak memblokir startup app)
+        ioSafe {
+            try {
+                // A. Bypass Setup Wizard (Langsung ke Home)
+                // Cek apakah setup sudah selesai, jika belum, tandai selesai.
+                if (getKey<Boolean>(HAS_DONE_SETUP_KEY) != true) {
+                    setKey(HAS_DONE_SETUP_KEY, true)
+                }
+
+                // B. Auto Load Repository (Hanya jalan sekali)
+                val repoAddedKey = "HAS_ADDED_MY_REPO"
+                if (getKey<Boolean>(repoAddedKey) != true) {
+                    val customRepoUrl = "https://raw.githubusercontent.com/michat88/AdiManuLateri3/refs/heads/builds/repo.json"
+                    // Load repository
+                    loadRepository(customRepoUrl)
+                    setKey(repoAddedKey, true)
+                    Log.i("CloudStreamApp", "MOD: Custom repository loaded successfully.")
+                }
+
+                // C. Auto Install Plugins (Hanya jalan sekali)
+                val prefs = PreferenceManager.getDefaultSharedPreferences(context)
+                val pluginInstalledKey = "HAS_INSTALLED_PLUGINS_AUTO"
+                val hasInstalled = prefs.getBoolean(pluginInstalledKey, false)
+
+                if (!hasInstalled) {
+                    // Download & Load plugin dari repo yang baru ditambahkan
+                    PluginManager.___DO_NOT_CALL_FROM_A_PLUGIN_loadAllOnlinePlugins(context)
+                    
+                    // Simpan status agar tidak download ulang setiap buka aplikasi
+                    prefs.edit().putBoolean(pluginInstalledKey, true).apply()
+                    Log.i("CloudStreamApp", "MOD: Plugins auto-installed successfully.")
+                }
+
+            } catch (e: Exception) {
+                Log.e("CloudStreamApp", "MOD: Error during auto-setup", e)
+            }
         }
     }
 
