@@ -439,21 +439,13 @@
     <string name="resize_zoom">Zoom</string>
     <string name="legal_notice">Disclaimer</string>
     <string name="legal_notice_key" translatable="false">legal_notice_key</string>
-    <string name="legal_notice_text" translatable="false">Any legal issues regarding the content on this application
-        should be taken up with the actual file hosts and providers themselves as we are not affiliated with them.
+    <string name="legal_notice_text" translatable="false">ATTENTION: AdiXtream is a media browser tool. This application works as an advanced search engine that collects links from the internet.
 
-        In case of copyright infringement, please directly contact the responsible parties or the streaming websites.
+        \n\nIMPORTANT: Extensions or Providers with the "Adi" label (such as AdiDrakor, Adicinemax21, etc.) are just BRANDS FOR SEARCH SCRIPTS (Scrapers) that we developed to facilitate access to public websites. We do NOT have any relationship, affiliation, or ownership of the source websites targeted by those scripts.
 
-        The app is purely for educational and personal use.
+        \n\nAdiXtream developers do not store, upload, or manage any video content on our servers. All content is fetched in real-time from third-party sites available to the public.
 
-        AdiXtream does not host any content on the app, and has no control over what media is put up or taken down.
-        AdiXtream functions like any other search engine, such as Google. AdiXtream does not host, upload or
-        manage any videos, films or content. It simply crawls, aggregates and displayes links in a convenient,
-        user-friendly interface.
-
-        It merely scrapes 3rd-party websites that are publicly accessable via any regular web browser. It is the
-        responsibility of user to avoid any actions that might violate the laws governing his/her locality. Use
-        AdiXtream at your own risk.
+        \n\nBy using this application, you understand that "AdiXtream" is just a connection tool (bridge), and all legal risks regarding copyright are the full responsibility of the user and the respective hosting website owners.
     </string>
     <string name="pref_category_bypass">ISP Bypasses</string>
     <string name="pref_category_links">Links</string>
