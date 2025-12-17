@@ -220,10 +220,24 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
         }
 
         binding.apply {
-            // --- MODIFIKASI DIMULAI DARI SINI ---
-            // Sembunyikan tombol Ekstensi agar tidak terlihat
+            // Sembunyikan tombol extensions jika tidak diinginkan
             settingsExtensions.visibility = View.GONE
-            
+
+            // --- LOGIKA TOMBOL TENTANG (BARU) ---
+            settingsAbout.setOnClickListener {
+                val builder = androidx.appcompat.app.AlertDialog.Builder(requireContext(), R.style.AlertDialogCustom)
+                builder.setTitle("Tentang AdiXtream")
+                
+                // Pesan Terima Kasih
+                builder.setMessage("AdiXtream dikembangkan oleh michat88.\n\nAplikasi ini berbasis pada proyek open-source CloudStream.\n\nTerima kasih yang sebesar-besarnya kepada Developer CloudStream (Lagradost & Tim) atas kode sumber yang luar biasa ini.")
+                
+                builder.setPositiveButton("Tutup") { dialog, _ ->
+                    dialog.dismiss()
+                }
+                builder.show()
+            }
+            // ------------------------------------
+
             listOf(
                 settingsGeneral to R.id.action_navigation_global_to_navigation_settings_general,
                 settingsPlayer to R.id.action_navigation_global_to_navigation_settings_player,
@@ -231,10 +245,7 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
                 settingsUi to R.id.action_navigation_global_to_navigation_settings_ui,
                 settingsProviders to R.id.action_navigation_global_to_navigation_settings_providers,
                 settingsUpdates to R.id.action_navigation_global_to_navigation_settings_updates,
-                
-                // Matikan baris navigasi ekstensi di bawah ini (sudah dikomentari)
                 // settingsExtensions to R.id.action_navigation_global_to_navigation_settings_extensions,
-            
             ).forEach { (view, navigationId) ->
                 view.apply {
                     setOnClickListener {
@@ -246,8 +257,6 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
                     }
                 }
             }
-            // --- MODIFIKASI SELESAI ---
-
             // Default focus on TV
             if (isLayout(TV)) {
                 settingsGeneral.requestFocus()
