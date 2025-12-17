@@ -1,25 +1,48 @@
-name: 1. GENERATE KUNCI BARU (JALANKAN SEKALI)
+name: Build Release (FINAL)
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - master
+      - main
 
 jobs:
-  bikin_kunci:
+  build:
+    name: Build Signed APK
     runs-on: ubuntu-latest
+    
     steps:
-      - name: Buat Keystore Baru
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Siapkan Java (JDK 17)
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          cache: 'gradle'
+
+      # MENGAMBIL KUNCI DARI SECRET YANG BARU KAMU SIMPAN
+      # Dan menyimpannya ke dalam folder app/ agar terbaca oleh Gradle
+      - name: Decode Keystore dari Secret
         run: |
-          # Membuat file keystore baru dengan password '161105' dan alias 'adixtream'
-          keytool -genkey -v -keystore app_keystore.jks \
-            -alias adixtream \
-            -keyalg RSA -keysize 2048 -validity 10000 \
-            -storepass 161105 -keypass 161105 \
-            -dname "CN=AdiXtream, OU=Dev, O=Adi, L=Indo, S=ID, C=ID"
-            
-      - name: Ubah ke Base64 (COPY KODE INI)
-        run: |
-          echo "👇👇👇 COPY SEMUA KODE DI BAWAH INI (DARI MULAI HURUF M SAMPAI SIMBOL =) 👇👇👇"
-          echo ""
-          base64 -w 0 app_keystore.jks
-          echo ""
-          echo "👆👆👆 SAMPAI SINI 👆👆👆"
+          echo "${{ secrets.SIGNING_KEY }}" | base64 -d > app/release.keystore
+
+      - name: Izinkan Gradle
+        run: chmod +x gradlew
+
+      # MEMULAI PROSES BUILD
+      - name: Mulai Proses Build
+        run: ./gradlew assembleRelease
+        env:
+          KEYSTORE_PATH: release.keystore
+          ALIAS: ${{ secrets.ALIAS }}
+          KEY_STORE_PASSWORD: ${{ secrets.KEY_STORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+
+      - name: Upload APK ke GitHub
+        uses: actions/upload-artifact@v4
+        with:
+          name: AdiXtream-Release
+          path: app/build/outputs/apk/release/*.apk
