@@ -43,7 +43,6 @@ android {
 
     signingConfigs {
         create("release") {
-            // Pastikan file keystore.jks ada di folder 'app/'
             storeFile = file("keystore.jks")
             storePassword = "161105"
             keyAlias = "adixtream"
@@ -231,8 +230,6 @@ dokka {
             )
             sourceLink {
                 localDirectory = file("..")
-                // --- UPDATE DILAKUKAN DI SINI ---
-                [span_0](start_span)// Sebelumnya recloudstream/cloudstream, sekarang michat88/AdiXtream[span_0](end_span)
                 remoteUrl("https://github.com/michat88/AdiXtream/tree/master")
                 remoteLineSuffix = "#L"
             }
