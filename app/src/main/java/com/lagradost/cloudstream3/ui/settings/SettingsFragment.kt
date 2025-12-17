@@ -1,5 +1,7 @@
 package com.lagradost.cloudstream3.ui.settings
 
+import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import android.util.Log
 import android.view.View
@@ -228,9 +230,18 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
                 val builder = androidx.appcompat.app.AlertDialog.Builder(requireContext(), R.style.AlertDialogCustom)
                 builder.setTitle("Tentang AdiXtream")
                 
-                // Pesan Terima Kasih
                 builder.setMessage("AdiXtream dikembangkan oleh michat88.\n\nAplikasi ini berbasis pada proyek open-source CloudStream.\n\nTerima kasih yang sebesar-besarnya kepada Developer CloudStream (Lagradost & Tim) atas kode sumber yang luar biasa ini.")
                 
+                // TOMBOL BARU: Buka GitHub
+                builder.setNeutralButton("Kode Sumber") { _, _ ->
+                    try {
+                        val browserIntent = Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/michat88/AdiXtream"))
+                        startActivity(browserIntent)
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
+                }
+
                 builder.setPositiveButton("Tutup") { dialog, _ ->
                     dialog.dismiss()
                 }
