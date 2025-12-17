@@ -3,10 +3,12 @@ package com.lagradost.cloudstream3.ui.settings
 import android.content.Intent
 import android.graphics.Color
 import android.graphics.LinearGradient
+import android.graphics.Matrix // <--- IMPORT BARU UNTUK PRESISI
+import android.graphics.Rect   // <--- IMPORT BARU UNTUK MENGUKUR TEKS
 import android.graphics.Shader
 import android.net.Uri
 import android.os.Bundle
-import android.util.Log  // <--- INI YANG HILANG TADI
+import android.util.Log
 import android.view.View
 import android.widget.ImageView
 import androidx.annotation.StringRes
@@ -228,7 +230,7 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
             // Sembunyikan tombol extensions jika tidak diinginkan
             settingsExtensions.visibility = View.GONE
 
-            // --- LOGIKA TOMBOL TENTANG (MERAH PUTIH ATAS BAWAH - GRADIENT) ---
+            // --- LOGIKA TOMBOL TENTANG (MERAH PUTIH PRESISI) ---
             settingsAbout.setOnClickListener {
                 val builder = androidx.appcompat.app.AlertDialog.Builder(requireContext(), R.style.AlertDialogCustom)
                 builder.setTitle("Tentang AdiXtream")
@@ -252,27 +254,38 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
                 val dialog = builder.create()
                 dialog.show()
 
-                // SETELAH dialog muncul, kita ambil tombolnya dan warnai dengan bendera
+                // SETELAH dialog muncul, kita warnai tombolnya dengan presisi
                 try {
                     val btnKodeSumber = dialog.getButton(androidx.appcompat.app.AlertDialog.BUTTON_NEUTRAL)
                     btnKodeSumber?.let { btn ->
-                        // Hitung tinggi teks untuk gradien
-                        val textHeight = btn.textSize
-                        
-                        // Buat Shader (Pewarna) Merah Putih
+                        val text = btn.text.toString()
+                        val paint = btn.paint
+                        val bounds = Rect()
+                        // 1. Ukur kotak pembatas teks yang sebenarnya
+                        paint.getTextBounds(text, 0, text.length, bounds)
+                        val height = bounds.height().toFloat()
+
+                        // 2. Buat Shader Merah Putih yang tajam (tepat 50%)
                         val shader = LinearGradient(
-                            0f, 0f, 0f, textHeight,
+                            0f, 0f, 0f, height,
                             intArrayOf(Color.RED, Color.RED, Color.WHITE, Color.WHITE),
-                            floatArrayOf(0f, 0.52f, 0.52f, 1f),
+                            floatArrayOf(0f, 0.50f, 0.50f, 1f), // Tepat setengah-setengah
                             Shader.TileMode.CLAMP
                         )
+
+                        // 3. Gunakan Matriks untuk menggeser shader agar pas di huruf
+                        // Teks digambar dari garis dasar (baseline), jadi kita perlu menggeser
+                        // shader ke atas sejauh batas atas teks (bounds.top biasanya negatif).
+                        val matrix = Matrix()
+                        matrix.setTranslate(0f, bounds.top.toFloat())
+                        shader.setLocalMatrix(matrix)
                         
                         // Terapkan ke tombol
                         btn.paint.shader = shader
                         btn.invalidate()
                     }
                 } catch (e: Exception) {
-                    e.printStackTrace()
+                    Log.e("SettingsFragment", "Gagal mewarnai tombol: ${e.message}")
                 }
             }
             // ------------------------------------
