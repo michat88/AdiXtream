@@ -19,7 +19,7 @@ fun getGitCommitHash(): String {
         if (headFile.exists()) {
             val headContent = headFile.readText().trim()
             if (headContent.startsWith("ref:")) {
-                val refPath = headContent.substring(5)
+                val refPath = headContent.substring(5).trim()
                 val commitFile = file("${project.rootDir}/.git/$refPath")
                 if (commitFile.exists()) commitFile.readText().trim() else ""
             } else headContent
@@ -43,10 +43,16 @@ android {
 
     signingConfigs {
         create("release") {
-            storeFile = file("keystore.jks")
-            storePassword = "161105"
-            keyAlias = "adixtream"
-            keyPassword = "161105"
+            // PERUBAHAN DI SINI:
+            // Menggunakan Environment Variable dari GitHub Secrets jika ada.
+            // Jika tidak ada (di laptop), gunakan nilai default (keystore.jks, 161105, adixtream).
+            
+            val envKeystorePath = System.getenv("KEYSTORE_PATH")
+            storeFile = if (envKeystorePath != null) file(envKeystorePath) else file("keystore.jks")
+            
+            storePassword = System.getenv("KEY_STORE_PASSWORD") ?: "161105"
+            keyAlias = System.getenv("ALIAS") ?: "adixtream"
+            keyPassword = System.getenv("KEY_PASSWORD") ?: "161105"
         }
     }
 
@@ -57,10 +63,8 @@ android {
         minSdk = libs.versions.minSdk.get().toInt()
         targetSdk = libs.versions.targetSdk.get().toInt()
         
-        // --- VERSI BARU DI SINI ---
         versionCode = 68
         versionName = "4.6.2"
-        // --------------------------
 
         resValue("string", "commit_hash", getGitCommitHash())
         resValue("bool", "is_prerelease", "false")
