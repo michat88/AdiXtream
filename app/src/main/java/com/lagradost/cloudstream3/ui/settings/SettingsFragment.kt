@@ -1,9 +1,11 @@
 package com.lagradost.cloudstream3.ui.settings
 
 import android.content.Intent
+import android.graphics.Color
+import android.graphics.LinearGradient
+import android.graphics.Shader
 import android.net.Uri
 import android.os.Bundle
-import android.util.Log
 import android.view.View
 import android.widget.ImageView
 import androidx.annotation.StringRes
@@ -225,14 +227,13 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
             // Sembunyikan tombol extensions jika tidak diinginkan
             settingsExtensions.visibility = View.GONE
 
-            // --- LOGIKA TOMBOL TENTANG (BARU) ---
+            // --- LOGIKA TOMBOL TENTANG (MERAH PUTIH ATAS BAWAH - GRADIENT) ---
             settingsAbout.setOnClickListener {
                 val builder = androidx.appcompat.app.AlertDialog.Builder(requireContext(), R.style.AlertDialogCustom)
                 builder.setTitle("Tentang AdiXtream")
-                
                 builder.setMessage("AdiXtream dikembangkan oleh michat88.\n\nAplikasi ini berbasis pada proyek open-source CloudStream.\n\nTerima kasih yang sebesar-besarnya kepada Developer CloudStream (Lagradost & Tim) atas kode sumber yang luar biasa ini.")
-                
-                // TOMBOL BARU: Buka GitHub
+
+                // Set teks normal dulu
                 builder.setNeutralButton("Kode Sumber") { _, _ ->
                     try {
                         val browserIntent = Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/michat88/AdiXtream"))
@@ -245,7 +246,36 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
                 builder.setPositiveButton("Tutup") { dialog, _ ->
                     dialog.dismiss()
                 }
-                builder.show()
+                
+                // Tampilkan dialog terlebih dahulu
+                val dialog = builder.create()
+                dialog.show()
+
+                // SETELAH dialog muncul, kita ambil tombolnya dan warnai dengan bendera
+                try {
+                    val btnKodeSumber = dialog.getButton(androidx.appcompat.app.AlertDialog.BUTTON_NEUTRAL)
+                    btnKodeSumber?.let { btn ->
+                        // Hitung tinggi teks untuk gradien
+                        val textHeight = btn.textSize
+                        
+                        // Buat Shader (Pewarna) Merah Putih
+                        // Koordinat: (0,0) sampai (0, textHeight) -> Atas ke Bawah
+                        // Warna: Merah -> Merah (0.5) -> Putih (0.5) -> Putih (1.0)
+                        // Ini membuat garis tegas di tengah, bukan pudar.
+                        val shader = LinearGradient(
+                            0f, 0f, 0f, textHeight,
+                            intArrayOf(Color.RED, Color.RED, Color.WHITE, Color.WHITE),
+                            floatArrayOf(0f, 0.52f, 0.52f, 1f),
+                            Shader.TileMode.CLAMP
+                        )
+                        
+                        // Terapkan ke tombol
+                        btn.paint.shader = shader
+                        btn.invalidate()
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
             }
             // ------------------------------------
 
