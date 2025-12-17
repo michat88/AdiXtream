@@ -201,13 +201,12 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
         binding.apply {
             settingsExtensions.visibility = View.GONE
 
-            // --- TOMBOL TENTANG (METODE JALUR BELAKANG - PASTI BERHASIL) ---
             settingsAbout.setOnClickListener {
                 val builder = androidx.appcompat.app.AlertDialog.Builder(requireContext(), R.style.AlertDialogCustom)
                 builder.setTitle("Tentang AdiXtream")
                 builder.setMessage("AdiXtream dikembangkan oleh michat88.\n\nAplikasi ini berbasis pada proyek open-source CloudStream.\n\nTerima kasih yang sebesar-besarnya kepada Developer CloudStream (Lagradost & Tim) atas kode sumber yang luar biasa ini.")
 
-                // Set tombol netral biasa dulu
+                // Set teks tombol
                 builder.setNeutralButton("Kode Sumber") { _, _ ->
                     try {
                         val browserIntent = Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/michat88/AdiXtream"))
@@ -221,35 +220,46 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
                     dialog.dismiss()
                 }
 
-                // Buat dialognya tapi jangan ditampilkan dulu
                 val dialog = builder.create()
-
-                // RAHASIA: Kita modifikasi tombolnya TEPAT SAAT dialog muncul (OnShow)
-                // Ini menjamin tombol sudah punya ukuran, jadi warnanya tidak akan meleset.
+                
+                // --- LOGIKA PEWARNAAN AMAN (SAFE MODE) ---
                 dialog.setOnShowListener {
                     try {
                         val btn = dialog.getButton(androidx.appcompat.app.AlertDialog.BUTTON_NEUTRAL)
                         
-                        // Buat Shader Merah Putih
-                        val textHeight = btn.textSize
-                        val shader = LinearGradient(
-                            0f, 0f, 0f, textHeight,
-                            intArrayOf(Color.RED, Color.RED, Color.WHITE, Color.WHITE),
-                            floatArrayOf(0f, 0.5f, 0.5f, 1f), // Tepat 50:50
-                            Shader.TileMode.CLAMP
-                        )
-                        
-                        // Paksa tombol memakai warna ini
-                        btn.paint.shader = shader
-                        btn.invalidate() // Gambar ulang sekarang juga
+                        // 1. PENGAMAN: Set warna teks jadi PUTIH dulu.
+                        // Jadi kalau pewarnaan gagal, tombol tidak akan hitam, tapi tetap putih.
+                        btn.setTextColor(Color.WHITE)
+
+                        // 2. TUNGGU TOMBOL MUNCUL (post)
+                        // Kita suruh sistem: "Tunggu sebentar sampai tombol benar-benar ada ukurannya"
+                        btn.post {
+                            try {
+                                val textHeight = btn.textSize
+                                // Cek agar tidak error jika ukuran 0
+                                if (textHeight > 0) {
+                                    val shader = LinearGradient(
+                                        0f, 0f, 0f, textHeight,
+                                        intArrayOf(Color.RED, Color.RED, Color.WHITE, Color.WHITE),
+                                        floatArrayOf(0f, 0.5f, 0.5f, 1f),
+                                        Shader.TileMode.CLAMP
+                                    )
+                                    btn.paint.shader = shader
+                                    btn.invalidate()
+                                }
+                            } catch (e: Exception) {
+                                // Kalau error, diam saja (karena warna sudah putih dari langkah no 1)
+                                e.printStackTrace()
+                            }
+                        }
                     } catch (e: Exception) {
-                        Log.e("SettingsFragment", "Gagal mewarnai: ${e.message}")
+                        e.printStackTrace()
                     }
                 }
+                // ------------------------------------------
 
                 dialog.show()
             }
-            // ------------------------------------
 
             listOf(
                 settingsGeneral to R.id.action_navigation_global_to_navigation_settings_general,
