@@ -223,20 +223,20 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
             // Sembunyikan tombol extensions jika tidak diinginkan
             settingsExtensions.visibility = View.GONE
 
-            // --- LOGIKA TOMBOL TENTANG (BARU) ---
+            // --- LOGIKA TOMBOL TENTANG (VERSI TEST v4.6.3) ---
             settingsAbout.setOnClickListener {
                 val builder = androidx.appcompat.app.AlertDialog.Builder(requireContext(), R.style.AlertDialogCustom)
                 builder.setTitle("Tentang AdiXtream")
                 
-                // Pesan Terima Kasih
-                builder.setMessage("AdiXtream dikembangkan oleh michat88.\n\nAplikasi ini berbasis pada proyek open-source CloudStream.\n\nTerima kasih yang sebesar-besarnya kepada Developer CloudStream (Lagradost & Tim) atas kode sumber yang luar biasa ini.")
+                // Pesan Pembuktian Update Sukses
+                builder.setMessage("AdiXtream v4.6.3 - Update Sukses! ✅\n\nJika kamu melihat pesan ini, berarti fitur Update Otomatis sudah berjalan lancar tanpa bentrok lagi.\n\nDikembangkan oleh michat88.")
                 
                 builder.setPositiveButton("Tutup") { dialog, _ ->
                     dialog.dismiss()
                 }
                 builder.show()
             }
-            // ------------------------------------
+            // ------------------------------------------------
 
             listOf(
                 settingsGeneral to R.id.action_navigation_global_to_navigation_settings_general,
