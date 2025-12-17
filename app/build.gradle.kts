@@ -43,10 +43,7 @@ android {
 
     signingConfigs {
         create("release") {
-            // PERUBAHAN DI SINI:
-            // Menggunakan Environment Variable dari GitHub Secrets jika ada.
-            // Jika tidak ada (di laptop), gunakan nilai default (keystore.jks, 161105, adixtream).
-            
+            // Konfigurasi dinamis: Baca dari GitHub Secrets jika ada, atau fallback ke default lokal
             val envKeystorePath = System.getenv("KEYSTORE_PATH")
             storeFile = if (envKeystorePath != null) file(envKeystorePath) else file("keystore.jks")
             
@@ -63,8 +60,10 @@ android {
         minSdk = libs.versions.minSdk.get().toInt()
         targetSdk = libs.versions.targetSdk.get().toInt()
         
-        versionCode = 68
-        versionName = "4.6.2"
+        // --- VERSI DIPERBARUI ---
+        versionCode = 69         // Naik dari 68
+        versionName = "4.6.3"    // Naik dari 4.6.2
+        // ------------------------
 
         resValue("string", "commit_hash", getGitCommitHash())
         resValue("bool", "is_prerelease", "false")
