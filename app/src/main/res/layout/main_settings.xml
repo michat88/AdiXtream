@@ -99,12 +99,19 @@
                 android:id="@+id/settings_credits"
                 style="@style/SettingsItem"
                 android:nextFocusUp="@id/settings_updates"
+                android:nextFocusDown="@+id/settings_about"
                 android:text="@string/category_account" />
 
             <TextView
-                android:id="@+id/settings_extensions"
+                android:id="@+id/settings_about"
                 style="@style/SettingsItem"
                 android:nextFocusUp="@id/settings_credits"
+                android:nextFocusDown="@+id/settings_extensions"
+                android:text="Tentang" />
+            <TextView
+                android:id="@+id/settings_extensions"
+                style="@style/SettingsItem"
+                android:nextFocusUp="@id/settings_about"
                 android:text="@string/extensions" />
 
             <LinearLayout
