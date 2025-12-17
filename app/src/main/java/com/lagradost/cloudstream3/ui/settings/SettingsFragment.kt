@@ -43,15 +43,14 @@ import java.util.Date
 import java.util.Locale
 import java.util.TimeZone
 
-// --- IMPORT UNTUK MODIFIKASI UI ---
+// --- IMPORT TAMBAHAN UNTUK PEWARNAAN TEKS ---
 import android.graphics.Color
-import android.graphics.LinearGradient
-import android.graphics.Shader
-import android.graphics.drawable.GradientDrawable
+import android.text.Spannable
+import android.text.SpannableString
+import android.text.style.ForegroundColorSpan
 import android.widget.Button
 import androidx.appcompat.app.AlertDialog
-import androidx.core.view.setPadding
-// ----------------------------------
+// --------------------------------------------
 
 class SettingsFragment : BaseFragment<MainSettingsBinding>(
     BaseFragment.BindingCreator.Inflate(MainSettingsBinding::inflate)
@@ -203,7 +202,7 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
         binding.apply {
             settingsExtensions.visibility = View.GONE
 
-            // --- TOMBOL TENTANG (FIXED: MERAH PUTIH HORIZONTAL SPLIT) ---
+            // --- LOGIKA TOMBOL TENTANG (WARNA MERAH PUTIH) ---
             settingsAbout.setOnClickListener {
                 val builder = AlertDialog.Builder(requireContext(), R.style.AlertDialogCustom)
                 builder.setTitle("Tentang AdiXtream")
@@ -211,7 +210,8 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
                 
                 builder.setNeutralButton("Kode Sumber") { _, _ ->
                     try {
-                        startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/michat88/AdiXtream")))
+                        val browserIntent = Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/michat88/AdiXtream"))
+                        startActivity(browserIntent)
                     } catch (e: Exception) {
                         e.printStackTrace()
                     }
@@ -221,48 +221,35 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
                     dialog.dismiss()
                 }
 
+                // Buat dan tampilkan dialog
                 val dialog: AlertDialog = builder.create()
                 dialog.show()
 
+                // Ambil tombol "Kode Sumber" (Neutral Button) setelah dialog muncul
                 val sourceCodeButton: Button? = dialog.getButton(AlertDialog.BUTTON_NEUTRAL)
                 
                 sourceCodeButton?.let { button ->
-                    // 1. Bingkai Putih (Menggunakan toPx sebagai property)
-                    val shape = GradientDrawable().apply {
-                        shape = GradientDrawable.RECTANGLE
-                        cornerRadius = 6.toPx.toFloat()
-                        setStroke(1.toPx, Color.WHITE)
-                        setColor(Color.TRANSPARENT)
-                    }
-                    button.background = shape
-                    button.setPadding(15.toPx, 0, 15.toPx, 0)
+                    val fullText = "Kode Sumber"
+                    val spannable = SpannableString(fullText)
 
-                    // 2. Efek Shader Merah Putih Horizontal
-                    button.post {
-                        if (button.height > 0) {
-                            val paint = button.paint
-                            val height = button.height.toFloat()
-                            
-                            // Menggunakan transisi tajam di 50% (0.49 ke 0.51)
-                            val shader = LinearGradient(
-                                0f, 0f, 0f, height,
-                                intArrayOf(
-                                    Color.RED,   // Merah (Atas)
-                                    Color.RED,   // Batas Merah
-                                    Color.WHITE, // Batas Putih
-                                    Color.WHITE  // Putih (Bawah)
-                                ),
-                                floatArrayOf(0f, 0.49f, 0.51f, 1f),
-                                Shader.TileMode.CLAMP
-                            )
-                            
-                            paint.shader = shader
-                            button.invalidate()
-                        }
-                    }
+                    // Warna MERAH untuk "Kode" (indeks 0 sampai 4)
+                    spannable.setSpan(
+                        ForegroundColorSpan(Color.parseColor("#FF0000")),
+                        0, 4,
+                        Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
+                    )
+
+                    // Warna PUTIH untuk "Sumber" (indeks 5 sampai selesai)
+                    spannable.setSpan(
+                        ForegroundColorSpan(Color.WHITE),
+                        5, fullText.length,
+                        Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
+                    )
+
+                    button.text = spannable
                 }
             }
-            // -----------------------------------------------------------
+            // --------------------------------------------------
 
             listOf(
                 settingsGeneral to R.id.action_navigation_global_to_navigation_settings_general,
