@@ -3,6 +3,8 @@ package com.lagradost.cloudstream3.ui.settings
 import android.content.Intent
 import android.graphics.Color
 import android.graphics.LinearGradient
+import android.graphics.Matrix // PENTING: Untuk menggeser warna biar pas
+import android.graphics.Rect   // PENTING: Untuk mengukur tinggi huruf
 import android.graphics.Shader
 import android.net.Uri
 import android.os.Bundle
@@ -201,12 +203,13 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
         binding.apply {
             settingsExtensions.visibility = View.GONE
 
+            // --- TOMBOL TENTANG (VERSI FINAL - GARIS LURUS TEGAS) ---
             settingsAbout.setOnClickListener {
                 val builder = androidx.appcompat.app.AlertDialog.Builder(requireContext(), R.style.AlertDialogCustom)
                 builder.setTitle("Tentang AdiXtream")
                 builder.setMessage("AdiXtream dikembangkan oleh michat88.\n\nAplikasi ini berbasis pada proyek open-source CloudStream.\n\nTerima kasih yang sebesar-besarnya kepada Developer CloudStream (Lagradost & Tim) atas kode sumber yang luar biasa ini.")
 
-                // Set teks tombol
+                // Set tombol netral biasa dulu
                 builder.setNeutralButton("Kode Sumber") { _, _ ->
                     try {
                         val browserIntent = Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/michat88/AdiXtream"))
@@ -221,34 +224,42 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
                 }
 
                 val dialog = builder.create()
-                
-                // --- LOGIKA PEWARNAAN AMAN (SAFE MODE) ---
+
+                // RAHASIA AGAR TIDAK BERGELOMBANG: Pakai Matrix dan Ukuran Asli
                 dialog.setOnShowListener {
                     try {
                         val btn = dialog.getButton(androidx.appcompat.app.AlertDialog.BUTTON_NEUTRAL)
-                        
-                        // 1. PENGAMAN: Set warna teks jadi PUTIH dulu.
-                        // Jadi kalau pewarnaan gagal, tombol tidak akan hitam, tapi tetap putih.
+                        // Pengaman: Set putih dulu
                         btn.setTextColor(Color.WHITE)
 
-                        // 2. TUNGGU TOMBOL MUNCUL (post)
-                        // Kita suruh sistem: "Tunggu sebentar sampai tombol benar-benar ada ukurannya"
                         btn.post {
                             try {
-                                val textHeight = btn.textSize
-                                // Cek agar tidak error jika ukuran 0
-                                if (textHeight > 0) {
-                                    val shader = LinearGradient(
-                                        0f, 0f, 0f, textHeight,
-                                        intArrayOf(Color.RED, Color.RED, Color.WHITE, Color.WHITE),
-                                        floatArrayOf(0f, 0.5f, 0.5f, 1f),
-                                        Shader.TileMode.CLAMP
-                                    )
-                                    btn.paint.shader = shader
-                                    btn.invalidate()
-                                }
+                                // 1. Ukur tinggi ASLI dari tulisan "Kode Sumber" (bukan tinggi tombol)
+                                val text = btn.text.toString()
+                                val bounds = Rect()
+                                btn.paint.getTextBounds(text, 0, text.length, bounds)
+                                val textHeight = bounds.height().toFloat()
+
+                                // 2. Buat Gradient Sesuai Tinggi Tulisan
+                                // Gunakan posisi 0.52f agar merahnya sedikit lebih dominan ke bawah (lebih imbang secara visual)
+                                val shader = LinearGradient(
+                                    0f, 0f, 0f, textHeight,
+                                    intArrayOf(Color.RED, Color.RED, Color.WHITE, Color.WHITE),
+                                    floatArrayOf(0f, 0.52f, 0.52f, 1f), // Garis tegas, tidak pudar
+                                    Shader.TileMode.CLAMP
+                                )
+
+                                // 3. PENTING: Geser gradient agar pas dengan posisi tulisan
+                                // Tanpa Matrix ini, gradient akan mulai dari atas tombol (bukan atas tulisan),
+                                // itulah yang bikin merahnya kependekan atau bergelombang.
+                                val matrix = Matrix()
+                                matrix.setTranslate(0f, bounds.top.toFloat())
+                                shader.setLocalMatrix(matrix)
+                                
+                                // 4. Terapkan
+                                btn.paint.shader = shader
+                                btn.invalidate()
                             } catch (e: Exception) {
-                                // Kalau error, diam saja (karena warna sudah putih dari langkah no 1)
                                 e.printStackTrace()
                             }
                         }
@@ -256,10 +267,10 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
                         e.printStackTrace()
                     }
                 }
-                // ------------------------------------------
 
                 dialog.show()
             }
+            // ------------------------------------
 
             listOf(
                 settingsGeneral to R.id.action_navigation_global_to_navigation_settings_general,
