@@ -3,12 +3,10 @@ package com.lagradost.cloudstream3.ui.settings
 import android.content.Intent
 import android.graphics.Color
 import android.graphics.LinearGradient
-import android.graphics.Matrix // PENTING: Untuk menggeser warna biar pas
-import android.graphics.Rect   // PENTING: Untuk mengukur tinggi huruf
 import android.graphics.Shader
 import android.net.Uri
 import android.os.Bundle
-import android.util.Log
+import android.util.Log  // <--- INI YANG HILANG TADI
 import android.view.View
 import android.widget.ImageView
 import androidx.annotation.StringRes
@@ -62,8 +60,12 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
             }
         }
 
+        /**
+         * Hide many Preferences on selected layouts.
+         **/
         fun PreferenceFragmentCompat?.hidePrefs(ids: List<Int>, layoutFlags: Int) {
             if (this == null) return
+
             try {
                 ids.forEach {
                     getPref(it)?.isVisible = !isLayout(layoutFlags)
@@ -73,12 +75,22 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
             }
         }
 
+        /**
+         * Hide the [Preference] on selected layouts.
+         * @return [Preference] if visible otherwise null.
+         *
+         * [hideOn] is usually followed by some actions on the preference which are mostly
+         * unnecessary when the preference is disabled for the said layout thus returning null.
+         **/
         fun Preference?.hideOn(layoutFlags: Int): Preference? {
             if (this == null) return null
             this.isVisible = !isLayout(layoutFlags)
             return if(this.isVisible) this else null
         }
 
+        /**
+         * On TV you cannot properly scroll to the bottom of settings, this fixes that.
+         * */
         fun PreferenceFragmentCompat.setPaddingBottom() {
             if (isLayout(TV or EMULATOR)) {
                 listView?.setPadding(0, 0, 0, 100.toPx)
@@ -88,6 +100,7 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
         fun PreferenceFragmentCompat.setToolBarScrollFlags() {
             if (isLayout(TV or EMULATOR)) {
                 val settingsAppbar = view?.findViewById<MaterialToolbar>(R.id.settings_toolbar)
+
                 settingsAppbar?.updateLayoutParams<AppBarLayout.LayoutParams> {
                     scrollFlags = AppBarLayout.LayoutParams.SCROLL_FLAG_NO_SCROLL
                 }
@@ -97,6 +110,7 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
         fun Fragment?.setToolBarScrollFlags() {
             if (isLayout(TV or EMULATOR)) {
                 val settingsAppbar = this?.view?.findViewById<MaterialToolbar>(R.id.settings_toolbar)
+
                 settingsAppbar?.updateLayoutParams<AppBarLayout.LayoutParams> {
                     scrollFlags = AppBarLayout.LayoutParams.SCROLL_FLAG_NO_SCROLL
                 }
@@ -106,6 +120,7 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
         fun Fragment?.setUpToolbar(title: String) {
             if (this == null) return
             val settingsToolbar = view?.findViewById<MaterialToolbar>(R.id.settings_toolbar) ?: return
+
             settingsToolbar.apply {
                 setTitle(title)
                 if (isLayout(PHONE or EMULATOR)) {
@@ -120,6 +135,7 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
         fun Fragment?.setUpToolbar(@StringRes title: Int) {
             if (this == null) return
             val settingsToolbar = view?.findViewById<MaterialToolbar>(R.id.settings_toolbar) ?: return
+
             settingsToolbar.apply {
                 setTitle(title)
                 if (isLayout(PHONE or EMULATOR)) {
@@ -147,10 +163,12 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
             dir.listFiles()?.let {
                 for (file in it) {
                     size += if (file.isFile) {
+                        // System.out.println(file.getName() + " " + file.length());
                         file.length()
                     } else getFolderSize(file)
                 }
             }
+
             return size
         }
     }
@@ -168,6 +186,10 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
             activity?.navigate(id, Bundle())
         }
 
+        /** used to debug leaks
+        showToast(activity,"${VideoDownloadManager.downloadStatusEvent.size} :
+        ${VideoDownloadManager.downloadProgressEvent.size}") **/
+
         fun hasProfilePictureFromAccountManagers(accountManagers: Array<AuthRepo>): Boolean {
             for (syncApi in accountManagers) {
                 val login = syncApi.authUser()
@@ -175,15 +197,17 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
 
                 binding.settingsProfilePic.let { imageView ->
                     imageView.loadImage(pic) {
+                        // Fallback to random error drawable
                         error { getImageFromDrawable(context ?: return@error null, errorProfilePic) }
                     }
                 }
                 binding.settingsProfileText.text = login.name
-                return true 
+                return true // sync profile exists
             }
-            return false 
+            return false // not syncing
         }
 
+        // display local account information if not syncing
         if (!hasProfilePictureFromAccountManagers(AccountManager.allApis)) {
             val activity = activity ?: return
             val currentAccount = try {
@@ -201,15 +225,16 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
         }
 
         binding.apply {
+            // Sembunyikan tombol extensions jika tidak diinginkan
             settingsExtensions.visibility = View.GONE
 
-            // --- TOMBOL TENTANG (VERSI FINAL - GARIS LURUS TEGAS) ---
+            // --- LOGIKA TOMBOL TENTANG (MERAH PUTIH ATAS BAWAH - GRADIENT) ---
             settingsAbout.setOnClickListener {
                 val builder = androidx.appcompat.app.AlertDialog.Builder(requireContext(), R.style.AlertDialogCustom)
                 builder.setTitle("Tentang AdiXtream")
                 builder.setMessage("AdiXtream dikembangkan oleh michat88.\n\nAplikasi ini berbasis pada proyek open-source CloudStream.\n\nTerima kasih yang sebesar-besarnya kepada Developer CloudStream (Lagradost & Tim) atas kode sumber yang luar biasa ini.")
 
-                // Set tombol netral biasa dulu
+                // Set teks normal dulu
                 builder.setNeutralButton("Kode Sumber") { _, _ ->
                     try {
                         val browserIntent = Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/michat88/AdiXtream"))
@@ -222,53 +247,33 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
                 builder.setPositiveButton("Tutup") { dialog, _ ->
                     dialog.dismiss()
                 }
-
+                
+                // Tampilkan dialog terlebih dahulu
                 val dialog = builder.create()
-
-                // RAHASIA AGAR TIDAK BERGELOMBANG: Pakai Matrix dan Ukuran Asli
-                dialog.setOnShowListener {
-                    try {
-                        val btn = dialog.getButton(androidx.appcompat.app.AlertDialog.BUTTON_NEUTRAL)
-                        // Pengaman: Set putih dulu
-                        btn.setTextColor(Color.WHITE)
-
-                        btn.post {
-                            try {
-                                // 1. Ukur tinggi ASLI dari tulisan "Kode Sumber" (bukan tinggi tombol)
-                                val text = btn.text.toString()
-                                val bounds = Rect()
-                                btn.paint.getTextBounds(text, 0, text.length, bounds)
-                                val textHeight = bounds.height().toFloat()
-
-                                // 2. Buat Gradient Sesuai Tinggi Tulisan
-                                // Gunakan posisi 0.52f agar merahnya sedikit lebih dominan ke bawah (lebih imbang secara visual)
-                                val shader = LinearGradient(
-                                    0f, 0f, 0f, textHeight,
-                                    intArrayOf(Color.RED, Color.RED, Color.WHITE, Color.WHITE),
-                                    floatArrayOf(0f, 0.52f, 0.52f, 1f), // Garis tegas, tidak pudar
-                                    Shader.TileMode.CLAMP
-                                )
-
-                                // 3. PENTING: Geser gradient agar pas dengan posisi tulisan
-                                // Tanpa Matrix ini, gradient akan mulai dari atas tombol (bukan atas tulisan),
-                                // itulah yang bikin merahnya kependekan atau bergelombang.
-                                val matrix = Matrix()
-                                matrix.setTranslate(0f, bounds.top.toFloat())
-                                shader.setLocalMatrix(matrix)
-                                
-                                // 4. Terapkan
-                                btn.paint.shader = shader
-                                btn.invalidate()
-                            } catch (e: Exception) {
-                                e.printStackTrace()
-                            }
-                        }
-                    } catch (e: Exception) {
-                        e.printStackTrace()
-                    }
-                }
-
                 dialog.show()
+
+                // SETELAH dialog muncul, kita ambil tombolnya dan warnai dengan bendera
+                try {
+                    val btnKodeSumber = dialog.getButton(androidx.appcompat.app.AlertDialog.BUTTON_NEUTRAL)
+                    btnKodeSumber?.let { btn ->
+                        // Hitung tinggi teks untuk gradien
+                        val textHeight = btn.textSize
+                        
+                        // Buat Shader (Pewarna) Merah Putih
+                        val shader = LinearGradient(
+                            0f, 0f, 0f, textHeight,
+                            intArrayOf(Color.RED, Color.RED, Color.WHITE, Color.WHITE),
+                            floatArrayOf(0f, 0.52f, 0.52f, 1f),
+                            Shader.TileMode.CLAMP
+                        )
+                        
+                        // Terapkan ke tombol
+                        btn.paint.shader = shader
+                        btn.invalidate()
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
             }
             // ------------------------------------
 
@@ -279,6 +284,7 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
                 settingsUi to R.id.action_navigation_global_to_navigation_settings_ui,
                 settingsProviders to R.id.action_navigation_global_to_navigation_settings_providers,
                 settingsUpdates to R.id.action_navigation_global_to_navigation_settings_updates,
+                // settingsExtensions to R.id.action_navigation_global_to_navigation_settings_extensions,
             ).forEach { (view, navigationId) ->
                 view.apply {
                     setOnClickListener {
@@ -290,6 +296,7 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
                     }
                 }
             }
+            // Default focus on TV
             if (isLayout(TV)) {
                 settingsGeneral.requestFocus()
             }
