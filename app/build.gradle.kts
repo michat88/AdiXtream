@@ -56,8 +56,11 @@ android {
         applicationId = "com.adixtream.app"
         minSdk = libs.versions.minSdk.get().toInt()
         targetSdk = libs.versions.targetSdk.get().toInt()
-        versionCode = 67
-        versionName = "4.6.1"
+        
+        // --- VERSI BARU DI SINI ---
+        versionCode = 68
+        versionName = "4.6.2"
+        // --------------------------
 
         resValue("string", "commit_hash", getGitCommitHash())
         resValue("bool", "is_prerelease", "false")
