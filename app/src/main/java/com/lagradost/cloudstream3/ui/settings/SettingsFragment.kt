@@ -43,14 +43,15 @@ import java.util.Date
 import java.util.Locale
 import java.util.TimeZone
 
-// --- IMPORT TAMBAHAN UNTUK PEWARNAAN TEKS ---
+// --- IMPORT TAMBAHAN UNTUK MODIFIKASI TOMBOL ---
 import android.graphics.Color
-import android.text.Spannable
-import android.text.SpannableString
-import android.text.style.ForegroundColorSpan
+import android.graphics.LinearGradient
+import android.graphics.Shader
+import android.graphics.drawable.GradientDrawable
 import android.widget.Button
 import androidx.appcompat.app.AlertDialog
-// --------------------------------------------
+import androidx.core.view.setPadding
+// ----------------------------------------------
 
 class SettingsFragment : BaseFragment<MainSettingsBinding>(
     BaseFragment.BindingCreator.Inflate(MainSettingsBinding::inflate)
@@ -202,7 +203,7 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
         binding.apply {
             settingsExtensions.visibility = View.GONE
 
-            // --- LOGIKA TOMBOL TENTANG (WARNA MERAH PUTIH) ---
+            // --- KODE MODIFIKASI: TOMBOL TENTANG DENGAN EFEK BENDERA ---
             settingsAbout.setOnClickListener {
                 val builder = AlertDialog.Builder(requireContext(), R.style.AlertDialogCustom)
                 builder.setTitle("Tentang AdiXtream")
@@ -221,35 +222,46 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
                     dialog.dismiss()
                 }
 
-                // Buat dan tampilkan dialog
                 val dialog: AlertDialog = builder.create()
                 dialog.show()
 
-                // Ambil tombol "Kode Sumber" (Neutral Button) setelah dialog muncul
+                // Modifikasi tampilan tombol setelah dialog muncul
                 val sourceCodeButton: Button? = dialog.getButton(AlertDialog.BUTTON_NEUTRAL)
                 
                 sourceCodeButton?.let { button ->
-                    val fullText = "Kode Sumber"
-                    val spannable = SpannableString(fullText)
+                    // 1. Berikan bingkai agar terlihat seperti tombol
+                    val shape = GradientDrawable().apply {
+                        shape = GradientDrawable.RECTANGLE
+                        cornerRadius = 6.toPx().toFloat()
+                        setStroke(1.toPx(), Color.WHITE) // Garis pinggir putih
+                        setColor(Color.TRANSPARENT)      // Latar transparan
+                    }
+                    button.background = shape
+                    button.setPadding(15.toPx(), 0, 15.toPx(), 0)
 
-                    // Warna MERAH untuk "Kode" (indeks 0 sampai 4)
-                    spannable.setSpan(
-                        ForegroundColorSpan(Color.parseColor("#FF0000")),
-                        0, 4,
-                        Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
-                    )
-
-                    // Warna PUTIH untuk "Sumber" (indeks 5 sampai selesai)
-                    spannable.setSpan(
-                        ForegroundColorSpan(Color.WHITE),
-                        5, fullText.length,
-                        Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
-                    )
-
-                    button.text = spannable
+                    // 2. Terapkan efek Shader Merah-Putih Horizontal
+                    button.post {
+                        val paint = button.paint
+                        val height = button.height.toFloat()
+                        
+                        val shader = LinearGradient(
+                            0f, 0f, 0f, height,
+                            intArrayOf(
+                                Color.RED,   // Atas: Merah
+                                Color.RED,   // Tengah: Merah
+                                Color.WHITE, // Tengah: Putih
+                                Color.WHITE  // Bawah: Putih
+                            ),
+                            floatArrayOf(0f, 0.45f, 0.55f, 1f), // Titik peralihan warna
+                            Shader.TileMode.CLAMP
+                        )
+                        
+                        paint.shader = shader
+                        button.invalidate() // Segarkan UI
+                    }
                 }
             }
-            // --------------------------------------------------
+            // -----------------------------------------------------------
 
             listOf(
                 settingsGeneral to R.id.action_navigation_global_to_navigation_settings_general,
