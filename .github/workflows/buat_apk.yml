@@ -1,10 +1,11 @@
-name: Buat APK AdiXtream (FINAL FIX)
+name: Build Release (FIXED SECRET)
 
 on:
   workflow_dispatch:
   push:
     branches:
       - master
+      - main
 
 jobs:
   build:
@@ -18,28 +19,31 @@ jobs:
       - name: Siapkan Java (JDK 17)
         uses: actions/setup-java@v4
         with:
-          distribution: 'zulu'
+          distribution: 'temurin'
           java-version: '17'
+          cache: 'gradle'
 
-      - name: Buat Keystore Otomatis (Lewat Terminal)
+      # BAGIAN PENTING 1: Mengambil Kunci dari Secret GitHub
+      # Ini akan mengubah kode rahasia menjadi file keystore asli
+      - name: Decode Keystore dari Secret
         run: |
-          keytool -genkey -v -keystore app/keystore.jks \
-            -alias adixtream \
-            -keyalg RSA -keysize 2048 -validity 10000 \
-            -storepass 161105 -keypass 161105 \
-            -dname "CN=AdiXtream, OU=Dev, O=Adi, L=Indo, S=ID, C=ID"
-          
-          echo "✅ Keystore berhasil dibuat di app/keystore.jks"
+          echo "${{ secrets.SIGNING_KEY }}" | base64 -d > release.keystore
 
-      - name: Izinkan Gradle untuk dijalankan
+      - name: Izinkan Gradle
         run: chmod +x gradlew
 
-      - name: Mulai Proses Build (Release Mode)
-        run: ./gradlew assembleRelease --stacktrace
+      # BAGIAN PENTING 2: Mengirim Password ke Gradle
+      # Tanpa bagian ini, build.gradle.kts tidak tahu passwordnya
+      - name: Mulai Proses Build
+        run: ./gradlew assembleRelease
+        env:
+          KEYSTORE_PATH: release.keystore
+          ALIAS: ${{ secrets.ALIAS }}
+          KEY_STORE_PASSWORD: ${{ secrets.KEY_STORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
 
       - name: Upload APK ke GitHub
         uses: actions/upload-artifact@v4
         with:
-          name: AdiXtream-Final-APK
-          # PERBAIKAN DISINI: Menambahkan ** agar bisa masuk ke folder 'stable'
-          path: app/build/outputs/apk/**/*.apk
+          name: AdiXtream-Release
+          path: app/build/outputs/apk/release/*.apk
