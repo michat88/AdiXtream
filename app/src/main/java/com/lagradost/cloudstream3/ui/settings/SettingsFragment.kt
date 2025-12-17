@@ -6,6 +6,7 @@ import android.graphics.LinearGradient
 import android.graphics.Shader
 import android.net.Uri
 import android.os.Bundle
+import android.util.Log  // <--- INI YANG HILANG TADI
 import android.view.View
 import android.widget.ImageView
 import androidx.annotation.StringRes
@@ -259,9 +260,6 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
                         val textHeight = btn.textSize
                         
                         // Buat Shader (Pewarna) Merah Putih
-                        // Koordinat: (0,0) sampai (0, textHeight) -> Atas ke Bawah
-                        // Warna: Merah -> Merah (0.5) -> Putih (0.5) -> Putih (1.0)
-                        // Ini membuat garis tegas di tengah, bukan pudar.
                         val shader = LinearGradient(
                             0f, 0f, 0f, textHeight,
                             intArrayOf(Color.RED, Color.RED, Color.WHITE, Color.WHITE),
