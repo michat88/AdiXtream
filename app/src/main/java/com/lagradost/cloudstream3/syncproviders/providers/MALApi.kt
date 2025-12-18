@@ -34,7 +34,9 @@ class MALApi : SyncAPI() {
     override var name = "MAL"
     override val idPrefix = "mal"
 
-    val key = "1714d6f2f4f7cc19644384f8c4629910"
+    // SUDAH DIUPDATE DENGAN CLIENT ID ADIXTREAM MILIKMU
+    val key = "c4530aae80910ab29dab91a963664e64" 
+    
     private val apiUrl = "https://api.myanimelist.net"
     override val hasOAuth2 = true
     override val redirectUrlIdentifier: String? = "mallogin"
@@ -615,18 +617,12 @@ class MALApi : SyncAPI() {
     data class MalNode(
         @JsonProperty("id") val id: Int,
         @JsonProperty("title") val title: String,
-        /*
-        also, but not used
-        main_picture ->
-            public string medium;
-			public string large;
-         */
     )
 
     data class MalStatus(
         @JsonProperty("status") val status: String,
         @JsonProperty("score") val score: Int,
-        @JsonProperty("num_episodes_watched") val numEpisodesWatched: Int,
+        @JsonProperty("num_episodes_watched") val numEpisodes_watched: Int,
         @JsonProperty("is_rewatching") val isRewatching: Boolean,
         @JsonProperty("updated_at") val updatedAt: String,
     )
@@ -659,7 +655,6 @@ class MALApi : SyncAPI() {
 
     data class MalSearch(
         @JsonProperty("data") val data: List<MalSearchNode>,
-        //paging
     )
 
     data class MalTitleHolder(
