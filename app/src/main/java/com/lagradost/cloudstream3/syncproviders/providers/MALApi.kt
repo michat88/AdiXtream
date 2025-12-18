@@ -34,7 +34,7 @@ class MALApi : SyncAPI() {
     override var name = "MAL"
     override val idPrefix = "mal"
 
-    // SUDAH DIUPDATE DENGAN CLIENT ID ADIXTREAM MILIKMU
+    // CLIENT ID ADIXTREAM MILIKMU
     val key = "c4530aae80910ab29dab91a963664e64" 
     
     private val apiUrl = "https://api.myanimelist.net"
@@ -622,7 +622,7 @@ class MALApi : SyncAPI() {
     data class MalStatus(
         @JsonProperty("status") val status: String,
         @JsonProperty("score") val score: Int,
-        @JsonProperty("num_episodes_watched") val numEpisodes_watched: Int,
+        @JsonProperty("num_episodes_watched") val numEpisodesWatched: Int,
         @JsonProperty("is_rewatching") val isRewatching: Boolean,
         @JsonProperty("updated_at") val updatedAt: String,
     )
