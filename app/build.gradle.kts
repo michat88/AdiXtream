@@ -43,7 +43,6 @@ android {
 
     signingConfigs {
         create("release") {
-            // Konfigurasi dinamis: Kunci keamanan dari GitHub Secrets
             val envKeystorePath = System.getenv("KEYSTORE_PATH")
             storeFile = if (envKeystorePath != null) file(envKeystorePath) else file("keystore.jks")
             
@@ -56,14 +55,13 @@ android {
     compileSdk = libs.versions.compileSdk.get().toInt()
 
     defaultConfig {
+        // Identitas aplikasi AdiXtream
         applicationId = "com.adixtream.app"
         minSdk = libs.versions.minSdk.get().toInt()
         targetSdk = libs.versions.targetSdk.get().toInt()
         
-        // --- UPDATE VERSI v4.6.5 ---
-        versionCode = 71          // Naik dari 70
-        versionName = "4.6.5"     // Naik dari 4.6.4
-        // ---------------------------
+        versionCode = 71
+        versionName = "4.6.5"
 
         resValue("string", "commit_hash", getGitCommitHash())
         resValue("bool", "is_prerelease", "false")
@@ -76,8 +74,11 @@ android {
 
         buildConfigField("long", "BUILD_DATE", "${System.currentTimeMillis()}")
         buildConfigField("String", "APP_VERSION", "\"$versionName\"")
-        buildConfigField("String", "SIMKL_CLIENT_ID", "\"" + (System.getenv("SIMKL_CLIENT_ID") ?: localProperties["simkl.id"]) + "\"")
-        buildConfigField("String", "SIMKL_CLIENT_SECRET", "\"" + (System.getenv("SIMKL_CLIENT_SECRET") ?: localProperties["simkl.secret"]) + "\"")
+        
+        // Kunci API Simkl resmi milik AdiXtream
+        buildConfigField("String", "SIMKL_CLIENT_ID", "\"db13c9a72e036f717c3a85b13cdeb31fa884c8f4991e43695f7b6477374e35b8\"")
+        buildConfigField("String", "SIMKL_CLIENT_SECRET", "\"d8cf8e1b79bae9b2f77f0347d6384a62f1a8d802abdd73d9aa52bf6a848532ba\"")
+        
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
