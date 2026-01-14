@@ -86,21 +86,21 @@ class PluginsViewModel : ViewModel() {
             return RepositoryManager.getRepoPlugins(repositoryUrl)
                 ?.also { repositoryCache[repositoryUrl] = it } ?: emptyList()
         }
+
         /**
          * @param viewModel optional, updates the plugins livedata for that viewModel if included
          * */
         fun downloadAll(activity: Activity?, repositoryUrl: String, viewModel: PluginsViewModel?) =
             ioSafe {
                 if (activity == null) return@ioSafe
-                
-                // 1. Ambil daftar plugin terbaru dari GitHub
-                val plugins = getPlugins(repositoryUrl)
 
-                // SAFETY CHECK: Jika internet mati atau repo kosong/gagal, JANGAN lakukan apa-apa.
-                // Ini untuk mencegah aplikasi menghapus semua plugin saat offline.
+                // FIX 1: Gunakan 'false' agar tidak pakai cache (Force Refresh dari GitHub)
+                val plugins = getPlugins(repositoryUrl, false)
+
+                // SAFETY CHECK: Jangan hapus apapun jika internet mati/repo kosong
                 if (plugins.isEmpty()) return@ioSafe
 
-                // --- BAGIAN 1: DOWNLOAD PLUGIN BARU ---
+                // --- BAGIAN A: DOWNLOAD PLUGIN BARU ---
                 plugins.filter { plugin ->
                     !isDownloaded(
                         activity,
@@ -109,7 +109,7 @@ class PluginsViewModel : ViewModel() {
                     )
                 }.also { list ->
                     main {
-                        // KITA MATIKAN TOAST INI AGAR SILENT (TIDAK CEREWET SAAT STARTUP)
+                        // FIX 2: Silent Mode (Toast dimatikan agar tidak cerewet)
                         /* showToast(
                             when {
                                 plugins.isEmpty() -> txt(R.string.no_plugins_found_error)
@@ -129,7 +129,7 @@ class PluginsViewModel : ViewModel() {
                         metadata.status != PROVIDER_STATUS_DOWN
                     )
                 }.main { list ->
-                    // KITA MATIKAN TOAST SUKSES JUGA AGAR BENAR-BENAR SILENT
+                    // FIX 2: Silent Mode (Toast sukses juga dimatikan)
                     if (list.any { it }) {
                         /*
                         showToast(
@@ -142,25 +142,23 @@ class PluginsViewModel : ViewModel() {
                         )
                         */
                         viewModel?.updatePluginListPrivate(activity, repositoryUrl)
-                    } else if (list.isNotEmpty()) {
-                        // showToast(R.string.download_failed, Toast.LENGTH_SHORT)
                     }
                 }
 
-                // --- BAGIAN 2: HAPUS PLUGIN LOKAL YANG TIDAK ADA DI GITHUB (AUTO-SYNC) ---
+                // --- BAGIAN B: AUTO-DELETE PLUGIN YANG HILANG DARI REPO ---
                 try {
-                    // A. Ambil semua nama internal plugin yang ada di GitHub saat ini
+                    // 1. Ambil daftar nama plugin yang ada di GitHub saat ini
                     val onlineInternalNames = plugins.map { it.second.internalName }.toSet()
                     
-                    // B. Ambil semua plugin yang terinstall di HP pengguna
+                    // 2. Ambil daftar plugin yang ada di HP
                     val localPlugins = PluginManager.getPluginsLocal()
                     
-                    // C. Cari plugin di HP yang namanya TIDAK ADA di daftar GitHub
+                    // 3. Cari plugin HP yang namanya TIDAK ADA di GitHub
                     val toDelete = localPlugins.filter { local ->
                         !onlineInternalNames.contains(local.internalName)
                     }
                     
-                    // D. Hapus plugin tersebut
+                    // 4. Hapus file plugin tersebut
                     toDelete.forEach { local ->
                          val file = File(local.filePath)
                          if (file.exists()) {
@@ -169,7 +167,7 @@ class PluginsViewModel : ViewModel() {
                          }
                     }
                     
-                    // E. Refresh tampilan jika ada yang dihapus
+                    // 5. Update tampilan jika ada yang dihapus
                     if (toDelete.isNotEmpty()) {
                         main {
                              viewModel?.updatePluginListLocal()
@@ -229,6 +227,7 @@ class PluginsViewModel : ViewModel() {
             else
                 updatePluginListPrivate(activity, repositoryUrl)
     }
+
     private suspend fun updatePluginListPrivate(context: Context, repositoryUrl: String) {
         val isAdult = PreferenceManager.getDefaultSharedPreferences(context)
             .getStringSet(context.getString(R.string.prefer_media_type_key), emptySet())
