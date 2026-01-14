@@ -93,74 +93,59 @@ class PluginsViewModel : ViewModel() {
         fun downloadAll(activity: Activity?, repositoryUrl: String, viewModel: PluginsViewModel?) =
             ioSafe {
                 if (activity == null) return@ioSafe
+                val plugins = getPlugins(repositoryUrl)
 
-                // --- UPDATE FIX: ANTI-CACHE (FORCE RELOAD) ---
-                // Kita tambahkan "?t=waktu" di belakang URL.
-                // Ini menipu GitHub agar memberikan file JSON terbaru DETIK INI JUGA.
-                // Tanpa ini, GitHub akan memberikan file lama (cache) selama 5-10 menit.
-                val antiCacheUrl = "$repositoryUrl?t=${System.currentTimeMillis()}"
-                
-                // Gunakan URL anti-cache untuk mengambil daftar plugin
-                // Parameter 'false' memastikan kita tidak menggunakan cache internal aplikasi
-                val plugins = getPlugins(antiCacheUrl, false)
-
-                // SAFETY CHECK: Jika internet mati atau repo kosong, STOP. Jangan hapus apa-apa.
-                if (plugins.isEmpty()) return@ioSafe
-
-                // --- BAGIAN A: DOWNLOAD PLUGIN BARU ---
                 plugins.filter { plugin ->
                     !isDownloaded(
                         activity,
                         plugin.second.internalName,
-                        repositoryUrl // Cek folder pakai URL asli agar path sesuai
+                        repositoryUrl
                     )
                 }.also { list ->
-                    // Silent Mode: Toast dimatikan
+                    main {
+                        showToast(
+                            when {
+                                // No plugins at all
+                                plugins.isEmpty() -> txt(
+                                    R.string.no_plugins_found_error,
+                                )
+                                // All plugins downloaded
+                                list.isEmpty() -> txt(
+                                    R.string.batch_download_nothing_to_download_format,
+                                    txt(R.string.plugin)
+                                )
+
+                                else -> txt(
+                                    R.string.batch_download_start_format,
+                                    list.size,
+                                    txt(if (list.size == 1) R.string.plugin_singular else R.string.plugin)
+                                )
+                            },
+                            Toast.LENGTH_SHORT
+                        )
+                    }
                 }.amap { (repo, metadata) ->
                     PluginManager.downloadPlugin(
                         activity,
                         metadata.url,
                         metadata.internalName,
-                        repositoryUrl, // PENTING: Gunakan URL asli (repositoryUrl), bukan 'repo' (antiCacheUrl) agar tidak double
+                        repo,
                         metadata.status != PROVIDER_STATUS_DOWN
                     )
                 }.main { list ->
                     if (list.any { it }) {
-                         viewModel?.updatePluginListPrivate(activity, repositoryUrl)
+                        showToast(
+                            txt(
+                                R.string.batch_download_finish_format,
+                                list.count { it },
+                                txt(if (list.size == 1) R.string.plugin_singular else R.string.plugin)
+                            ),
+                            Toast.LENGTH_SHORT
+                        )
+                        viewModel?.updatePluginListPrivate(activity, repositoryUrl)
+                    } else if (list.isNotEmpty()) {
+                        showToast(R.string.download_failed, Toast.LENGTH_SHORT)
                     }
-                }
-
-                // --- BAGIAN B: AUTO-DELETE PLUGIN YANG HILANG DARI REPO ---
-                try {
-                    // 1. Ambil daftar nama plugin dari GitHub (yang sudah Fresh karena Anti-Cache)
-                    val onlineInternalNames = plugins.map { it.second.internalName }.toSet()
-                    
-                    // 2. Ambil plugin di HP
-                    val localPlugins = PluginManager.getPluginsLocal()
-                    
-                    // 3. Cari plugin di HP yang namanya TIDAK ADA di GitHub
-                    val toDelete = localPlugins.filter { local ->
-                        // Jika tidak ada di daftar online, berarti harus dihapus
-                        !onlineInternalNames.contains(local.internalName)
-                    }
-                    
-                    // 4. Eksekusi Hapus
-                    toDelete.forEach { local ->
-                         val file = File(local.filePath)
-                         if (file.exists()) {
-                             PluginManager.deletePlugin(file)
-                             Log.i(TAG, "Auto-Delete: ${local.internalName} dihapus. Bye-bye!")
-                         }
-                    }
-                    
-                    // 5. Refresh UI
-                    if (toDelete.isNotEmpty()) {
-                        main {
-                             viewModel?.updatePluginListLocal()
-                        }
-                    }
-                } catch (e: Exception) {
-                    Log.e(TAG, "Error Auto-Delete: ${e.message}")
                 }
             }
     }
