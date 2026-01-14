@@ -197,7 +197,7 @@ import android.content.ContentUris
 import com.lagradost.cloudstream3.ui.home.HomeFragment
 import com.lagradost.cloudstream3.utils.TvChannelUtils
 
-// --- IMPORT TAMBAHAN ---
+// --- IMPORT TAMBAHAN (PENTING) ---
 import com.lagradost.cloudstream3.plugins.RepositoryManager
 import com.lagradost.cloudstream3.ui.settings.extensions.PluginsViewModel
 // -----------------------
@@ -435,6 +435,8 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
             }
         }
     }
+
+
     var lastPopup: SearchResponse? = null
     fun loadPopup(result: SearchResponse, load: Boolean = true) {
         lastPopup = result
@@ -586,7 +588,6 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
             }
         }
     }
-
     //private var mCastSession: CastSession? = null
     var mSessionManager: SessionManager? = null
     private val mSessionManagerListener: SessionManagerListener<Session> by lazy { SessionManagerListenerImpl() }
@@ -1279,56 +1280,55 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
             )
         }
 
-        // =================================================================================
-        // KODE MODIFIKASI: AUTO REPO & BYPASS SETUP (VERSI FINAL "ONCE ONLY")
-        // =================================================================================
-        
-        // 1. Auto Load Repository (HANYA JIKA REPO BELUM TERDAFTAR DI APLIKASI)
+        // --- KODE MODIFIKASI: AUTO REPO & ONE-TIME DOWNLOAD (FIXED) ---
         ioSafe {
-            val customRepoUrl = "https://raw.githubusercontent.com/michat88/AdiManuLateri3/refs/heads/builds/repo.json"
+            // Key unik untuk menandai bahwa setup sudah selesai
+            val uniqueSetupKey = "MY_APP_INITIAL_SETUP_DONE_V1"
             
-            // A. Cek Cerdas: Ambil daftar repo yg sudah ada, cek apakah repo kita ada di situ?
-            val currentRepos = RepositoryManager.getRepositories()
-            val isRepoAlreadyExist = currentRepos.any { it.url == customRepoUrl }
+            // Cek apakah setup sudah pernah dilakukan?
+            val isAlreadySetup = getKey(uniqueSetupKey, false) == true
 
-            // B. JIKA BELUM ADA (Berarti ini instalasi pertama atau data dihapus), baru kita gas!
-            if (!isRepoAlreadyExist) {
+            if (!isAlreadySetup) {
                 try {
-                    // Parse repository dari URL
+                    val customRepoUrl = "https://raw.githubusercontent.com/michat88/AdiManuLateri3/refs/heads/builds/repo.json"
+                    
+                    // A. Parse repository
                     val parsedRepo = RepositoryManager.parseRepository(customRepoUrl)
                     
                     if (parsedRepo != null) {
-                        // Buat object RepositoryData
+                        // B. Masukkan Repo secara Manual
                         val finalRepoData = com.lagradost.cloudstream3.ui.settings.extensions.RepositoryData(
                             parsedRepo.iconUrl,
                             parsedRepo.name,
                             customRepoUrl
                         )
-
-                        // Masukkan ke sistem
                         RepositoryManager.addRepository(finalRepoData)
-                        Log.i(TAG, "First Run: Installing Custom Repository: $customRepoUrl")
+                        Log.i(TAG, "Silent-loaded custom repository: $customRepoUrl")
 
-                        // C. DOWNLOAD SEMUA PLUGIN (Hanya terjadi SEKALI seumur hidup instalasi)
+                        // C. LANGSUNG DOWNLOAD SEMUA PLUGIN (Hanya Sekali Ini Saja)
                         main {
                             PluginsViewModel.downloadAll(this@MainActivity, customRepoUrl, null)
                         }
                     }
+
+                    // D. SETTING TAMBAHAN: MATIKAN AUTO UPDATE
+                    setKey(getString(R.string.auto_update_plugins_key), false)
+
+                    // E. TANDAI BAHWA SETUP SUDAH SELESAI
+                    setKey(uniqueSetupKey, true)
+
                 } catch (e: Exception) {
                     logError(e)
                 }
-            } else {
-                Log.i(TAG, "Custom Repo sudah ada. Skip auto-download agar pilihan user tidak terreset.")
             }
         }
         
         // 2. Bypass/Lewati Setup Wizard (Bahasa & Tema)
-        // Ini tetap pakai key agar tidak mengganggu settingan user nanti kalau mereka mau ubah
         if (getKey(HAS_DONE_SETUP_KEY, false) != true) {
              setKey(HAS_DONE_SETUP_KEY, true)
              updateLocale() 
         }
-        // =================================================================================
+        // -------------------------------------------------
 
         // overscan
         val padding = settingsManager.getInt(getString(R.string.overscan_key), 0).toPx
@@ -1511,7 +1511,6 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
         observe(viewModel.watchStatus, ::setWatchStatus)
         observe(syncViewModel.userData, ::setUserData)
         observeNullable(viewModel.subscribeStatus, ::setSubscribeStatus)
-
         observeNullable(viewModel.page) { resource ->
             if (resource == null) {
                 hidePreviewPopupDialog()
@@ -2051,25 +2050,15 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
             removeKey(USER_SELECTED_HOMEPAGE_API)
         }
 
-        // --- INI BAGIAN PENTING UNTUK BYPASS SETUP ---
-        // Jika kunci setup belum ada, kita buat TRUE dan JANGAN NAVIGASI KE SETUP LANGUAGE
+        // --- BYPASS SETUP DI AKHIR (SAFETY NET) ---
+        // Jika karena alasan tertentu setup belum ditandai selesai, kita tandai di sini
+        // dan pastikan tidak ada navigasi ke SetupFragmentExtensions
         try {
             if (getKey(HAS_DONE_SETUP_KEY, false) != true) {
                 setKey(HAS_DONE_SETUP_KEY, true)
                 // Kita tidak memanggil navController.navigate(...)
                 // Jadi aplikasi akan tetap di HomeFragment
             } 
-            // Bagian ini biasanya mengarahkan ke setup extensions jika kosong, 
-            // tapi karena kita sudah load repo di atas, user akan baik-baik saja.
-            else if (PluginManager.getPluginsOnline().isEmpty()
-                && PluginManager.getPluginsLocal().isEmpty()
-            ) {
-                 // Opsional: Jika masih mau menampilkan halaman extensions jika kosong
-                 /* navController.navigate(
-                    R.id.navigation_setup_extensions,
-                    SetupFragmentExtensions.newInstance(false)
-                ) */
-            }
         } catch (e: Exception) {
             logError(e)
         }
