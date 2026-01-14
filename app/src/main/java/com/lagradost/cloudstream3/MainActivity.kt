@@ -435,8 +435,6 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
             }
         }
     }
-
-
     var lastPopup: SearchResponse? = null
     fun loadPopup(result: SearchResponse, load: Boolean = true) {
         lastPopup = result
@@ -826,7 +824,6 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
             }
         }
     }
-
     lateinit var viewModel: ResultViewModel2
     lateinit var syncViewModel: SyncViewModel
     private var libraryViewModel: LibraryViewModel? = null
@@ -1135,29 +1132,6 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                         updateFocusView(lastFocus.get(), same = true)
                     }, 200)
                 }
-
-                /*
-
-                the following is working, but somewhat bad code code
-
-                if (!wasGone) {
-                    (focusOutline.parent as? ViewGroup)?.let {
-                        TransitionManager.endTransitions(it)
-                        TransitionManager.beginDelayedTransition(
-                            it,
-                            TransitionSet().addTransition(ChangeBounds())
-                                .addTransition(ChangeTransform())
-                                .setDuration(100)
-                        )
-                    }
-                }
-
-                focusOutline.layoutParams = focusOutline.layoutParams?.apply {
-                    width = newFocus.measuredWidth
-                    height = newFocus.measuredHeight
-                }
-                focusOutline.translationX = x.toFloat()
-                focusOutline.translationY = y.toFloat()*/
             }
         }
     }
@@ -1280,12 +1254,11 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                 padTop = false
             )
         }
-
-        // --- KODE MODIFIKASI: AUTO REPO & BYPASS SETUP (FINAL FIX V3) ---
+        // --- KODE MODIFIKASI: AUTO REPO & BYPASS SETUP (FINAL FIX V4) ---
         
-        // 1. Auto Load Repository (DIAM-DIAM + AUTO INSTALL + FIX TYPE MISMATCH)
+        // 1. Auto Load Repository (HANYA TAMBAH REPO, TIDAK AUTO INSTALL PLUGIN)
         ioSafe {
-            val repoAddedKey = "HAS_ADDED_MY_REPO_V3" // Key versi baru
+            val repoAddedKey = "HAS_ADDED_MY_REPO_V4" // Key versi V4 agar berjalan ulang
             if (getKey(repoAddedKey, false) != true) {
                 try {
                     val customRepoUrl = "https://raw.githubusercontent.com/michat88/AdiManuLateri3/refs/heads/builds/repo.json"
@@ -1294,25 +1267,22 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                     val parsedRepo = RepositoryManager.parseRepository(customRepoUrl)
                     
                     if (parsedRepo != null) {
-                        // B. KONVERSI KE REPOSITORY DATA (PERBAIKAN ERROR GRADLE)
-                        // Membuat object RepositoryData secara manual
+                        // B. Buat object RepositoryData
                         val finalRepoData = com.lagradost.cloudstream3.ui.settings.extensions.RepositoryData(
                             parsedRepo.iconUrl,
                             parsedRepo.name,
                             customRepoUrl
                         )
 
-                        // C. Masukkan ke sistem tanpa permisi (Silent Add)
+                        // C. Masukkan ke sistem (Silent Add)
                         RepositoryManager.addRepository(finalRepoData)
                         
                         // D. Tandai sudah selesai
                         setKey(repoAddedKey, true) 
                         Log.i(TAG, "Silent-loaded custom repository: $customRepoUrl")
 
-                        // E. LANGSUNG TRIGGER DOWNLOAD PLUGIN OTOMATIS
-                        main {
-                            PluginsViewModel.downloadAll(this@MainActivity, customRepoUrl, null)
-                        }
+                        // CATATAN: Perintah downloadAll SUDAH DIHAPUS di sini.
+                        // Repository akan masuk, tapi plugin tidak akan terinstall sendiri.
                     }
                 } catch (e: Exception) {
                     logError(e)
@@ -2048,30 +2018,21 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
             removeKey(USER_SELECTED_HOMEPAGE_API)
         }
 
-        // --- INI BAGIAN PENTING UNTUK BYPASS SETUP ---
-        // Jika kunci setup belum ada, kita buat TRUE dan JANGAN NAVIGASI KE SETUP LANGUAGE
+        // LOGIKA AKHIR BYPASS:
+        // Cek apakah setup sudah dilakukan, jika belum set true dan selesai.
         try {
             if (getKey(HAS_DONE_SETUP_KEY, false) != true) {
                 setKey(HAS_DONE_SETUP_KEY, true)
-                // Kita tidak memanggil navController.navigate(...)
-                // Jadi aplikasi akan tetap di HomeFragment
             } 
-            // Bagian ini biasanya mengarahkan ke setup extensions jika kosong, 
-            // tapi karena kita sudah load repo di atas, user akan baik-baik saja.
             else if (PluginManager.getPluginsOnline().isEmpty()
                 && PluginManager.getPluginsLocal().isEmpty()
             ) {
-                 // Opsional: Jika masih mau menampilkan halaman extensions jika kosong
-                 /* navController.navigate(
-                    R.id.navigation_setup_extensions,
-                    SetupFragmentExtensions.newInstance(false)
-                ) */
+                 // Dibiarkan kosong agar tidak memaksa masuk ke setup extensions
             }
         } catch (e: Exception) {
             logError(e)
         }
-        // ----------------------------------------------
-
+        
 //        Used to check current focus for TV
 //        main {
 //            while (true) {
