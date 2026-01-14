@@ -200,7 +200,8 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
         }
 
         binding.apply {
-            settingsExtensions.visibility = View.GONE
+            // PERBAIKAN 1: Baris ini dihapus agar Ekstensi terlihat
+            // settingsExtensions.visibility = View.GONE 
 
             // --- LOGIKA TOMBOL TENTANG (WARNA MERAH PUTIH) ---
             settingsAbout.setOnClickListener {
@@ -253,6 +254,8 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
 
             listOf(
                 settingsGeneral to R.id.action_navigation_global_to_navigation_settings_general,
+                // PERBAIKAN 2: Menambahkan navigasi Ekstensi kembali
+                settingsExtensions to R.id.action_navigation_global_to_navigation_settings_extensions,
                 settingsPlayer to R.id.action_navigation_global_to_navigation_settings_player,
                 settingsCredits to R.id.action_navigation_global_to_navigation_settings_account,
                 settingsUi to R.id.action_navigation_global_to_navigation_settings_ui,
