@@ -72,6 +72,7 @@ class PluginsViewModel : ViewModel() {
         ): Boolean {
             return getPluginPath(context, pluginName, repositoryUrl).exists()
         }
+
         private suspend fun getPlugins(
             repositoryUrl: String,
             canUseCache: Boolean = true
@@ -85,15 +86,21 @@ class PluginsViewModel : ViewModel() {
             return RepositoryManager.getRepoPlugins(repositoryUrl)
                 ?.also { repositoryCache[repositoryUrl] = it } ?: emptyList()
         }
-
         /**
          * @param viewModel optional, updates the plugins livedata for that viewModel if included
          * */
         fun downloadAll(activity: Activity?, repositoryUrl: String, viewModel: PluginsViewModel?) =
             ioSafe {
                 if (activity == null) return@ioSafe
+                
+                // 1. Ambil daftar plugin terbaru dari GitHub
                 val plugins = getPlugins(repositoryUrl)
 
+                // SAFETY CHECK: Jika internet mati atau repo kosong/gagal, JANGAN lakukan apa-apa.
+                // Ini untuk mencegah aplikasi menghapus semua plugin saat offline.
+                if (plugins.isEmpty()) return@ioSafe
+
+                // --- BAGIAN 1: DOWNLOAD PLUGIN BARU ---
                 plugins.filter { plugin ->
                     !isDownloaded(
                         activity,
@@ -102,31 +109,16 @@ class PluginsViewModel : ViewModel() {
                     )
                 }.also { list ->
                     main {
-                        // --- PERBAIKAN: MATIKAN POPUP "SEMUA TELAH TERUNDUH" ---
-                        // Kode asli di bawah ini saya jadikan komentar (silent mode)
-                        
+                        // KITA MATIKAN TOAST INI AGAR SILENT (TIDAK CEREWET SAAT STARTUP)
                         /* showToast(
                             when {
-                                // No plugins at all
-                                plugins.isEmpty() -> txt(
-                                    R.string.no_plugins_found_error,
-                                )
-                                // All plugins downloaded
-                                list.isEmpty() -> txt(
-                                    R.string.batch_download_nothing_to_download_format,
-                                    txt(R.string.plugin)
-                                )
-
-                                else -> txt(
-                                    R.string.batch_download_start_format,
-                                    list.size,
-                                    txt(if (list.size == 1) R.string.plugin_singular else R.string.plugin)
-                                )
+                                plugins.isEmpty() -> txt(R.string.no_plugins_found_error)
+                                list.isEmpty() -> txt(R.string.batch_download_nothing_to_download_format, txt(R.string.plugin))
+                                else -> txt(R.string.batch_download_start_format, list.size, txt(if (list.size == 1) R.string.plugin_singular else R.string.plugin))
                             },
                             Toast.LENGTH_SHORT
-                        ) 
+                        )
                         */
-                        // -------------------------------------------------------
                     }
                 }.amap { (repo, metadata) ->
                     PluginManager.downloadPlugin(
@@ -137,12 +129,8 @@ class PluginsViewModel : ViewModel() {
                         metadata.status != PROVIDER_STATUS_DOWN
                     )
                 }.main { list ->
-                    // Bagian ini adalah notifikasi "Berhasil Download X Plugin".
-                    // Jika kamu mau notifikasi ini TETAP MUNCUL saat ada update baru, biarkan saja.
-                    // Tapi jika kamu mau "Silent Total" (benar-benar diam), beri tanda // di depan showToast di bawah ini juga.
-                    
+                    // KITA MATIKAN TOAST SUKSES JUGA AGAR BENAR-BENAR SILENT
                     if (list.any { it }) {
-                        // Uncomment baris di bawah ini jika ingin tau kalau ada update berhasil
                         /*
                         showToast(
                             txt(
@@ -157,6 +145,38 @@ class PluginsViewModel : ViewModel() {
                     } else if (list.isNotEmpty()) {
                         // showToast(R.string.download_failed, Toast.LENGTH_SHORT)
                     }
+                }
+
+                // --- BAGIAN 2: HAPUS PLUGIN LOKAL YANG TIDAK ADA DI GITHUB (AUTO-SYNC) ---
+                try {
+                    // A. Ambil semua nama internal plugin yang ada di GitHub saat ini
+                    val onlineInternalNames = plugins.map { it.second.internalName }.toSet()
+                    
+                    // B. Ambil semua plugin yang terinstall di HP pengguna
+                    val localPlugins = PluginManager.getPluginsLocal()
+                    
+                    // C. Cari plugin di HP yang namanya TIDAK ADA di daftar GitHub
+                    val toDelete = localPlugins.filter { local ->
+                        !onlineInternalNames.contains(local.internalName)
+                    }
+                    
+                    // D. Hapus plugin tersebut
+                    toDelete.forEach { local ->
+                         val file = File(local.filePath)
+                         if (file.exists()) {
+                             PluginManager.deletePlugin(file)
+                             Log.i(TAG, "Auto-Delete: ${local.internalName} dihapus karena sudah tidak ada di repo.")
+                         }
+                    }
+                    
+                    // E. Refresh tampilan jika ada yang dihapus
+                    if (toDelete.isNotEmpty()) {
+                        main {
+                             viewModel?.updatePluginListLocal()
+                        }
+                    }
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error saat membersihkan plugin: ${e.message}")
                 }
             }
     }
