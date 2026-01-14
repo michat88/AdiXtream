@@ -1,6 +1,5 @@
 package com.lagradost.cloudstream3
 
-import com.lagradost.cloudstream3.ui.settings.extensions.AutoDownloadMode
 import android.animation.ValueAnimator
 import android.annotation.SuppressLint
 import android.app.Dialog
@@ -201,7 +200,7 @@ import com.lagradost.cloudstream3.utils.TvChannelUtils
 // --- IMPORT TAMBAHAN (PENTING) ---
 import com.lagradost.cloudstream3.plugins.RepositoryManager
 import com.lagradost.cloudstream3.ui.settings.extensions.PluginsViewModel
-import com.lagradost.cloudstream3.ui.settings.extensions.AutoDownloadMode
+import com.lagradost.cloudstream3.ui.settings.extensions.AutoDownloadMode // <--- INI YG BIKIN ERROR KEMARIN
 // -----------------------
 
 class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCallback {
@@ -434,159 +433,6 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                 view.requestRectangleOnScreen(r2, false)
                 // TvFocus.current =TvFocus.current.copy(y=y.toFloat())
             } catch (_: Throwable) {
-            }
-        }
-    }
-
-
-    var lastPopup: SearchResponse? = null
-    fun loadPopup(result: SearchResponse, load: Boolean = true) {
-        lastPopup = result
-        val syncName = syncViewModel.syncName(result.apiName)
-
-        // based on apiName we decide on if it is a local list or not, this is because
-        // we want to show a bit of extra UI to sync apis
-        if (result is SyncAPI.LibraryItem && syncName != null) {
-            isLocalList = false
-            syncViewModel.setSync(syncName, result.syncId)
-            syncViewModel.updateMetaAndUser()
-        } else {
-            isLocalList = true
-            syncViewModel.clear()
-        }
-
-        if (load) {
-            viewModel.load(
-                this, result.url, result.apiName, false, if (getApiDubstatusSettings()
-                        .contains(DubStatus.Dubbed)
-                ) DubStatus.Dubbed else DubStatus.Subbed, null
-            )
-        } else {
-            viewModel.loadSmall(result)
-        }
-    }
-
-    override fun onColorSelected(dialogId: Int, color: Int) {
-        onColorSelectedEvent.invoke(Pair(dialogId, color))
-    }
-
-    override fun onDialogDismissed(dialogId: Int) {
-        onDialogDismissedEvent.invoke(dialogId)
-    }
-
-    override fun onConfigurationChanged(newConfig: Configuration) {
-        super.onConfigurationChanged(newConfig)
-        updateLocale() // android fucks me by chaining lang when rotating the phone
-        updateTheme(this) // Update if system theme
-
-        val navHostFragment =
-            supportFragmentManager.findFragmentById(R.id.nav_host_fragment) as NavHostFragment
-        navHostFragment.navController.currentDestination?.let { updateNavBar(it) }
-    }
-
-    private fun updateNavBar(destination: NavDestination) {
-        this.hideKeyboard()
-
-        // Fucks up anime info layout since that has its own layout
-        binding?.castMiniControllerHolder?.isVisible =
-            !listOf(
-                R.id.navigation_results_phone,
-                R.id.navigation_results_tv,
-                R.id.navigation_player
-            ).contains(destination.id)
-
-        val isNavVisible = listOf(
-            R.id.navigation_home,
-            R.id.navigation_search,
-            R.id.navigation_library,
-            R.id.navigation_downloads,
-            R.id.navigation_settings,
-            R.id.navigation_download_child,
-            R.id.navigation_subtitles,
-            R.id.navigation_chrome_subtitles,
-            R.id.navigation_settings_player,
-            R.id.navigation_settings_updates,
-            R.id.navigation_settings_ui,
-            R.id.navigation_settings_account,
-            R.id.navigation_settings_providers,
-            R.id.navigation_settings_general,
-            R.id.navigation_settings_extensions,
-            R.id.navigation_settings_plugins,
-            R.id.navigation_test_providers,
-        ).contains(destination.id)
-
-
-        /*val dontPush = listOf(
-            R.id.navigation_home,
-            R.id.navigation_search,
-            R.id.navigation_results_phone,
-            R.id.navigation_results_tv,
-            R.id.navigation_player,
-            R.id.navigation_quick_search,
-        ).contains(destination.id)
-
-        binding?.navHostFragment?.apply {
-            val params = layoutParams as ConstraintLayout.LayoutParams
-            val push =
-                if (!dontPush && isLayout(TV or EMULATOR)) resources.getDimensionPixelSize(R.dimen.navbar_width) else 0
-
-            if (!this.isLtr()) {
-                params.setMargins(
-                    params.leftMargin,
-                    params.topMargin,
-                    push,
-                    params.bottomMargin
-                )
-            } else {
-                params.setMargins(
-                    push,
-                    params.topMargin,
-                    params.rightMargin,
-                    params.bottomMargin
-                )
-            }
-
-            layoutParams = params
-        }*/
-
-        binding?.apply {
-            navRailView.isVisible = isNavVisible && isLandscape()
-            navView.isVisible = isNavVisible && !isLandscape()
-            navHostFragment.apply {
-                val marginPx = resources.getDimensionPixelSize(R.dimen.nav_rail_view_width)
-                layoutParams = (navHostFragment.layoutParams as ViewGroup.MarginLayoutParams).apply {
-                    marginStart = if (isNavVisible && isLandscape() && isLayout(TV or EMULATOR)) marginPx else 0
-                }
-            }
-
-            /**
-             * We need to make sure if we return to a sub-fragment,
-             * the correct navigation item is selected so that it does not
-             * highlight the wrong one in UI.
-             */
-            when (destination.id) {
-                in listOf(R.id.navigation_downloads, R.id.navigation_download_child) -> {
-                    navRailView.menu.findItem(R.id.navigation_downloads).isChecked = true
-                    navView.menu.findItem(R.id.navigation_downloads).isChecked = true
-                }
-
-                in listOf(
-                    R.id.navigation_settings,
-                    R.id.navigation_subtitles,
-                    R.id.navigation_chrome_subtitles,
-                    R.id.navigation_settings_player,
-                    R.id.navigation_settings_updates,
-                    R.id.navigation_settings_ui,
-                    R.id.navigation_settings_account,
-                    R.id.navigation_settings_providers,
-                    R.id.navigation_settings_general,
-                    R.id.navigation_settings_extensions,
-                    R.id.navigation_settings_plugins,
-                    R.id.navigation_test_providers
-                ) -> {
-                    navRailView.menu.findItem(R.id.navigation_settings).isChecked = true
-                    navView.menu.findItem(R.id.navigation_settings).isChecked = true
-                }
             }
         }
     }
