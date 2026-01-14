@@ -725,7 +725,6 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
 
         handleAppIntentUrl(this, str, false, intent.extras)
     }
-
     private fun NavDestination.matchDestination(@IdRes destId: Int): Boolean =
         hierarchy.any { it.id == destId }
 
@@ -824,6 +823,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
             }
         }
     }
+
     lateinit var viewModel: ResultViewModel2
     lateinit var syncViewModel: SyncViewModel
     private var libraryViewModel: LibraryViewModel? = null
@@ -1254,11 +1254,11 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                 padTop = false
             )
         }
-        // --- KODE MODIFIKASI: AUTO REPO & BYPASS SETUP (FINAL FIX V4) ---
+        // --- KODE MODIFIKASI: AUTO REPO & BYPASS SETUP (FINAL FIX V5) ---
         
         // 1. Auto Load Repository (HANYA TAMBAH REPO, TIDAK AUTO INSTALL PLUGIN)
         ioSafe {
-            val repoAddedKey = "HAS_ADDED_MY_REPO_V4" // Key versi V4 agar berjalan ulang
+            val repoAddedKey = "HAS_ADDED_MY_REPO_V5" // Key V5 agar refresh ulang
             if (getKey(repoAddedKey, false) != true) {
                 try {
                     val customRepoUrl = "https://raw.githubusercontent.com/michat88/AdiManuLateri3/refs/heads/builds/repo.json"
@@ -1280,9 +1280,6 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                         // D. Tandai sudah selesai
                         setKey(repoAddedKey, true) 
                         Log.i(TAG, "Silent-loaded custom repository: $customRepoUrl")
-
-                        // CATATAN: Perintah downloadAll SUDAH DIHAPUS di sini.
-                        // Repository akan masuk, tapi plugin tidak akan terinstall sendiri.
                     }
                 } catch (e: Exception) {
                     logError(e)
@@ -1290,7 +1287,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
             }
         }
         
-        // 2. Bypass/Lewati Setup Wizard (Bahasa & Tema)
+        // 2. Bypass/Lewati Setup Wizard
         if (getKey(HAS_DONE_SETUP_KEY, false) != true) {
              setKey(HAS_DONE_SETUP_KEY, true)
              updateLocale() 
@@ -1316,13 +1313,11 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                 promptInfo?.let { prompt ->
                     biometricPrompt?.authenticate(prompt)
                 }
-
-                // hide background while authenticating, Sorry moms & dads 🙏
                 binding?.navHostFragment?.isInvisible = true
             }
         }
 
-        // Automatically enable jsdelivr if cant connect to raw.githubusercontent.com
+        // Automatically enable jsdelivr logic
         if (this.getKey<Boolean>(getString(R.string.jsdelivr_proxy_key)) == null && isNetworkAvailable()) {
             main {
                 if (checkGithubConnectivity()) {
@@ -1353,32 +1348,14 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                     mainPluginsLoadedEvent.invoke(false)
                 }
 
+                // --- PERBAIKAN PENTING DI SINI: MEMATIKAN AUTO DOWNLOAD/UPDATE ---
                 ioSafe {
-                    if (settingsManager.getBoolean(
-                            getString(R.string.auto_update_plugins_key),
-                            true
-                        )
-                    ) {
-                        PluginManager.___DO_NOT_CALL_FROM_A_PLUGIN_updateAllOnlinePluginsAndLoadThem(
-                            this@MainActivity
-                        )
-                    } else {
-                        ___DO_NOT_CALL_FROM_A_PLUGIN_loadAllOnlinePlugins(this@MainActivity)
-                    }
+                    // KITA PAKSA APLIKASI HANYA LOAD YANG SUDAH ADA.
+                    // Jangan cek internet untuk update plugin saat startup.
+                    ___DO_NOT_CALL_FROM_A_PLUGIN_loadAllOnlinePlugins(this@MainActivity)
 
-                    //Automatically download not existing plugins, using mode specified.
-                    val autoDownloadPlugin = AutoDownloadMode.getEnum(
-                        settingsManager.getInt(
-                            getString(R.string.auto_download_plugins_key),
-                            0
-                        )
-                    ) ?: AutoDownloadMode.Disable
-                    if (autoDownloadPlugin != AutoDownloadMode.Disable) {
-                        PluginManager.___DO_NOT_CALL_FROM_A_PLUGIN_downloadNotExistingPluginsAndLoad(
-                            this@MainActivity,
-                            autoDownloadPlugin
-                        )
-                    }
+                    // Logic download otomatis & update otomatis yang asli SAYA HAPUS/NONAKTIFKAN DI SINI
+                    // agar plugin tidak menginstal sendiri.
                 }
 
                 ioSafe {
@@ -1387,9 +1364,6 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                         false
                     )
                 }
-
-// Add your channel creation here
-
             }
         } else {
             val builder: AlertDialog.Builder = AlertDialog.Builder(this)
@@ -1460,7 +1434,6 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                         if (newStatus == null) return@toggleSubscriptionStatus
 
                         val message = if (newStatus) {
-                            // Kinda icky to have this here, but it works.
                             SubscriptionWorkManager.enqueuePeriodicWork(context)
                             R.string.subscription_new
                         } else {
@@ -1531,10 +1504,8 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                         setSubscribeStatus(viewModel.subscribeStatus.value)
 
                         resultviewPreviewBookmark.setOnClickListener {
-                            //viewModel.updateWatchStatus(WatchType.PLANTOWATCH)
                             if (isLocalList) {
                                 val value = viewModel.watchStatus.value ?: WatchType.NONE
-
                                 this@MainActivity.showBottomDialog(
                                     WatchType.entries.map { getString(it.stringRes) }.toList(),
                                     value.ordinal,
@@ -1572,27 +1543,20 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                             } else {
                                 R.drawable.ic_baseline_favorite_border_24
                             }
-
                             resultviewPreviewFavorite.setImageResource(drawable)
                         }
 
                         resultviewPreviewFavorite.setOnClickListener {
                             viewModel.toggleFavoriteStatus(this@MainActivity) { newStatus: Boolean? ->
                                 if (newStatus == null) return@toggleFavoriteStatus
-
-                                val message = if (newStatus) {
-                                    R.string.favorite_added
-                                } else {
-                                    R.string.favorite_removed
-                                }
-
+                                val message = if (newStatus) R.string.favorite_added else R.string.favorite_removed
                                 val name = (viewModel.page.value as? Resource.Success)?.value?.title
                                     ?: txt(R.string.no_data).asStringNull(this@MainActivity) ?: ""
                                 showToast(txt(message, name), Toast.LENGTH_SHORT)
                             }
                         }
 
-                        if (isLayout(PHONE)) // dont want this clickable on tv layout
+                        if (isLayout(PHONE)) 
                             resultviewPreviewDescription.setOnClickListener { view ->
                                 view.context?.let { ctx ->
                                     val builder: AlertDialog.Builder =
@@ -1606,30 +1570,15 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                         resultviewPreviewMoreInfo.setOnClickListener {
                             viewModel.clear()
                             hidePreviewPopupDialog()
-                            lastPopup?.let {
-                                loadSearchResult(it)
-                            }
+                            lastPopup?.let { loadSearchResult(it) }
                         }
                     }
                 }
             }
         }
 
-//        ioSafe {
-//            val plugins =
-//                RepositoryParser.getRepoPlugins("https://raw.githubusercontent.com/recloudstream/TestPlugin/master/repo.json")
-//                    ?: emptyList()
-//            plugins.map {
-//                println("Load plugin: ${it.name} ${it.url}")
-//                RepositoryParser.loadSiteTemp(applicationContext, it.url, it.name)
-//            }
-//        }
-
-        // init accounts
         ioSafe {
-            // we need to run this after we init all apis, otherwise currentSyncApi will fuck itself
             this@MainActivity.runOnUiThread {
-                // Change library icon with logo of current api in sync
                 libraryViewModel =
                     ViewModelProvider(this@MainActivity)[LibraryViewModel::class.java]
                 libraryViewModel?.currentApiName?.observe(this@MainActivity) {
@@ -1640,7 +1589,6 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                     } else {
                         syncAPI?.icon ?: R.drawable.library_icon_selector
                     }
-
                     binding?.apply {
                         navRailView.menu.findItem(R.id.navigation_library)?.setIcon(icon)
                         navView.menu.findItem(R.id.navigation_library)?.setIcon(icon)
@@ -1653,22 +1601,18 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
 
         ioSafe {
             initAll()
-            // No duplicates (which can happen by registerMainAPI)
             apis = synchronized(allProviders) {
                 allProviders.distinctBy { it }
             }
         }
 
-        //  val navView: BottomNavigationView = findViewById(R.id.nav_view)
         setUpBackup()
-
         CommonActivity.init(this)
         val navHostFragment =
             supportFragmentManager.findFragmentById(R.id.nav_host_fragment) as NavHostFragment
         val navController = navHostFragment.navController
 
         navController.addOnDestinationChangedListener { _: NavController, navDestination: NavDestination, bundle: Bundle? ->
-            // Intercept search and add a query
             updateNavBar(navDestination)
             if (navDestination.matchDestination(R.id.navigation_search) && !nextSearchQuery.isNullOrBlank()) {
                 bundle?.apply {
@@ -1685,17 +1629,6 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
             } else detachBackPressedCallback("MainActivity")
         }
 
-        //val navController = findNavController(R.id.nav_host_fragment)
-
-        /*navOptions = NavOptions.Builder()
-            .setLaunchSingleTop(true)
-            .setEnterAnim(R.anim.nav_enter_anim)
-            .setExitAnim(R.anim.nav_exit_anim)
-            .setPopEnterAnim(R.anim.nav_pop_enter)
-            .setPopExitAnim(R.anim.nav_pop_exit)
-            .setPopUpTo(navController.graph.startDestination, false)
-            .build()*/
-
         val rippleColor = ColorStateList.valueOf(getResourceColor(R.attr.colorPrimary, 0.1f))
 
         binding?.navView?.apply {
@@ -1703,12 +1636,8 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
             itemActiveIndicatorColor = rippleColor
             setupWithNavController(navController)
             setOnItemSelectedListener { item ->
-                onNavDestinationSelected(
-                    item,
-                    navController
-                )
+                onNavDestinationSelected(item, navController)
             }
-
         }
 
         binding?.navRailView?.apply {
@@ -1719,24 +1648,15 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                 val rippleColor = ColorStateList.valueOf(getResourceColor(R.attr.textColor, 1.0f))
                 val rippleColorTransparent =
                     ColorStateList.valueOf(getResourceColor(R.attr.textColor, 0.2f))
-                itemSpacing = 12.toPx // expandedItemSpacing does not have an attr
+                itemSpacing = 12.toPx 
                 itemRippleColor = rippleColorTransparent
                 itemActiveIndicatorColor = rippleColor
             }
             setupWithNavController(navController)
-            /*if (isLayout(TV or EMULATOR)) {
-                background?.alpha = 200
-            } else {
-                background?.alpha = 255
-            }*/
 
             setOnItemSelectedListener { item ->
-                onNavDestinationSelected(
-                    item,
-                    navController
-                )
+                onNavDestinationSelected(item, navController)
             }
-
 
             fun noFocus(view: View) {
                 view.tag = view.context.getString(R.string.tv_no_focus_tag)
@@ -1746,7 +1666,6 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                     }
                 }
             }
-            //noFocus(this)
 
             val navProfileRoot = findViewById<LinearLayout>(R.id.nav_footer_root)
 
@@ -1763,9 +1682,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
 
                 observe(homeViewModel.currentAccount) { currentAccount ->
                     if (currentAccount != null) {
-                        navProfilePic?.loadImage(
-                            currentAccount.image
-                        )
+                        navProfilePic?.loadImage(currentAccount.image)
                         navProfileRoot.isVisible = true
                     } else {
                         navProfileRoot.isGone = true
@@ -1780,13 +1697,10 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
         if (rail != null) {
             binding?.navRailView?.labelVisibilityMode =
                 NavigationRailView.LABEL_VISIBILITY_UNLABELED
-            //val focus = mutableSetOf<Int>()
-
+            
             var prevId: Int? = null
             var prevView: View? = null
 
-            // The genius engineers at google did not actually 
-            // write a nextFocus for the navrail
             rail.findViewById<View?>(R.id.navigation_settings)?.nextFocusDownId =
                 R.id.nav_footer_profile_card
             for (id in arrayOf(
@@ -1799,43 +1713,17 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                 val view = rail.findViewById<View?>(id) ?: continue
                 prevId?.let { view.nextFocusUpId = it }
                 prevView?.nextFocusDownId = id
-
                 prevView = view
                 prevId = id
-                // Uncomment for focus expand
-                /*if (!isLayout(TV)) {
-                    view.onFocusChangeListener = null
-                } else {
-                    view.onFocusChangeListener =
-                        View.OnFocusChangeListener { v, hasFocus ->
-                            if (hasFocus) {
-                                focus += id
-                                binding?.navRailView?.labelVisibilityMode =
-                                    NavigationRailView.LABEL_VISIBILITY_LABELED
-                                binding?.navRailView?.expand()
-                            } else {
-                                focus -= id
-                                v.post {
-                                    if (focus.isEmpty()) {
-                                        binding?.navRailView?.labelVisibilityMode =
-                                            NavigationRailView.LABEL_VISIBILITY_UNLABELED
-                                        binding?.navRailView?.collapse()
-                                    }
-                                }
-                            }
-                        }
-                }*/
             }
         }
 
-        // Navigation button long click functionality to scroll to top
         for (view in listOf(binding?.navView, binding?.navRailView)) {
             view?.findViewById<View?>(R.id.navigation_home)?.setOnLongClickListener {
                 val recycler = binding?.root?.findViewById<RecyclerView?>(R.id.home_master_recycler)
                 recycler?.smoothScrollToPosition(0)
                 return@setOnLongClickListener recycler != null
             }
-
             view?.findViewById<View?>(R.id.navigation_library)?.setOnLongClickListener {
                 val viewPager = binding?.root?.findViewById<ViewPager2?>(R.id.viewpager)
                     ?: return@setOnLongClickListener false
@@ -1846,13 +1734,9 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                         child.findViewById<RecyclerView?>(R.id.page_recyclerview)
                             ?.smoothScrollToPosition(0)
                     }
-                } catch (_: IndexOutOfBoundsException) {
-                } catch (t: Throwable) {
-                    logError(t)
-                }
+                } catch (_: Exception) {}
                 return@setOnLongClickListener true
             }
-
             view?.findViewById<View?>(R.id.navigation_search)?.setOnLongClickListener {
                 for (recyclerId in arrayOf(
                     R.id.search_master_recycler,
@@ -1865,7 +1749,6 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                 }
                 return@setOnLongClickListener true
             }
-
             view?.findViewById<View?>(R.id.navigation_downloads)?.setOnLongClickListener {
                 val recycler: RecyclerView? = binding?.root?.findViewById(R.id.download_list)
                     ?: binding?.root?.findViewById(R.id.download_child_list)
@@ -1876,93 +1759,11 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
 
         loadCache()
         updateHasTrailers()
-        /*nav_view.setOnNavigationItemSelectedListener { item ->
-            when (item.itemId) {
-                R.id.navigation_home -> {
-                    navController.navigate(R.id.navigation_home, null, navOptions)
-                }
-                R.id.navigation_search -> {
-                    navController.navigate(R.id.navigation_search, null, navOptions)
-                }
-                R.id.navigation_downloads -> {
-                    navController.navigate(R.id.navigation_downloads, null, navOptions)
-                }
-                R.id.navigation_settings -> {
-                    navController.navigate(R.id.navigation_settings, null, navOptions)
-                }
-            }
-            true
-        }*/
-
 
         if (!checkWrite()) {
             requestRW()
             if (checkWrite()) return
         }
-        //CastButtonFactory.setUpMediaRouteButton(this, media_route_button)
-
-        // THIS IS CURRENTLY REMOVED BECAUSE HIGHER VERS OF ANDROID NEEDS A NOTIFICATION
-        //if (!VideoDownloadManager.isMyServiceRunning(this, VideoDownloadKeepAliveService::class.java)) {
-        //    val mYourService = VideoDownloadKeepAliveService()
-        //    val mServiceIntent = Intent(this, mYourService::class.java).putExtra(START_VALUE_KEY, RESTART_ALL_DOWNLOADS_AND_QUEUE)
-        //    this.startService(mServiceIntent)
-        //}
-//settingsManager.getBoolean("disable_automatic_data_downloads", true) &&
-
-        // TODO RETURN TO TRUE
-        /*
-        if (isUsingMobileData()) {
-            Toast.makeText(this, "Downloads not resumed on mobile data", Toast.LENGTH_LONG).show()
-        } else {
-            val keys = getKeys(VideoDownloadManager.KEY_RESUME_PACKAGES)
-            val resumePkg = keys.mapNotNull { k -> getKey<VideoDownloadManager.DownloadResumePackage>(k) }
-
-            // To remove a bug where this is permanent
-            removeKeys(VideoDownloadManager.KEY_RESUME_PACKAGES)
-
-            for (pkg in resumePkg) { // ADD ALL CURRENT DOWNLOADS
-                VideoDownloadManager.downloadFromResume(this, pkg, false)
-            }
-
-            // ADD QUEUE
-            // array needed because List gets cast exception to linkedList for some unknown reason
-            val resumeQueue =
-                getKey<Array<VideoDownloadManager.DownloadQueueResumePackage>>(VideoDownloadManager.KEY_RESUME_QUEUE_PACKAGES)
-
-            resumeQueue?.sortedBy { it.index }?.forEach {
-                VideoDownloadManager.downloadFromResume(this, it.pkg)
-            }
-        }*/
-
-
-        /*
-        val castContext = CastContext.getSharedInstance(applicationContext)
-         fun buildMediaQueueItem(video: String): MediaQueueItem {
-           // val movieMetadata = MediaMetadata(MediaMetadata.MEDIA_TYPE_PHOTO)
-            //movieMetadata.putString(MediaMetadata.KEY_TITLE, "CloudStream")
-            val mediaInfo = MediaInfo.Builder(Uri.parse(video).toString())
-                .setStreamType(MediaInfo.STREAM_TYPE_NONE)
-                .setContentType(MimeTypes.IMAGE_JPEG)
-               // .setMetadata(movieMetadata).build()
-                .build()
-            return MediaQueueItem.Builder(mediaInfo).build()
-        }*/
-        /*
-        castContext.addCastStateListener { state ->
-            if (state == CastState.CONNECTED) {
-                println("TESTING")
-                val isCasting = castContext?.sessionManager?.currentCastSession?.remoteMediaClient?.currentItem != null
-                if(!isCasting) {
-                    val castPlayer = CastPlayer(castContext)
-                    println("LOAD ITEM")
-
-                    castPlayer.loadItem(buildMediaQueueItem("https://cdn.discordapp.com/attachments/551382684560261121/730169809408622702/ChromecastLogo6.png"),0)
-                }
-            }
-        }*/
-        /*thread {
-            createISO()
-        }*/
 
         if (BuildConfig.DEBUG) {
             var providersAndroidManifestString = "Current androidmanifest should be:\n"
@@ -1989,10 +1790,9 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
         APIRepository.dubStatusActive = getApiDubstatusSettings()
 
         try {
-            // this ensures that no unnecessary space is taken
             loadCache()
-            File(filesDir, "exoplayer").deleteRecursively() // old cache
-            deleteFileOnExit(File(cacheDir, "exoplayer"))   // current cache
+            File(filesDir, "exoplayer").deleteRecursively()
+            deleteFileOnExit(File(cacheDir, "exoplayer"))
         } catch (e: Exception) {
             logError(e)
         }
@@ -2006,10 +1806,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
             val channelId =
                 TvChannelUtils.getChannelId(this@MainActivity, getString(R.string.app_name))
             if (channelId == null) {
-                Log.d("TvChannel", "Channel not found, creating")
                 TvChannelUtils.createTvChannel(this@MainActivity)
-            } else {
-                Log.d("TvChannel", "Channel ID: $channelId")
             }
         }
 
@@ -2018,53 +1815,29 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
             removeKey(USER_SELECTED_HOMEPAGE_API)
         }
 
-        // LOGIKA AKHIR BYPASS:
-        // Cek apakah setup sudah dilakukan, jika belum set true dan selesai.
         try {
             if (getKey(HAS_DONE_SETUP_KEY, false) != true) {
                 setKey(HAS_DONE_SETUP_KEY, true)
             } 
-            else if (PluginManager.getPluginsOnline().isEmpty()
-                && PluginManager.getPluginsLocal().isEmpty()
-            ) {
-                 // Dibiarkan kosong agar tidak memaksa masuk ke setup extensions
-            }
         } catch (e: Exception) {
             logError(e)
         }
         
-//        Used to check current focus for TV
-//        main {
-//            while (true) {
-//                delay(5000)
-//                println("Current focus: $currentFocus")
-//                showToast(this, currentFocus.toString(), Toast.LENGTH_LONG)
-//            }
-//        }
-
         onBackPressedDispatcher.addCallback(
             this,
             object : OnBackPressedCallback(true) {
                 override fun handleOnBackPressed() {
                     setNavigationBarColorCompat(R.attr.primaryGrayBackground)
                     updateLocale()
-
-                    // If we don't disable we end up in a loop with default behavior calling
-                    // this callback as well, so we disable it, run default behavior,
-                    // then re-enable this callback so it can be used for next back press.
                     isEnabled = false
                     onBackPressedDispatcher.onBackPressed()
                     isEnabled = true
                 }
             }
         )
-
-
     }
 
-    /** Biometric stuff **/
     override fun onAuthenticationSuccess() {
-        // make background (nav host fragment) visible again
         binding?.navHostFragment?.isInvisible = false
     }
 
