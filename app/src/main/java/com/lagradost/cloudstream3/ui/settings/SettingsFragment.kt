@@ -200,10 +200,27 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
         }
 
         binding.apply {
-            // PERUBAHAN: Baris ini dihapus agar tombol Extension terlihat
-            // settingsExtensions.visibility = View.GONE
+            // 1. DAFTAR MENU UTAMA (EKSTENSI ADA DI SINI)
+            listOf(
+                settingsGeneral to R.id.action_navigation_global_to_navigation_settings_general,
+                settingsPlayer to R.id.action_navigation_global_to_navigation_settings_player,
+                settingsCredits to R.id.action_navigation_global_to_navigation_settings_account,
+                settingsUi to R.id.action_navigation_global_to_navigation_settings_ui,
+                settingsProviders to R.id.action_navigation_global_to_navigation_settings_providers,
+                settingsUpdates to R.id.action_navigation_global_to_navigation_settings_updates,
+                // Tombol Extensions diaktifkan dan dimasukkan ke dalam list
+                settingsExtensions to R.id.action_navigation_global_to_navigation_settings_extensions, 
+            ).forEach { (view, navigationId) ->
+                view.apply {
+                    setOnClickListener { navigate(navigationId) }
+                    if (isLayout(TV)) {
+                        isFocusable = true
+                        isFocusableInTouchMode = true
+                    }
+                }
+            }
 
-            // --- LOGIKA TOMBOL TENTANG (WARNA MERAH PUTIH) ---
+            // 2. LOGIKA TOMBOL TENTANG (DIPINDAHKAN KE BAWAH)
             settingsAbout.setOnClickListener {
                 val builder = AlertDialog.Builder(requireContext(), R.style.AlertDialogCustom)
                 builder.setTitle("Tentang AdiXtream")
@@ -222,25 +239,20 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
                     dialog.dismiss()
                 }
 
-                // Buat dan tampilkan dialog
                 val dialog: AlertDialog = builder.create()
                 dialog.show()
 
-                // Ambil tombol "Kode Sumber" (Neutral Button) setelah dialog muncul
                 val sourceCodeButton: Button? = dialog.getButton(AlertDialog.BUTTON_NEUTRAL)
-                
                 sourceCodeButton?.let { button ->
                     val fullText = "Kode Sumber"
                     val spannable = SpannableString(fullText)
 
-                    // Warna MERAH untuk "Kode" (indeks 0 sampai 4)
                     spannable.setSpan(
                         ForegroundColorSpan(Color.parseColor("#FF0000")),
                         0, 4,
                         Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
                     )
 
-                    // Warna PUTIH untuk "Sumber" (indeks 5 sampai selesai)
                     spannable.setSpan(
                         ForegroundColorSpan(Color.WHITE),
                         5, fullText.length,
@@ -252,24 +264,6 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
             }
             // --------------------------------------------------
 
-            listOf(
-                settingsGeneral to R.id.action_navigation_global_to_navigation_settings_general,
-                settingsPlayer to R.id.action_navigation_global_to_navigation_settings_player,
-                settingsCredits to R.id.action_navigation_global_to_navigation_settings_account,
-                settingsUi to R.id.action_navigation_global_to_navigation_settings_ui,
-                settingsProviders to R.id.action_navigation_global_to_navigation_settings_providers,
-                settingsUpdates to R.id.action_navigation_global_to_navigation_settings_updates,
-                // PERUBAHAN: Menambahkan kembali navigasi untuk tombol extensions
-                settingsExtensions to R.id.action_navigation_global_to_navigation_settings_extensions, 
-            ).forEach { (view, navigationId) ->
-                view.apply {
-                    setOnClickListener { navigate(navigationId) }
-                    if (isLayout(TV)) {
-                        isFocusable = true
-                        isFocusableInTouchMode = true
-                    }
-                }
-            }
             if (isLayout(TV)) {
                 settingsGeneral.requestFocus()
             }
