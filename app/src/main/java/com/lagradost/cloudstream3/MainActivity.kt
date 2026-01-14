@@ -588,6 +588,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
             }
         }
     }
+
     //private var mCastSession: CastSession? = null
     var mSessionManager: SessionManager? = null
     private val mSessionManagerListener: SessionManagerListener<Session> by lazy { SessionManagerListenerImpl() }
@@ -1280,59 +1281,61 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
             )
         }
 
-        // --- KODE MODIFIKASI: AUTO REPO & SMART AUTO DOWNLOAD (FINAL FIX SILENT v2) ---
+        // --- KODE MODIFIKASI: AUTO REPO & BYPASS SETUP (AUTO UPDATE V4) ---
 
         val customRepoUrl = "https://raw.githubusercontent.com/michat88/AdiManuLateri3/refs/heads/builds/repo.json"
-
+        
+        // BAGIAN 1: Auto Load Repository (HANYA SEKALI SAAT PERTAMA KALI / DATA DIHAPUS)
         ioSafe {
-            try {
-                // 1. Ambil Data Repository dari Internet
-                val parsedRepo = RepositoryManager.parseRepository(customRepoUrl)
-
-                if (parsedRepo != null) {
-                    // A. Pastikan Repository Tertanam (Hanya jika belum ada)
-                    val currentRepos = RepositoryManager.getRepositories()
-                    val isRepoAlreadyAdded = currentRepos.any { it.url == customRepoUrl }
-
-                    if (!isRepoAlreadyAdded) {
+            val repoAddedKey = "HAS_ADDED_MY_REPO_V3" // Key versi baru
+            if (getKey(repoAddedKey, false) != true) {
+                try {
+                    // A. Parse repository 
+                    val parsedRepo = RepositoryManager.parseRepository(customRepoUrl)
+                    
+                    if (parsedRepo != null) {
+                        // B. KONVERSI KE REPOSITORY DATA
                         val finalRepoData = com.lagradost.cloudstream3.ui.settings.extensions.RepositoryData(
                             parsedRepo.iconUrl,
                             parsedRepo.name,
                             customRepoUrl
                         )
+
+                        // C. Masukkan ke sistem
                         RepositoryManager.addRepository(finalRepoData)
-                        Log.i(TAG, "AdiXtream: Repository berhasil ditanam.")
+                        
+                        // D. Tandai sudah selesai (Agar tidak menambahkan repo ganda)
+                        setKey(repoAddedKey, true) 
+                        Log.i(TAG, "Silent-loaded custom repository: $customRepoUrl")
                     }
+                } catch (e: Exception) {
+                    logError(e)
+                }
+            }
+        }
 
-                    // B. LOGIKA BARU: Cek apakah PERLU download? (Fix variabel 'plugin')
-                    // PERHATIKAN: Menggunakan .plugin (singular), bukan .plugins
-                    val onlinePlugins = parsedRepo.plugin 
-                    val localPlugins = PluginManager.getPluginsLocal()
+        // BAGIAN 2: Cek & Download Plugin Baru (JALAN SETIAP STARTUP)
+        // Kita letakkan INI DI LUAR blok 'if' di atas agar selalu dieksekusi setiap buka aplikasi.
+        ioSafe {
+            try {
+                // Beri sedikit jeda (2 detik) agar aplikasi loading sempurna dulu sebelum mulai download
+                kotlinx.coroutines.delay(2000)
 
-                    // Kita cari: Adakah plugin 'online' yang namanya TIDAK ditemukan di 'local'?
-                    val adaPluginBaru = onlinePlugins.any { online ->
-                        localPlugins.none { local -> local.internalName == online.internalName }
-                    }
-
-                    if (adaPluginBaru) {
-                        Log.i(TAG, "AdiXtream: Menemukan plugin baru! Memulai download...")
-                        // Pindah ke Main Thread untuk eksekusi download
-                        main {
-                            PluginsViewModel.downloadAll(this@MainActivity, customRepoUrl, null)
-                        }
-                    } else {
-                        Log.i(TAG, "AdiXtream: Plugin sudah lengkap. Mode senyap (Silent).")
-                    }
+                main {
+                    // Fungsi ini akan membaca ulang repo dan otomatis mendownload/update plugin
+                    // Argumen ke-3 'null' berarti dia mendownload semuanya yang ada di repo list
+                    PluginsViewModel.downloadAll(this@MainActivity, customRepoUrl, null)
+                    Log.i(TAG, "Checking for new plugins from: $customRepoUrl")
                 }
             } catch (e: Exception) {
                 logError(e)
             }
         }
-
-        // 2. Bypass/Lewati Setup Wizard (Bahasa & Tema)
+        
+        // BAGIAN 3: Bypass/Lewati Setup Wizard (Bahasa & Tema)
         if (getKey(HAS_DONE_SETUP_KEY, false) != true) {
-            setKey(HAS_DONE_SETUP_KEY, true)
-            updateLocale()
+             setKey(HAS_DONE_SETUP_KEY, true)
+             updateLocale() 
         }
         // -------------------------------------------------
 
@@ -1360,6 +1363,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                 binding?.navHostFragment?.isInvisible = true
             }
         }
+
         // Automatically enable jsdelivr if cant connect to raw.githubusercontent.com
         if (this.getKey<Boolean>(getString(R.string.jsdelivr_proxy_key)) == null && isNetworkAvailable()) {
             main {
@@ -2064,30 +2068,10 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                 // Kita tidak memanggil navController.navigate(...)
                 // Jadi aplikasi akan tetap di HomeFragment
             } 
-            // Bagian ini biasanya mengarahkan ke setup extensions jika kosong, 
-            // tapi karena kita sudah load repo di atas, user akan baik-baik saja.
-            else if (PluginManager.getPluginsOnline().isEmpty()
-                && PluginManager.getPluginsLocal().isEmpty()
-            ) {
-                 // Opsional: Jika masih mau menampilkan halaman extensions jika kosong
-                 /* navController.navigate(
-                    R.id.navigation_setup_extensions,
-                    SetupFragmentExtensions.newInstance(false)
-                ) */
-            }
         } catch (e: Exception) {
             logError(e)
         }
         // ----------------------------------------------
-
-//        Used to check current focus for TV
-//        main {
-//            while (true) {
-//                delay(5000)
-//                println("Current focus: $currentFocus")
-//                showToast(this, currentFocus.toString(), Toast.LENGTH_LONG)
-//            }
-//        }
 
         onBackPressedDispatcher.addCallback(
             this,
