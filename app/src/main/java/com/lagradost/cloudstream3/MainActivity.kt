@@ -1280,20 +1280,21 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
             )
         }
 
-        // --- KODE MODIFIKASI: AUTO REPO & AUTO DOWNLOAD (FINAL FIX ADIXTREAM) ---
+        // --- KODE MODIFIKASI: AUTO REPO & SMART AUTO DOWNLOAD (FINAL FIX SILENT) ---
 
         val customRepoUrl = "https://raw.githubusercontent.com/michat88/AdiManuLateri3/refs/heads/builds/repo.json"
 
         ioSafe {
-            // BAGIAN 1: Pastikan Repository Tertanam (Hanya jika belum ada)
-            // Kita cek langsung ke RepositoryManager apakah URL ini sudah terdaftar
-            val currentRepos = RepositoryManager.getRepositories()
-            val isRepoAlreadyAdded = currentRepos.any { it.url == customRepoUrl }
+            try {
+                // 1. Ambil Data Repository dari Internet
+                val parsedRepo = RepositoryManager.parseRepository(customRepoUrl)
 
-            if (!isRepoAlreadyAdded) {
-                try {
-                    val parsedRepo = RepositoryManager.parseRepository(customRepoUrl)
-                    if (parsedRepo != null) {
+                if (parsedRepo != null) {
+                    // A. Pastikan Repository Tertanam (Hanya jika belum ada)
+                    val currentRepos = RepositoryManager.getRepositories()
+                    val isRepoAlreadyAdded = currentRepos.any { it.url == customRepoUrl }
+
+                    if (!isRepoAlreadyAdded) {
                         val finalRepoData = com.lagradost.cloudstream3.ui.settings.extensions.RepositoryData(
                             parsedRepo.iconUrl,
                             parsedRepo.name,
@@ -1302,21 +1303,29 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                         RepositoryManager.addRepository(finalRepoData)
                         Log.i(TAG, "AdiXtream: Repository berhasil ditanam.")
                     }
-                } catch (e: Exception) {
-                    logError(e)
-                }
-            }
 
-            // BAGIAN 2: CEK & DOWNLOAD PLUGIN BARU (Jalan SETIAP KALI aplikasi dibuka)
-            // Kita taruh ini DI LUAR pengecekan "isRepoAlreadyAdded" supaya selalu dieksekusi.
-            main {
-                try {
-                    Log.i(TAG, "AdiXtream: Memeriksa plugin baru dari repository...")
-                    // Fungsi ini akan membandingkan plugin di server vs lokal, lalu download yang kurang
-                    PluginsViewModel.downloadAll(this@MainActivity, customRepoUrl, null)
-                } catch (e: Exception) {
-                    Log.e(TAG, "AdiXtream: Gagal auto-download plugin", e)
+                    // B. LOGIKA BARU: Cek apakah PERLU download? (Supaya tidak muncul Toast terus)
+                    val onlinePlugins = parsedRepo.plugins
+                    val localPlugins = PluginManager.getPluginsLocal()
+
+                    // Kita cari: Adakah plugin 'online' yang namanya TIDAK ditemukan di 'local'?
+                    val adaPluginBaru = onlinePlugins.any { online ->
+                        localPlugins.none { local -> local.internalName == online.internalName }
+                    }
+
+                    if (adaPluginBaru) {
+                        Log.i(TAG, "AdiXtream: Menemukan plugin baru! Memulai download...")
+                        // Pindah ke Main Thread untuk eksekusi download (Toast akan muncul disini, tapi itu wajar karena ada download)
+                        main {
+                            PluginsViewModel.downloadAll(this@MainActivity, customRepoUrl, null)
+                        }
+                    } else {
+                        Log.i(TAG, "AdiXtream: Plugin sudah lengkap. Mode senyap (Silent).")
+                        // Kita TIDAK memanggil downloadAll, jadi Toast tidak akan muncul.
+                    }
                 }
+            } catch (e: Exception) {
+                logError(e)
             }
         }
 
