@@ -72,7 +72,6 @@ class PluginsViewModel : ViewModel() {
         ): Boolean {
             return getPluginPath(context, pluginName, repositoryUrl).exists()
         }
-
         private suspend fun getPlugins(
             repositoryUrl: String,
             canUseCache: Boolean = true
@@ -103,7 +102,10 @@ class PluginsViewModel : ViewModel() {
                     )
                 }.also { list ->
                     main {
-                        showToast(
+                        // --- PERBAIKAN: MATIKAN POPUP "SEMUA TELAH TERUNDUH" ---
+                        // Kode asli di bawah ini saya jadikan komentar (silent mode)
+                        
+                        /* showToast(
                             when {
                                 // No plugins at all
                                 plugins.isEmpty() -> txt(
@@ -122,7 +124,9 @@ class PluginsViewModel : ViewModel() {
                                 )
                             },
                             Toast.LENGTH_SHORT
-                        )
+                        ) 
+                        */
+                        // -------------------------------------------------------
                     }
                 }.amap { (repo, metadata) ->
                     PluginManager.downloadPlugin(
@@ -133,7 +137,13 @@ class PluginsViewModel : ViewModel() {
                         metadata.status != PROVIDER_STATUS_DOWN
                     )
                 }.main { list ->
+                    // Bagian ini adalah notifikasi "Berhasil Download X Plugin".
+                    // Jika kamu mau notifikasi ini TETAP MUNCUL saat ada update baru, biarkan saja.
+                    // Tapi jika kamu mau "Silent Total" (benar-benar diam), beri tanda // di depan showToast di bawah ini juga.
+                    
                     if (list.any { it }) {
+                        // Uncomment baris di bawah ini jika ingin tau kalau ada update berhasil
+                        /*
                         showToast(
                             txt(
                                 R.string.batch_download_finish_format,
@@ -142,9 +152,10 @@ class PluginsViewModel : ViewModel() {
                             ),
                             Toast.LENGTH_SHORT
                         )
+                        */
                         viewModel?.updatePluginListPrivate(activity, repositoryUrl)
                     } else if (list.isNotEmpty()) {
-                        showToast(R.string.download_failed, Toast.LENGTH_SHORT)
+                        // showToast(R.string.download_failed, Toast.LENGTH_SHORT)
                     }
                 }
             }
@@ -198,7 +209,6 @@ class PluginsViewModel : ViewModel() {
             else
                 updatePluginListPrivate(activity, repositoryUrl)
     }
-
     private suspend fun updatePluginListPrivate(context: Context, repositoryUrl: String) {
         val isAdult = PreferenceManager.getDefaultSharedPreferences(context)
             .getStringSet(context.getString(R.string.prefer_media_type_key), emptySet())
