@@ -1280,7 +1280,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
             )
         }
 
-        // --- KODE MODIFIKASI: AUTO REPO & SMART AUTO DOWNLOAD (FINAL FIX SILENT) ---
+        // --- KODE MODIFIKASI: AUTO REPO & SMART AUTO DOWNLOAD (FINAL FIX SILENT v2) ---
 
         val customRepoUrl = "https://raw.githubusercontent.com/michat88/AdiManuLateri3/refs/heads/builds/repo.json"
 
@@ -1304,8 +1304,9 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                         Log.i(TAG, "AdiXtream: Repository berhasil ditanam.")
                     }
 
-                    // B. LOGIKA BARU: Cek apakah PERLU download? (Supaya tidak muncul Toast terus)
-                    val onlinePlugins = parsedRepo.plugins
+                    // B. LOGIKA BARU: Cek apakah PERLU download? (Fix variabel 'plugin')
+                    // PERHATIKAN: Menggunakan .plugin (singular), bukan .plugins
+                    val onlinePlugins = parsedRepo.plugin 
                     val localPlugins = PluginManager.getPluginsLocal()
 
                     // Kita cari: Adakah plugin 'online' yang namanya TIDAK ditemukan di 'local'?
@@ -1315,13 +1316,12 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
 
                     if (adaPluginBaru) {
                         Log.i(TAG, "AdiXtream: Menemukan plugin baru! Memulai download...")
-                        // Pindah ke Main Thread untuk eksekusi download (Toast akan muncul disini, tapi itu wajar karena ada download)
+                        // Pindah ke Main Thread untuk eksekusi download
                         main {
                             PluginsViewModel.downloadAll(this@MainActivity, customRepoUrl, null)
                         }
                     } else {
                         Log.i(TAG, "AdiXtream: Plugin sudah lengkap. Mode senyap (Silent).")
-                        // Kita TIDAK memanggil downloadAll, jadi Toast tidak akan muncul.
                     }
                 }
             } catch (e: Exception) {
