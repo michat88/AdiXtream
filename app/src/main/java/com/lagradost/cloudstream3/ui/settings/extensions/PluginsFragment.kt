@@ -37,7 +37,7 @@ class PluginsFragment : BaseFragment<FragmentPluginsBinding>(
     private val pluginViewModel: PluginsViewModel by activityViewModels()
     
     // Variabel baru untuk memastikan auto-install hanya jalan sekali saat dibuka
-    private var hasAutoInstalled = false 
+    private var hasAutoInstalled = true 
 
     override fun onDestroyView() {
         pluginViewModel.clear() // clear for the next observe
