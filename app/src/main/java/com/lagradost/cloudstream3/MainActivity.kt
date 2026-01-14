@@ -1,5 +1,6 @@
 package com.lagradost.cloudstream3
 
+import com.lagradost.cloudstream3.ui.settings.extensions.AutoDownloadMode
 import android.animation.ValueAnimator
 import android.annotation.SuppressLint
 import android.app.Dialog
