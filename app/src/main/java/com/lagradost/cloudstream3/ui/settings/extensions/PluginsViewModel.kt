@@ -100,7 +100,8 @@ class PluginsViewModel : ViewModel() {
                 // Tanpa ini, GitHub akan memberikan file lama (cache) selama 5-10 menit.
                 val antiCacheUrl = "$repositoryUrl?t=${System.currentTimeMillis()}"
                 
-                // Gunakan URL anti-cache untuk mengambil daftar
+                // Gunakan URL anti-cache untuk mengambil daftar plugin
+                // Parameter 'false' memastikan kita tidak menggunakan cache internal aplikasi
                 val plugins = getPlugins(antiCacheUrl, false)
 
                 // SAFETY CHECK: Jika internet mati atau repo kosong, STOP. Jangan hapus apa-apa.
@@ -120,7 +121,7 @@ class PluginsViewModel : ViewModel() {
                         activity,
                         metadata.url,
                         metadata.internalName,
-                        repositoryUrl, // Download pakai URL asli agar rapi
+                        repositoryUrl, // PENTING: Gunakan URL asli (repositoryUrl), bukan 'repo' (antiCacheUrl) agar tidak double
                         metadata.status != PROVIDER_STATUS_DOWN
                     )
                 }.main { list ->
