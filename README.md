@@ -6,6 +6,11 @@
   <strong>Nonton Film, Drakor, & Anime Tanpa Ribet.</strong>
   <br>
   <br>
+  <a href="https://github.com/michat88/AdiXtream/stargazers">
+    <img src="https://img.shields.io/github/stars/michat88/AdiXtream?style=social" alt="Star on GitHub">
+  </a>
+  <br>
+  <br>
   <a href="https://github.com/michat88/AdiXtream/releases">
     <img src="https://img.shields.io/github/v/release/michat88/AdiXtream?style=for-the-badge&color=blue" alt="Latest Release">
   </a>
