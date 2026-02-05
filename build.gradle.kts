@@ -1,8 +1,19 @@
+// build.gradle.kts (ROOT PROJECT) - FIX FINAL
+
 plugins {
+    // Plugin Aplikasi (Wajib untuk App)
     alias(libs.plugins.android.application) apply false
-    alias(libs.plugins.android.lint) apply false
-    alias(libs.plugins.android.multiplatform.library) apply false
-    alias(libs.plugins.buildkonfig) apply false // Universal build config
+
+    // Plugin Library (Wajib untuk modul :library)
+    alias(libs.plugins.android.library) apply false
+
+    // --- BAGIAN YANG DIHAPUS ---
+    // Saya menghapus 'android.lint' dan 'android.multiplatform.library' 
+    // karena belum ada di libs.versions.toml kamu dan menyebabkan error.
+    // ---------------------------
+
+    // Plugin pendukung lainnya (Tetap dipertahankan)
+    alias(libs.plugins.buildkonfig) apply false 
     alias(libs.plugins.dokka) apply false
     alias(libs.plugins.kotlin.android) apply false
     alias(libs.plugins.kotlin.jvm) apply false
@@ -10,7 +21,7 @@ plugins {
 }
 
 allprojects {
-    // https://docs.gradle.org/current/userguide/upgrading_major_version_9.html#test_task_fails_when_no_tests_are_discovered
+    // Konfigurasi tasks (Aman dipertahankan)
     tasks.withType<AbstractTestTask>().configureEach {
         failOnNoDiscoveredTests = false
     }
