@@ -39,7 +39,6 @@ open class Streamplay : ExtractorApi() {
                 referer = "$mainServer/"
             )
         } else {
-            // Streamplay biasanya butuh token, tapi kita coba lanjut kalau null
             null 
         }
 
@@ -64,25 +63,21 @@ open class Streamplay : ExtractorApi() {
                 .replace("file", "\"file\"")
                 .replace("label", "\"label\"")
             
-            // PERBAIKAN PENTING:
-            // Yang lama: "[$data}]" (Salah, ada kurung kurawal '}')
-            // Yang baru: "[$data]" (Benar)
             val jsonString = "[$data]"
             
             tryParseJson<List<Source>>(jsonString)?.forEach { res ->
                 val fileUrl = res.file ?: return@forEach
+                
+                // PERBAIKAN: Menggunakan Lambda (Kurung Kurawal)
                 callback.invoke(
-                    newExtractorLink(
-                        this.name,
-                        this.name,
-                        fileUrl,
-                        referer = "$mainServer/",
-                        quality = when (res.label) {
+                    newExtractorLink(this.name, this.name, fileUrl) {
+                        this.referer = "$mainServer/"
+                        this.quality = when (res.label) {
                             "HD" -> Qualities.P720.value
                             "SD" -> Qualities.P480.value
                             else -> Qualities.Unknown.value
                         }
-                    )
+                    }
                 )
             }
         }
