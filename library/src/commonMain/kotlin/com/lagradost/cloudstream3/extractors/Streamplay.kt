@@ -26,57 +26,70 @@ open class Streamplay : ExtractorApi() {
             "${it.scheme}://${it.host}"
         }
         val key = redirectUrl.substringAfter("embed-").substringBefore(".html")
-        val token =
-            request.document.select("script").find { it.data().contains("sitekey:") }?.data()
-                ?.substringAfterLast("sitekey: '")?.substringBefore("',")?.let { captchaKey ->
-                    getCaptchaToken(
-                        redirectUrl,
-                        captchaKey,
-                        referer = "$mainServer/"
-                    )
-                } ?: throw ErrorLoadingException("can't bypass captcha")
+        
+        // Ambil token captcha jika ada
+        val captchaKey = request.document.select("script")
+            .find { it.data().contains("sitekey:") }?.data()
+            ?.substringAfterLast("sitekey: '")?.substringBefore("',")
+            
+        val token = if (!captchaKey.isNullOrEmpty()) {
+             getCaptchaToken(
+                redirectUrl,
+                captchaKey,
+                referer = "$mainServer/"
+            )
+        } else {
+            // Streamplay biasanya butuh token, tapi kita coba lanjut kalau null
+            null 
+        }
+
+        // Post request untuk dapat link video
         app.post(
-            "$mainServer/player-$key-488x286.html", data = mapOf(
+            "$mainServer/player-$key-488x286.html", 
+            data = mapOf(
                 "op" to "embed",
-                "token" to token
+                "token" to (token ?: "")
             ),
             referer = redirectUrl,
             headers = mapOf(
                 "Accept" to "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
-                "Content-Type" to "application/x-www-form-urlencoded"
+                "Content-Type" to "application/x-www-form-urlencoded",
+                "User-Agent" to com.lagradost.cloudstream3.USER_AGENT
             )
         ).document.select("script").find { script ->
             script.data().contains("eval(function(p,a,c,k,e,d)")
         }?.let {
-            val data = getAndUnpack(it.data()).substringAfter("sources=[").substringBefore(",desc")
+            val unpacked = getAndUnpack(it.data())
+            val data = unpacked.substringAfter("sources=[").substringBefore(",desc")
                 .replace("file", "\"file\"")
                 .replace("label", "\"label\"")
-            tryParseJson<List<Source>>("[$data}]")?.map { res ->
+            
+            // PERBAIKAN PENTING:
+            // Yang lama: "[$data}]" (Salah, ada kurung kurawal '}')
+            // Yang baru: "[$data]" (Benar)
+            val jsonString = "[$data]"
+            
+            tryParseJson<List<Source>>(jsonString)?.forEach { res ->
+                val fileUrl = res.file ?: return@forEach
                 callback.invoke(
                     newExtractorLink(
                         this.name,
                         this.name,
-                        res.file ?: return@map null,
-                    ) {
-                        this.referer = "$mainServer/"
-                        this.quality = when (res.label) {
+                        fileUrl,
+                        referer = "$mainServer/",
+                        quality = when (res.label) {
                             "HD" -> Qualities.P720.value
                             "SD" -> Qualities.P480.value
                             else -> Qualities.Unknown.value
                         }
-                        this.headers = mapOf(
-                            "Range" to "bytes=0-"
-                        )
-                    }
+                    )
                 )
             }
         }
-
     }
 
     data class Source(
         @JsonProperty("file") val file: String? = null,
         @JsonProperty("label") val label: String? = null,
     )
-
 }
