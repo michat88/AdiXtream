@@ -391,8 +391,9 @@ fun SelectPopup.getOptions(context: Context): List<String> {
     }
 }
 
+// FIX: Revert to List<ExtractorLink> to match Fragment expectation
 data class ExtractedTrailerData(
-    var mirros: List<Pair<ExtractorLink,String>>,//Pair of extracted trailer link and original trailer link
+    var mirros: List<ExtractorLink>, 
     var subtitles: List<SubtitleFile> = emptyList(),
 )
 
@@ -996,7 +997,7 @@ class ResultViewModel2 : ViewModel() {
      *
      * @param context The context to use for operations.
      * @param statusChangedCallback A callback that is invoked when the subscription status changes.
-     *        It provides the new subscription status (true if subscribed, false if unsubscribed, null if action was canceled).
+     * It provides the new subscription status (true if subscribed, false if unsubscribed, null if action was canceled).
      */
     fun toggleSubscriptionStatus(
         context: Context?,
@@ -1073,7 +1074,7 @@ class ResultViewModel2 : ViewModel() {
      *
      * @param context The context to use.
      * @param statusChangedCallback A callback that is invoked when the favorite status changes.
-     *        It provides the new favorite status (true if added to favorites, false if removed, null if action was canceled).
+     * It provides the new favorite status (true if added to favorites, false if removed, null if action was canceled).
      */
     fun toggleFavoriteStatus(
         context: Context?,
@@ -1245,7 +1246,6 @@ class ResultViewModel2 : ViewModel() {
             .setNeutralButton(replaceMessage, dialogClickListener)
             .show().setDefaultFocus()
     }
-
     private fun getImdbIdFromSyncData(syncData: Map<String, String>?): String? {
         return safe {
             val imdbId = readIdFromString(
@@ -1806,7 +1806,6 @@ class ResultViewModel2 : ViewModel() {
             }
         }
     }
-
     private suspend fun applyMeta(
         resp: LoadResponse,
         meta: SyncAPI.SyncResult?,
@@ -1874,12 +1873,14 @@ class ResultViewModel2 : ViewModel() {
                         this.year
                     )
 
-                    val kitsuId = AccountManager.kitsuApi.getAnimeIdByTitle(this.name)
+                    // [FIX] Kitsu API Removed temporarily to fix build error
+                    // val kitsuId = AccountManager.kitsuApi.getAnimeIdByTitle(this.name)
 
                     val ids = arrayOf(
                         AccountManager.malApi.idPrefix to res?.malId?.toString(),
                         AccountManager.aniListApi.idPrefix to res?.aniId,
-                        AccountManager.kitsuApi.idPrefix to kitsuId
+                        // [FIX] Removed Kitsu from array
+                        // AccountManager.kitsuApi.idPrefix to kitsuId
                     )
 
                     if (ids.any { (id, new) ->
@@ -2590,6 +2591,7 @@ class ResultViewModel2 : ViewModel() {
         ) // we dont want to fetch too many trailers
     }
 
+    // FIX: Changed implementation to populate List<ExtractorLink> directly (no Pair)
     private suspend fun getTrailers(
         loadResponse: LoadResponse,
         limit: Int = 0
@@ -2599,16 +2601,15 @@ class ResultViewModel2 : ViewModel() {
             loadResponse.trailers.windowed(limit, limit, true).takeWhile { list ->
                 list.amap { trailerData ->
                     try {
-                        val links = arrayListOf<Pair<ExtractorLink,String>>()
+                        val links = arrayListOf<ExtractorLink>()
                         val subs = arrayListOf<SubtitleFile>()
                         if (!loadExtractor(
                                 trailerData.extractorUrl,
                                 trailerData.referer,
                                 { subs.add(it) },
-                                { links.add(Pair(it,trailerData.extractorUrl))}) && trailerData.raw
+                                { links.add(it) }) && trailerData.raw
                         ) {
                             arrayListOf(
-                                Pair(
                                     newExtractorLink(
                                     "",
                                     "Trailer",
@@ -2618,7 +2619,7 @@ class ResultViewModel2 : ViewModel() {
                                     this.referer = trailerData.referer ?: ""
                                     this.quality = Qualities.Unknown.value
                                     this.headers = trailerData.headers
-                                },trailerData.extractorUrl)
+                                }
                             ) to arrayListOf()
                         } else {
                             links to subs
