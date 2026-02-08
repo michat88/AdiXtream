@@ -1135,6 +1135,29 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                         updateFocusView(lastFocus.get(), same = true)
                     }, 200)
                 }
+
+                /*
+
+                the following is working, but somewhat bad code code
+
+                if (!wasGone) {
+                    (focusOutline.parent as? ViewGroup)?.let {
+                        TransitionManager.endTransitions(it)
+                        TransitionManager.beginDelayedTransition(
+                            it,
+                            TransitionSet().addTransition(ChangeBounds())
+                                .addTransition(ChangeTransform())
+                                .setDuration(100)
+                        )
+                    }
+                }
+
+                focusOutline.layoutParams = focusOutline.layoutParams?.apply {
+                    width = newFocus.measuredWidth
+                    height = newFocus.measuredHeight
+                }
+                focusOutline.translationX = x.toFloat()
+                focusOutline.translationY = y.toFloat()*/
             }
         }
     }
@@ -1271,7 +1294,8 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                     val parsedRepo = RepositoryManager.parseRepository(customRepoUrl)
                     
                     if (parsedRepo != null) {
-                        // B. KONVERSI KE REPOSITORY DATA
+                        // B. KONVERSI KE REPOSITORY DATA (PERBAIKAN ERROR GRADLE)
+                        // Membuat object RepositoryData secara manual
                         val finalRepoData = com.lagradost.cloudstream3.ui.settings.extensions.RepositoryData(
                             parsedRepo.iconUrl,
                             parsedRepo.name,
@@ -1413,6 +1437,8 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
             }
             builder.show().setDefaultFocus()
         }
+
+
         fun setUserData(status: Resource<SyncAPI.AbstractSyncStatus>?) {
             if (isLocalList) return
             bottomPreviewBinding?.apply {
@@ -1619,6 +1645,16 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
             }
         }
 
+//        ioSafe {
+//            val plugins =
+//                RepositoryParser.getRepoPlugins("https://raw.githubusercontent.com/recloudstream/TestPlugin/master/repo.json")
+//                    ?: emptyList()
+//            plugins.map {
+//                println("Load plugin: ${it.name} ${it.url}")
+//                RepositoryParser.loadSiteTemp(applicationContext, it.url, it.name)
+//            }
+//        }
+
         // init accounts
         ioSafe {
             // we need to run this after we init all apis, otherwise currentSyncApi will fuck itself
@@ -1653,6 +1689,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
             }
         }
 
+        //  val navView: BottomNavigationView = findViewById(R.id.nav_view)
         setUpBackup()
 
         CommonActivity.init(this)
@@ -1677,6 +1714,17 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                 }
             } else detachBackPressedCallback("MainActivity")
         }
+
+        //val navController = findNavController(R.id.nav_host_fragment)
+
+        /*navOptions = NavOptions.Builder()
+            .setLaunchSingleTop(true)
+            .setEnterAnim(R.anim.nav_enter_anim)
+            .setExitAnim(R.anim.nav_exit_anim)
+            .setPopEnterAnim(R.anim.nav_pop_enter)
+            .setPopExitAnim(R.anim.nav_pop_exit)
+            .setPopUpTo(navController.graph.startDestination, false)
+            .build()*/
 
         val rippleColor = ColorStateList.valueOf(getResourceColor(R.attr.colorPrimary, 0.1f))
 
@@ -1706,7 +1754,12 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                 itemActiveIndicatorColor = rippleColor
             }
             setupWithNavController(navController)
-            
+            /*if (isLayout(TV or EMULATOR)) {
+                background?.alpha = 200
+            } else {
+                background?.alpha = 255
+            }*/
+
             setOnItemSelectedListener { item ->
                 onNavDestinationSelected(
                     item,
@@ -1723,6 +1776,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                     }
                 }
             }
+            //noFocus(this)
 
             val navProfileRoot = findViewById<LinearLayout>(R.id.nav_footer_root)
 
@@ -1756,10 +1810,13 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
         if (rail != null) {
             binding?.navRailView?.labelVisibilityMode =
                 NavigationRailView.LABEL_VISIBILITY_UNLABELED
+            //val focus = mutableSetOf<Int>()
 
             var prevId: Int? = null
             var prevView: View? = null
 
+            // The genius engineers at google did not actually 
+            // write a nextFocus for the navrail
             rail.findViewById<View?>(R.id.navigation_settings)?.nextFocusDownId =
                 R.id.nav_footer_profile_card
             for (id in arrayOf(
@@ -1775,6 +1832,29 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
 
                 prevView = view
                 prevId = id
+                // Uncomment for focus expand
+                /*if (!isLayout(TV)) {
+                    view.onFocusChangeListener = null
+                } else {
+                    view.onFocusChangeListener =
+                        View.OnFocusChangeListener { v, hasFocus ->
+                            if (hasFocus) {
+                                focus += id
+                                binding?.navRailView?.labelVisibilityMode =
+                                    NavigationRailView.LABEL_VISIBILITY_LABELED
+                                binding?.navRailView?.expand()
+                            } else {
+                                focus -= id
+                                v.post {
+                                    if (focus.isEmpty()) {
+                                        binding?.navRailView?.labelVisibilityMode =
+                                            NavigationRailView.LABEL_VISIBILITY_UNLABELED
+                                        binding?.navRailView?.collapse()
+                                    }
+                                }
+                            }
+                        }
+                }*/
             }
         }
 
@@ -1826,12 +1906,94 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
 
         loadCache()
         updateHasTrailers()
+        /*nav_view.setOnNavigationItemSelectedListener { item ->
+            when (item.itemId) {
+                R.id.navigation_home -> {
+                    navController.navigate(R.id.navigation_home, null, navOptions)
+                }
+                R.id.navigation_search -> {
+                    navController.navigate(R.id.navigation_search, null, navOptions)
+                }
+                R.id.navigation_downloads -> {
+                    navController.navigate(R.id.navigation_downloads, null, navOptions)
+                }
+                R.id.navigation_settings -> {
+                    navController.navigate(R.id.navigation_settings, null, navOptions)
+                }
+            }
+            true
+        }*/
+
 
         if (!checkWrite()) {
             requestRW()
             if (checkWrite()) return
         }
-        
+        //CastButtonFactory.setUpMediaRouteButton(this, media_route_button)
+
+        // THIS IS CURRENTLY REMOVED BECAUSE HIGHER VERS OF ANDROID NEEDS A NOTIFICATION
+        //if (!VideoDownloadManager.isMyServiceRunning(this, VideoDownloadKeepAliveService::class.java)) {
+        //    val mYourService = VideoDownloadKeepAliveService()
+        //    val mServiceIntent = Intent(this, mYourService::class.java).putExtra(START_VALUE_KEY, RESTART_ALL_DOWNLOADS_AND_QUEUE)
+        //    this.startService(mServiceIntent)
+        //}
+//settingsManager.getBoolean("disable_automatic_data_downloads", true) &&
+
+        // TODO RETURN TO TRUE
+        /*
+        if (isUsingMobileData()) {
+            Toast.makeText(this, "Downloads not resumed on mobile data", Toast.LENGTH_LONG).show()
+        } else {
+            val keys = getKeys(VideoDownloadManager.KEY_RESUME_PACKAGES)
+            val resumePkg = keys.mapNotNull { k -> getKey<VideoDownloadManager.DownloadResumePackage>(k) }
+
+            // To remove a bug where this is permanent
+            removeKeys(VideoDownloadManager.KEY_RESUME_PACKAGES)
+
+            for (pkg in resumePkg) { // ADD ALL CURRENT DOWNLOADS
+                VideoDownloadManager.downloadFromResume(this, pkg, false)
+            }
+
+            // ADD QUEUE
+            // array needed because List gets cast exception to linkedList for some unknown reason
+            val resumeQueue =
+                getKey<Array<VideoDownloadManager.DownloadQueueResumePackage>>(VideoDownloadManager.KEY_RESUME_QUEUE_PACKAGES)
+
+            resumeQueue?.sortedBy { it.index }?.forEach {
+                VideoDownloadManager.downloadFromResume(this, it.pkg)
+            }
+        }*/
+
+
+        /*
+        val castContext = CastContext.getSharedInstance(applicationContext)
+         fun buildMediaQueueItem(video: String): MediaQueueItem {
+           // val movieMetadata = MediaMetadata(MediaMetadata.MEDIA_TYPE_PHOTO)
+            //movieMetadata.putString(MediaMetadata.KEY_TITLE, "CloudStream")
+            val mediaInfo = MediaInfo.Builder(Uri.parse(video).toString())
+                .setStreamType(MediaInfo.STREAM_TYPE_NONE)
+                .setContentType(MimeTypes.IMAGE_JPEG)
+               // .setMetadata(movieMetadata).build()
+                .build()
+            return MediaQueueItem.Builder(mediaInfo).build()
+        }*/
+        /*
+        castContext.addCastStateListener { state ->
+            if (state == CastState.CONNECTED) {
+                println("TESTING")
+                val isCasting = castContext?.sessionManager?.currentCastSession?.remoteMediaClient?.currentItem != null
+                if(!isCasting) {
+                    val castPlayer = CastPlayer(castContext)
+                    println("LOAD ITEM")
+
+                    castPlayer.loadItem(buildMediaQueueItem("https://cdn.discordapp.com/attachments/551382684560261121/730169809408622702/ChromecastLogo6.png"),0)
+                }
+            }
+        }*/
+        /*thread {
+            createISO()
+        }*/
+
         if (BuildConfig.DEBUG) {
             var providersAndroidManifestString = "Current androidmanifest should be:\n"
             synchronized(allProviders) {
@@ -1857,6 +2019,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
         APIRepository.dubStatusActive = getApiDubstatusSettings()
 
         try {
+            // this ensures that no unnecessary space is taken
             loadCache()
             File(filesDir, "exoplayer").deleteRecursively() // old cache
             deleteFileOnExit(File(cacheDir, "exoplayer"))   // current cache
@@ -1885,17 +2048,38 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
             removeKey(USER_SELECTED_HOMEPAGE_API)
         }
 
+        // --- INI BAGIAN PENTING UNTUK BYPASS SETUP ---
+        // Jika kunci setup belum ada, kita buat TRUE dan JANGAN NAVIGASI KE SETUP LANGUAGE
         try {
             if (getKey(HAS_DONE_SETUP_KEY, false) != true) {
                 setKey(HAS_DONE_SETUP_KEY, true)
+                // Kita tidak memanggil navController.navigate(...)
+                // Jadi aplikasi akan tetap di HomeFragment
             } 
+            // Bagian ini biasanya mengarahkan ke setup extensions jika kosong, 
+            // tapi karena kita sudah load repo di atas, user akan baik-baik saja.
+            else if (PluginManager.getPluginsOnline().isEmpty()
+                && PluginManager.getPluginsLocal().isEmpty()
+            ) {
+                 // Opsional: Jika masih mau menampilkan halaman extensions jika kosong
+                 /* navController.navigate(
+                    R.id.navigation_setup_extensions,
+                    SetupFragmentExtensions.newInstance(false)
+                ) */
+            }
         } catch (e: Exception) {
             logError(e)
         }
-
-        // --- PEMANGGIL POPUP DUKUNGAN (ADA DI SINI) ---
-        showSupportPopup()
         // ----------------------------------------------
+
+//        Used to check current focus for TV
+//        main {
+//            while (true) {
+//                delay(5000)
+//                println("Current focus: $currentFocus")
+//                showToast(this, currentFocus.toString(), Toast.LENGTH_LONG)
+//            }
+//        }
 
         onBackPressedDispatcher.addCallback(
             this,
@@ -1904,12 +2088,17 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                     setNavigationBarColorCompat(R.attr.primaryGrayBackground)
                     updateLocale()
 
+                    // If we don't disable we end up in a loop with default behavior calling
+                    // this callback as well, so we disable it, run default behavior,
+                    // then re-enable this callback so it can be used for next back press.
                     isEnabled = false
                     onBackPressedDispatcher.onBackPressed()
                     isEnabled = true
                 }
             }
         )
+
+
     }
 
     /** Biometric stuff **/
@@ -1932,35 +2121,4 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
             false
         }
     }
-
-    // --- FUNGSI POPUP DUKUNGAN (Baru) ---
-    private fun showSupportPopup() {
-        try {
-            val builder = androidx.appcompat.app.AlertDialog.Builder(this)
-            builder.setTitle("Dukung AdiXtream")
-            builder.setMessage("Halo! Terima kasih sudah menggunakan AdiXtream.\n\nDukunganmu sangat berarti agar pengembangan aplikasi ini terus berjalan. Yuk, traktir kopi pengembangnya!")
-            
-            // Tombol Dukung (Membuka Saweria)
-            builder.setPositiveButton("Dukung via Saweria") { _, _ ->
-                try {
-                    val url = "https://saweria.co/michat88"
-                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
-                    startActivity(intent)
-                } catch (e: Exception) {
-                    showToast("Gagal membuka browser", Toast.LENGTH_SHORT)
-                }
-            }
-
-            // Tombol Tutup
-            builder.setNegativeButton("Nanti Saja") { dialog, _ ->
-                dialog.dismiss()
-            }
-
-            builder.setCancelable(false)
-            builder.show()
-        } catch (e: Exception) {
-            Log.e(TAG, "Error showing support popup: ${e.message}")
-        }
-    }
-    // ------------------------------------
 }
