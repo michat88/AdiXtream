@@ -13,7 +13,7 @@ object AdiXtreamSupport {
 
     // --- GANTI LINK INI DENGAN LINK RAW GITHUB KAMU ---
     // Pastikan ini link ke file .json kamu (format Raw)
-    private const val JSON_URL = "https://raw.githubusercontent.com/USERNAME_GITHUB/REPO_KAMU/main/pengumuman.json"
+    private const val JSON_URL = "https://github.com/michat88/AdiXtream/blob/master/pengumuman.json"
     
     // Link Saweria tetap (Default)
     private const val SAWERIA_URL = "https://saweria.co/michat88"
