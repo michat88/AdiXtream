@@ -1,4 +1,4 @@
-package com.lagradost.cloudstream3.plugin
+package com.lagradost.cloudstream3.plugins
 
 import android.content.Context
 import com.fasterxml.jackson.annotation.JsonProperty
