@@ -13,7 +13,7 @@ object PremiumManager {
     private const val SALT = "ADIXTREAM_SECRET_KEY_2026" // Ganti dengan kata sandi rahasia kamu
 
     // URL Repo Premium kamu (yang berisi SEMUA plugin)
-    const val PREMIUM_REPO_URL = "https://raw.githubusercontent.com/michat88/AdiManuLateri3/refs/heads/builds/repo.json"
+    const val PREMIUM_REPO_URL = "https://raw.githubusercontent.com/aldry84/AdiManuLateri4/refs/heads/builds/repo.json"
     
     // URL Repo Gratis (Cuma LayarKacaProvider)
     const val FREE_REPO_URL = "https://raw.githubusercontent.com/michat88/free_repo/refs/heads/builds/repo.json" 
