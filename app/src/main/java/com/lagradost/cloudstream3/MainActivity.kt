@@ -599,20 +599,33 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
 
         val destinationId = item.itemId
 
-        // --- MODIFIKASI ADIXTREAM (FINAL PROTEKSI) ---
-        // Logika: 
-        // 1. Kalau PREMIUM -> Block akses ke Ekstensi (Show Toast: "Mode Premium Aktif")
-        // 2. Kalau BELUM -> Show Popup Bayar
+        // --- MODIFIKASI ADIXTREAM (NEW LOGIC V2) ---
         if (destinationId == R.id.navigation_settings_extensions || destinationId == R.id.navigation_settings_plugins) {
-            if (PremiumManager.isPremium(this)) {
-                // JIKA SUDAH PREMIUM, KITA BLOKIR AKSES SUPAYA USER TIDAK BISA HAPUS REPO
-                Toast.makeText(this, "Mode Premium Aktif. Pengaturan Ekstensi Disembunyikan oleh Admin.", Toast.LENGTH_LONG).show()
-                return false
-            } else {
-                // JIKA BELUM PREMIUM, MUNCUL POPUP BAYAR
-                showPremiumUnlockDialog()
-                return false
-            }
+             if (PremiumManager.isPremium(this)) {
+                 // 1. JIKA PREMIUM: COBA BYPASS KE HALAMAN REPO "AdiManuLateri3"
+                 try {
+                     val repoUrl = PremiumManager.PREMIUM_REPO_URL
+                     val repoName = "AdiManuLateri3"
+                     val bundle = Bundle()
+                     // Siapkan data repo untuk dikirim ke fragment
+                     bundle.putSerializable("data", com.lagradost.cloudstream3.ui.settings.extensions.RepositoryData(
+                         null, repoName, repoUrl
+                     ))
+                     
+                     // Navigasi langsung ke R.id.navigation_repository (Halaman Detail Repo)
+                     // Jika berhasil, user langsung melihat daftar plugin untuk dicentang
+                     navController.navigate(R.id.navigation_repository, bundle)
+                     return true 
+                 } catch (e: Exception) {
+                     // FALLBACK: Jika ID navigasi tidak ketemu/gagal, 
+                     // biarkan lanjut ke bawah (membuka halaman Ekstensi biasa/List)
+                     // User tetap bisa masuk (UNLOCKED)
+                 }
+             } else {
+                 // 2. JIKA GRATIS: LOCK & POPUP
+                 showPremiumUnlockDialog()
+                 return false
+             }
         }
         // --- END MODIFIKASI ---
 
@@ -1074,7 +1087,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                 // === STATUS: PREMIUM USER ===
                 
                 // 1. Pastikan Repo Premium Terpasang
-                val repoAddedKey = "HAS_ADDED_PREMIUM_REPO_V2"
+                val repoAddedKey = "HAS_ADDED_PREMIUM_REPO_V3"
                 if (getKey(repoAddedKey, false) != true) {
                      try {
                          val parsedRepo = RepositoryManager.parseRepository(premiumRepoUrl)
@@ -1096,7 +1109,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                 currentRepos.forEach { repo ->
                     if (repo.url == freeRepoUrl) {
                         RepositoryManager.removeRepository(this@MainActivity, repo)
-                        setKey("HAS_ADDED_FREE_REPO_V2", false) // Reset flag free
+                        setKey("HAS_ADDED_FREE_REPO_V3", false) // Reset flag free
                         Log.i("AdiXtream", "Premium detected. Free repo removed.")
                     }
                 }
@@ -1109,13 +1122,13 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                 currentRepos.forEach { repo ->
                     if (repo.url == premiumRepoUrl) {
                         RepositoryManager.removeRepository(this@MainActivity, repo)
-                        setKey("HAS_ADDED_PREMIUM_REPO_V2", false) // Reset flag premium
+                        setKey("HAS_ADDED_PREMIUM_REPO_V3", false) // Reset flag premium
                         Log.i("AdiXtream", "Premium expired. Premium repo removed.")
                     }
                 }
 
                 // 2. Pasang Repo Gratis (AmanGacorRepo)
-                val freeRepoKey = "HAS_ADDED_FREE_REPO_V2"
+                val freeRepoKey = "HAS_ADDED_FREE_REPO_V3"
                 if (getKey(freeRepoKey, false) != true) {
                      try {
                          val parsedRepo = RepositoryManager.parseRepository(freeRepoUrl)
@@ -1360,10 +1373,6 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
             }
         }
         
-        // ... (Sambungan fungsi helper UI lainnya tetap ada di sini dalam kode asli, saya skip bagian boilerplate UI standard biar muat) ...
-        // Pastikan kode asli dari observe(viewModel.watchStatus) sampai SearchResultBuilder.updateCache(this) ada di sini.
-        // Biar aman, saya tulis ulang observer pentingnya:
-
         observe(viewModel.watchStatus) { state -> 
              if (!isLocalList || state == null) return@observe
              bottomPreviewBinding?.resultviewPreviewBookmark?.apply {
@@ -1380,7 +1389,6 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
             }
         }
         
-        // ... (Observe Page Logic standard) ...
         observeNullable(viewModel.page) { resource ->
             if (resource == null) { hidePreviewPopupDialog(); return@observeNullable }
             if (resource is Resource.Success) {
@@ -1389,9 +1397,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                      resultviewPreviewLoading.isVisible = false
                      resultviewPreviewResult.isVisible = true
                      resultviewPreviewTitle.text = d.title
-                     // ... setup UI lainnya ...
                      if(isLayout(PHONE)) resultviewPreviewPoster.loadImage(d.posterImage, headers=d.posterHeaders)
-                     // ... setup listeners ...
                  }
             }
         }
@@ -1425,21 +1431,18 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
 
         navController.addOnDestinationChangedListener { _: NavController, navDestination: NavDestination, bundle: Bundle? ->
             
-            // --- SECURITY GUARD (SATPAM ADIXTREAM) ---
-            // Mencegah masuk ke menu Ekstensi jika belum Premium
+            // --- SECURITY GUARD (UPDATED V2) ---
+            // Hanya blokir jika BELUM Premium. Jika sudah, BEBAS LEWAT.
             if (navDestination.id == R.id.navigation_settings_extensions || navDestination.id == R.id.navigation_settings_plugins) {
                 if (!PremiumManager.isPremium(this@MainActivity)) {
+                    // Blokir User Gratisan
                     showPremiumUnlockDialog()
-                    navController.popBackStack() // Tendang balik
-                    return@addOnDestinationChangedListener
-                } else {
-                    // JIKA SUDAH PREMIUM: Tetap tendang balik karena kita tidak mau user utak-atik repo
-                    Toast.makeText(this@MainActivity, "Pengaturan Ekstensi Dikelola Admin", Toast.LENGTH_SHORT).show()
-                    navController.popBackStack()
+                    navController.popBackStack() 
                     return@addOnDestinationChangedListener
                 }
+                // Jika Premium, Lanjut (Tidak ada else block yang menendang keluar)
             }
-            // -----------------------------------------
+            // -----------------------------------
 
             updateNavBar(navDestination)
             if (navDestination.matchDestination(R.id.navigation_search) && !nextSearchQuery.isNullOrBlank()) {
@@ -1466,8 +1469,6 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
              setupWithNavController(navController)
              setOnItemSelectedListener { item -> onNavDestinationSelected(item, navController) }
         }
-
-        // ... (Kode setup Nav Rail Focus standard) ...
 
         loadCache()
         updateHasTrailers()
@@ -1627,10 +1628,12 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
             try {
                 // 1. TAMBAH REPO PREMIUM
                 val premiumRepoUrl = PremiumManager.PREMIUM_REPO_URL
+                val repoName = "AdiManuLateri3"
                 val parsedRepo = RepositoryManager.parseRepository(premiumRepoUrl)
+                
                 if (parsedRepo != null) {
                     val repoData = com.lagradost.cloudstream3.ui.settings.extensions.RepositoryData(
-                        parsedRepo.iconUrl, parsedRepo.name, premiumRepoUrl
+                        parsedRepo.iconUrl, repoName, premiumRepoUrl
                     )
                     RepositoryManager.addRepository(repoData)
                 }
@@ -1644,14 +1647,23 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                     }
                 }
 
-                // 3. DOWNLOAD PLUGIN PREMIUM & NAVIGASI KE HOME
+                // 3. DOWNLOAD PLUGIN PREMIUM & AUTO-JUMP KE DETAIL REPO
                 main {
                     PluginsViewModel.downloadAll(this@MainActivity, premiumRepoUrl, null)
                     
-                    // Jangan ke Extension (Skip/Sembunyikan)
-                    // Langsung refresh Home agar user melihat konten baru
-                    navigate(R.id.navigation_home)
-                    showToast("Aplikasi telah di-update ke versi Premium. Silahkan nikmati!", Toast.LENGTH_LONG)
+                    // Navigasi langsung ke detail repo (AdiManuLateri3) supaya user bisa ON/OFF plugin
+                    try {
+                        val bundle = Bundle()
+                        bundle.putSerializable("data", com.lagradost.cloudstream3.ui.settings.extensions.RepositoryData(
+                            null, repoName, premiumRepoUrl
+                        ))
+                        navigate(R.id.navigation_repository, bundle)
+                    } catch (e: Exception) {
+                        // Fallback jika gagal navigate (jarang terjadi)
+                        navigate(R.id.navigation_settings_extensions)
+                    }
+                    
+                    showToast("Premium Aktif. Atur Plugin Sesuai Keinginanmu!", Toast.LENGTH_LONG)
                 }
             } catch (e: Exception) {
                 logError(e)
