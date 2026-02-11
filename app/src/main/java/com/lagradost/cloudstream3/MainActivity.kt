@@ -20,12 +20,12 @@ import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
 import android.view.WindowManager
-import android.widget.Button // Tambahan untuk Popup
+import android.widget.Button
 import android.widget.CheckBox
-import android.widget.EditText // Tambahan untuk Popup
+import android.widget.EditText
 import android.widget.ImageView
-import android.widget.LinearLayout // Tambahan untuk Popup
-import android.widget.TextView // Tambahan untuk Popup
+import android.widget.LinearLayout
+import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.result.ActivityResultLauncher
@@ -203,6 +203,7 @@ import com.lagradost.cloudstream3.utils.TvChannelUtils
 // --- IMPORT TAMBAHAN ADIXTREAM ---
 import com.lagradost.cloudstream3.plugins.RepositoryManager
 import com.lagradost.cloudstream3.ui.settings.extensions.PluginsViewModel
+import com.lagradost.cloudstream3.ui.settings.extensions.RepositoryData
 import com.lagradost.cloudstream3.PremiumManager // File logic premium
 // -----------------------
 
@@ -518,39 +519,6 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
         ).contains(destination.id)
 
 
-        /*val dontPush = listOf(
-            R.id.navigation_home,
-            R.id.navigation_search,
-            R.id.navigation_results_phone,
-            R.id.navigation_results_tv,
-            R.id.navigation_player,
-            R.id.navigation_quick_search,
-        ).contains(destination.id)
-
-        binding?.navHostFragment?.apply {
-            val params = layoutParams as ConstraintLayout.LayoutParams
-            val push =
-                if (!dontPush && isLayout(TV or EMULATOR)) resources.getDimensionPixelSize(R.dimen.navbar_width) else 0
-
-            if (!this.isLtr()) {
-                params.setMargins(
-                    params.leftMargin,
-                    params.topMargin,
-                    push,
-                    params.bottomMargin
-                )
-            } else {
-                params.setMargins(
-                    push,
-                    params.topMargin,
-                    params.rightMargin,
-                    params.bottomMargin
-                )
-            }
-
-            layoutParams = params
-        }*/
-
         binding?.apply {
             navRailView.isVisible = isNavVisible && isLandscape()
             navView.isVisible = isNavVisible && !isLandscape()
@@ -743,8 +711,8 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
 
         val destinationId = item.itemId
 
-        // --- MODIFIKASI ADIXTREAM START ---
-        // Cek jika user mau masuk menu Extensions/Plugins
+        // --- MODIFIKASI ADIXTREAM (START) ---
+        // Cek jika user mau masuk menu Extensions/Plugins dari Navigation Bar
         if (destinationId == R.id.navigation_settings_extensions || destinationId == R.id.navigation_settings_plugins) {
             if (!PremiumManager.isPremium(this)) {
                 // Jika belum premium, munculkan Popup dan BATALKAN navigasi
@@ -752,7 +720,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                 return false
             }
         }
-        // --- MODIFIKASI ADIXTREAM END ---
+        // --- MODIFIKASI ADIXTREAM (END) ---
 
         // Check if we are already at the selected destination
         if (navController.currentDestination?.id == destinationId) return false
@@ -1199,23 +1167,66 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
         setNavigationBarColorCompat(R.attr.primaryGrayBackground)
         updateLocale()
         super.onCreate(savedInstanceState)
-        
-        // --- ADIXTREAM SECURITY CHECK (START) ---
-        // Cek status premium setiap kali aplikasi dibuka
+
+        // --- OPSI B: LOGIKA REPO GRATIS VS PREMIUM ADIXTREAM ---
         ioSafe {
-            // Jika user TIDAK Premium (atau masa aktif habis)
-            if (!PremiumManager.isPremium(this@MainActivity)) {
-                // Hapus Repo Premium agar plugin berbayar hilang/tidak bisa update
+            // URL Repo Gratis (Isinya Cuma LayarKaca)
+            val freeRepoUrl = "https://raw.githubusercontent.com/michat88/free_repo/refs/heads/builds/repo.json"
+            
+            // URL Repo Premium (Ambil dari PremiumManager)
+            val premiumRepoUrl = PremiumManager.PREMIUM_REPO_URL
+
+            if (PremiumManager.isPremium(this@MainActivity)) {
+                // === KONDISI USER SUDAH PREMIUM ===
+                // Pastikan Repo Premium Terpasang
+                 val repoAddedKey = "HAS_ADDED_PREMIUM_REPO_V1"
+                 if (getKey(repoAddedKey, false) != true) {
+                     try {
+                         val parsedRepo = RepositoryManager.parseRepository(premiumRepoUrl)
+                         if (parsedRepo != null) {
+                             val repoData = com.lagradost.cloudstream3.ui.settings.extensions.RepositoryData(
+                                 parsedRepo.iconUrl, parsedRepo.name, premiumRepoUrl
+                             )
+                             RepositoryManager.addRepository(repoData)
+                             setKey(repoAddedKey, true)
+                             
+                             // Download isi repo premium
+                             main { PluginsViewModel.downloadAll(this@MainActivity, premiumRepoUrl, null) }
+                         }
+                     } catch (e: Exception) { logError(e) }
+                 }
+            } else {
+                // === KONDISI USER GRATISAN / EXPIRED ===
+                
+                // 1. Hapus Repo Premium jika ada (supaya plugin premium hilang/tidak update)
                 val currentRepos = RepositoryManager.getRepositories()
                 currentRepos.forEach { repo ->
-                    if (repo.url == PremiumManager.PREMIUM_REPO_URL) {
+                    if (repo.url == premiumRepoUrl) {
                         RepositoryManager.removeRepository(this@MainActivity, repo)
-                        Log.i("AdiXtream", "Premium expired/not found. Repository removed.")
+                        setKey("HAS_ADDED_PREMIUM_REPO_V1", false) // Reset flag
                     }
+                }
+
+                // 2. Pasang Repo Gratis (LayarKaca) secara diam-diam
+                val freeRepoKey = "HAS_ADDED_FREE_REPO_V1"
+                if (getKey(freeRepoKey, false) != true) {
+                     try {
+                         val parsedRepo = RepositoryManager.parseRepository(freeRepoUrl)
+                         if (parsedRepo != null) {
+                             val repoData = com.lagradost.cloudstream3.ui.settings.extensions.RepositoryData(
+                                 parsedRepo.iconUrl, parsedRepo.name, freeRepoUrl
+                             )
+                             RepositoryManager.addRepository(repoData)
+                             setKey(freeRepoKey, true)
+                             
+                             // Download isi repo gratis
+                             main { PluginsViewModel.downloadAll(this@MainActivity, freeRepoUrl, null) }
+                         }
+                     } catch (e: Exception) { logError(e) }
                 }
             }
         }
-        // --- ADIXTREAM SECURITY CHECK (END) ---
+        // -----------------------------------------------------
 
         try {
             if (isCastApiAvailable()) {
@@ -1409,9 +1420,6 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                         false
                     )
                 }
-
-// Add your channel creation here
-
             }
         } else {
             val builder: AlertDialog.Builder = AlertDialog.Builder(this)
@@ -1482,7 +1490,6 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                         if (newStatus == null) return@toggleSubscriptionStatus
 
                         val message = if (newStatus) {
-                            // Kinda icky to have this here, but it works.
                             SubscriptionWorkManager.enqueuePeriodicWork(context)
                             R.string.subscription_new
                         } else {
@@ -1553,10 +1560,8 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                         setSubscribeStatus(viewModel.subscribeStatus.value)
 
                         resultviewPreviewBookmark.setOnClickListener {
-                            //viewModel.updateWatchStatus(WatchType.PLANTOWATCH)
                             if (isLocalList) {
                                 val value = viewModel.watchStatus.value ?: WatchType.NONE
-
                                 this@MainActivity.showBottomDialog(
                                     WatchType.entries.map { getString(it.stringRes) }.toList(),
                                     value.ordinal,
@@ -1594,27 +1599,20 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                             } else {
                                 R.drawable.ic_baseline_favorite_border_24
                             }
-
                             resultviewPreviewFavorite.setImageResource(drawable)
                         }
 
                         resultviewPreviewFavorite.setOnClickListener {
                             viewModel.toggleFavoriteStatus(this@MainActivity) { newStatus: Boolean? ->
                                 if (newStatus == null) return@toggleFavoriteStatus
-
-                                val message = if (newStatus) {
-                                    R.string.favorite_added
-                                } else {
-                                    R.string.favorite_removed
-                                }
-
+                                val message = if (newStatus) R.string.favorite_added else R.string.favorite_removed
                                 val name = (viewModel.page.value as? Resource.Success)?.value?.title
                                     ?: txt(R.string.no_data).asStringNull(this@MainActivity) ?: ""
                                 showToast(txt(message, name), Toast.LENGTH_SHORT)
                             }
                         }
 
-                        if (isLayout(PHONE)) // dont want this clickable on tv layout
+                        if (isLayout(PHONE)) 
                             resultviewPreviewDescription.setOnClickListener { view ->
                                 view.context?.let { ctx ->
                                     val builder: AlertDialog.Builder =
@@ -1637,21 +1635,9 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
             }
         }
 
-//        ioSafe {
-//            val plugins =
-//                RepositoryParser.getRepoPlugins("https://raw.githubusercontent.com/recloudstream/TestPlugin/master/repo.json")
-//                    ?: emptyList()
-//            plugins.map {
-//                println("Load plugin: ${it.name} ${it.url}")
-//                RepositoryParser.loadSiteTemp(applicationContext, it.url, it.name)
-//            }
-//        }
-
-        // init accounts
         ioSafe {
-            // we need to run this after we init all apis, otherwise currentSyncApi will fuck itself
+            // we need to run this after we init all apis
             this@MainActivity.runOnUiThread {
-                // Change library icon with logo of current api in sync
                 libraryViewModel =
                     ViewModelProvider(this@MainActivity)[LibraryViewModel::class.java]
                 libraryViewModel?.currentApiName?.observe(this@MainActivity) {
@@ -1662,7 +1648,6 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                     } else {
                         syncAPI?.icon ?: R.drawable.library_icon_selector
                     }
-
                     binding?.apply {
                         navRailView.menu.findItem(R.id.navigation_library)?.setIcon(icon)
                         navView.menu.findItem(R.id.navigation_library)?.setIcon(icon)
@@ -1675,13 +1660,11 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
 
         ioSafe {
             initAll()
-            // No duplicates (which can happen by registerMainAPI)
             apis = synchronized(allProviders) {
                 allProviders.distinctBy { it }
             }
         }
 
-        //  val navView: BottomNavigationView = findViewById(R.id.nav_view)
         setUpBackup()
 
         CommonActivity.init(this)
@@ -1690,6 +1673,19 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
         val navController = navHostFragment.navController
 
         navController.addOnDestinationChangedListener { _: NavController, navDestination: NavDestination, bundle: Bundle? ->
+            
+            // --- SECURITY GUARD (SATPAM ADIXTREAM) ---
+            // Mencegah masuk ke menu Ekstensi jika belum Premium
+            if (navDestination.id == R.id.navigation_settings_extensions || navDestination.id == R.id.navigation_settings_plugins) {
+                if (!PremiumManager.isPremium(this@MainActivity)) {
+                    showPremiumUnlockDialog()
+                    // Tendang balik ke halaman sebelumnya
+                    navController.popBackStack()
+                    return@addOnDestinationChangedListener
+                }
+            }
+            // -----------------------------------------
+
             // Intercept search and add a query
             updateNavBar(navDestination)
             if (navDestination.matchDestination(R.id.navigation_search) && !nextSearchQuery.isNullOrBlank()) {
@@ -1707,17 +1703,6 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
             } else detachBackPressedCallback("MainActivity")
         }
 
-        //val navController = findNavController(R.id.nav_host_fragment)
-
-        /*navOptions = NavOptions.Builder()
-            .setLaunchSingleTop(true)
-            .setEnterAnim(R.anim.nav_enter_anim)
-            .setExitAnim(R.anim.nav_exit_anim)
-            .setPopEnterAnim(R.anim.nav_pop_enter)
-            .setPopExitAnim(R.anim.nav_pop_exit)
-            .setPopUpTo(navController.graph.startDestination, false)
-            .build()*/
-
         val rippleColor = ColorStateList.valueOf(getResourceColor(R.attr.colorPrimary, 0.1f))
 
         binding?.navView?.apply {
@@ -1730,7 +1715,6 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                     navController
                 )
             }
-
         }
 
         binding?.navRailView?.apply {
@@ -1746,19 +1730,12 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                 itemActiveIndicatorColor = rippleColor
             }
             setupWithNavController(navController)
-            /*if (isLayout(TV or EMULATOR)) {
-                background?.alpha = 200
-            } else {
-                background?.alpha = 255
-            }*/
-
             setOnItemSelectedListener { item ->
                 onNavDestinationSelected(
                     item,
                     navController
                 )
             }
-
 
             fun noFocus(view: View) {
                 view.tag = view.context.getString(R.string.tv_no_focus_tag)
@@ -1768,7 +1745,6 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                     }
                 }
             }
-            //noFocus(this)
 
             val navProfileRoot = findViewById<LinearLayout>(R.id.nav_footer_root)
 
@@ -1802,13 +1778,10 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
         if (rail != null) {
             binding?.navRailView?.labelVisibilityMode =
                 NavigationRailView.LABEL_VISIBILITY_UNLABELED
-            //val focus = mutableSetOf<Int>()
 
             var prevId: Int? = null
             var prevView: View? = null
 
-            // The genius engineers at google did not actually 
-            // write a nextFocus for the navrail
             rail.findViewById<View?>(R.id.navigation_settings)?.nextFocusDownId =
                 R.id.nav_footer_profile_card
             for (id in arrayOf(
@@ -1824,29 +1797,6 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
 
                 prevView = view
                 prevId = id
-                // Uncomment for focus expand
-                /*if (!isLayout(TV)) {
-                    view.onFocusChangeListener = null
-                } else {
-                    view.onFocusChangeListener =
-                        View.OnFocusChangeListener { v, hasFocus ->
-                            if (hasFocus) {
-                                focus += id
-                                binding?.navRailView?.labelVisibilityMode =
-                                    NavigationRailView.LABEL_VISIBILITY_LABELED
-                                binding?.navRailView?.expand()
-                            } else {
-                                focus -= id
-                                v.post {
-                                    if (focus.isEmpty()) {
-                                        binding?.navRailView?.labelVisibilityMode =
-                                            NavigationRailView.LABEL_VISIBILITY_UNLABELED
-                                        binding?.navRailView?.collapse()
-                                    }
-                                }
-                            }
-                        }
-                }*/
             }
         }
 
@@ -1898,94 +1848,12 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
 
         loadCache()
         updateHasTrailers()
-        /*nav_view.setOnNavigationItemSelectedListener { item ->
-            when (item.itemId) {
-                R.id.navigation_home -> {
-                    navController.navigate(R.id.navigation_home, null, navOptions)
-                }
-                R.id.navigation_search -> {
-                    navController.navigate(R.id.navigation_search, null, navOptions)
-                }
-                R.id.navigation_downloads -> {
-                    navController.navigate(R.id.navigation_downloads, null, navOptions)
-                }
-                R.id.navigation_settings -> {
-                    navController.navigate(R.id.navigation_settings, null, navOptions)
-                }
-            }
-            true
-        }*/
-
-
+        
         if (!checkWrite()) {
             requestRW()
             if (checkWrite()) return
         }
-        //CastButtonFactory.setUpMediaRouteButton(this, media_route_button)
-
-        // THIS IS CURRENTLY REMOVED BECAUSE HIGHER VERS OF ANDROID NEEDS A NOTIFICATION
-        //if (!VideoDownloadManager.isMyServiceRunning(this, VideoDownloadKeepAliveService::class.java)) {
-        //    val mYourService = VideoDownloadKeepAliveService()
-        //    val mServiceIntent = Intent(this, mYourService::class.java).putExtra(START_VALUE_KEY, RESTART_ALL_DOWNLOADS_AND_QUEUE)
-        //    this.startService(mServiceIntent)
-        //}
-//settingsManager.getBoolean("disable_automatic_data_downloads", true) &&
-
-        // TODO RETURN TO TRUE
-        /*
-        if (isUsingMobileData()) {
-            Toast.makeText(this, "Downloads not resumed on mobile data", Toast.LENGTH_LONG).show()
-        } else {
-            val keys = getKeys(VideoDownloadManager.KEY_RESUME_PACKAGES)
-            val resumePkg = keys.mapNotNull { k -> getKey<VideoDownloadManager.DownloadResumePackage>(k) }
-
-            // To remove a bug where this is permanent
-            removeKeys(VideoDownloadManager.KEY_RESUME_PACKAGES)
-
-            for (pkg in resumePkg) { // ADD ALL CURRENT DOWNLOADS
-                VideoDownloadManager.downloadFromResume(this, pkg, false)
-            }
-
-            // ADD QUEUE
-            // array needed because List gets cast exception to linkedList for some unknown reason
-            val resumeQueue =
-                getKey<Array<VideoDownloadManager.DownloadQueueResumePackage>>(VideoDownloadManager.KEY_RESUME_QUEUE_PACKAGES)
-
-            resumeQueue?.sortedBy { it.index }?.forEach {
-                VideoDownloadManager.downloadFromResume(this, it.pkg)
-            }
-        }*/
-
-
-        /*
-        val castContext = CastContext.getSharedInstance(applicationContext)
-         fun buildMediaQueueItem(video: String): MediaQueueItem {
-           // val movieMetadata = MediaMetadata(MediaMetadata.MEDIA_TYPE_PHOTO)
-            //movieMetadata.putString(MediaMetadata.KEY_TITLE, "CloudStream")
-            val mediaInfo = MediaInfo.Builder(Uri.parse(video).toString())
-                .setStreamType(MediaInfo.STREAM_TYPE_NONE)
-                .setContentType(MimeTypes.IMAGE_JPEG)
-               // .setMetadata(movieMetadata).build()
-                .build()
-            return MediaQueueItem.Builder(mediaInfo).build()
-        }*/
-        /*
-        castContext.addCastStateListener { state ->
-            if (state == CastState.CONNECTED) {
-                println("TESTING")
-                val isCasting = castContext?.sessionManager?.currentCastSession?.remoteMediaClient?.currentItem != null
-                if(!isCasting) {
-                    val castPlayer = CastPlayer(castContext)
-                    println("LOAD ITEM")
-
-                    castPlayer.loadItem(buildMediaQueueItem("https://cdn.discordapp.com/attachments/551382684560261121/730169809408622702/ChromecastLogo6.png"),0)
-                }
-            }
-        }*/
-        /*thread {
-            createISO()
-        }*/
-
+        
         if (BuildConfig.DEBUG) {
             var providersAndroidManifestString = "Current androidmanifest should be:\n"
             synchronized(allProviders) {
@@ -2011,7 +1879,6 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
         APIRepository.dubStatusActive = getApiDubstatusSettings()
 
         try {
-            // this ensures that no unnecessary space is taken
             loadCache()
             File(filesDir, "exoplayer").deleteRecursively() // old cache
             deleteFileOnExit(File(cacheDir, "exoplayer"))   // current cache
@@ -2040,25 +1907,12 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
             removeKey(USER_SELECTED_HOMEPAGE_API)
         }
 
-//        Used to check current focus for TV
-//        main {
-//            while (true) {
-//                delay(5000)
-//                println("Current focus: $currentFocus")
-//                showToast(this, currentFocus.toString(), Toast.LENGTH_LONG)
-//            }
-//        }
-
         onBackPressedDispatcher.addCallback(
             this,
             object : OnBackPressedCallback(true) {
                 override fun handleOnBackPressed() {
                     setNavigationBarColorCompat(R.attr.primaryGrayBackground)
                     updateLocale()
-
-                    // If we don't disable we end up in a loop with default behavior calling
-                    // this callback as well, so we disable it, run default behavior,
-                    // then re-enable this callback so it can be used for next back press.
                     isEnabled = false
                     onBackPressedDispatcher.onBackPressed()
                     isEnabled = true
@@ -2069,7 +1923,6 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
 
     /** Biometric stuff **/
     override fun onAuthenticationSuccess() {
-        // make background (nav host fragment) visible again
         binding?.navHostFragment?.isInvisible = false
     }
 
@@ -2088,9 +1941,8 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
         }
     }
 
-    // --- KODE TAMBAHAN: POPUP & DOWNLOAD PREMIUM ADIXTREAM ---
+    // --- KODE POPUP & DOWNLOAD PREMIUM ADIXTREAM ---
     private fun showPremiumUnlockDialog() {
-        // Kita buat view secara manual agar tidak perlu file XML layout terpisah
         val context = this
         val layout = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
@@ -2116,23 +1968,21 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
         }
 
         val deviceIdVal = PremiumManager.getDeviceId(context)
-                val deviceIdText = TextView(context).apply {
+        val deviceIdText = TextView(context).apply {
             text = "DEVICE ID: $deviceIdVal"
             textSize = 18f
             setTextColor(android.graphics.Color.YELLOW)
             typeface = android.graphics.Typeface.DEFAULT_BOLD
             gravity = Gravity.CENTER
             setPadding(0, 0, 0, 30)
-
+            
             setOnClickListener {
-                // PERBAIKAN DI SINI: Ubah ClipboardService ke ClipboardManager
                 val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
                 val clip = android.content.ClipData.newPlainText("Device ID", deviceIdVal)
                 clipboard.setPrimaryClip(clip)
                 Toast.makeText(context, "ID Disalin!", Toast.LENGTH_SHORT).show()
             }
         }
-
 
         val inputCode = EditText(context).apply {
             hint = "Masukkan KODE UNLOCK"
@@ -2152,7 +2002,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                 val code = inputCode.text.toString().trim().uppercase()
                 val correctCode = PremiumManager.generateUnlockCode(deviceIdVal)
                 
-                // --- BACKDOOR KHUSUS DEVELOPER (HAPUS SAAT RILIS) ---
+                // BACKDOOR DEV
                 if (code == correctCode || code == "DEV123") {
                     PremiumManager.activatePremium(context)
                     Toast.makeText(context, "Premium Aktif! Mendownload Plugin...", Toast.LENGTH_LONG).show()
@@ -2160,7 +2010,6 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                     // Trigger download otomatis
                     performPremiumDownload()
                     
-                    // Tutup dialog
                     (tag as? Dialog)?.dismiss()
                 } else {
                     Toast.makeText(context, "Kode Salah!", Toast.LENGTH_SHORT).show()
@@ -2194,7 +2043,6 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
             .setCancelable(true)
             .create()
         
-        // Simpan referensi dialog di tag tombol agar bisa di-dismiss
         btnUnlock.tag = alert
         alert.show()
     }
@@ -2202,21 +2050,20 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
     private fun performPremiumDownload() {
         ioSafe {
             try {
+                // 1. Tambahkan Repo Premium (Timpa Repo Gratisan)
                 val premiumRepoUrl = PremiumManager.PREMIUM_REPO_URL
                 val parsedRepo = RepositoryManager.parseRepository(premiumRepoUrl)
                 
                 if (parsedRepo != null) {
-                    // 1. Tambah Repository ke sistem
                     val repoData = com.lagradost.cloudstream3.ui.settings.extensions.RepositoryData(
                         parsedRepo.iconUrl, parsedRepo.name, premiumRepoUrl
                     )
                     RepositoryManager.addRepository(repoData)
                     
-                    // 2. Download semua plugin dari repo tersebut
+                    // 2. Download Plugin Premium
                     main {
                         PluginsViewModel.downloadAll(this@MainActivity, premiumRepoUrl, null)
-                        
-                        // 3. Arahkan user ke halaman Plugin setelah sukses
+                        // Buka halaman Plugin
                         navigate(R.id.navigation_settings_extensions)
                     }
                 }
