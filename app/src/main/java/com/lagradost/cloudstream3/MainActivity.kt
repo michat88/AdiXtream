@@ -698,7 +698,6 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
 
         handleAppIntentUrl(this, str, false, intent.extras)
     }
-
     private fun NavDestination.matchDestination(@IdRes destId: Int): Boolean =
         hierarchy.any { it.id == destId }
 
@@ -1117,29 +1116,6 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                         updateFocusView(lastFocus.get(), same = true)
                     }, 200)
                 }
-
-                /*
-
-                the following is working, but somewhat bad code code
-
-                if (!wasGone) {
-                    (focusOutline.parent as? ViewGroup)?.let {
-                        TransitionManager.endTransitions(it)
-                        TransitionManager.beginDelayedTransition(
-                            it,
-                            TransitionSet().addTransition(ChangeBounds())
-                                .addTransition(ChangeTransform())
-                                .setDuration(100)
-                        )
-                    }
-                }
-
-                focusOutline.layoutParams = focusOutline.layoutParams?.apply {
-                    width = newFocus.measuredWidth
-                    height = newFocus.measuredHeight
-                }
-                focusOutline.translationX = x.toFloat()
-                focusOutline.translationY = y.toFloat()*/
             }
         }
     }
@@ -1236,7 +1212,6 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
         } catch (t: Throwable) {
             logError(t)
         }
-
         window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN)
         updateTv()
 
@@ -1998,23 +1973,6 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
             setBackgroundColor(android.graphics.Color.parseColor("#FFD700"))
             setTextColor(android.graphics.Color.BLACK)
             setPadding(0, 30, 0, 0)
-            setOnClickListener {
-                val code = inputCode.text.toString().trim().uppercase()
-                val correctCode = PremiumManager.generateUnlockCode(deviceIdVal)
-                
-                // BACKDOOR DEV
-                if (code == correctCode || code == "DEV123") {
-                    PremiumManager.activatePremium(context)
-                    Toast.makeText(context, "Premium Aktif! Mendownload Plugin...", Toast.LENGTH_LONG).show()
-                    
-                    // Trigger download otomatis
-                    performPremiumDownload()
-                    
-                    (tag as? Dialog)?.dismiss()
-                } else {
-                    Toast.makeText(context, "Kode Salah!", Toast.LENGTH_SHORT).show()
-                }
-            }
         }
         
         val btnAdmin = Button(context).apply {
@@ -2030,6 +1988,47 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                 }
             }
         }
+
+        // --- LOGIKA TOMBOL UNLOCK (MODIFIKASI RESTART) ---
+        btnUnlock.setOnClickListener {
+            val code = inputCode.text.toString().trim().uppercase()
+            val correctCode = PremiumManager.generateUnlockCode(deviceIdVal)
+            
+            // BACKDOOR DEV
+            if (code == correctCode || code == "DEV123") {
+                // 1. Simpan Status Premium
+                PremiumManager.activatePremium(context)
+                
+                // 2. Tutup dialog lama
+                (btnUnlock.tag as? Dialog)?.dismiss()
+                
+                // 3. Ambil Tanggal Expired
+                val expiryDate = PremiumManager.getExpiryDateString(context)
+
+                // 4. Tampilkan Popup Sukses & Restart
+                AlertDialog.Builder(context)
+                    .setTitle("✅ AKTIVASI SUKSES")
+                    .setMessage("Selamat! Fitur premium Anda sudah aktif.\n\n" +
+                                "📅 Aktif sampai: $expiryDate\n\n" +
+                                "Silahkan masuk ke menu Ekstensi untuk akses fitur premium Anda.\n" +
+                                "Selamat menonton!")
+                    .setCancelable(false) // User wajib klik OK
+                    .setPositiveButton("OK, RESTART APP") { _, _ ->
+                        // --- LOGIKA RESTART OTOMATIS ---
+                        val packageManager = context.packageManager
+                        val intent = packageManager.getLaunchIntentForPackage(context.packageName)
+                        val componentName = intent?.component
+                        val mainIntent = Intent.makeRestartActivityTask(componentName)
+                        context.startActivity(mainIntent)
+                        Runtime.getRuntime().exit(0) // Matikan proses saat ini
+                    }
+                    .show()
+
+            } else {
+                Toast.makeText(context, "Kode Salah!", Toast.LENGTH_SHORT).show()
+            }
+        }
+        // -------------------------------------------------
 
         layout.addView(title)
         layout.addView(subTitle)
