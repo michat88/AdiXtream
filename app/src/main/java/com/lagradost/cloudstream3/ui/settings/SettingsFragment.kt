@@ -206,7 +206,7 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
                 try {
                     val bundle = Bundle()
                     // Nama yang akan muncul di header toolbar
-                    bundle.putString("name", "AdiManuLateri3") 
+                    bundle.putString("name", "AmanGacor") 
                     // URL Repository kamu (WAJIB SAMA PERSIS DENGAN MAIN ACTIVITY)
                     bundle.putString("url", "https://raw.githubusercontent.com/aldry84/AdiManuLateri4/refs/heads/builds/repo.json") 
                     bundle.putBoolean("isLocal", false)
