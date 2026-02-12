@@ -60,8 +60,8 @@ android {
         minSdk = libs.versions.minSdk.get().toInt()
         targetSdk = libs.versions.targetSdk.get().toInt()
         
-        versionCode = 76
-        versionName = "4.7.0"
+        versionCode = 77
+        versionName = "4.7.1"
 
         resValue("string", "commit_hash", getGitCommitHash())
         resValue("bool", "is_prerelease", "false")
