@@ -14,11 +14,11 @@ object PremiumManager {
     private const val SALT = "ADIXTREAM_SECRET_KEY_2026" // Ganti dengan kata sandi rahasia kamu jika perlu
 
     // URL Repo Premium kamu (yang berisi SEMUA plugin)
-    const val PREMIUM_REPO_URL = "https://raw.githubusercontent.com/aldry84/AdiManuLateri4/refs/heads/builds/repo.json"
+    const val PREMIUM_REPO_URL = "https://raw.githubusercontent.com/aldry84/Repo_Premium/refs/heads/builds/repo.json"
     
     // URL Repo Gratis (Cuma LayarKacaProvider) - WAJIB DIISI URL JSON YANG VALID
     // Contoh: "https://raw.githubusercontent.com/username/repo-gratis/main/repo.json"
-    const val FREE_REPO_URL = "https://raw.githubusercontent.com/michat88/free_repo/refs/heads/builds/repo.json" 
+    const val FREE_REPO_URL = "https://raw.githubusercontent.com/michat88/Repo_Gratis/refs/heads/builds/repo.json" 
 
     fun getDeviceId(context: Context): String {
         val androidId = Settings.Secure.getString(context.contentResolver, Settings.Secure.ANDROID_ID)
