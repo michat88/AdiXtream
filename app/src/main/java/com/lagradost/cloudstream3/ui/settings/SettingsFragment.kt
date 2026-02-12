@@ -208,7 +208,7 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
                     // Nama yang akan muncul di header toolbar
                     bundle.putString("name", "AmanGacor") 
                     // URL Repository kamu (WAJIB SAMA PERSIS DENGAN MAIN ACTIVITY)
-                    bundle.putString("url", "https://raw.githubusercontent.com/aldry84/AdiManuLateri4/refs/heads/builds/repo.json") 
+                    bundle.putString("url", "https://raw.githubusercontent.com/aldry84/Repo_Premium/refs/heads/builds/repo.json") 
                     bundle.putBoolean("isLocal", false)
                     
                     // Navigasi langsung ke PluginsFragment, melewati ExtensionsFragment
