@@ -1147,7 +1147,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
         // --- OPSI B: LOGIKA REPO GRATIS VS PREMIUM ADIXTREAM (UPDATE V2) ---
         ioSafe {
             // 1. DEFINISI URL BARU (Sesuai Request)
-            val targetPremiumRepo = "https://raw.githubusercontent.com/aldry84/AdiManuLateri4/refs/heads/builds/repo.json"
+            val targetPremiumRepo = "https://raw.githubusercontent.com/aldry84/Repo_Premium/refs/heads/builds/repo.json"
             // Ambil URL Free dari PremiumManager (Pastikan file PremiumManager.kt juga sudah diedit)
             val targetFreeRepo = PremiumManager.FREE_REPO_URL
 
@@ -2064,7 +2064,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
         ioSafe {
             try {
                 // 1. Tambahkan Repo Premium (Gunakan URL Baru)
-                val premiumRepoUrl = "https://raw.githubusercontent.com/aldry84/AdiManuLateri4/refs/heads/builds/repo.json"
+                val premiumRepoUrl = "https://raw.githubusercontent.com/aldry84/Repo_Premium/refs/heads/builds/repo.json"
                 val parsedRepo = RepositoryManager.parseRepository(premiumRepoUrl)
                 
                 if (parsedRepo != null) {
