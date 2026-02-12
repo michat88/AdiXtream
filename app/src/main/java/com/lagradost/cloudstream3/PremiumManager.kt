@@ -3,19 +3,21 @@ package com.lagradost.cloudstream3
 import android.content.Context
 import android.provider.Settings
 import androidx.preference.PreferenceManager
+import com.lagradost.cloudstream3.plugins.RepositoryManager
+import com.lagradost.cloudstream3.utils.DataStoreHelper
 import java.security.MessageDigest
 import java.util.concurrent.TimeUnit
 
 object PremiumManager {
     private const val PREF_IS_PREMIUM = "is_premium_user"
     private const val PREF_EXPIRY_DATE = "premium_expiry_date"
-    private const val PREF_SHOW_WELCOME = "show_premium_welcome" // Flag untuk popup selamat datang
-    private const val SALT = "ADIXTREAM_SECRET_KEY_2026" // Ganti dengan kata sandi rahasia kamu
+    private const val SALT = "ADIXTREAM_SECRET_KEY_2026" // Ganti dengan kata sandi rahasia kamu jika perlu
 
     // URL Repo Premium kamu (yang berisi SEMUA plugin)
     const val PREMIUM_REPO_URL = "https://raw.githubusercontent.com/michat88/AdiManuLateri3/refs/heads/builds/repo.json"
     
-    // URL Repo Gratis (Cuma LayarKacaProvider)
+    // URL Repo Gratis (Cuma LayarKacaProvider) - WAJIB DIISI URL JSON YANG VALID
+    // Contoh: "https://raw.githubusercontent.com/username/repo-gratis/main/repo.json"
     const val FREE_REPO_URL = "https://raw.githubusercontent.com/michat88/free_repo/refs/heads/builds/repo.json" 
 
     fun getDeviceId(context: Context): String {
@@ -67,30 +69,13 @@ object PremiumManager {
             putLong(PREF_EXPIRY_DATE, 0)
             apply()
         }
+        // HAPUS PLUGIN DISINI
+        // Nanti kita panggil logic hapus repo di MainActivity biar thread aman
     }
     
     fun getExpiryDateString(context: Context): String {
         val prefs = PreferenceManager.getDefaultSharedPreferences(context)
         val date = prefs.getLong(PREF_EXPIRY_DATE, 0)
         return if (date == 0L) "Non-Premium" else java.text.SimpleDateFormat("dd MMM yyyy").format(java.util.Date(date))
-    }
-
-    // --- LOGIKA POPUP SELAMAT DATANG SETELAH RESTART ---
-    
-    // Dipanggil saat aktivasi sukses (sebelum restart)
-    fun setWelcomeFlag(context: Context, value: Boolean) {
-        val prefs = PreferenceManager.getDefaultSharedPreferences(context)
-        prefs.edit().putBoolean(PREF_SHOW_WELCOME, value).apply()
-    }
-
-    // Dipanggil di onCreate MainActivity (setelah restart)
-    fun checkAndConsumeWelcomeFlag(context: Context): Boolean {
-        val prefs = PreferenceManager.getDefaultSharedPreferences(context)
-        val show = prefs.getBoolean(PREF_SHOW_WELCOME, false)
-        if (show) {
-            // Matikan flag agar popup tidak muncul terus-menerus
-            prefs.edit().putBoolean(PREF_SHOW_WELCOME, false).apply()
-        }
-        return show
     }
 }
