@@ -9,6 +9,7 @@ import android.content.SharedPreferences
 import android.content.res.ColorStateList
 import android.content.res.Configuration
 import android.graphics.Rect
+import android.graphics.drawable.GradientDrawable
 import android.net.Uri
 import android.os.Bundle
 import android.util.AttributeSet
@@ -25,6 +26,7 @@ import android.widget.CheckBox
 import android.widget.EditText
 import android.widget.ImageView
 import android.widget.LinearLayout
+import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
@@ -42,6 +44,7 @@ import androidx.core.view.isGone
 import androidx.core.view.isInvisible
 import androidx.core.view.isVisible
 import androidx.core.view.marginStart
+import androidx.core.view.setPadding
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.NavController
@@ -972,7 +975,6 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                 val repoAddedKey = "HAS_ADDED_PREMIUM_REPO_V2" 
                 
                 if (getKey(repoAddedKey, false) != true) {
-                    // Hapus repo gratis jika ada
                     currentRepos.forEach { repo ->
                         if (repo.url == targetFreeRepo) {
                             RepositoryManager.removeRepository(this@MainActivity, repo)
@@ -994,8 +996,6 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                 val freeRepoKey = "HAS_ADDED_FREE_REPO_V2"
                 
                 if (getKey(freeRepoKey, false) != true) {
-                    // Hapus semua repo KECUALI yang targetFreeRepo
-                    // Ini untuk membersihkan repo premium yang sudah expired
                     currentRepos.forEach { repo ->
                         if (repo.url != targetFreeRepo) {
                             RepositoryManager.removeRepository(this@MainActivity, repo)
@@ -1538,63 +1538,138 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
         } catch (t: Throwable) { false }
     }
 
-    // --- POPUP UNLOCK ADIXTREAM (NEW LOGIC) ---
+    // --- POPUP UNLOCK ADIXTREAM (NEW PREMIUM DESIGN) ---
     private fun showPremiumUnlockDialog() {
         val context = this
+        
+        // 1. Container dengan Gradient Background
+        val gradient = GradientDrawable(
+            GradientDrawable.Orientation.TOP_BOTTOM,
+            intArrayOf(0xFF1A1A1A.toInt(), 0xFF000000.toInt()) // Dark Gray to Black
+        )
+        gradient.cornerRadius = 16f.toPx.toFloat()
+
         val layout = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(60, 60, 60, 60)
-            setBackgroundColor(android.graphics.Color.parseColor("#202020"))
+            setPadding(40, 40, 40, 40)
+            background = gradient
         }
 
+        val scroll = ScrollView(context).apply {
+            addView(layout)
+        }
+
+        // 2. Icon Mahkota
+        val icon = TextView(context).apply {
+            text = "👑"
+            textSize = 40f
+            gravity = Gravity.CENTER
+            setPadding(0, 10, 0, 10)
+        }
+
+        // 3. Judul
         val title = TextView(context).apply {
-            text = "🔒 PREMIUM ACCESS REQUIRED"
-            textSize = 20f
+            text = "PREMIUM ACCESS"
+            textSize = 22f
             setTextColor(android.graphics.Color.WHITE)
             typeface = android.graphics.Typeface.DEFAULT_BOLD
             gravity = Gravity.CENTER
-            setPadding(0, 0, 0, 40)
+            setPadding(0, 0, 0, 10)
         }
         
         val subTitle = TextView(context).apply {
-            text = "Fitur ini terkunci.\nHubungi Admin untuk mendapatkan Kode Aktivasi.\n\n💰 Harga: Rp 10.000 / Device"
+            text = "Fitur ini terkunci. Silakan hubungi admin untuk berlangganan."
             textSize = 14f
             setTextColor(android.graphics.Color.LTGRAY)
             gravity = Gravity.CENTER
-            setPadding(0, 0, 0, 40)
+            setPadding(0, 0, 0, 30)
         }
 
-        val deviceIdVal = PremiumManager.getDeviceId(context)
-        val deviceIdText = TextView(context).apply {
-            text = "DEVICE ID: $deviceIdVal"
-            textSize = 18f
-            setTextColor(android.graphics.Color.YELLOW)
-            typeface = android.graphics.Typeface.DEFAULT_BOLD
+        // 4. Daftar Harga (List)
+        val priceLayout = LinearLayout(context).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(20, 20, 20, 20)
+            setBackgroundColor(0xFF252525.toInt()) // Dark card bg
             gravity = Gravity.CENTER
-            setPadding(0, 0, 0, 30)
             
+            fun addPrice(dur: String, price: String) {
+                val row = LinearLayout(context).apply {
+                    orientation = LinearLayout.HORIZONTAL
+                    setPadding(0, 5, 0, 5)
+                    weightSum = 2f
+                }
+                val t1 = TextView(context).apply {
+                    text = dur
+                    setTextColor(android.graphics.Color.WHITE)
+                    layoutParams = LinearLayout.LayoutParams(0, -2, 1f)
+                }
+                val t2 = TextView(context).apply {
+                    text = price
+                    setTextColor(android.graphics.Color.GREEN)
+                    layoutParams = LinearLayout.LayoutParams(0, -2, 1f)
+                    gravity = Gravity.END
+                }
+                row.addView(t1)
+                row.addView(t2)
+                addView(row)
+            }
+            
+            addPrice("1 Bulan", "Rp 10.000")
+            addPrice("6 Bulan", "Rp 50.000")
+            addPrice("1 Tahun", "Rp 100.000")
+        }
+
+        // 5. Device ID Box (Bisa dicopy)
+        val deviceIdVal = PremiumManager.getDeviceId(context)
+        
+        val idContainer = LinearLayout(context).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(20, 20, 20, 20)
             setOnClickListener {
                 val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
                 val clip = android.content.ClipData.newPlainText("Device ID", deviceIdVal)
                 clipboard.setPrimaryClip(clip)
                 Toast.makeText(context, "ID Disalin!", Toast.LENGTH_SHORT).show()
             }
+            setBackgroundColor(0xFF333333.toInt()) // Box color
         }
+        val idLabel = TextView(context).apply {
+            text = "DEVICE ID ANDA (Tap to copy):"
+            textSize = 12f
+            setTextColor(android.graphics.Color.GRAY)
+            gravity = Gravity.CENTER
+        }
+        val idValue = TextView(context).apply {
+            text = deviceIdVal
+            textSize = 24f
+            setTextColor(android.graphics.Color.YELLOW)
+            typeface = android.graphics.Typeface.DEFAULT_BOLD
+            gravity = Gravity.CENTER
+            setPadding(0, 5, 0, 0)
+        }
+        idContainer.addView(idLabel)
+        idContainer.addView(idValue)
 
+        // 6. Input Kode
         val inputCode = EditText(context).apply {
-            hint = "Masukkan KODE UNLOCK"
+            hint = "Masukkan KODE di sini"
             setHintTextColor(android.graphics.Color.GRAY)
             setTextColor(android.graphics.Color.WHITE)
             gravity = Gravity.CENTER
-            setPadding(30, 30, 30, 30)
-            setBackgroundColor(android.graphics.Color.parseColor("#303030"))
+            setPadding(30, 40, 30, 40)
+            textSize = 18f
+            setSingleLine()
+            setBackgroundColor(android.graphics.Color.TRANSPARENT)
         }
 
+        // 7. Tombol Unlock
         val btnUnlock = Button(context).apply {
             text = "UNLOCK NOW"
-            setBackgroundColor(android.graphics.Color.parseColor("#FFD700"))
+            textSize = 16f
+            setBackgroundColor(android.graphics.Color.parseColor("#FFD700")) // Gold
             setTextColor(android.graphics.Color.BLACK)
-            setPadding(0, 30, 0, 0)
+            typeface = android.graphics.Typeface.DEFAULT_BOLD
+            setPadding(0, 30, 0, 30)
         }
         
         val btnAdmin = Button(context).apply {
@@ -1611,30 +1686,22 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
             }
         }
 
-        // --- LOGIKA UNLOCK BARU (DATE SECURE) ---
+        // --- Logic Tombol ---
         btnUnlock.setOnClickListener {
             val code = inputCode.text.toString().trim().uppercase()
-            
-            // 1. Validasi Kode & Hitung Tanggal Expired
             val isSuccess = PremiumManager.activatePremiumWithCode(context, code, deviceIdVal)
             
             if (isSuccess) {
-                // Tutup dialog input
                 (btnUnlock.tag as? Dialog)?.dismiss()
-                
-                // Ambil Tanggal Expired untuk ditampilkan
                 val expiryDate = PremiumManager.getExpiryDateString(context)
-
-                // Tampilkan Popup Sukses & Restart
+                
                 AlertDialog.Builder(context)
-                    .setTitle("✅ AKTIVASI SUKSES")
-                    .setMessage("Selamat! Fitur premium Anda sudah aktif.\n\n" +
-                                "📅 Aktif sampai: $expiryDate\n\n" +
-                                "Aplikasi akan di-restart untuk menerapkan perubahan repository.\n" +
-                                "Selamat menonton!")
+                    .setTitle("✅ PREMIUM DIAKTIFKAN")
+                    .setMessage("Terima kasih telah berlangganan!\n\n" +
+                                "📅 Masa Aktif: $expiryDate\n\n" +
+                                "Aplikasi akan direstart...")
                     .setCancelable(false)
-                    .setPositiveButton("OK, RESTART APP") { _, _ ->
-                        // Restart Aplikasi
+                    .setPositiveButton("OK") { _, _ ->
                         val packageManager = context.packageManager
                         val intent = packageManager.getLaunchIntentForPackage(context.packageName)
                         val componentName = intent?.component
@@ -1643,22 +1710,32 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                         Runtime.getRuntime().exit(0)
                     }
                     .show()
-
             } else {
-                Toast.makeText(context, "Kode Salah, Device Berbeda, atau Sudah Kadaluarsa!", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, "⛔ Kode Salah / Sudah Expired!", Toast.LENGTH_SHORT).show()
             }
         }
-        // ----------------------------------------
 
+        // Menyusun Layout
+        layout.addView(icon)
         layout.addView(title)
         layout.addView(subTitle)
-        layout.addView(deviceIdText)
+        
+        // Spacer
+        layout.addView(View(context).apply { layoutParams = LinearLayout.LayoutParams(-1, 20) })
+        layout.addView(priceLayout)
+        
+        layout.addView(View(context).apply { layoutParams = LinearLayout.LayoutParams(-1, 30) })
+        layout.addView(idContainer)
+        
+        layout.addView(View(context).apply { layoutParams = LinearLayout.LayoutParams(-1, 30) })
         layout.addView(inputCode)
+        layout.addView(View(context).apply { layoutParams = LinearLayout.LayoutParams(-1, 2, 0f).apply { setMargins(0,0,0,20); setBackgroundColor(android.graphics.Color.GRAY) } }) // Garis bawah input
+        
         layout.addView(btnUnlock)
         layout.addView(btnAdmin)
 
         val alert = AlertDialog.Builder(context)
-            .setView(layout)
+            .setView(scroll)
             .setCancelable(true)
             .create()
         
