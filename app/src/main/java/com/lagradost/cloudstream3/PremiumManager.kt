@@ -18,7 +18,7 @@ object PremiumManager {
     
     // URL Repo Gratis (Cuma LayarKacaProvider) - WAJIB DIISI URL JSON YANG VALID
     // Contoh: "https://raw.githubusercontent.com/username/repo-gratis/main/repo.json"
-    const val FREE_REPO_URL = "https://raw.githubusercontent.com/michat88/free_repo/refs/heads/builds/repo.json" 
+    const val FREE_REPO_URL = "https://raw.githubusercontent.com/aldry84/AdiManuLateri4/refs/heads/builds/repo.json" 
 
     fun getDeviceId(context: Context): String {
         val androidId = Settings.Secure.getString(context.contentResolver, Settings.Secure.ANDROID_ID)
