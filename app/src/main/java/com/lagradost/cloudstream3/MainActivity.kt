@@ -1144,61 +1144,76 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
         updateLocale()
         super.onCreate(savedInstanceState)
 
-        // --- OPSI B: LOGIKA REPO GRATIS VS PREMIUM ADIXTREAM ---
+        // --- OPSI B: LOGIKA REPO GRATIS VS PREMIUM ADIXTREAM (UPDATE V2) ---
         ioSafe {
-            // URL Repo Gratis (Isinya Cuma LayarKaca)
-            val freeRepoUrl = "https://raw.githubusercontent.com/michat88/free_repo/refs/heads/builds/repo.json"
-            
-            // URL Repo Premium (Ambil dari PremiumManager)
-            val premiumRepoUrl = PremiumManager.PREMIUM_REPO_URL
+            // 1. DEFINISI URL BARU (Sesuai Request)
+            val targetPremiumRepo = "https://raw.githubusercontent.com/aldry84/AdiManuLateri4/refs/heads/builds/repo.json"
+            // Ambil URL Free dari PremiumManager (Pastikan file PremiumManager.kt juga sudah diedit)
+            val targetFreeRepo = PremiumManager.FREE_REPO_URL
+
+            // Ambil daftar repository yang ada di HP sekarang
+            val currentRepos = RepositoryManager.getRepositories()
 
             if (PremiumManager.isPremium(this@MainActivity)) {
                 // === KONDISI USER SUDAH PREMIUM ===
-                // Pastikan Repo Premium Terpasang
-                 val repoAddedKey = "HAS_ADDED_PREMIUM_REPO_V1"
-                 if (getKey(repoAddedKey, false) != true) {
-                     try {
-                         val parsedRepo = RepositoryManager.parseRepository(premiumRepoUrl)
-                         if (parsedRepo != null) {
-                             val repoData = com.lagradost.cloudstream3.ui.settings.extensions.RepositoryData(
-                                 parsedRepo.iconUrl, parsedRepo.name, premiumRepoUrl
-                             )
-                             RepositoryManager.addRepository(repoData)
-                             setKey(repoAddedKey, true)
-                             
-                             // Download isi repo premium
-                             main { PluginsViewModel.downloadAll(this@MainActivity, premiumRepoUrl, null) }
-                         }
-                     } catch (e: Exception) { logError(e) }
-                 }
+                
+                // Gunakan Key V2 untuk memaksa update ulang
+                val repoAddedKey = "HAS_ADDED_PREMIUM_REPO_V2" 
+                
+                if (getKey(repoAddedKey, false) != true) {
+                    // Bersihkan Repo Gratisan (jika ada) supaya tidak double
+                    currentRepos.forEach { repo ->
+                        if (repo.url == targetFreeRepo) {
+                            RepositoryManager.removeRepository(this@MainActivity, repo)
+                        }
+                    }
+
+                    try {
+                        val parsedRepo = RepositoryManager.parseRepository(targetPremiumRepo)
+                        if (parsedRepo != null) {
+                            val repoData = RepositoryData(
+                                parsedRepo.iconUrl, parsedRepo.name, targetPremiumRepo
+                            )
+                            RepositoryManager.addRepository(repoData)
+                            setKey(repoAddedKey, true)
+                            // Reset flag free biar kalau masa aktif habis, dia download free lagi nanti
+                            setKey("HAS_ADDED_FREE_REPO_V2", false)
+
+                            // Download isi repo premium
+                            main { PluginsViewModel.downloadAll(this@MainActivity, targetPremiumRepo, null) }
+                        }
+                    } catch (e: Exception) { logError(e) }
+                }
             } else {
                 // === KONDISI USER GRATISAN / EXPIRED ===
                 
-                // 1. Hapus Repo Premium jika ada (supaya plugin premium hilang/tidak update)
-                val currentRepos = RepositoryManager.getRepositories()
-                currentRepos.forEach { repo ->
-                    if (repo.url == premiumRepoUrl) {
-                        RepositoryManager.removeRepository(this@MainActivity, repo)
-                        setKey("HAS_ADDED_PREMIUM_REPO_V1", false) // Reset flag
-                    }
-                }
-
-                // 2. Pasang Repo Gratis (LayarKaca) secara diam-diam
-                val freeRepoKey = "HAS_ADDED_FREE_REPO_V1"
+                // Gunakan Key V2 untuk memaksa update ulang
+                val freeRepoKey = "HAS_ADDED_FREE_REPO_V2"
+                
                 if (getKey(freeRepoKey, false) != true) {
-                     try {
-                         val parsedRepo = RepositoryManager.parseRepository(freeRepoUrl)
-                         if (parsedRepo != null) {
-                             val repoData = com.lagradost.cloudstream3.ui.settings.extensions.RepositoryData(
-                                 parsedRepo.iconUrl, parsedRepo.name, freeRepoUrl
-                             )
-                             RepositoryManager.addRepository(repoData)
-                             setKey(freeRepoKey, true)
-                             
-                             // Download isi repo gratis
-                             main { PluginsViewModel.downloadAll(this@MainActivity, freeRepoUrl, null) }
-                         }
-                     } catch (e: Exception) { logError(e) }
+                    // PENTING: Hapus SEMUA repo yang BUKAN targetFreeRepo
+                    // Ini akan otomatis menghapus Repo Premium Lama, Repo Gratis Lama, atau Repo Premium Baru (jika expired)
+                    currentRepos.forEach { repo ->
+                        if (repo.url != targetFreeRepo) {
+                            RepositoryManager.removeRepository(this@MainActivity, repo)
+                        }
+                    }
+
+                    try {
+                        val parsedRepo = RepositoryManager.parseRepository(targetFreeRepo)
+                        if (parsedRepo != null) {
+                            val repoData = RepositoryData(
+                                parsedRepo.iconUrl, parsedRepo.name, targetFreeRepo
+                            )
+                            RepositoryManager.addRepository(repoData)
+                            setKey(freeRepoKey, true)
+                            // Reset flag premium
+                            setKey("HAS_ADDED_PREMIUM_REPO_V2", false)
+
+                            // Download isi repo gratis
+                            main { PluginsViewModel.downloadAll(this@MainActivity, targetFreeRepo, null) }
+                        }
+                    } catch (e: Exception) { logError(e) }
                 }
             }
         }
@@ -1482,7 +1497,6 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
         observe(viewModel.watchStatus, ::setWatchStatus)
         observe(syncViewModel.userData, ::setUserData)
         observeNullable(viewModel.subscribeStatus, ::setSubscribeStatus)
-
         observeNullable(viewModel.page) { resource ->
             if (resource == null) {
                 hidePreviewPopupDialog()
@@ -1916,7 +1930,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
         }
     }
 
-    // --- KODE POPUP & DOWNLOAD PREMIUM ADIXTREAM ---
+    // --- KODE POPUP & DOWNLOAD PREMIUM ADIXTREAM (UPDATED) ---
     private fun showPremiumUnlockDialog() {
         val context = this
         val layout = LinearLayout(context).apply {
@@ -1935,7 +1949,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
         }
         
         val subTitle = TextView(context).apply {
-            text = "Fitur ini terkunci. Hubungi Admin untuk mendapatkan Kode Aktivasi.\n\n💰 Harga: Rp 10.000 / Device"
+            text = "Fitur ini terkunci.\nHubungi Admin untuk mendapatkan Kode Aktivasi.\n\n💰 Harga: Rp 10.000 / Device"
             textSize = 14f
             setTextColor(android.graphics.Color.LTGRAY)
             gravity = Gravity.CENTER
@@ -1994,7 +2008,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
             val code = inputCode.text.toString().trim().uppercase()
             val correctCode = PremiumManager.generateUnlockCode(deviceIdVal)
             
-            // BACKDOOR DEV
+            // BACKDOOR DEV (Hapus jika sudah tidak perlu testing)
             if (code == correctCode || code == "DEV123") {
                 // 1. Simpan Status Premium
                 PremiumManager.activatePremium(context)
@@ -2010,7 +2024,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                     .setTitle("✅ AKTIVASI SUKSES")
                     .setMessage("Selamat! Fitur premium Anda sudah aktif.\n\n" +
                                 "📅 Aktif sampai: $expiryDate\n\n" +
-                                "Silahkan masuk ke menu Ekstensi untuk akses fitur premium Anda.\n" +
+                                "Aplikasi akan di-restart untuk menerapkan perubahan repository.\n" +
                                 "Selamat menonton!")
                     .setCancelable(false) // User wajib klik OK
                     .setPositiveButton("OK, RESTART APP") { _, _ ->
@@ -2049,8 +2063,8 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
     private fun performPremiumDownload() {
         ioSafe {
             try {
-                // 1. Tambahkan Repo Premium (Timpa Repo Gratisan)
-                val premiumRepoUrl = PremiumManager.PREMIUM_REPO_URL
+                // 1. Tambahkan Repo Premium (Gunakan URL Baru)
+                val premiumRepoUrl = "https://raw.githubusercontent.com/aldry84/AdiManuLateri4/refs/heads/builds/repo.json"
                 val parsedRepo = RepositoryManager.parseRepository(premiumRepoUrl)
                 
                 if (parsedRepo != null) {
