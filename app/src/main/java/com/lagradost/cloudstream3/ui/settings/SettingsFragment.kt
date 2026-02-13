@@ -50,8 +50,8 @@ import android.text.SpannableString
 import android.text.style.ForegroundColorSpan
 import android.widget.Button
 import androidx.appcompat.app.AlertDialog
+// Import PremiumManager agar bisa membedakan URL repo
 import com.lagradost.cloudstream3.PremiumManager
-import com.lagradost.cloudstream3.MainActivity
 // -----------------------
 
 class SettingsFragment : BaseFragment<MainSettingsBinding>(
@@ -202,26 +202,40 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
         }
 
         binding.apply {
-            
-            // --- PERBAIKAN NAVIGASI EKSTENSI ---
+
+            // --- 1. MODIFIKASI: BYPASS MASUK LANGSUNG KE PLUGINS (DIPERBAIKI) ---
             settingsExtensions.setOnClickListener {
-                // Mengecek status premium melalui PremiumManager
-                if (!PremiumManager.isPremium(requireContext())) {
-                    // Memanggil dialog unlock yang sekarang sudah PUBLIC di MainActivity
-                    (activity as? MainActivity)?.showPremiumUnlockDialog()
-                } else {
-                    // Jika sudah premium, navigasi ke ExtensionsFragment secara normal
-                    navigate(R.id.action_navigation_global_to_navigation_settings_extensions)
+                try {
+                    val bundle = Bundle()
+                    val context = requireContext()
+
+                    // Cek Status Premium User
+                    val isPremium = PremiumManager.isPremium(context)
+
+                    // Tentukan Nama Repo & URL berdasarkan status Premium/Gratis
+                    // Mengambil URL langsung dari PremiumManager agar sinkron dengan MainActivity
+                    val repoName = if (isPremium) "Repository Premium" else "Repository Gratis"
+                    val repoUrl = if (isPremium) PremiumManager.PREMIUM_REPO_URL else PremiumManager.FREE_REPO_URL
+
+                    // Masukkan ke Bundle
+                    bundle.putString("name", repoName)
+                    bundle.putString("url", repoUrl)
+                    bundle.putBoolean("isLocal", false)
+
+                    // Navigasi langsung ke PluginsFragment, melewati ExtensionsFragment
+                    activity?.navigate(R.id.navigation_settings_plugins, bundle)
+                } catch (e: Exception) {
+                    logError(e)
                 }
             }
-            // ------------------------------------
+            // --------------------------------------------------------
 
-            // --- LOGIKA TOMBOL TENTANG ---
+            // --- 2. LOGIKA TOMBOL TENTANG (WARNA MERAH PUTIH) ---
             settingsAbout.setOnClickListener {
                 val builder = AlertDialog.Builder(requireContext(), R.style.AlertDialogCustom)
                 builder.setTitle("Tentang AdiXtream")
                 builder.setMessage("AdiXtream dikembangkan oleh michat88.\n\nAplikasi ini berbasis pada proyek open-source CloudStream.\n\nTerima kasih kepada Developer CloudStream (Lagradost & Tim) atas kode sumber yang luar biasa ini.")
-                
+
                 builder.setNeutralButton("Kode Sumber") { _, _ ->
                     try {
                         val browserIntent = Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/michat88/AdiXtream"))
@@ -258,9 +272,10 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
                     button.text = spannable
                 }
             }
-            // ------------------------------
+            // --------------------------------------------------
 
-            // --- DAFTAR MENU LAINNYA ---
+            // --- 3. DAFTAR MENU LAINNYA ---
+            // Catatan: 'settingsExtensions' DIHAPUS dari list ini agar tidak bentrok dengan logika khusus di atas
             listOf(
                 settingsGeneral to R.id.action_navigation_global_to_navigation_settings_general,
                 settingsPlayer to R.id.action_navigation_global_to_navigation_settings_player,
