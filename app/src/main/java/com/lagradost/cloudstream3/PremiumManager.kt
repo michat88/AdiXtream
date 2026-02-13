@@ -19,7 +19,7 @@ object PremiumManager {
     // TAHUN PATOKAN (Jangan diubah setelah rilis, atau kode lama tidak valid)
     private const val EPOCH_YEAR = 2025 
 
-    const val PREMIUM_REPO_URL = "https://raw.githubusercontent.com/aldry84/Repo_Premium/refs/heads/builds/repo.json"
+    const val PREMIUM_REPO_URL = "https://raw.githubusercontent.com/michat88/PremiumRepo/builds/repo.json"
     const val FREE_REPO_URL = "https://raw.githubusercontent.com/michat88/Repo_Gratis/refs/heads/builds/repo.json"
 
     fun getDeviceId(context: Context): String {
