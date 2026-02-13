@@ -28,246 +28,65 @@ import com.lagradost.cloudstream3.ui.settings.Globals.PHONE
 import com.lagradost.cloudstream3.ui.settings.Globals.TV
 import com.lagradost.cloudstream3.ui.settings.Globals.isLandscape
 import com.lagradost.cloudstream3.ui.settings.Globals.isLayout
-import com.lagradost.cloudstream3.utils.DataStoreHelper
-import com.lagradost.cloudstream3.utils.ImageLoader.loadImage
+import com.lagradost.cloudstream3.utils.AppUtils.openBrowser
+import com.lagradost.cloudstream3.utils.AppUtils.setAppLayout
 import com.lagradost.cloudstream3.utils.UIHelper.clipboardHelper
+import com.lagradost.cloudstream3.utils.UIHelper.dismissSafe
 import com.lagradost.cloudstream3.utils.UIHelper.fixSystemBarsPadding
+import com.lagradost.cloudstream3.utils.UIHelper.getNavigationBarHeight
+import com.lagradost.cloudstream3.utils.UIHelper.getStatusBarHeight
 import com.lagradost.cloudstream3.utils.UIHelper.navigate
-import com.lagradost.cloudstream3.utils.UIHelper.toPx
-import com.lagradost.cloudstream3.utils.getImageFromDrawable
+import com.lagradost.cloudstream3.utils.UIHelper.setImage
+import com.lagradost.cloudstream3.utils.SingleSelectionHelper.showBottomDialog
+import com.lagradost.cloudstream3.utils.SingleSelectionHelper.showDialog
 import com.lagradost.cloudstream3.utils.txt
-import java.io.File
 import java.text.DateFormat
 import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
-import java.util.TimeZone
+import java.util.*
 
-// --- IMPORT TAMBAHAN ---
-import android.graphics.Color
-import android.text.Spannable
-import android.text.SpannableString
-import android.text.style.ForegroundColorSpan
-import android.widget.Button
-import androidx.appcompat.app.AlertDialog
-// -----------------------
+class SettingsFragment : BaseFragment() {
+    override var layout = R.layout.main_settings
+    private var binding: MainSettingsBinding? = null
 
-class SettingsFragment : BaseFragment<MainSettingsBinding>(
-    BaseFragment.BindingCreator.Inflate(MainSettingsBinding::inflate)
-) {
     companion object {
-        fun PreferenceFragmentCompat?.getPref(id: Int): Preference? {
-            if (this == null) return null
-            return try {
-                findPreference(getString(id))
-            } catch (e: Exception) {
-                logError(e)
-                null
+        fun Fragment.setUpToolbar(@StringRes title: Int) {
+            val settingsToolbar = view?.findViewById<MaterialToolbar>(R.id.settings_toolbar)
+            settingsToolbar?.setTitle(title)
+            settingsToolbar?.setNavigationIcon(R.drawable.ic_baseline_arrow_back_24)
+            settingsToolbar?.setNavigationOnClickListener {
+                activity?.onBackPressedDispatcher?.onBackPressed()
             }
         }
 
-        fun PreferenceFragmentCompat?.hidePrefs(ids: List<Int>, layoutFlags: Int) {
-            if (this == null) return
-            try {
-                ids.forEach {
-                    getPref(it)?.isVisible = !isLayout(layoutFlags)
-                }
-            } catch (e: Exception) {
-                logError(e)
-            }
+        fun View.setSystemBarsPadding() {
+            fixSystemBarsPadding(padTop = true, padBottom = false)
         }
 
-        fun Preference?.hideOn(layoutFlags: Int): Preference? {
-            if (this == null) return null
-            this.isVisible = !isLayout(layoutFlags)
-            return if(this.isVisible) this else null
-        }
-
-        fun PreferenceFragmentCompat.setPaddingBottom() {
-            if (isLayout(TV or EMULATOR)) {
-                listView?.setPadding(0, 0, 0, 100.toPx)
+        fun View.setToolBarScrollFlags() {
+            if (isLayout(TV)) return
+            updateLayoutParams<AppBarLayout.LayoutParams> {
+                scrollFlags =
+                    AppBarLayout.LayoutParams.SCROLL_FLAG_SCROLL or AppBarLayout.LayoutParams.SCROLL_FLAG_ENTER_ALWAYS
             }
-        }
-
-        fun PreferenceFragmentCompat.setToolBarScrollFlags() {
-            if (isLayout(TV or EMULATOR)) {
-                val settingsAppbar = view?.findViewById<MaterialToolbar>(R.id.settings_toolbar)
-                settingsAppbar?.updateLayoutParams<AppBarLayout.LayoutParams> {
-                    scrollFlags = AppBarLayout.LayoutParams.SCROLL_FLAG_NO_SCROLL
-                }
-            }
-        }
-
-        fun Fragment?.setToolBarScrollFlags() {
-            if (isLayout(TV or EMULATOR)) {
-                val settingsAppbar = this?.view?.findViewById<MaterialToolbar>(R.id.settings_toolbar)
-                settingsAppbar?.updateLayoutParams<AppBarLayout.LayoutParams> {
-                    scrollFlags = AppBarLayout.LayoutParams.SCROLL_FLAG_NO_SCROLL
-                }
-            }
-        }
-
-        fun Fragment?.setUpToolbar(title: String) {
-            if (this == null) return
-            val settingsToolbar = view?.findViewById<MaterialToolbar>(R.id.settings_toolbar) ?: return
-            settingsToolbar.apply {
-                setTitle(title)
-                if (isLayout(PHONE or EMULATOR)) {
-                    setNavigationIcon(R.drawable.ic_baseline_arrow_back_24)
-                    setNavigationOnClickListener {
-                        activity?.onBackPressedDispatcher?.onBackPressed()
-                    }
-                }
-            }
-        }
-
-        fun Fragment?.setUpToolbar(@StringRes title: Int) {
-            if (this == null) return
-            val settingsToolbar = view?.findViewById<MaterialToolbar>(R.id.settings_toolbar) ?: return
-            settingsToolbar.apply {
-                setTitle(title)
-                if (isLayout(PHONE or EMULATOR)) {
-                    setNavigationIcon(R.drawable.ic_baseline_arrow_back_24)
-                    children.firstOrNull { it is ImageView }?.tag = getString(R.string.tv_no_focus_tag)
-                    setNavigationOnClickListener {
-                        safe { activity?.onBackPressedDispatcher?.onBackPressed() }
-                    }
-                }
-            }
-        }
-
-        fun Fragment.setSystemBarsPadding() {
-            view?.let {
-                fixSystemBarsPadding(
-                    it,
-                    padLeft = isLayout(TV or EMULATOR),
-                    padBottom = isLandscape()
-                )
-            }
-        }
-
-        fun getFolderSize(dir: File): Long {
-            var size: Long = 0
-            dir.listFiles()?.let {
-                for (file in it) {
-                    size += if (file.isFile) file.length() else getFolderSize(file)
-                }
-            }
-            return size
         }
     }
 
-    override fun fixLayout(view: View) {
-        fixSystemBarsPadding(
-            view,
-            padBottom = isLandscape(),
-            padLeft = isLayout(TV or EMULATOR)
-        )
-    }
-
-    override fun onBindingCreated(binding: MainSettingsBinding) {
-        fun navigate(id: Int) {
-            activity?.navigate(id, Bundle())
-        }
-
-        fun hasProfilePictureFromAccountManagers(accountManagers: Array<AuthRepo>): Boolean {
-            for (syncApi in accountManagers) {
-                val login = syncApi.authUser()
-                val pic = login?.profilePicture ?: continue
-                binding.settingsProfilePic.let { imageView ->
-                    imageView.loadImage(pic) {
-                        error { getImageFromDrawable(context ?: return@error null, errorProfilePic) }
-                    }
-                }
-                binding.settingsProfileText.text = login.name
-                return true
-            }
-            return false
-        }
-
-        if (!hasProfilePictureFromAccountManagers(AccountManager.allApis)) {
-            val activity = activity ?: return
-            val currentAccount = try {
-                DataStoreHelper.accounts.firstOrNull {
-                    it.keyIndex == DataStoreHelper.selectedKeyIndex
-                } ?: activity.let { DataStoreHelper.getDefaultAccount(activity) }
-            } catch (t: IllegalStateException) {
-                Log.e("AccountManager", "Activity not found", t)
-                null
-            }
-            binding.settingsProfilePic.loadImage(currentAccount?.image)
-            binding.settingsProfileText.text = currentAccount?.name
-        }
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        val binding = MainSettingsBinding.bind(view)
+        this.binding = binding
 
         binding.apply {
-            
-            // --- 1. MODIFIKASI: BYPASS MASUK LANGSUNG KE PLUGINS ---
-            settingsExtensions.setOnClickListener {
-                try {
-                    val bundle = Bundle()
-                    // Nama yang akan muncul di header toolbar
-                    bundle.putString("name", "FiturPremium") 
-                    // URL Repository kamu (WAJIB SAMA PERSIS DENGAN MAIN ACTIVITY)
-                    bundle.putString("url", "https://raw.githubusercontent.com/aldry84/Repo_Premium/refs/heads/builds/repo.json") 
-                    bundle.putBoolean("isLocal", false)
-                    
-                    // Navigasi langsung ke PluginsFragment, melewati ExtensionsFragment
-                    activity?.navigate(R.id.navigation_settings_plugins, bundle)
-                } catch (e: Exception) {
-                    logError(e)
-                }
-            }
-            // --------------------------------------------------------
+            settingsToolbar.setSystemBarsPadding()
+            settingsToolbar.setToolBarScrollFlags()
 
-            // --- 2. LOGIKA TOMBOL TENTANG (WARNA MERAH PUTIH) ---
-            settingsAbout.setOnClickListener {
-                val builder = AlertDialog.Builder(requireContext(), R.style.AlertDialogCustom)
-                builder.setTitle("Tentang AdiXtream")
-                builder.setMessage("AdiXtream dikembangkan oleh michat88.\n\nAplikasi ini berbasis pada proyek open-source CloudStream.\n\nTerima kasih kepada Developer CloudStream (Lagradost & Tim) atas kode sumber yang luar biasa ini.")
-                
-                builder.setNeutralButton("Kode Sumber") { _, _ ->
-                    try {
-                        val browserIntent = Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/michat88/AdiXtream"))
-                        startActivity(browserIntent)
-                    } catch (e: Exception) {
-                        e.printStackTrace()
-                    }
-                }
-
-                builder.setPositiveButton("Tutup") { dialog, _ ->
-                    dialog.dismiss()
-                }
-
-                val dialog: AlertDialog = builder.create()
-                dialog.show()
-
-                val sourceCodeButton: Button? = dialog.getButton(AlertDialog.BUTTON_NEUTRAL)
-                sourceCodeButton?.let { button ->
-                    val fullText = "Kode Sumber"
-                    val spannable = SpannableString(fullText)
-
-                    spannable.setSpan(
-                        ForegroundColorSpan(Color.parseColor("#FF0000")),
-                        0, 4,
-                        Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
-                    )
-
-                    spannable.setSpan(
-                        ForegroundColorSpan(Color.WHITE),
-                        5, fullText.length,
-                        Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
-                    )
-
-                    button.text = spannable
-                }
-            }
-            // --------------------------------------------------
-
-            // --- 3. DAFTAR MENU LAINNYA ---
-            // Catatan: 'settingsExtensions' DIHAPUS dari list ini agar tidak bentrok dengan logika khusus di atas
+            // --- Navigasi Diperbaiki ---
             listOf(
                 settingsGeneral to R.id.action_navigation_global_to_navigation_settings_general,
                 settingsPlayer to R.id.action_navigation_global_to_navigation_settings_player,
+                
+                // Sekarang tombol ini akan dicek oleh Satpam di MainActivity
+                settingsExtensions to R.id.action_navigation_global_to_navigation_settings_extensions, 
+                
                 settingsCredits to R.id.action_navigation_global_to_navigation_settings_account,
                 settingsUi to R.id.action_navigation_global_to_navigation_settings_ui,
                 settingsProviders to R.id.action_navigation_global_to_navigation_settings_providers,
@@ -281,12 +100,14 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
                     }
                 }
             }
+
             if (isLayout(TV)) {
                 settingsGeneral.requestFocus()
             }
         }
 
-        val appVersion = BuildConfig.APP_VERSION
+        // Tampilkan Info Versi
+        val appVersion = BuildConfig.VERSION_NAME
         val commitInfo = getString(R.string.commit_hash)
         val buildTimestamp = SimpleDateFormat.getDateTimeInstance(DateFormat.LONG, DateFormat.LONG,
             Locale.getDefault()
@@ -299,5 +120,10 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
             clipboardHelper(txt(R.string.extension_version), "$appVersion $commitInfo $buildTimestamp")
             true
         }
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        binding = null
     }
 }
