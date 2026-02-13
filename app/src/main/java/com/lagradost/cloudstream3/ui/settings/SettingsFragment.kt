@@ -203,22 +203,20 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
 
         binding.apply {
             
-            // --- MODIFIKASI PERBAIKAN: NAVIGASI EKSTENSI ---
-            // Kita menghapus bypass navigasi langsung ke PluginsFragment
-            // karena itu menyebabkan repository tidak terdeteksi oleh UI.
+            // --- PERBAIKAN NAVIGASI EKSTENSI ---
             settingsExtensions.setOnClickListener {
+                // Mengecek status premium melalui PremiumManager
                 if (!PremiumManager.isPremium(requireContext())) {
-                    // Jika belum premium, panggil dialog unlock di MainActivity
+                    // Memanggil dialog unlock yang sekarang sudah PUBLIC di MainActivity
                     (activity as? MainActivity)?.showPremiumUnlockDialog()
                 } else {
-                    // Jika sudah premium, arahkan ke ExtensionsFragment secara normal
-                    // Ini memastikan daftar repository dimuat dengan benar oleh sistem.
+                    // Jika sudah premium, navigasi ke ExtensionsFragment secara normal
                     navigate(R.id.action_navigation_global_to_navigation_settings_extensions)
                 }
             }
-            // --------------------------------------------------------
+            // ------------------------------------
 
-            // --- LOGIKA TOMBOL TENTANG (WARNA MERAH PUTIH) ---
+            // --- LOGIKA TOMBOL TENTANG ---
             settingsAbout.setOnClickListener {
                 val builder = AlertDialog.Builder(requireContext(), R.style.AlertDialogCustom)
                 builder.setTitle("Tentang AdiXtream")
@@ -260,7 +258,7 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
                     button.text = spannable
                 }
             }
-            // --------------------------------------------------
+            // ------------------------------
 
             // --- DAFTAR MENU LAINNYA ---
             listOf(
