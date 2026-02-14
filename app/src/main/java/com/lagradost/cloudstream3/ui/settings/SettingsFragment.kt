@@ -50,7 +50,8 @@ import android.text.SpannableString
 import android.text.style.ForegroundColorSpan
 import android.widget.Button
 import androidx.appcompat.app.AlertDialog
-import com.lagradost.cloudstream3.PremiumManager // Penting: Import PremiumManager
+// Import PremiumManager agar bisa membedakan URL repo
+import com.lagradost.cloudstream3.PremiumManager
 // -----------------------
 
 class SettingsFragment : BaseFragment<MainSettingsBinding>(
@@ -202,7 +203,7 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
 
         binding.apply {
 
-            // --- 1. MODIFIKASI: BYPASS MASUK LANGSUNG KE PLUGINS (DINAMIS) ---
+            // --- 1. MODIFIKASI: BYPASS MASUK LANGSUNG KE PLUGINS (DIPERBAIKI) ---
             settingsExtensions.setOnClickListener {
                 try {
                     val bundle = Bundle()
@@ -211,27 +212,25 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
                     // Cek Status Premium User
                     val isPremium = PremiumManager.isPremium(context)
 
-                    // --- PERUBAHAN: MENGAMBIL DATA DARI PREMIUM MANAGER ---
-                    // Pastikan di PremiumManager.kt sudah ada variabel PREMIUM_REPO_NAME & FREE_REPO_NAME
-                    val repoName = if (isPremium) PremiumManager.PREMIUM_REPO_NAME else PremiumManager.FREE_REPO_NAME
+                    // Tentukan Nama Repo & URL berdasarkan status Premium/Gratis
+                    // Mengambil URL langsung dari PremiumManager agar sinkron dengan MainActivity
+                    val repoName = if (isPremium) "Repository Premium" else "Repository Gratis"
                     val repoUrl = if (isPremium) PremiumManager.PREMIUM_REPO_URL else PremiumManager.FREE_REPO_URL
-                    // -----------------------------------------------------
 
                     // Masukkan ke Bundle
                     bundle.putString("name", repoName)
                     bundle.putString("url", repoUrl)
                     bundle.putBoolean("isLocal", false)
 
-                    // Navigasi langsung ke PluginsFragment
-                    // NOTE: Pastikan ID 'navigation_settings_plugins' ada di navigation graph kamu
+                    // Navigasi langsung ke PluginsFragment, melewati ExtensionsFragment
                     activity?.navigate(R.id.navigation_settings_plugins, bundle)
                 } catch (e: Exception) {
                     logError(e)
                 }
             }
-            // -----------------------------------------------------------------
+            // --------------------------------------------------------
 
-            // --- 2. LOGIKA TOMBOL TENTANG (Custom Dialog Merah Putih) ---
+            // --- 2. LOGIKA TOMBOL TENTANG (WARNA MERAH PUTIH) ---
             settingsAbout.setOnClickListener {
                 val builder = AlertDialog.Builder(requireContext(), R.style.AlertDialogCustom)
                 builder.setTitle("Tentang AdiXtream")
@@ -276,7 +275,7 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
             // --------------------------------------------------
 
             // --- 3. DAFTAR MENU LAINNYA ---
-            // Catatan: 'settingsExtensions' KITA HAPUS dari list ini karena sudah ditangani manual di atas
+            // Catatan: 'settingsExtensions' DIHAPUS dari list ini agar tidak bentrok dengan logika khusus di atas
             listOf(
                 settingsGeneral to R.id.action_navigation_global_to_navigation_settings_general,
                 settingsPlayer to R.id.action_navigation_global_to_navigation_settings_player,
