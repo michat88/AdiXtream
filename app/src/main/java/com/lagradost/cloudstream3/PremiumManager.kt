@@ -11,8 +11,9 @@ import java.util.Locale
 import java.util.concurrent.TimeUnit
 import kotlin.math.abs
 
-// Pastikan RepoProtector ada di package yang sama atau di-import jika berbeda package
-// import com.lagradost.cloudstream3.utils.RepoProtector (Aktifkan jika RepoProtector ada di folder utils)
+// --- PERBAIKAN: TAMBAHKAN IMPORT INI ---
+import com.lagradost.cloudstream3.utils.RepoProtector
+// ---------------------------------------
 
 object PremiumManager {
     private const val PREF_IS_PREMIUM = "is_premium_user"
@@ -23,8 +24,7 @@ object PremiumManager {
     private const val EPOCH_YEAR = 2025 
 
     // --- MODIFIKASI KEAMANAN ---
-    // Menggunakan 'val' (bukan const val) dan decode dari RepoProtector
-    // Ini mencegah URL terbaca langsung di Classes.dex lewat MT Manager
+    // Sekarang RepoProtector sudah dikenali berkat import di atas
     val PREMIUM_REPO_URL = RepoProtector.decode(RepoProtector.PREMIUM_REPO_ENCODED)
     val FREE_REPO_URL = RepoProtector.decode(RepoProtector.FREE_REPO_ENCODED)
     // ---------------------------
