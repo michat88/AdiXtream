@@ -143,78 +143,28 @@ class SettingsUpdates : BasePreferenceFragmentCompat() {
             return@setOnPreferenceClickListener true
         }
 
-        // --- MODIFIKASI ADIXTREAM: MENONAKTIFKAN LOGCAT ---
+        // --- MODIFIKASI ADIXTREAM: LOGCAT DISEMBUNYIKAN ---
         // Tombol disembunyikan agar repo tidak bocor
         getPref(R.string.show_logcat_key)?.isVisible = false
-
-        /* KODE ASLI DIKOMENTARI (TIDAK DIHAPUS, HANYA MATI)
-        getPref(R.string.show_logcat_key)?.setOnPreferenceClickListener { pref ->
-            val builder = AlertDialog.Builder(pref.context, R.style.AlertDialogCustom)
-
-            val binding = LogcatBinding.inflate(layoutInflater, null, false)
-            builder.setView(binding.root)
-
-            val dialog = builder.create()
-            dialog.show()
-
-            val logList = mutableListOf<String>()
-            try {
-                // https://developer.android.com/studio/command-line/logcat
-                val process = Runtime.getRuntime().exec("logcat -d")
-                val bufferedReader = BufferedReader(InputStreamReader(process.inputStream))
-                bufferedReader.lineSequence().forEach { logList.add(it) }
-            } catch (e: Exception) {
-                logError(e) // kinda ironic
-            }
-
-            val adapter = LogcatAdapter().apply { submitList(logList) }
-            binding.logcatRecyclerView.layoutManager = LinearLayoutManager(pref.context)
-            binding.logcatRecyclerView.adapter = adapter
-
-            binding.copyBtt.setOnClickListener {
-                clipboardHelper(txt("Logcat"), logList.joinToString("\n"))
-                dialog.dismissSafe(activity)
-            }
-
-            binding.clearBtt.setOnClickListener {
-                Runtime.getRuntime().exec("logcat -c")
-                dialog.dismissSafe(activity)
-            }
-
-            binding.saveBtt.setOnClickListener {
-                val date = SimpleDateFormat("yyyy_MM_dd_HH_mm", Locale.getDefault()).format(Date(currentTimeMillis()))
-                var fileStream: OutputStream? = null
-                try {
-                    fileStream = VideoDownloadManager.setupStream(
-                        it.context,
-                        "logcat_${date}",
-                        null,
-                        "txt",
-                        false
-                    ).openNew()
-                    fileStream.writer().use { writer -> writer.write(logList.joinToString("\n")) }
-                    dialog.dismissSafe(activity)
-                } catch (t: Throwable) {
-                    logError(t)
-                    showToast(t.message)
-                }
-            }
-
-            binding.closeBtt.setOnClickListener {
-                dialog.dismissSafe(activity)
-            }
-
-            return@setOnPreferenceClickListener true
-        }
-        */
         // --------------------------------------------------
+
+        // --- MODIFIKASI ADIXTREAM: PENGINSTAL APK DEFAULT KE 'VERSI LAMA' (1) ---
+        val apkInstallerKeyStr = getString(R.string.apk_installer_key)
+
+        // Cek apakah pengguna sudah punya pengaturan ini. Jika belum, paksa ke '1' (Versi Lama)
+        if (!settingsManager.contains(apkInstallerKeyStr)) {
+            settingsManager.edit {
+                putInt(apkInstallerKeyStr, 1)
+            }
+        }
 
         getPref(R.string.apk_installer_key)?.setOnPreferenceClickListener {
             val prefNames = resources.getStringArray(R.array.apk_installer_pref)
             val prefValues = resources.getIntArray(R.array.apk_installer_values)
 
+            // Gunakan nilai 1 sebagai fallback default saat membuka dialog
             val currentInstaller =
-                settingsManager.getInt(getString(R.string.apk_installer_key), 0)
+                settingsManager.getInt(getString(R.string.apk_installer_key), 1)
 
             activity?.showBottomDialog(
                 prefNames.toList(),
@@ -233,6 +183,7 @@ class SettingsUpdates : BasePreferenceFragmentCompat() {
             }
             return@setOnPreferenceClickListener true
         }
+        // ------------------------------------------------------------------------
 
         getPref(R.string.manual_check_update_key)?.let { pref ->
             pref.summary = BuildConfig.APP_VERSION
