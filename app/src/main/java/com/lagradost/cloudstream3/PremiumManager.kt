@@ -11,6 +11,9 @@ import java.util.Locale
 import java.util.concurrent.TimeUnit
 import kotlin.math.abs
 
+// Pastikan RepoProtector ada di package yang sama atau di-import jika berbeda package
+// import com.lagradost.cloudstream3.utils.RepoProtector (Aktifkan jika RepoProtector ada di folder utils)
+
 object PremiumManager {
     private const val PREF_IS_PREMIUM = "is_premium_user"
     private const val PREF_EXPIRY_DATE = "premium_expiry_date"
@@ -19,8 +22,12 @@ object PremiumManager {
     // TAHUN PATOKAN (Jangan diubah setelah rilis, atau kode lama tidak valid)
     private const val EPOCH_YEAR = 2025 
 
-    const val PREMIUM_REPO_URL = "https://raw.githubusercontent.com/michat88/PremiumRepo/builds/repo.json"
-    const val FREE_REPO_URL = "https://raw.githubusercontent.com/michat88/Repo_Gratis/refs/heads/builds/repo.json"
+    // --- MODIFIKASI KEAMANAN ---
+    // Menggunakan 'val' (bukan const val) dan decode dari RepoProtector
+    // Ini mencegah URL terbaca langsung di Classes.dex lewat MT Manager
+    val PREMIUM_REPO_URL = RepoProtector.decode(RepoProtector.PREMIUM_REPO_ENCODED)
+    val FREE_REPO_URL = RepoProtector.decode(RepoProtector.FREE_REPO_ENCODED)
+    // ---------------------------
 
     fun getDeviceId(context: Context): String {
         val androidId = Settings.Secure.getString(context.contentResolver, Settings.Secure.ANDROID_ID)
