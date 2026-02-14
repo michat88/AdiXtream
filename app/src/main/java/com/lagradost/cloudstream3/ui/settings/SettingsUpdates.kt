@@ -143,6 +143,11 @@ class SettingsUpdates : BasePreferenceFragmentCompat() {
             return@setOnPreferenceClickListener true
         }
 
+        // --- MODIFIKASI ADIXTREAM: MENONAKTIFKAN LOGCAT ---
+        // Tombol disembunyikan agar repo tidak bocor
+        getPref(R.string.show_logcat_key)?.isVisible = false
+
+        /* KODE ASLI DIKOMENTARI (TIDAK DIHAPUS, HANYA MATI)
         getPref(R.string.show_logcat_key)?.setOnPreferenceClickListener { pref ->
             val builder = AlertDialog.Builder(pref.context, R.style.AlertDialogCustom)
 
@@ -201,6 +206,8 @@ class SettingsUpdates : BasePreferenceFragmentCompat() {
 
             return@setOnPreferenceClickListener true
         }
+        */
+        // --------------------------------------------------
 
         getPref(R.string.apk_installer_key)?.setOnPreferenceClickListener {
             val prefNames = resources.getStringArray(R.array.apk_installer_pref)
