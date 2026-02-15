@@ -29,6 +29,7 @@ import com.lagradost.cloudstream3.CommonActivity.showToast
 import com.lagradost.cloudstream3.MainAPI
 import com.lagradost.cloudstream3.MainAPI.Companion.settingsForProvider
 import com.lagradost.cloudstream3.MainActivity.Companion.afterPluginsLoadedEvent
+import com.lagradost.cloudstream3.MainActivity.Companion.lastError
 import com.lagradost.cloudstream3.PROVIDER_STATUS_DOWN
 import com.lagradost.cloudstream3.PROVIDER_STATUS_OK
 import com.lagradost.cloudstream3.R
@@ -51,7 +52,7 @@ import com.lagradost.cloudstream3.utils.Coroutines.main
 import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.utils.UIHelper.colorFromAttribute
 import com.lagradost.cloudstream3.utils.UiText
-import com.lagradost.cloudstream3.utils.VideoDownloadManager.sanitizeFilename
+import com.lagradost.cloudstream3.utils.downloader.DownloadFileManagement.sanitizeFilename
 import com.lagradost.cloudstream3.utils.extractorApis
 import com.lagradost.cloudstream3.utils.txt
 import dalvik.system.PathClassLoader
@@ -173,8 +174,9 @@ object PluginManager {
         return getKey(PLUGINS_KEY_LOCAL) ?: emptyArray()
     }
 
+    // MODIFIED FOR ADIXTREAM: Changed folder name from Cloudstream3 to AdiXtream
     private val CLOUD_STREAM_FOLDER =
-        Environment.getExternalStorageDirectory().absolutePath + "/Cloudstream3/"
+        Environment.getExternalStorageDirectory().absolutePath + "/AdiXtream/"
 
     private val LOCAL_PLUGINS_PATH = CLOUD_STREAM_FOLDER + "plugins"
 
@@ -572,6 +574,11 @@ object PluginManager {
         afterPluginsLoadedEvent.invoke(forceReload)
     }
 
+    /** @return true if safe mode is enabled in any possible way. */
+    fun isSafeMode(): Boolean {
+        return checkSafeModeFile() || lastError != null
+    }
+
     /**
      * This can be used to override any extension loading to fix crashes!
      * @return true if safe mode file is present
@@ -783,6 +790,10 @@ object PluginManager {
                 true
             }
         } catch (e: Exception) {
+            // MODIFIED FOR ADIXTREAM: Show Toast on Error
+            main {
+                Toast.makeText(activity, "Gagal Update: ${e.message}", Toast.LENGTH_LONG).show()
+            }
             logError(e)
             return false
         }
