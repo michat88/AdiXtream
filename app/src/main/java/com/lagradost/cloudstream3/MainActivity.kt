@@ -1152,12 +1152,26 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                     mainPluginsLoadedEvent.invoke(false)
                 }
 
+                // --- PERBAIKAN: RACE CONDITION / DOUBLE DOWNLOAD ---
+                // Mencegah update bawaan menimpa file yang sedang didownload oleh logika Premium/Free
                 ioSafe {
-                    if (settingsManager.getBoolean(getString(R.string.auto_update_plugins_key), true)) {
-                        PluginManager.___DO_NOT_CALL_FROM_A_PLUGIN_updateAllOnlinePluginsAndLoadThem(this@MainActivity)
+                    // Cek apakah kita sudah menjalankan logika Premium/Free Repo di atas
+                    // Jika user baru saja ganti repo (Premium <-> Free), jangan update lagi di sini untuk hindari konflik file.
+                    val hasTriggeredRepoSwitch = getKey<Boolean>("HAS_ADDED_PREMIUM_REPO_V2") == true || getKey<Boolean>("HAS_ADDED_FREE_REPO_V2") == true
+                    
+                    if (!hasTriggeredRepoSwitch) {
+                         // Hanya jalankan update standar jika tidak ada perubahan repo
+                         if (settingsManager.getBoolean(getString(R.string.auto_update_plugins_key), true)) {
+                            PluginManager.___DO_NOT_CALL_FROM_A_PLUGIN_updateAllOnlinePluginsAndLoadThem(this@MainActivity)
+                        } else {
+                            ___DO_NOT_CALL_FROM_A_PLUGIN_loadAllOnlinePlugins(this@MainActivity)
+                        }
                     } else {
+                        // Jika sudah switch repo, cukup load saja tanpa update (karena di atas sudah didownload)
                         ___DO_NOT_CALL_FROM_A_PLUGIN_loadAllOnlinePlugins(this@MainActivity)
                     }
+
+                    // Tetap jalankan auto download mode jika ada
                     val autoDownloadPlugin = AutoDownloadMode.getEnum(settingsManager.getInt(getString(R.string.auto_download_plugins_key), 0)) ?: AutoDownloadMode.Disable
                     if (autoDownloadPlugin != AutoDownloadMode.Disable) {
                         PluginManager.___DO_NOT_CALL_FROM_A_PLUGIN_downloadNotExistingPluginsAndLoad(this@MainActivity, autoDownloadPlugin)
