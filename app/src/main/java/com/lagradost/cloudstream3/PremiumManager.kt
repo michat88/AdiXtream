@@ -11,33 +11,39 @@ import java.util.Locale
 import java.util.concurrent.TimeUnit
 import kotlin.math.abs
 
-// --- PERBAIKAN: TAMBAHKAN IMPORT INI ---
+// Import wajib agar bisa membaca URL terenkripsi dari RepoProtector
 import com.lagradost.cloudstream3.utils.RepoProtector
-// ---------------------------------------
 
 object PremiumManager {
     private const val PREF_IS_PREMIUM = "is_premium_user"
     private const val PREF_EXPIRY_DATE = "premium_expiry_date"
+    
+    // Kunci Rahasia untuk hashing (SALT). Pastikan ini sama dengan yang ada di Generator Admin.
     private const val SALT = "ADIXTREAM_SECRET_KEY_2026_SECURE" 
     
-    // TAHUN PATOKAN (Jangan diubah setelah rilis, atau kode lama tidak valid)
+    // TAHUN PATOKAN (Epoch). Jangan diubah setelah aplikasi rilis ke user.
     private const val EPOCH_YEAR = 2025 
 
-    // --- MODIFIKASI KEAMANAN ---
-    // Sekarang RepoProtector sudah dikenali berkat import di atas
+    // --- REPOSITORY URLS ---
+    // Mengambil URL yang sudah didecode dari RepoProtector agar tidak terbaca plain text
     val PREMIUM_REPO_URL = RepoProtector.decode(RepoProtector.PREMIUM_REPO_ENCODED)
     val FREE_REPO_URL = RepoProtector.decode(RepoProtector.FREE_REPO_ENCODED)
-    // ---------------------------
+    // -----------------------
 
+    /**
+     * Mendapatkan ID Unik Perangkat User
+     * Menggunakan Android ID yang di-hash agar lebih pendek (8 karakter).
+     */
     fun getDeviceId(context: Context): String {
         val androidId = Settings.Secure.getString(context.contentResolver, Settings.Secure.ANDROID_ID)
         return abs(androidId.hashCode()).toString().take(8)
     }
 
     /**
-     * GENERATE CODE (Hanya untuk Admin)
+     * GENERATE CODE (Fungsi ini biasanya hanya dipakai di sisi Admin/Generator)
+     * Membuat kode unik berdasarkan Device ID dan durasi hari.
      * @param deviceId ID Device User
-     * @param daysValid Mau aktif berapa hari dari HARI INI? (Misal 30)
+     * @param daysValid Mau aktif berapa hari dari HARI INI?
      */
     fun generateUnlockCode(deviceId: String, daysValid: Int): String {
         // 1. Hitung Tanggal Target Expired
@@ -52,12 +58,11 @@ object PremiumManager {
         val diffMillis = targetDate.time - epochCal.timeInMillis
         val daysFromEpoch = TimeUnit.MILLISECONDS.toDays(diffMillis).toInt()
 
-        // 3. Konversi hari ke Hex (3 digit). Max 4095 hari (sekitar 11 tahun)
-        // Contoh: Hari ke-400 -> "190"
+        // 3. Konversi hari ke Hex (3 digit). Max mencakup sekitar 11 tahun.
         val dateHex = "%03X".format(daysFromEpoch)
 
         // 4. Buat Signature Keamanan (3 digit)
-        // Kita hash DeviceID + DateHex + Salt supaya user gak bisa ngasal ubah DateHex
+        // Hash kombinasi DeviceID + DateHex + Salt
         val signatureInput = "$deviceId$dateHex$SALT"
         val signatureHash = MessageDigest.getInstance("MD5").digest(signatureInput.toByteArray())
         val signatureHex = signatureHash.joinToString("") { "%02x".format(it) }
@@ -68,19 +73,19 @@ object PremiumManager {
     }
 
     /**
-     * FUNGSI AKTIVASI BARU
-     * Sekarang fungsi ini butuh 'code' untuk mendekripsi tanggalnya.
+     * FUNGSI AKTIVASI (Dipanggil saat user menekan tombol Unlock)
+     * Memverifikasi kode yang dimasukkan user.
      */
     fun activatePremiumWithCode(context: Context, code: String, deviceId: String): Boolean {
-        // Validasi panjang kode
+        // Validasi panjang kode harus 6 karakter
         if (code.length != 6) return false
 
         val inputCode = code.uppercase()
-        val datePartHex = inputCode.substring(0, 3) // 3 Digit pertama (Tanggal)
-        val sigPartHex = inputCode.substring(3, 6)  // 3 Digit terakhir (Keamanan)
+        val datePartHex = inputCode.substring(0, 3) // 3 Digit pertama (Data Tanggal)
+        val sigPartHex = inputCode.substring(3, 6)  // 3 Digit terakhir (Signature Keamanan)
 
         // 1. Cek Validitas Signature (Anti Cheat)
-        // Kita hitung ulang hash-nya, apakah cocok dengan 3 digit terakhir?
+        // Hitung ulang hash berdasarkan input, apakah cocok dengan signature?
         val checkInput = "$deviceId$datePartHex$SALT"
         val checkHashBytes = MessageDigest.getInstance("MD5").digest(checkInput.toByteArray())
         val expectedSig = checkHashBytes.joinToString("") { "%02x".format(it) }
@@ -103,8 +108,7 @@ object PremiumManager {
 
             // Cek apakah tanggal itu sudah lewat (Expired)?
             if (System.currentTimeMillis() > expiryTime) {
-                // Kode benar, tapi masa aktifnya sudah habis
-                return false 
+                return false // Kode benar secara format, tapi masa aktifnya sudah lewat
             }
 
             // 3. Simpan Ke Preferences (Save Permanent Date)
@@ -121,14 +125,19 @@ object PremiumManager {
         }
     }
 
+    /**
+     * Cek Status Premium
+     * Mengembalikan true jika user premium DAN belum expired.
+     */
     fun isPremium(context: Context): Boolean {
         val prefs = PreferenceManager.getDefaultSharedPreferences(context)
         val isPremium = prefs.getBoolean(PREF_IS_PREMIUM, false)
         val expiryDate = prefs.getLong(PREF_EXPIRY_DATE, 0)
         
         if (isPremium) {
+            // Cek apakah hari ini sudah melewati tanggal expiry
             if (System.currentTimeMillis() > expiryDate) {
-                deactivatePremium(context)
+                deactivatePremium(context) // Otomatis matikan premium jika lewat tanggal
                 return false
             }
             return true
@@ -136,6 +145,9 @@ object PremiumManager {
         return false
     }
 
+    /**
+     * Nonaktifkan Premium (Logout/Expired/Reset)
+     */
     fun deactivatePremium(context: Context) {
         val prefs = PreferenceManager.getDefaultSharedPreferences(context)
         prefs.edit().apply {
@@ -145,6 +157,9 @@ object PremiumManager {
         }
     }
     
+    /**
+     * Helper untuk menampilkan tanggal expiry ke UI (String format)
+     */
     fun getExpiryDateString(context: Context): String {
         val prefs = PreferenceManager.getDefaultSharedPreferences(context)
         val date = prefs.getLong(PREF_EXPIRY_DATE, 0)
