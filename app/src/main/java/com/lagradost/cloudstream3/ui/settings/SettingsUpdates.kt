@@ -143,9 +143,49 @@ class SettingsUpdates : BasePreferenceFragmentCompat() {
             return@setOnPreferenceClickListener true
         }
 
-        // --- MODIFIKASI ADIXTREAM: LOGCAT DISEMBUNYIKAN ---
-        // Tombol disembunyikan agar repo tidak bocor
-        getPref(R.string.show_logcat_key)?.isVisible = false
+        // --- PERBAIKAN: LOGCAT DIAKTIFKAN KEMBALI ---
+        getPref(R.string.show_logcat_key)?.setOnPreferenceClickListener {
+            val binding = LogcatBinding.inflate(layoutInflater)
+            val builder = AlertDialog.Builder(requireContext())
+            builder.setView(binding.root)
+            val dialog = builder.create()
+            dialog.show()
+
+            try {
+                // Baca logcat
+                val process = Runtime.getRuntime().exec("logcat -d")
+                val bufferedReader = BufferedReader(InputStreamReader(process.inputStream))
+                val log = StringBuilder()
+                var line: String?
+                while (bufferedReader.readLine().also { line = it } != null) {
+                    log.append(line + "\n")
+                }
+                binding.textLog.text = log.toString()
+            } catch (e: Exception) {
+                logError(e)
+                binding.textLog.text = "Error reading logcat: ${e.message}"
+            }
+
+            binding.copyBtt.setOnClickListener {
+                activity?.clipboardHelper(binding.textLog.text, "Logcat")
+                showToast(activity, R.string.copy_to_clipboard, Toast.LENGTH_SHORT)
+            }
+
+            binding.clearBtt.setOnClickListener {
+                try {
+                    Runtime.getRuntime().exec("logcat -c")
+                    binding.textLog.text = ""
+                    showToast(activity, R.string.cache_cleared, Toast.LENGTH_SHORT)
+                } catch (e: Exception) {
+                    logError(e)
+                }
+            }
+
+            binding.closeBtt.setOnClickListener {
+                dismissSafe(dialog)
+            }
+            return@setOnPreferenceClickListener true
+        }
         // --------------------------------------------------
 
         // --- MODIFIKASI ADIXTREAM: PENGINSTAL APK DEFAULT KE 'VERSI LAMA' (1) ---
