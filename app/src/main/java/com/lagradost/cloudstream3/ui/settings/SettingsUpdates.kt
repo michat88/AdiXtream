@@ -23,6 +23,7 @@ import com.lagradost.cloudstream3.plugins.PluginManager
 import com.lagradost.cloudstream3.services.BackupWorkManager
 import com.lagradost.cloudstream3.ui.BasePreferenceFragmentCompat
 import com.lagradost.cloudstream3.ui.settings.Globals.EMULATOR
+import com.lagradost.cloudstream3.ui.settings.Globals.TV
 import com.lagradost.cloudstream3.ui.settings.SettingsFragment.Companion.getPref
 import com.lagradost.cloudstream3.ui.settings.SettingsFragment.Companion.hideOn
 import com.lagradost.cloudstream3.ui.settings.SettingsFragment.Companion.setPaddingBottom
@@ -32,8 +33,9 @@ import com.lagradost.cloudstream3.ui.settings.utils.getChooseFolderLauncher
 import com.lagradost.cloudstream3.utils.BackupUtils
 import com.lagradost.cloudstream3.utils.BackupUtils.restorePrompt
 import com.lagradost.cloudstream3.utils.Coroutines.ioSafe
-// PERBAIKAN IMPORT: Lokasi InAppUpdater dan UIHelper yang benar
 import com.lagradost.cloudstream3.utils.InAppUpdater.Companion.runAutoUpdate
+import com.lagradost.cloudstream3.utils.SingleSelectionHelper.showBottomDialog
+import com.lagradost.cloudstream3.utils.SingleSelectionHelper.showDialog
 import com.lagradost.cloudstream3.utils.UIHelper.clipboardHelper
 import com.lagradost.cloudstream3.utils.UIHelper.dismissSafe
 import com.lagradost.cloudstream3.utils.UIHelper.hideKeyboard
@@ -121,6 +123,7 @@ class SettingsUpdates : BasePreferenceFragmentCompat() {
                 true,
                 {}
             ) {
+                // Last = custom
                 if (it == dirs.size) {
                     try {
                         pathPicker.launch(Uri.EMPTY)
@@ -128,6 +131,9 @@ class SettingsUpdates : BasePreferenceFragmentCompat() {
                         logError(e)
                     }
                 } else {
+                    // Sets both visual and actual paths.
+                    // path = used uri
+                    // dir = dir path
                     settingsManager.edit {
                         putString(getString(R.string.backup_path_key), dirs[it])
                         putString(getString(R.string.backup_dir_key), dirs[it])
@@ -137,10 +143,9 @@ class SettingsUpdates : BasePreferenceFragmentCompat() {
             return@setOnPreferenceClickListener true
         }
 
-        // --- FIX LOGCAT UNTUK ADIXTREAM ---
         getPref(R.string.show_logcat_key)?.setOnPreferenceClickListener { pref ->
-            val context = context ?: return@setOnPreferenceClickListener true
-            val builder = AlertDialog.Builder(context, R.style.AlertDialogCustom)
+            val builder = AlertDialog.Builder(pref.context, R.style.AlertDialogCustom)
+
             val binding = LogcatBinding.inflate(layoutInflater, null, false)
             builder.setView(binding.root)
 
@@ -149,39 +154,33 @@ class SettingsUpdates : BasePreferenceFragmentCompat() {
 
             val logList = mutableListOf<String>()
             try {
+                // https://developer.android.com/studio/command-line/logcat
                 val process = Runtime.getRuntime().exec("logcat -d")
                 val bufferedReader = BufferedReader(InputStreamReader(process.inputStream))
                 bufferedReader.lineSequence().forEach { logList.add(it) }
             } catch (e: Exception) {
-                logError(e)
+                logError(e) // kinda ironic
             }
 
-            val adapter = LogcatAdapter()
-            adapter.submitList(logList)
-            binding.logcatRecyclerView.layoutManager = LinearLayoutManager(context)
+            val adapter = LogcatAdapter().apply { submitList(logList) }
+            binding.logcatRecyclerView.layoutManager = LinearLayoutManager(pref.context)
             binding.logcatRecyclerView.adapter = adapter
 
             binding.copyBtt.setOnClickListener {
-                // Gunakan fungsi clipboardHelper dari UIHelper
-                context.clipboardHelper(logList.joinToString("\n"), "Logcat")
-                // Pakai teks manual kalau R.string.copy_to_clipboard error
-                Toast.makeText(context, "Copied to clipboard", Toast.LENGTH_SHORT).show()
+                clipboardHelper(txt("Logcat"), logList.joinToString("\n"))
+                dialog.dismissSafe(activity)
             }
 
             binding.clearBtt.setOnClickListener {
-                try {
-                    Runtime.getRuntime().exec("logcat -c")
-                    adapter.submitList(emptyList())
-                    Toast.makeText(context, "Log cleared", Toast.LENGTH_SHORT).show()
-                } catch (e: Exception) {
-                    logError(e)
-                }
+                Runtime.getRuntime().exec("logcat -c")
+                dialog.dismissSafe(activity)
             }
 
-            binding.saveBtt?.setOnClickListener {
+            binding.saveBtt.setOnClickListener {
                 val date = SimpleDateFormat("yyyy_MM_dd_HH_mm", Locale.getDefault()).format(Date(currentTimeMillis()))
+                var fileStream: OutputStream? = null
                 try {
-                     val fileStream = VideoDownloadManager.setupStream(
+                    fileStream = VideoDownloadManager.setupStream(
                         it.context,
                         "logcat_${date}",
                         null,
@@ -189,10 +188,10 @@ class SettingsUpdates : BasePreferenceFragmentCompat() {
                         false
                     ).openNew()
                     fileStream.writer().use { writer -> writer.write(logList.joinToString("\n")) }
-                    Toast.makeText(context, "Log saved", Toast.LENGTH_SHORT).show()
                     dialog.dismissSafe(activity)
                 } catch (t: Throwable) {
                     logError(t)
+                    showToast(t.message)
                 }
             }
 
@@ -203,16 +202,12 @@ class SettingsUpdates : BasePreferenceFragmentCompat() {
             return@setOnPreferenceClickListener true
         }
 
-        // --- ADIXTREAM APK INSTALLER SETTINGS ---
-        val apkInstallerKeyStr = getString(R.string.apk_installer_key)
-        if (!settingsManager.contains(apkInstallerKeyStr)) {
-            settingsManager.edit { putInt(apkInstallerKeyStr, 1) }
-        }
-
         getPref(R.string.apk_installer_key)?.setOnPreferenceClickListener {
             val prefNames = resources.getStringArray(R.array.apk_installer_pref)
             val prefValues = resources.getIntArray(R.array.apk_installer_values)
-            val currentInstaller = settingsManager.getInt(getString(R.string.apk_installer_key), 1)
+
+            val currentInstaller =
+                settingsManager.getInt(getString(R.string.apk_installer_key), 0)
 
             activity?.showBottomDialog(
                 prefNames.toList(),
@@ -222,8 +217,12 @@ class SettingsUpdates : BasePreferenceFragmentCompat() {
                 {}
             ) { num ->
                 try {
-                    settingsManager.edit { putInt(getString(R.string.apk_installer_key), prefValues[num]) }
-                } catch (e: Exception) { logError(e) }
+                    settingsManager.edit {
+                        putInt(getString(R.string.apk_installer_key), prefValues[num])
+                    }
+                } catch (e: Exception) {
+                    logError(e)
+                }
             }
             return@setOnPreferenceClickListener true
         }
@@ -232,10 +231,12 @@ class SettingsUpdates : BasePreferenceFragmentCompat() {
             pref.summary = BuildConfig.APP_VERSION
             pref.setOnPreferenceClickListener {
                 ioSafe {
-                    // Panggil fungsi runAutoUpdate dari InAppUpdater
                     if (activity?.runAutoUpdate(false) == false) {
                         activity?.runOnUiThread {
-                            showToast(R.string.no_update_found, Toast.LENGTH_SHORT)
+                            showToast(
+                                R.string.no_update_found,
+                                Toast.LENGTH_SHORT
+                            )
                         }
                     }
                 }
@@ -245,7 +246,9 @@ class SettingsUpdates : BasePreferenceFragmentCompat() {
 
         getPref(R.string.auto_download_plugins_key)?.setOnPreferenceClickListener {
             val prefNames = resources.getStringArray(R.array.auto_download_plugin)
-            val prefValues = enumValues<AutoDownloadMode>().sortedBy { x -> x.value }.map { x -> x.value }
+            val prefValues =
+                enumValues<AutoDownloadMode>().sortedBy { x -> x.value }.map { x -> x.value }
+
             val current = settingsManager.getInt(getString(R.string.auto_download_plugins_key), 0)
 
             activity?.showBottomDialog(
@@ -255,7 +258,9 @@ class SettingsUpdates : BasePreferenceFragmentCompat() {
                 true,
                 {}
             ) { num ->
-                settingsManager.edit { putInt(getString(R.string.auto_download_plugins_key), prefValues[num]) }
+                settingsManager.edit {
+                    putInt(getString(R.string.auto_download_plugins_key), prefValues[num])
+                }
                 (context ?: CloudStreamApp.context)?.let { ctx -> app.initClient(ctx) }
             }
             return@setOnPreferenceClickListener true
@@ -265,7 +270,7 @@ class SettingsUpdates : BasePreferenceFragmentCompat() {
             ioSafe {
                 PluginManager.___DO_NOT_CALL_FROM_A_PLUGIN_manuallyReloadAndUpdatePlugins(activity ?: return@ioSafe)
             }
-            return@setOnPreferenceClickListener true
+            return@setOnPreferenceClickListener true // Return true for the listener
         }
     }
 
