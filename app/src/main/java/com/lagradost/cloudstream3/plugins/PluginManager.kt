@@ -623,9 +623,18 @@ object PluginManager {
             val name: String = manifest.name ?: "NO NAME".also {
                 Log.d(TAG, "No manifest name for ${data.internalName}")
             }
-            val version: Int = manifest.version ?: PLUGIN_VERSION_NOT_SET.also {
-                Log.d(TAG, "No manifest version for ${data.internalName}")
+            
+            // --- FIX START: VALIDASI VERSI ---
+            val version: Int = manifest.version ?: PLUGIN_VERSION_NOT_SET
+            
+            // Perbaikan Logika: Jika versi plugin masih default (Int.MIN_VALUE), 
+            // itu tandanya file corrupt atau manifest tidak terbaca benar.
+            // Kita harus return FALSE agar tidak dianggap "Success" oleh UI.
+            if (version == PLUGIN_VERSION_NOT_SET) {
+                Log.e(TAG, "Gagal memuat plugin ${data.internalName}: Versi tidak ditemukan di manifest.json (Versi = $version)")
+                return false
             }
+            // --- FIX END ---
 
             @Suppress("UNCHECKED_CAST")
             val pluginClass: Class<*> =
