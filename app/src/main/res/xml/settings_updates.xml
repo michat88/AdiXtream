@@ -62,7 +62,7 @@
 
         <Preference
             android:icon="@drawable/ic_baseline_extension_24"
-            android:key="@string/manual_update_plugins_key"
+            app:key="@string/manual_update_plugins_key"
             android:title="@string/update_plugins"
             android:summary="@string/update_plugins_manually"/>
     </PreferenceCategory>
