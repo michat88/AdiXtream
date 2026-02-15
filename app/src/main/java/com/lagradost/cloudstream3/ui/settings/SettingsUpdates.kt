@@ -23,7 +23,6 @@ import com.lagradost.cloudstream3.plugins.PluginManager
 import com.lagradost.cloudstream3.services.BackupWorkManager
 import com.lagradost.cloudstream3.ui.BasePreferenceFragmentCompat
 import com.lagradost.cloudstream3.ui.settings.Globals.EMULATOR
-import com.lagradost.cloudstream3.ui.settings.Globals.TV
 import com.lagradost.cloudstream3.ui.settings.SettingsFragment.Companion.getPref
 import com.lagradost.cloudstream3.ui.settings.SettingsFragment.Companion.hideOn
 import com.lagradost.cloudstream3.ui.settings.SettingsFragment.Companion.setPaddingBottom
@@ -33,12 +32,13 @@ import com.lagradost.cloudstream3.ui.settings.utils.getChooseFolderLauncher
 import com.lagradost.cloudstream3.utils.BackupUtils
 import com.lagradost.cloudstream3.utils.BackupUtils.restorePrompt
 import com.lagradost.cloudstream3.utils.Coroutines.ioSafe
-import com.lagradost.cloudstream3.utils.InAppUpdater.Companion.runAutoUpdate
+import com.lagradost.cloudstream3.utils.InAppUpdater.runAutoUpdate
 import com.lagradost.cloudstream3.utils.SingleSelectionHelper.showBottomDialog
 import com.lagradost.cloudstream3.utils.SingleSelectionHelper.showDialog
 import com.lagradost.cloudstream3.utils.UIHelper.clipboardHelper
 import com.lagradost.cloudstream3.utils.UIHelper.dismissSafe
 import com.lagradost.cloudstream3.utils.UIHelper.hideKeyboard
+// Pastikan import ini sesuai dengan lokasi VideoDownloadManager di project kamu
 import com.lagradost.cloudstream3.utils.VideoDownloadManager
 import com.lagradost.cloudstream3.utils.txt
 import java.io.BufferedReader
@@ -143,55 +143,87 @@ class SettingsUpdates : BasePreferenceFragmentCompat() {
             return@setOnPreferenceClickListener true
         }
 
-        // --- PERBAIKAN: LOGCAT DIAKTIFKAN KEMBALI ---
-        getPref(R.string.show_logcat_key)?.setOnPreferenceClickListener {
-            val binding = LogcatBinding.inflate(layoutInflater)
-            val builder = AlertDialog.Builder(requireContext())
+        // --- START FIX LOGCAT ---
+        getPref(R.string.show_logcat_key)?.setOnPreferenceClickListener { pref ->
+            val context = context ?: return@setOnPreferenceClickListener true
+            
+            // Inflate Layout Binding
+            val builder = AlertDialog.Builder(context, R.style.AlertDialogCustom)
+            val binding = LogcatBinding.inflate(layoutInflater, null, false)
             builder.setView(binding.root)
+
             val dialog = builder.create()
             dialog.show()
 
+            // Baca Logcat
+            val logList = mutableListOf<String>()
             try {
-                // Baca logcat
+                // Ambil logcat -d (dump)
                 val process = Runtime.getRuntime().exec("logcat -d")
                 val bufferedReader = BufferedReader(InputStreamReader(process.inputStream))
-                val log = StringBuilder()
-                var line: String?
-                while (bufferedReader.readLine().also { line = it } != null) {
-                    log.append(line + "\n")
-                }
-                binding.textLog.text = log.toString()
+                bufferedReader.lineSequence().forEach { logList.add(it) }
             } catch (e: Exception) {
                 logError(e)
-                binding.textLog.text = "Error reading logcat: ${e.message}"
+                logList.add("Error reading logcat: ${e.message}")
             }
 
+            // Pasang Adapter (Ini yang sebelumnya error karena pakai TextView)
+            val adapter = LogcatAdapter() // Menggunakan Class Adapter yang kamu kirim
+            adapter.submitList(logList)
+            
+            binding.logcatRecyclerView.layoutManager = LinearLayoutManager(context)
+            binding.logcatRecyclerView.adapter = adapter
+
+            // Tombol Copy
             binding.copyBtt.setOnClickListener {
-                activity?.clipboardHelper(binding.textLog.text, "Logcat")
+                activity?.clipboardHelper(logList.joinToString("\n"), "Logcat")
                 showToast(activity, R.string.copy_to_clipboard, Toast.LENGTH_SHORT)
+                // dialog.dismissSafe(activity) // Opsional: tutup dialog setelah copy
             }
 
+            // Tombol Clear Cache
             binding.clearBtt.setOnClickListener {
                 try {
                     Runtime.getRuntime().exec("logcat -c")
-                    binding.textLog.text = ""
+                    adapter.submitList(emptyList()) // Kosongkan list di UI
                     showToast(activity, R.string.cache_cleared, Toast.LENGTH_SHORT)
                 } catch (e: Exception) {
                     logError(e)
                 }
             }
 
-            binding.closeBtt.setOnClickListener {
-                dismissSafe(dialog)
+            // Tombol Save (Opsional, saya wrap try-catch biar gak crash kalau ada import error)
+            binding.saveBtt?.setOnClickListener {
+                val date = SimpleDateFormat("yyyy_MM_dd_HH_mm", Locale.getDefault()).format(Date(currentTimeMillis()))
+                try {
+                    // Pastikan VideoDownloadManager diimport dengan benar
+                     val fileStream = VideoDownloadManager.setupStream(
+                        it.context,
+                        "logcat_${date}",
+                        null,
+                        "txt",
+                        false
+                    ).openNew()
+                    fileStream.writer().use { writer -> writer.write(logList.joinToString("\n")) }
+                    showToast(activity, "Log saved", Toast.LENGTH_SHORT)
+                    dialog.dismissSafe(activity)
+                } catch (t: Throwable) {
+                    logError(t)
+                    showToast(activity, "Error saving: ${t.message}", Toast.LENGTH_SHORT)
+                }
             }
+
+            binding.closeBtt.setOnClickListener {
+                dialog.dismissSafe(activity)
+            }
+
             return@setOnPreferenceClickListener true
         }
-        // --------------------------------------------------
+        // --- END FIX LOGCAT ---
 
-        // --- MODIFIKASI ADIXTREAM: PENGINSTAL APK DEFAULT KE 'VERSI LAMA' (1) ---
+        // --- ADIXTREAM MOD: INSTALLER DEFAULT 1 ---
         val apkInstallerKeyStr = getString(R.string.apk_installer_key)
 
-        // Cek apakah pengguna sudah punya pengaturan ini. Jika belum, paksa ke '1' (Versi Lama)
         if (!settingsManager.contains(apkInstallerKeyStr)) {
             settingsManager.edit {
                 putInt(apkInstallerKeyStr, 1)
@@ -202,7 +234,6 @@ class SettingsUpdates : BasePreferenceFragmentCompat() {
             val prefNames = resources.getStringArray(R.array.apk_installer_pref)
             val prefValues = resources.getIntArray(R.array.apk_installer_values)
 
-            // Gunakan nilai 1 sebagai fallback default saat membuka dialog
             val currentInstaller =
                 settingsManager.getInt(getString(R.string.apk_installer_key), 1)
 
@@ -223,7 +254,6 @@ class SettingsUpdates : BasePreferenceFragmentCompat() {
             }
             return@setOnPreferenceClickListener true
         }
-        // ------------------------------------------------------------------------
 
         getPref(R.string.manual_check_update_key)?.let { pref ->
             pref.summary = BuildConfig.APP_VERSION
@@ -268,7 +298,7 @@ class SettingsUpdates : BasePreferenceFragmentCompat() {
             ioSafe {
                 PluginManager.___DO_NOT_CALL_FROM_A_PLUGIN_manuallyReloadAndUpdatePlugins(activity ?: return@ioSafe)
             }
-            return@setOnPreferenceClickListener true // Return true for the listener
+            return@setOnPreferenceClickListener true
         }
     }
 
