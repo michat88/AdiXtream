@@ -52,7 +52,8 @@ import com.lagradost.cloudstream3.utils.Coroutines.main
 import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.utils.UIHelper.colorFromAttribute
 import com.lagradost.cloudstream3.utils.UiText
-import com.lagradost.cloudstream3.utils.downloader.DownloadFileManagement.sanitizeFilename
+// PERBAIKAN: Mengembalikan import ke VideoDownloadManager (lokasi lama yang aman)
+import com.lagradost.cloudstream3.utils.VideoDownloadManager.sanitizeFilename
 import com.lagradost.cloudstream3.utils.extractorApis
 import com.lagradost.cloudstream3.utils.txt
 import dalvik.system.PathClassLoader
