@@ -59,6 +59,7 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import java.io.File
 import java.io.InputStreamReader
+import java.util.concurrent.CopyOnWriteArrayList
 
 // Different keys for local and not since local can be removed at any time without app knowing, hence the local are getting rebuilt on every app start
 const val PLUGINS_KEY = "PLUGINS_KEY"
@@ -104,6 +105,7 @@ const val PLUGIN_VERSION_ALWAYS_UPDATE = -1
 object PluginManager {
     // Prevent multiple writes at once
     val lock = Mutex()
+    private val listLock = Any() // FIX: Kunci khusus untuk mencegah crash modifikasi list bersamaan
 
     const val TAG = "PluginManager"
 
@@ -247,7 +249,6 @@ object PluginManager {
             )
         } ?: false
     }
-
     /**
      * Needs to be run before other plugin loading because plugin loading can not be overwritten
      * 1. Gets all online data about the downloaded plugins
@@ -294,11 +295,11 @@ object PluginManager {
             "Outdated plugins: ${outdatedPlugins.filter { it.isOutdated }}"
         }
 
-        val updatedPlugins = mutableListOf<String>()
+        // --- FIX: Gunakan CopyOnWriteArrayList agar tahan dieksekusi secara paralel oleh amap ---
+        val updatedPlugins = CopyOnWriteArrayList<String>()
 
         outdatedPlugins.amap { pluginData ->
             if (pluginData.isDisabled) {
-                //updatedPlugins.add(activity.getString(R.string.single_plugin_disabled, pluginData.onlineData.second.name))
                 unloadPlugin(pluginData.savedData.filePath)
             } else if (pluginData.isOutdated) {
                 downloadPlugin(
@@ -316,16 +317,11 @@ object PluginManager {
 
         main {
             val uitext = txt(R.string.plugins_updated, updatedPlugins.size)
-            createNotification(activity, uitext, updatedPlugins)
-            /*val navBadge = (activity as MainActivity).binding?.navRailView?.getOrCreateBadge(R.id.navigation_settings)
-            navBadge?.isVisible = true
-            navBadge?.number = 5*/
+            createNotification(activity, uitext, updatedPlugins.toList()) // Convert back to standard list for UI
         }
 
-        // ioSafe {
         loadedOnlinePlugins = true
         afterPluginsLoadedEvent.invoke(false)
-        // }
 
         Log.i(TAG, "Plugin update done!")
     }
@@ -335,9 +331,6 @@ object PluginManager {
      * 1. Gets all online data from online plugins repo
      * 2. Fetch all not downloaded plugins
      * 3. Download them and reload plugins
-     *
-     * DO NOT USE THIS IN A PLUGIN! It may case an infinite recursive loop lagging or crashing everyone's devices.
-     * If you use it from a plugin, do not expect a stable jvmName, SO DO NOT USE IT!
      */
     @Suppress("FunctionName", "DEPRECATION_ERROR")
     @Deprecated(
@@ -352,7 +345,8 @@ object PluginManager {
     ) {
         assertNonRecursiveCallstack()
 
-        val newDownloadPlugins = mutableListOf<String>()
+        // --- FIX: Gunakan CopyOnWriteArrayList ---
+        val newDownloadPlugins = CopyOnWriteArrayList<String>()
         val urls = (getKey<Array<RepositoryData>>(REPOSITORIES_KEY)
             ?: emptyArray()) + PREBUILT_REPOSITORIES
         val onlinePlugins = urls.toList().amap {
@@ -360,7 +354,6 @@ object PluginManager {
         }.flatten().distinctBy { it.second.url }
 
         val providerLang = activity.getApiProviderLangSettings()
-        //Log.i(TAG, "providerLang => ${providerLang.toJson()}")
 
         // Iterate online repos and returns not downloaded plugins
         val notDownloadedPlugins = onlinePlugins.mapNotNull { onlineData ->
@@ -397,11 +390,9 @@ object PluginManager {
             //Omit lang not selected on language setting
             if (mode == AutoDownloadMode.FilterByLang) {
                 val lang = sitePlugin.language ?: return@mapNotNull null
-                //If set to 'universal', don't skip any language
                 if (!providerLang.contains(AllLanguagesName) && !providerLang.contains(lang)) {
                     return@mapNotNull null
                 }
-                //Log.i(TAG, "sitePlugin lang => $lang")
             }
 
             val savedData = PluginData(
@@ -413,7 +404,6 @@ object PluginManager {
             )
             OnlinePluginData(savedData, onlineData)
         }
-        //Log.i(TAG, "notDownloadedPlugins => ${notDownloadedPlugins.toJson()}")
 
         notDownloadedPlugins.amap { pluginData ->
             downloadPlugin(
@@ -430,13 +420,10 @@ object PluginManager {
 
         main {
             val uitext = txt(R.string.plugins_downloaded, newDownloadPlugins.size)
-            createNotification(activity, uitext, newDownloadPlugins)
+            createNotification(activity, uitext, newDownloadPlugins.toList())
         }
 
-        // ioSafe {
         afterPluginsLoadedEvent.invoke(false)
-        // }
-
         Log.i(TAG, "Plugin download done!")
     }
 
@@ -447,12 +434,6 @@ object PluginManager {
         }
     }
 
-    /**
-     * Use updateAllOnlinePluginsAndLoadThem
-     *
-     * DO NOT USE THIS IN A PLUGIN! It may case an infinite recursive loop lagging or crashing everyone's devices.
-     * If you use it from a plugin, do not expect a stable jvmName, SO DO NOT USE IT!
-     */
     @Suppress("FunctionName", "DEPRECATION_ERROR")
     @Deprecated(
         "Calling this function from a plugin will lead to crashes, use loadPlugin and unloadPlugin",
@@ -473,12 +454,6 @@ object PluginManager {
         }
     }
 
-    /**
-     * Reloads all local plugins and forces a page update, used for hot reloading with deployWithAdb
-     *
-     * DO NOT USE THIS IN A PLUGIN! It may case an infinite recursive loop lagging or crashing everyone's devices.
-     * If you use it from a plugin, do not expect a stable jvmName, SO DO NOT USE IT!
-     */
     @Suppress("FunctionName", "DEPRECATION_ERROR")
     @Throws
     @Deprecated(
@@ -497,13 +472,6 @@ object PluginManager {
         ___DO_NOT_CALL_FROM_A_PLUGIN_loadAllLocalPlugins(activity, true)
     }
 
-    /**
-     * @param forceReload see afterPluginsLoadedEvent, basically a way to load all local plugins
-     * and reload all pages even if they are previously valid
-     *
-     * DO NOT USE THIS IN A PLUGIN! It may case an infinite recursive loop lagging or crashing everyone's devices.
-     * If you use it from a plugin, do not expect a stable jvmName, SO DO NOT USE IT!
-     */
     @Suppress("FunctionName", "DEPRECATION_ERROR")
     @Deprecated(
         "Calling this function from a plugin will lead to crashes, use loadPlugin and unloadPlugin",
@@ -525,42 +493,25 @@ object PluginManager {
         }
 
         val sortedPlugins = dir.listFiles()
-        // Always sort plugins alphabetically for reproducible results
-
         Log.d(TAG, "Files in '${LOCAL_PLUGINS_PATH}' folder: ${sortedPlugins?.size}")
 
-        // Use app-specific external files directory and copy the file there.
-        // We have to do this because on Android 14+, it otherwise gives SecurityException
-        // due to dex files and setReadOnly seems to have no effect unless it it here.
         val pluginDirectory = File(context.getExternalFilesDir(null), "plugins")
         if (!pluginDirectory.exists()) {
-            pluginDirectory.mkdirs() // Ensure the plugins directory exists
+            pluginDirectory.mkdirs()
         }
 
-        // Make sure all local plugins are fully refreshed.
         removeKey(PLUGINS_KEY_LOCAL)
 
         sortedPlugins?.sortedBy { it.name }?.amap { file ->
             try {
                 val destinationFile = File(pluginDirectory, file.name)
-
-                // Only copy the file if the destination file doesn't exist or if it
-                // has been modified (check file length and modification time).
                 if (!destinationFile.exists() ||
                     destinationFile.length() != file.length() ||
                     destinationFile.lastModified() != file.lastModified()
                 ) {
-
-                    // Copy the file to the app-specific plugin directory
                     file.copyTo(destinationFile, overwrite = true)
-
-                    // After copying, set the destination file's modification time
-                    // to match the source file. We do this for performance so that we
-                    // can check the modification time and not make redundant writes.
                     destinationFile.setLastModified(file.lastModified())
                 }
-
-                // Load the plugin after it has been copied
                 maybeLoadPlugin(context, destinationFile)
             } catch (t: Throwable) {
                 Log.e(TAG, "Failed to copy the file")
@@ -572,10 +523,6 @@ object PluginManager {
         afterPluginsLoadedEvent.invoke(forceReload)
     }
 
-    /**
-     * This can be used to override any extension loading to fix crashes!
-     * @return true if safe mode file is present
-     **/
     fun checkSafeModeFile(): Boolean {
         return safe {
             val folder = File(CLOUD_STREAM_FOLDER)
@@ -586,7 +533,6 @@ object PluginManager {
             files?.any()
         } ?: false
     }
-
     /**
      * @return True if successful, false if not
      * */
@@ -666,9 +612,14 @@ object PluginManager {
                     context.resources.configuration
                 )
             }
-            plugins[filePath] = pluginInstance
-            classLoaders[loader] = pluginInstance
-            urlPlugins[data.url ?: filePath] = pluginInstance
+            
+            // --- FIX: Gunakan gembok saat mendaftarkan plugin ke dalam Map ---
+            synchronized(listLock) {
+                plugins[filePath] = pluginInstance
+                classLoaders[loader] = pluginInstance
+                urlPlugins[data.url ?: filePath] = pluginInstance
+            }
+            
             if (pluginInstance is Plugin) {
                 pluginInstance.load(context)
             } else {
@@ -680,7 +631,6 @@ object PluginManager {
         } catch (e: Throwable) {
             Log.e(TAG, "Failed to load $file: ${Log.getStackTraceString(e)}")
             showToast(
-                // context.getActivity(), // we are not always on the main thread
                 context.getString(R.string.plugin_load_fail).format(fileName),
                 Toast.LENGTH_LONG
             )
@@ -713,16 +663,21 @@ object PluginManager {
             APIHolder.allProviders.removeIf { provider: MainAPI -> provider.sourcePlugin == plugin.filename }
         }
 
-        extractorApis.removeIf { provider: ExtractorApi -> provider.sourcePlugin == plugin.filename }
+        // --- FIX: Gunakan gembok saat mencopot extractor agar tidak crash saat update massal ---
+        synchronized(extractorApis) {
+            extractorApis.removeIf { provider: ExtractorApi -> provider.sourcePlugin == plugin.filename }
+        }
 
         synchronized(VideoClickActionHolder.allVideoClickActions) {
             VideoClickActionHolder.allVideoClickActions.removeIf { action: VideoClickAction -> action.sourcePlugin == plugin.filename }
         }
 
-        classLoaders.values.removeIf { v -> v == plugin }
-
-        plugins.remove(absolutePath)
-        urlPlugins.values.removeIf { v -> v == plugin }
+        // --- FIX: Gunakan gembok saat mencopot dari Map utama ---
+        synchronized(listLock) {
+            classLoaders.values.removeIf { v -> v == plugin }
+            plugins.remove(absolutePath)
+            urlPlugins.values.removeIf { v -> v == plugin }
+        }
     }
 
     /**
@@ -846,7 +801,8 @@ object PluginManager {
                 }
         }.distinctBy { it.onlineData.second.url }
 
-        val updatedPlugins = mutableListOf<String>()
+        // --- FIX: Gunakan CopyOnWriteArrayList ---
+        val updatedPlugins = CopyOnWriteArrayList<String>()
 
         allPlugins.amap { pluginData ->
             if (pluginData.isDisabled) {
@@ -883,7 +839,7 @@ object PluginManager {
                     R.string.plugins_updated_manually,
                     listOf(updatedPlugins.size)
                 )
-                createNotification(activity, notificationText, updatedPlugins)
+                createNotification(activity, notificationText, updatedPlugins.toList())
 
             }
         }
