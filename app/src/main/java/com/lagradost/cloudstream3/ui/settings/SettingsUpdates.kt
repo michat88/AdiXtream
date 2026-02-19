@@ -132,54 +132,28 @@ class SettingsUpdates : BasePreferenceFragmentCompat() {
         }
 
         // --- ADIXTREAM SECURITY: DISABLE LOGCAT ---
-        // PERBAIKAN: Diaktifkan kembali dan ditambahkan fungsi kliknya
-        getPref(R.string.show_logcat_key)?.apply {
-            isVisible = true
-            setOnPreferenceClickListener {
-                try {
-                    // Perintah untuk pindah ke halaman Logcat
-                    findNavController().navigate(R.id.navigation_logs)
-                } catch (e: Exception) {
-                    // Jaga-jaga kalau ID navigasinya juga diubah/dihapus oleh AdiXtream
-                    activity?.runOnUiThread {
-                        Toast.makeText(context, "Gagal membuka Logcat: ID tidak ditemukan", Toast.LENGTH_SHORT).show()
-                    }
-                }
-                true
-            }
-        }
+        // Sembunyikan sepenuhnya dari UI agar tidak bisa ditekan
+        getPref(R.string.show_logcat_key)?.isVisible = false
         // ------------------------------------------
-
-        // PERBAIKAN: Mengatur 'Versi lama' sebagai default jika pengguna belum menyetelnya
-        val apkInstallerKey = getString(R.string.apk_installer_key)
-        if (!settingsManager.contains(apkInstallerKey)) {
-            val prefValues = resources.getIntArray(R.array.apk_installer_values)
-            // Asumsi 'Versi lama' ada di indeks 1 pada array XML
-            val defaultLegacyValue = if (prefValues.size > 1) prefValues[1] else 0
-            
-            settingsManager.edit {
-                putInt(apkInstallerKey, defaultLegacyValue)
-            }
-        }
 
         getPref(R.string.apk_installer_key)?.setOnPreferenceClickListener {
             val prefNames = resources.getStringArray(R.array.apk_installer_pref)
             val prefValues = resources.getIntArray(R.array.apk_installer_values)
 
-            // Mengambil nilai saat ini, fallback ke 'Versi lama' jika tidak ditemukan
-            val fallbackValue = if (prefValues.size > 1) prefValues[1] else 0
-            val currentInstaller = settingsManager.getInt(apkInstallerKey, fallbackValue)
+            // Mengubah nilai default dari 0 menjadi 1 (Versi lama)
+            val currentInstaller =
+                settingsManager.getInt(getString(R.string.apk_installer_key), 1)
 
             activity?.showBottomDialog(
                 prefNames.toList(),
-                prefValues.indexOf(currentInstaller).takeIf { it >= 0 } ?: 1,
+                prefValues.indexOf(currentInstaller),
                 getString(R.string.apk_installer_settings),
                 true,
                 {}
             ) { num ->
                 try {
                     settingsManager.edit {
-                        putInt(apkInstallerKey, prefValues[num])
+                        putInt(getString(R.string.apk_installer_key), prefValues[num])
                     }
                 } catch (e: Exception) {
                     logError(e)
@@ -195,7 +169,7 @@ class SettingsUpdates : BasePreferenceFragmentCompat() {
                     if (activity?.runAutoUpdate(false) == false) {
                         activity?.runOnUiThread {
                             showToast(
-                               R.string.no_update_found,
+                                R.string.no_update_found,
                                 Toast.LENGTH_SHORT
                             )
                         }
@@ -243,7 +217,7 @@ class SettingsUpdates : BasePreferenceFragmentCompat() {
                 (runCatching {
                     first + BackupUtils.getCurrentBackupDir(ctx).let {
                         it.first?.filePath() ?: it.second
-                    }
+                            }
                 }.getOrNull() ?: first).filterNotNull().distinct()
             }
         } ?: emptyList()
