@@ -329,6 +329,7 @@ class CS3IPlayer : IPlayer {
         Log.i(TAG, "setActiveSubtitles ${subtitles.size}")
         subtitleHelper.setAllSubtitles(subtitles)
     }
+
     private var currentSubtitles: SubtitleData? = null
 
     private fun List<Tracks.Group>.getTrack(id: String?): Pair<TrackGroup, Int>? {
@@ -453,7 +454,6 @@ class CS3IPlayer : IPlayer {
             this.height,
         )
     }
-
     override fun getVideoTracks(): CurrentTracks {
         val allTracks = exoPlayer?.currentTracks?.groups ?: emptyList()
         val videoTracks = allTracks.filter { it.type == TRACK_TYPE_VIDEO }
@@ -660,6 +660,7 @@ class CS3IPlayer : IPlayer {
         exoPlayer?.setPlaybackSpeed(speed)
         playBackSpeed = speed
     }
+
     companion object {
         private const val CRONET_TIMEOUT_MS = 15_000
 
@@ -933,6 +934,7 @@ class CS3IPlayer : IPlayer {
             Log.i(TAG, "Media is not seekable, we can not seek to $time")
         }
     }
+
     override fun handleEvent(event: CSPlayerEvent, source: PlayerEventSource) {
         Log.i(TAG, "handleEvent ${event.name}")
         try {
@@ -1038,7 +1040,6 @@ class CS3IPlayer : IPlayer {
             delay(1000)
         }
     }
-
     private fun buildExoPlayer(
         context: Context,
         mediaItemSlices: List<MediaItemSlice>,
@@ -1057,7 +1058,7 @@ class CS3IPlayer : IPlayer {
          * Does not work if trackSelector is defined.
          **/
         maxVideoHeight: Int? = null,
-        audioSources: List<MediaSource> = emptyList() // <-- Modifikasi Audio
+        audioSlices: List<MediaItemSlice> = emptyList() // PERBAIKAN: Menambahkan parameter audio
     ): ExoPlayer {
         val exoPlayerBuilder =
             ExoPlayer.Builder(context)
@@ -1304,28 +1305,32 @@ class CS3IPlayer : IPlayer {
             }
         }
 
+        // PERBAIKAN: Mengkonversi audioSlices menjadi MediaSources
+        val audioMediaSources = audioSlices.map { item ->
+            factory.createMediaSource(item.mediaItem)
+        }.toTypedArray()
+
         //println("PLAYBACK POS $playbackPosition")
         return exoPlayerBuilder.build().apply {
             setPlayWhenReady(playWhenReady)
             seekTo(currentWindow, playbackPosition)
-            
-            // <-- Modifikasi Audio: Gabungkan Video, Subtitle, dan Audio
-            val allSources = listOf(videoMediaSource) + subSources + audioSources
             setMediaSource(
-                MergingMediaSource(*allSources.toTypedArray()),
+                MergingMediaSource(
+                    videoMediaSource, *audioMediaSources, *subSources.toTypedArray() // PERBAIKAN: Menggabungkan audio dengan video dan subtitle
+                ),
                 playbackPosition
             )
-            
             setHandleAudioBecomingNoisy(true)
             setPlaybackSpeed(playBackSpeed)
         }
     }
+
     private fun loadExo(
         context: Context,
         mediaSlices: List<MediaItemSlice>,
         subSources: List<SingleSampleMediaSource>,
         cacheFactory: CacheDataSource.Factory? = null,
-        audioSources: List<MediaSource> = emptyList() // <-- Modifikasi Audio
+        audioSlices: List<MediaItemSlice> = emptyList() // PERBAIKAN: Menambahkan parameter audio
     ) {
         Log.i(TAG, "loadExo")
         val settingsManager = PreferenceManager.getDefaultSharedPreferences(context)
@@ -1346,13 +1351,13 @@ class CS3IPlayer : IPlayer {
                 currentWindow,
                 playbackPosition,
                 playBackSpeed,
-                subtitleOffset = currentSubtitleOffset,
                 cacheSize = cacheSize,
                 videoBufferMs = videoBufferMs,
                 playWhenReady = isPlaying, // this keep the current state of the player
                 cacheFactory = cacheFactory,
+                subtitleOffset = currentSubtitleOffset,
                 maxVideoHeight = maxVideoHeight,
-                audioSources = audioSources // <-- Modifikasi Audio
+                audioSlices = audioSlices // PERBAIKAN: Meneruskan data audio ke buildExoPlayer
             )
 
             event(PlayerAttachedEvent(exoPlayer))
@@ -1485,6 +1490,10 @@ class CS3IPlayer : IPlayer {
                     super.onPlayerError(error)
                 }
 
+                //override fun onCues(cues: MutableList<Cue>) {
+                //    super.onCues(cues.map { cue -> cue.buildUpon().setText("Hello world").setSize(Cue.DIMEN_UNSET).build() })
+                //}
+
                 override fun onIsPlayingChanged(isPlaying: Boolean) {
                     super.onIsPlayingChanged(isPlaying)
                     if (isPlaying) {
@@ -1543,7 +1552,6 @@ class CS3IPlayer : IPlayer {
             event(ErrorEvent(t))
         }
     }
-
     private var lastTimeStamps: List<EpisodeSkip.SkipStamp> = emptyList()
 
     override fun addTimeStamps(timeStamps: List<EpisodeSkip.SkipStamp>) {
@@ -1551,9 +1559,12 @@ class CS3IPlayer : IPlayer {
         timeStamps.forEach { timestamp ->
             exoPlayer?.createMessage { _, _ ->
                 updatedTime(source = PlayerEventSource.Player)
+                //if (payload is EpisodeSkip.SkipStamp) // this should always be true
+                //    onTimestampInvoked?.invoke(payload)
             }
                 ?.setLooper(Looper.getMainLooper())
                 ?.setPosition(timestamp.startMs)
+                //?.setPayload(timestamp)
                 ?.setDeleteAfterDelivery(false)
                 ?.send()
         }
@@ -1595,6 +1606,7 @@ class CS3IPlayer : IPlayer {
                     }
                         .setLooper(Looper.getMainLooper())
                         .setPosition(contentDuration * percentage / 100)
+                        //   .setPayload(customPayloadData)
                         .setDeleteAfterDelivery(false)
                         .send()
                 }
@@ -1841,6 +1853,11 @@ class CS3IPlayer : IPlayer {
                 )
             }
 
+            // PERBAIKAN: Mengambil data audio dari link jika tersedia (misalnya dari YouTube)
+            val audioSlices = link.audioTracks?.map { audioTrack ->
+                MediaItemSlice(getMediaItem(mime, audioTrack.url), Long.MIN_VALUE)
+            } ?: emptyList()
+
             val onlineSourceFactory =
                 createOnlineSource(link, tryCreateEngine(context, simpleCacheSize))
             val offlineSourceFactory = context.createOfflineSource()
@@ -1861,26 +1878,8 @@ class CS3IPlayer : IPlayer {
                 setUpstreamDataSourceFactory(onlineSourceFactory)
             }
 
-            // <-- Modifikasi Audio: Ekstrak audio dari link YoutubeExtractor
-            // Jika audioTracks di ExtractorLink ternyata warnanya merah setelah disalin, beri tahu aku ya!
-            val audioSources = try {
-                // Memanggil audioTracks. Karena strukturnya berbeda, kita bungkus pakai try-catch biar super aman
-                val audioTracks = link.javaClass.getMethod("getAudioTracks").invoke(link) as? List<*>
-                audioTracks?.mapNotNull { audio ->
-                    try {
-                        val audioUrl = audio?.javaClass?.getMethod("getUrl")?.invoke(audio) as? String ?: return@mapNotNull null
-                        val mediaItem = getMediaItem(MimeTypes.AUDIO_UNKNOWN, audioUrl)
-                        DefaultMediaSourceFactory(onlineSourceFactory).createMediaSource(mediaItem)
-                    } catch (e: Exception) {
-                        Log.e(TAG, "Gagal membuat audio source: ${e.message}")
-                        null
-                    }
-                } ?: emptyList()
-            } catch (e: Exception) {
-                emptyList()
-            }
-
-            loadExo(context, mediaItems, subSources, cacheFactory, audioSources)
+            // PERBAIKAN: Masukkan audioSlices ke dalam fungsi loadExo
+            loadExo(context, mediaItems, subSources, cacheFactory, audioSlices = audioSlices)
         } catch (t: Throwable) {
             Log.e(TAG, "loadOnlinePlayer error", t)
             event(ErrorEvent(t))
