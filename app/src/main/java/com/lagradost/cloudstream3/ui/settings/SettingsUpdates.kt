@@ -132,8 +132,22 @@ class SettingsUpdates : BasePreferenceFragmentCompat() {
         }
 
         // --- ADIXTREAM SECURITY: DISABLE LOGCAT ---
-        // PERBAIKAN: Diaktifkan kembali (true) untuk analisa error subtitle
-        getPref(R.string.show_logcat_key)?.isVisible = true
+        // PERBAIKAN: Diaktifkan kembali dan ditambahkan fungsi kliknya
+        getPref(R.string.show_logcat_key)?.apply {
+            isVisible = true
+            setOnPreferenceClickListener {
+                try {
+                    // Perintah untuk pindah ke halaman Logcat
+                    findNavController().navigate(R.id.navigation_logs)
+                } catch (e: Exception) {
+                    // Jaga-jaga kalau ID navigasinya juga diubah/dihapus oleh AdiXtream
+                    activity?.runOnUiThread {
+                        Toast.makeText(context, "Gagal membuka Logcat: ID tidak ditemukan", Toast.LENGTH_SHORT).show()
+                    }
+                }
+                true
+            }
+        }
         // ------------------------------------------
 
         // PERBAIKAN: Mengatur 'Versi lama' sebagai default jika pengguna belum menyetelnya
