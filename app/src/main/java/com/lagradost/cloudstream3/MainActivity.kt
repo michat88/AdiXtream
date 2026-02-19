@@ -207,7 +207,7 @@ import com.lagradost.cloudstream3.utils.TvChannelUtils
 import com.lagradost.cloudstream3.plugins.RepositoryManager
 import com.lagradost.cloudstream3.ui.settings.extensions.PluginsViewModel
 import com.lagradost.cloudstream3.ui.settings.extensions.RepositoryData
-import com.lagradost.cloudstream3.PremiumManager // File logic premium
+import com.lagradost.cloudstream3.PremiumManager
 // -----------------------
 
 class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCallback {
@@ -611,6 +611,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
 
         handleAppIntentUrl(this, str, false, intent.extras)
     }
+    
     private fun NavDestination.matchDestination(@IdRes destId: Int): Boolean =
         hierarchy.any { it.id == destId }
 
@@ -677,7 +678,6 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
             false
         }
     }
-
     private val pluginsLock = Mutex()
     private fun onAllPluginsLoaded(success: Boolean = false) {
         ioSafe {
@@ -939,7 +939,6 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
             }
         }
     }
-
     @Suppress("DEPRECATION_ERROR")
     override fun onCreate(savedInstanceState: Bundle?) {
         app.initClient(this)
@@ -962,65 +961,84 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
         updateLocale()
         super.onCreate(savedInstanceState)
 
-        // --- REPO MANAGEMENT LOGIC (ADIXTREAM V2) ---
-        // Logika ini otomatis mengganti repo berdasarkan status premium
-        // PERBAIKAN: MENGHAPUS downloadAll() UNTUK MENCEGAH RACE CONDITION
+        // --- LOGIKA REPOSITORY & UPDATE (ADIXTREAM ANTI-BUG V3) ---
         ioSafe {
-            val targetPremiumRepo = PremiumManager.PREMIUM_REPO_URL
-            val targetFreeRepo = PremiumManager.FREE_REPO_URL
+            // 1. Tentukan target URL berdasarkan status aktual user
+            val isPremium = PremiumManager.isPremium(this@MainActivity)
+            val targetRepoUrl = if (isPremium) PremiumManager.PREMIUM_REPO_URL else PremiumManager.FREE_REPO_URL
+            
+            // 2. Ambil daftar repo yang sedang terpasang di HP user saat ini
             val currentRepos = RepositoryManager.getRepositories()
+            
+            // 3. Evaluasi Kondisi Nyata
+            // Cek apakah target repo sudah ada, dan cek apakah ada repo 'nyasar' (misal repo lama)
+            val hasTargetRepo = currentRepos.any { it.url == targetRepoUrl }
+            val hasInvalidRepos = currentRepos.any { it.url != targetRepoUrl }
+            
+            var isRepoChanged = false
 
-            if (PremiumManager.isPremium(this@MainActivity)) {
-                // === MODE PREMIUM ===
-                val repoAddedKey = "HAS_ADDED_PREMIUM_REPO_V2" 
+            // 4. JIKA KONDISI TIDAK SESUAI (Baru Install, Baru Aktivasi, Expired, atau URL Ganti)
+            if (!hasTargetRepo || hasInvalidRepos) {
+                Log.d(TAG, "Status Repo tidak sinkron. Melakukan penyesuaian otomatis...")
                 
-                if (getKey(repoAddedKey, false) != true) {
-                    currentRepos.forEach { repo ->
-                        if (repo.url == targetFreeRepo) {
-                            RepositoryManager.removeRepository(this@MainActivity, repo)
-                        }
-                    }
-                    try {
-                        val parsedRepo = RepositoryManager.parseRepository(targetPremiumRepo)
-                        if (parsedRepo != null) {
-                            val repoData = RepositoryData(parsedRepo.iconUrl, parsedRepo.name, targetPremiumRepo)
-                            RepositoryManager.addRepository(repoData)
-                            setKey(repoAddedKey, true)
-                            setKey("HAS_ADDED_FREE_REPO_V2", false)
-                            
-                            // FIX: Code di bawah dihapus agar tidak download paksa. 
-                            // main { PluginsViewModel.downloadAll(this@MainActivity, targetPremiumRepo, null) }
-                            Log.d(TAG, "Switched to Premium Repo Successfully")
-                        }
-                    } catch (e: Exception) { logError(e) }
+                // LANGKAH A: Sapu bersih semua repo lama agar tidak ada konflik
+                currentRepos.forEach { repo ->
+                    RepositoryManager.removeRepository(this@MainActivity, repo)
                 }
-            } else {
-                // === MODE GRATIS / EXPIRED ===
-                val freeRepoKey = "HAS_ADDED_FREE_REPO_V2"
                 
-                if (getKey(freeRepoKey, false) != true) {
-                    currentRepos.forEach { repo ->
-                        if (repo.url != targetFreeRepo) {
-                            RepositoryManager.removeRepository(this@MainActivity, repo)
-                        }
+                // LANGKAH B: Pasang repo yang benar sesuai hak user
+                try {
+                    val parsedRepo = RepositoryManager.parseRepository(targetRepoUrl)
+                    if (parsedRepo != null) {
+                        val repoData = RepositoryData(parsedRepo.iconUrl, parsedRepo.name, targetRepoUrl)
+                        RepositoryManager.addRepository(repoData)
+                        
+                        isRepoChanged = true // Tandai bahwa kita baru saja merombak repo
+                        Log.d(TAG, "Repo berhasil disinkronkan ke: $targetRepoUrl")
                     }
-                    try {
-                        val parsedRepo = RepositoryManager.parseRepository(targetFreeRepo)
-                        if (parsedRepo != null) {
-                            val repoData = RepositoryData(parsedRepo.iconUrl, parsedRepo.name, targetFreeRepo)
-                            RepositoryManager.addRepository(repoData)
-                            setKey(freeRepoKey, true)
-                            setKey("HAS_ADDED_PREMIUM_REPO_V2", false)
-                            
-                            // FIX: Code di bawah dihapus agar tidak download paksa.
-                            // main { PluginsViewModel.downloadAll(this@MainActivity, targetFreeRepo, null) }
-                            Log.d(TAG, "Switched to Free Repo Successfully")
-                        }
-                    } catch (e: Exception) { logError(e) }
+                } catch (e: Exception) { 
+                    logError(e) 
                 }
             }
+
+            // ==========================================================
+            // 5. MANAJEMEN DOWNLOAD & UPDATE PLUGIN YANG AMAN DARI CRASH
+            // ==========================================================
+            Thread.sleep(1000) // Beri jeda 1 detik agar database HP selesai menyimpan status Repo
+
+            if (isRepoChanged) {
+                // -> KONDISI A: REPO BARU SAJA DIGANTI
+                // Karena kita baru ganti repo, kita harus download ulang plugin dari repo tersebut.
+                try {
+                    Log.d(TAG, "Mengunduh plugin dari Repo Baru...")
+                    
+                    // Download secara paksa (Aman, karena auto-update CloudStream tidak dijalankan di sini)
+                    PluginsViewModel.downloadAll(this@MainActivity, targetRepoUrl, null)
+                    
+                    // Setelah selesai, load langsung ke memori
+                    PluginManager.___DO_NOT_CALL_FROM_A_PLUGIN_loadAllOnlinePlugins(this@MainActivity)
+                    PluginManager.___DO_NOT_CALL_FROM_A_PLUGIN_loadAllLocalPlugins(this@MainActivity, false)
+                    
+                } catch (e: Exception) {
+                    logError(e)
+                }
+            } else {
+                // -> KONDISI B: REPO TIDAK BERUBAH (Pemakaian sehari-hari)
+                // Biarkan sistem auto-update bawaan CloudStream berjalan normal.
+                if (settingsManager.getBoolean(getString(R.string.auto_update_plugins_key), true)) {
+                    PluginManager.___DO_NOT_CALL_FROM_A_PLUGIN_updateAllOnlinePluginsAndLoadThem(this@MainActivity)
+                } else {
+                    PluginManager.___DO_NOT_CALL_FROM_A_PLUGIN_loadAllOnlinePlugins(this@MainActivity)
+                }
+
+                val autoDownloadPlugin = AutoDownloadMode.getEnum(settingsManager.getInt(getString(R.string.auto_download_plugins_key), 0)) ?: AutoDownloadMode.Disable
+                if (autoDownloadPlugin != AutoDownloadMode.Disable) {
+                    PluginManager.___DO_NOT_CALL_FROM_A_PLUGIN_downloadNotExistingPluginsAndLoad(this@MainActivity, autoDownloadPlugin)
+                }
+                PluginManager.___DO_NOT_CALL_FROM_A_PLUGIN_loadAllLocalPlugins(this@MainActivity, false)
+            }
         }
-        // --------------------------------------------
+        // -----------------------------------------------------------
         try {
             if (isCastApiAvailable()) {
                 CastContext.getSharedInstance(this) { it.run() }
@@ -1149,48 +1167,6 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
 
         if (PluginManager.checkSafeModeFile()) {
             safe { showToast(R.string.safe_mode_file, Toast.LENGTH_LONG) }
-        } else if (lastError == null) {
-            ioSafe {
-                DataStoreHelper.currentHomePage?.let { homeApi ->
-                    mainPluginsLoadedEvent.invoke(loadSinglePlugin(this@MainActivity, homeApi))
-                } ?: run {
-                    mainPluginsLoadedEvent.invoke(false)
-                }
-
-                // --- PERBAIKAN UTAMA: SINGLE UPDATE MECHANISM ---
-                // Karena kita sudah menghapus 'main { downloadAll }' di atas,
-                // sekarang aman untuk memanggil update standar CloudStream.
-                ioSafe {
-                    // Beri sedikit jeda agar RepositoryManager selesai menyimpan config jika baru diganti
-                    Thread.sleep(1000)
-
-                    if (settingsManager.getBoolean(getString(R.string.auto_update_plugins_key), true)) {
-                        PluginManager.___DO_NOT_CALL_FROM_A_PLUGIN_updateAllOnlinePluginsAndLoadThem(this@MainActivity)
-                    } else {
-                        ___DO_NOT_CALL_FROM_A_PLUGIN_loadAllOnlinePlugins(this@MainActivity)
-                    }
-
-                    val autoDownloadPlugin = AutoDownloadMode.getEnum(settingsManager.getInt(getString(R.string.auto_download_plugins_key), 0)) ?: AutoDownloadMode.Disable
-                    if (autoDownloadPlugin != AutoDownloadMode.Disable) {
-                        PluginManager.___DO_NOT_CALL_FROM_A_PLUGIN_downloadNotExistingPluginsAndLoad(this@MainActivity, autoDownloadPlugin)
-                    }
-                }
-                ioSafe { PluginManager.___DO_NOT_CALL_FROM_A_PLUGIN_loadAllLocalPlugins(this@MainActivity, false) }
-            }
-        } else {
-            val builder: AlertDialog.Builder = AlertDialog.Builder(this)
-            builder.setTitle(R.string.safe_mode_title)
-            builder.setMessage(R.string.safe_mode_description)
-            builder.apply {
-                setPositiveButton(R.string.safe_mode_crash_info) { _, _ ->
-                    val tbBuilder: AlertDialog.Builder = AlertDialog.Builder(context)
-                    tbBuilder.setTitle(R.string.safe_mode_title)
-                    tbBuilder.setMessage(lastError)
-                    tbBuilder.show()
-                }
-                setNegativeButton("Ok") { _, _ -> }
-            }
-            builder.show().setDefaultFocus()
         }
 
         fun setUserData(status: Resource<SyncAPI.AbstractSyncStatus>?) {
