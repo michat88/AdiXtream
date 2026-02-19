@@ -433,7 +433,6 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
             supportFragmentManager.findFragmentById(R.id.nav_host_fragment) as NavHostFragment
         navHostFragment.navController.currentDestination?.let { updateNavBar(it) }
     }
-
     private fun updateNavBar(destination: NavDestination) {
         this.hideKeyboard()
 
@@ -1516,7 +1515,6 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
             }
         )
     }
-
     override fun onAuthenticationSuccess() { binding?.navHostFragment?.isInvisible = false }
     override fun onAuthenticationError() { finish() }
 
@@ -1606,6 +1604,52 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
             addPrice("6 Bulan", "Rp 50.000")
             addPrice("1 Tahun", "Rp 100.000")
         }
+
+        // --- TAMBAHAN QRIS ADIXTREAM ---
+        val qrisContainer = LinearLayout(context).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER
+            setPadding(0, 40, 0, 20)
+        }
+
+        val qrisTitle = TextView(context).apply {
+            text = "SCAN UNTUK BAYAR"
+            textSize = 12f
+            setTextColor(android.graphics.Color.GRAY)
+            gravity = Gravity.CENTER
+            setPadding(0, 0, 0, 20)
+        }
+
+        // CardView agar pinggiran gambar melengkung
+        val qrisCard = CardView(context).apply {
+            radius = 16f.toPx.toFloat()
+            setCardBackgroundColor(android.graphics.Color.WHITE)
+            layoutParams = LinearLayout.LayoutParams(220.toPx, 220.toPx)
+            clipChildren = true
+            clipToPadding = true
+        }
+
+        val qrisImage = ImageView(context).apply {
+            layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
+            scaleType = ImageView.ScaleType.FIT_CENTER
+            // Memuat gambar dari link GitHub yang kamu berikan
+            loadImage("https://raw.githubusercontent.com/michat88/Zaneta/main/Icons/qris.png")
+        }
+        
+        qrisCard.addView(qrisImage)
+
+        val qrisFooter = TextView(context).apply {
+            text = "OVO / DANA / GOPAY / SHOPEEPAY / BANK"
+            textSize = 10f
+            setTextColor(android.graphics.Color.GRAY)
+            gravity = Gravity.CENTER
+            setPadding(0, 20, 0, 0)
+        }
+
+        qrisContainer.addView(qrisTitle)
+        qrisContainer.addView(qrisCard)
+        qrisContainer.addView(qrisFooter)
+        // -------------------------------
 
         // 5. Device ID Box (Bisa dicopy)
         val deviceIdVal = PremiumManager.getDeviceId(context)
@@ -1711,6 +1755,9 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
         // Spacer
         layout.addView(View(context).apply { layoutParams = LinearLayout.LayoutParams(-1, 20) })
         layout.addView(priceLayout)
+        
+        // Memasukkan kontainer QRIS ke dalam urutan Layout
+        layout.addView(qrisContainer)
         
         layout.addView(View(context).apply { layoutParams = LinearLayout.LayoutParams(-1, 30) })
         layout.addView(idContainer)
