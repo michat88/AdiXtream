@@ -15,6 +15,7 @@ import android.widget.FrameLayout
 import androidx.annotation.MainThread
 import androidx.annotation.OptIn
 import androidx.appcompat.app.AlertDialog
+import androidx.core.net.toUri
 import androidx.media3.common.C.TIME_UNSET
 import androidx.media3.common.C.TRACK_TYPE_AUDIO
 import androidx.media3.common.C.TRACK_TYPE_TEXT
@@ -54,6 +55,7 @@ import androidx.media3.exoplayer.source.ClippingMediaSource
 import androidx.media3.exoplayer.source.ConcatenatingMediaSource
 import androidx.media3.exoplayer.source.ConcatenatingMediaSource2
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
+import androidx.media3.exoplayer.source.MediaSource
 import androidx.media3.exoplayer.source.MergingMediaSource
 import androidx.media3.exoplayer.source.SingleSampleMediaSource
 import androidx.media3.exoplayer.text.TextOutput
@@ -63,6 +65,7 @@ import androidx.media3.exoplayer.trackselection.TrackSelector
 import androidx.media3.ui.SubtitleView
 import androidx.preference.PreferenceManager
 import com.lagradost.cloudstream3.APIHolder.getApiFromNameNull
+import com.lagradost.cloudstream3.AudioFile
 import com.lagradost.cloudstream3.CloudStreamApp.Companion.getKey
 import com.lagradost.cloudstream3.CloudStreamApp.Companion.setKey
 import com.lagradost.cloudstream3.CommonActivity.activity
@@ -82,18 +85,18 @@ import com.lagradost.cloudstream3.ui.subtitles.SaveCaptionStyle
 import com.lagradost.cloudstream3.ui.subtitles.SubtitlesFragment.Companion.applyStyle
 import com.lagradost.cloudstream3.utils.AppContextUtils.isUsingMobileData
 import com.lagradost.cloudstream3.utils.AppContextUtils.setDefaultFocus
+import com.lagradost.cloudstream3.utils.CLEARKEY_UUID
 import com.lagradost.cloudstream3.utils.Coroutines.ioSafe
 import com.lagradost.cloudstream3.utils.Coroutines.runOnMainThread
 import com.lagradost.cloudstream3.utils.DataStoreHelper.currentAccount
 import com.lagradost.cloudstream3.utils.DrmExtractorLink
 import com.lagradost.cloudstream3.utils.EpisodeSkip
 import com.lagradost.cloudstream3.utils.ExtractorLink
-import com.lagradost.cloudstream3.utils.CLEARKEY_UUID
-import com.lagradost.cloudstream3.utils.WIDEVINE_UUID
-import com.lagradost.cloudstream3.utils.PLAYREADY_UUID
 import com.lagradost.cloudstream3.utils.ExtractorLinkPlayList
 import com.lagradost.cloudstream3.utils.ExtractorLinkType
+import com.lagradost.cloudstream3.utils.PLAYREADY_UUID
 import com.lagradost.cloudstream3.utils.SubtitleHelper.fromTagToLanguageName
+import com.lagradost.cloudstream3.utils.WIDEVINE_UUID
 import io.github.anilbeesetti.nextlib.media3ext.ffdecoder.NextRenderersFactory
 import kotlinx.coroutines.delay
 import org.chromium.net.CronetEngine
@@ -103,9 +106,6 @@ import java.util.concurrent.Executors
 import javax.net.ssl.HttpsURLConnection
 import javax.net.ssl.SSLContext
 import javax.net.ssl.SSLSession
-import kotlin.collections.HashSet
-import kotlin.text.StringBuilder
-import androidx.core.net.toUri
 
 const val TAG = "CS3ExoPlayer"
 const val PREFERRED_AUDIO_LANGUAGE_KEY = "preferred_audio_language"
@@ -410,7 +410,6 @@ class CS3IPlayer : IPlayer {
             ?: return
     }
 
-
     /**
      * Gets all supported formats in a list
      * */
@@ -523,13 +522,6 @@ class CS3IPlayer : IPlayer {
                                     }
                                 }
                         )
-
-                        // ugliest code I have written, it seeks 1ms to *update* the subtitles
-                        //exoPlayer?.applicationLooper?.let {
-                        //    Handler(it).postDelayed({
-                        //        seekTime(1L)
-                        //    }, 1)
-                        //}
                     }
 
                     SubtitleStatus.NOT_FOUND -> {
@@ -549,8 +541,6 @@ class CS3IPlayer : IPlayer {
         CustomDecoder.subtitleOffset = offset
         if (currentTextRenderer?.state == STATE_ENABLED || currentTextRenderer?.state == STATE_STARTED) {
             exoPlayer?.currentPosition?.let { pos ->
-                // This seems to properly refresh all subtitles
-                // It needs to be done as all subtitle cues with timings are pre-processed
                 currentTextRenderer?.resetPosition(pos)
             }
         }
@@ -577,7 +567,6 @@ class CS3IPlayer : IPlayer {
             Rational(format.width, format.height)
         }
     }
-
     override fun updateSubtitleStyle(style: SaveCaptionStyle) {
         subtitleHelper.setSubStyle(style)
     }
@@ -1041,7 +1030,6 @@ class CS3IPlayer : IPlayer {
             delay(1000)
         }
     }
-
     private fun buildExoPlayer(
         context: Context,
         mediaItemSlices: List<MediaItemSlice>,
@@ -1059,7 +1047,8 @@ class CS3IPlayer : IPlayer {
          * Sets the m3u8 preferred video quality, will not force stop anything with higher quality.
          * Does not work if trackSelector is defined.
          **/
-        maxVideoHeight: Int? = null
+        maxVideoHeight: Int? = null,
+        audioSources: List<MediaSource> = emptyList() // <-- KODE DITAMBAHKAN DI SINI
     ): ExoPlayer {
         val exoPlayerBuilder =
             ExoPlayer.Builder(context)
@@ -1310,12 +1299,14 @@ class CS3IPlayer : IPlayer {
         return exoPlayerBuilder.build().apply {
             setPlayWhenReady(playWhenReady)
             seekTo(currentWindow, playbackPosition)
+            
+            // <-- KODE DITAMBAHKAN DI SINI (Menggabungkan Gambar, Subtitle, dan Suara) -->
+            val allSources = listOf(videoMediaSource) + subSources + audioSources
             setMediaSource(
-                MergingMediaSource(
-                    videoMediaSource, *subSources.toTypedArray()
-                ),
+                MergingMediaSource(*allSources.toTypedArray()),
                 playbackPosition
             )
+            
             setHandleAudioBecomingNoisy(true)
             setPlaybackSpeed(playBackSpeed)
         }
@@ -1325,6 +1316,7 @@ class CS3IPlayer : IPlayer {
         context: Context,
         mediaSlices: List<MediaItemSlice>,
         subSources: List<SingleSampleMediaSource>,
+        audioSources: List<MediaSource> = emptyList(), // <-- KODE DITAMBAHKAN DI SINI
         cacheFactory: CacheDataSource.Factory? = null
     ) {
         Log.i(TAG, "loadExo")
@@ -1351,7 +1343,8 @@ class CS3IPlayer : IPlayer {
                 playWhenReady = isPlaying, // this keep the current state of the player
                 cacheFactory = cacheFactory,
                 subtitleOffset = currentSubtitleOffset,
-                maxVideoHeight = maxVideoHeight
+                maxVideoHeight = maxVideoHeight,
+                audioSources = audioSources // <-- KODE DITAMBAHKAN DI SINI
             )
 
             event(PlayerAttachedEvent(exoPlayer))
@@ -1386,8 +1379,7 @@ class CS3IPlayer : IPlayer {
                             tracks.groups.filter { it.type == TRACK_TYPE_TEXT }.getFormats()
                                 .mapNotNull { (format, _) ->
                                     // Filter out non subs, already used subs and subs without languages
-                                    if (format.id == null ||
-                                        format.language == null ||
+                                    if (format.id == null || format.language == null ||
                                         format.language?.startsWith("-") == true
                                     ) return@mapNotNull null
 
@@ -1683,10 +1675,37 @@ class CS3IPlayer : IPlayer {
         return Pair(subSources, activeSubtitles)
     }
 
+    // <-- KODE DITAMBAHKAN DI SINI (Fungsi untuk mengambil audio) -->
+    /**
+     * Creates audio media sources from ExtractorLink's audioTracks
+     */
+    private fun getAudioSources(
+        audioTracks: List<AudioFile>,
+        onlineSourceFactory: HttpDataSource.Factory?
+    ): List<MediaSource> {
+        return audioTracks.mapNotNull { audio ->
+            if (onlineSourceFactory != null) {
+                try {
+                    val mediaItem = getMediaItem(MimeTypes.AUDIO_UNKNOWN, audio.url)
+                    val factory = DefaultMediaSourceFactory(onlineSourceFactory.apply {
+                        if (audio.headers.isNotEmpty()) {
+                            this.setDefaultRequestProperties(audio.headers)
+                        }
+                    })
+                    factory.createMediaSource(mediaItem)
+                } catch (e: Exception) {
+                    Log.e(TAG, "Failed to create audio source for ${audio.url}: ${e.message}")
+                    null
+                }
+            } else {
+                null
+            }
+        }
+    }
+
     override fun isActive(): Boolean {
         return exoPlayer != null
     }
-
 
     @MainThread
     private fun loadTorrent(context: Context, link: ExtractorLink) {
@@ -1757,7 +1776,7 @@ class CS3IPlayer : IPlayer {
                         // this causes a *bug* that restarts all torrents from 0
                         // but I would call this a feature
                         releasePlayer()
-                        loadExo(context, listOf(), listOf(), null)
+                        loadExo(context, listOf(), listOf(), emptyList(), null)
                     }
                     event(
                         StatusEvent(
@@ -1868,7 +1887,14 @@ class CS3IPlayer : IPlayer {
                 setUpstreamDataSourceFactory(onlineSourceFactory)
             }
 
-            loadExo(context, mediaItems, subSources, cacheFactory)
+            // <-- KODE DITAMBAHKAN DI SINI (Membaca Audio saat Online Player dipanggil) -->
+            val audioSources = getAudioSources(
+                audioTracks = link.audioTracks,
+                onlineSourceFactory = onlineSourceFactory
+            )
+
+            loadExo(context, mediaItems, subSources, audioSources, cacheFactory) // <-- PARAMETER AUDIO DITAMBAHKAN DI SINI
+
         } catch (t: Throwable) {
             Log.e(TAG, "loadOnlinePlayer error", t)
             event(ErrorEvent(t))
