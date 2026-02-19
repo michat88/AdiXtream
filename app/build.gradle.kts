@@ -170,7 +170,7 @@ dependencies {
 
     implementation(libs.jsoup)
     implementation(libs.rhino)
-    implementation(libs.quickjs)
+    implementation(libs.zipline)
     implementation(libs.fuzzywuzzy)
     implementation(libs.safefile)
     coreLibraryDesugaring(libs.desugar.jdk.libs.nio)
