@@ -132,27 +132,40 @@ class SettingsUpdates : BasePreferenceFragmentCompat() {
         }
 
         // --- ADIXTREAM SECURITY: DISABLE LOGCAT ---
-        // Sembunyikan sepenuhnya dari UI agar tidak bisa ditekan
-        getPref(R.string.show_logcat_key)?.isVisible = false
+        // PERBAIKAN: Diaktifkan kembali (true) untuk analisa error subtitle
+        getPref(R.string.show_logcat_key)?.isVisible = true
         // ------------------------------------------
+
+        // PERBAIKAN: Mengatur 'Versi lama' sebagai default jika pengguna belum menyetelnya
+        val apkInstallerKey = getString(R.string.apk_installer_key)
+        if (!settingsManager.contains(apkInstallerKey)) {
+            val prefValues = resources.getIntArray(R.array.apk_installer_values)
+            // Asumsi 'Versi lama' ada di indeks 1 pada array XML
+            val defaultLegacyValue = if (prefValues.size > 1) prefValues[1] else 0
+            
+            settingsManager.edit {
+                putInt(apkInstallerKey, defaultLegacyValue)
+            }
+        }
 
         getPref(R.string.apk_installer_key)?.setOnPreferenceClickListener {
             val prefNames = resources.getStringArray(R.array.apk_installer_pref)
             val prefValues = resources.getIntArray(R.array.apk_installer_values)
 
-            val currentInstaller =
-                settingsManager.getInt(getString(R.string.apk_installer_key), 0)
+            // Mengambil nilai saat ini, fallback ke 'Versi lama' jika tidak ditemukan
+            val fallbackValue = if (prefValues.size > 1) prefValues[1] else 0
+            val currentInstaller = settingsManager.getInt(apkInstallerKey, fallbackValue)
 
             activity?.showBottomDialog(
                 prefNames.toList(),
-                prefValues.indexOf(currentInstaller),
+                prefValues.indexOf(currentInstaller).takeIf { it >= 0 } ?: 1,
                 getString(R.string.apk_installer_settings),
                 true,
                 {}
             ) { num ->
                 try {
                     settingsManager.edit {
-                        putInt(getString(R.string.apk_installer_key), prefValues[num])
+                        putInt(apkInstallerKey, prefValues[num])
                     }
                 } catch (e: Exception) {
                     logError(e)
@@ -168,7 +181,7 @@ class SettingsUpdates : BasePreferenceFragmentCompat() {
                     if (activity?.runAutoUpdate(false) == false) {
                         activity?.runOnUiThread {
                             showToast(
-                                R.string.no_update_found,
+                               R.string.no_update_found,
                                 Toast.LENGTH_SHORT
                             )
                         }
@@ -215,8 +228,8 @@ class SettingsUpdates : BasePreferenceFragmentCompat() {
                 val first = listOf(defaultDir)
                 (runCatching {
                     first + BackupUtils.getCurrentBackupDir(ctx).let {
-                                it.first?.filePath() ?: it.second
-                            }
+                        it.first?.filePath() ?: it.second
+                    }
                 }.getOrNull() ?: first).filterNotNull().distinct()
             }
         } ?: emptyList()
