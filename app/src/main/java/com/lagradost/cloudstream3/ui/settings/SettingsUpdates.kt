@@ -8,14 +8,12 @@ import androidx.appcompat.app.AlertDialog
 import androidx.core.content.edit
 import androidx.navigation.fragment.findNavController
 import androidx.preference.PreferenceManager
-import androidx.recyclerview.widget.LinearLayoutManager
 import com.lagradost.cloudstream3.AutoDownloadMode
 import com.lagradost.cloudstream3.BuildConfig
 import com.lagradost.cloudstream3.CloudStreamApp
 import com.lagradost.cloudstream3.CommonActivity.showToast
 import com.lagradost.cloudstream3.R
 import com.lagradost.cloudstream3.app
-import com.lagradost.cloudstream3.databinding.LogcatBinding
 import com.lagradost.cloudstream3.mvvm.logError
 import com.lagradost.cloudstream3.mvvm.safe
 import com.lagradost.cloudstream3.network.initClient
@@ -23,7 +21,6 @@ import com.lagradost.cloudstream3.plugins.PluginManager
 import com.lagradost.cloudstream3.services.BackupWorkManager
 import com.lagradost.cloudstream3.ui.BasePreferenceFragmentCompat
 import com.lagradost.cloudstream3.ui.settings.Globals.EMULATOR
-import com.lagradost.cloudstream3.ui.settings.Globals.TV
 import com.lagradost.cloudstream3.ui.settings.SettingsFragment.Companion.getPref
 import com.lagradost.cloudstream3.ui.settings.SettingsFragment.Companion.hideOn
 import com.lagradost.cloudstream3.ui.settings.SettingsFragment.Companion.setPaddingBottom
@@ -36,18 +33,8 @@ import com.lagradost.cloudstream3.utils.Coroutines.ioSafe
 import com.lagradost.cloudstream3.utils.InAppUpdater.Companion.runAutoUpdate
 import com.lagradost.cloudstream3.utils.SingleSelectionHelper.showBottomDialog
 import com.lagradost.cloudstream3.utils.SingleSelectionHelper.showDialog
-import com.lagradost.cloudstream3.utils.UIHelper.clipboardHelper
-import com.lagradost.cloudstream3.utils.UIHelper.dismissSafe
 import com.lagradost.cloudstream3.utils.UIHelper.hideKeyboard
-import com.lagradost.cloudstream3.utils.VideoDownloadManager
-import com.lagradost.cloudstream3.utils.txt
-import java.io.BufferedReader
-import java.io.InputStreamReader
-import java.io.OutputStream
-import java.lang.System.currentTimeMillis
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
+import java.io.File
 
 class SettingsUpdates : BasePreferenceFragmentCompat() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -110,6 +97,7 @@ class SettingsUpdates : BasePreferenceFragmentCompat() {
             activity?.restorePrompt()
             return@setOnPreferenceClickListener true
         }
+        
         getPref(R.string.backup_path_key)?.hideOn(EMULATOR)?.setOnPreferenceClickListener {
             val dirs = getBackupDirsForDisplay()
             val currentDir =
@@ -143,64 +131,10 @@ class SettingsUpdates : BasePreferenceFragmentCompat() {
             return@setOnPreferenceClickListener true
         }
 
-        getPref(R.string.show_logcat_key)?.setOnPreferenceClickListener { pref ->
-            val builder = AlertDialog.Builder(pref.context, R.style.AlertDialogCustom)
-
-            val binding = LogcatBinding.inflate(layoutInflater, null, false)
-            builder.setView(binding.root)
-
-            val dialog = builder.create()
-            dialog.show()
-
-            val logList = mutableListOf<String>()
-            try {
-                // https://developer.android.com/studio/command-line/logcat
-                val process = Runtime.getRuntime().exec("logcat -d")
-                val bufferedReader = BufferedReader(InputStreamReader(process.inputStream))
-                bufferedReader.lineSequence().forEach { logList.add(it) }
-            } catch (e: Exception) {
-                logError(e) // kinda ironic
-            }
-
-            val adapter = LogcatAdapter().apply { submitList(logList) }
-            binding.logcatRecyclerView.layoutManager = LinearLayoutManager(pref.context)
-            binding.logcatRecyclerView.adapter = adapter
-
-            binding.copyBtt.setOnClickListener {
-                clipboardHelper(txt("Logcat"), logList.joinToString("\n"))
-                dialog.dismissSafe(activity)
-            }
-
-            binding.clearBtt.setOnClickListener {
-                Runtime.getRuntime().exec("logcat -c")
-                dialog.dismissSafe(activity)
-            }
-
-            binding.saveBtt.setOnClickListener {
-                val date = SimpleDateFormat("yyyy_MM_dd_HH_mm", Locale.getDefault()).format(Date(currentTimeMillis()))
-                var fileStream: OutputStream? = null
-                try {
-                    fileStream = VideoDownloadManager.setupStream(
-                        it.context,
-                        "logcat_${date}",
-                        null,
-                        "txt",
-                        false
-                    ).openNew()
-                    fileStream.writer().use { writer -> writer.write(logList.joinToString("\n")) }
-                    dialog.dismissSafe(activity)
-                } catch (t: Throwable) {
-                    logError(t)
-                    showToast(t.message)
-                }
-            }
-
-            binding.closeBtt.setOnClickListener {
-                dialog.dismissSafe(activity)
-            }
-
-            return@setOnPreferenceClickListener true
-        }
+        // --- ADIXTREAM SECURITY: DISABLE LOGCAT ---
+        // Sembunyikan sepenuhnya dari UI agar tidak bisa ditekan
+        getPref(R.string.show_logcat_key)?.isVisible = false
+        // ------------------------------------------
 
         getPref(R.string.apk_installer_key)?.setOnPreferenceClickListener {
             val prefNames = resources.getStringArray(R.array.apk_installer_pref)
