@@ -190,33 +190,34 @@ class RebahinProvider : MainAPI() {
             var finalUrl = url
             
             if (finalUrl.contains("short.icu")) {
-                finalUrl = app.get(finalUrl).url 
+                // Bypass redirect short.icu untuk mendapatkan URL tujuan asli
+                finalUrl = app.get(finalUrl, allowRedirects = true).url 
             }
 
-            // Coba dengan extractor bawaan
+            // 1. Coba berikan ke Extractor bawaan Cloudstream
             loadExtractor(finalUrl, referer, subtitleCallback, callback)
 
+            // 2. Ekstrak rahasia dari Server Privat Rebahin (IP based) / AbyssCDN
             val ipRegex = Regex("""https?://\d+\.\d+\.\d+\.\d+/.*""")
             
             if (ipRegex.matches(finalUrl) || finalUrl.contains("abysscdn.com")) {
                 val embedText = app.get(finalUrl, referer = referer).text
                 val unpacked = getAndUnpack(embedText)
                 
-                // PEMBARUAN: Tangkap URL apapun di dalam parameter 'file' JWPlayer
-                val videoRegex = """(?:file|src|url)\s*[:=]\s*['"](https?://[^'"]+)['"]""".toRegex(RegexOption.IGNORE_CASE)
+                // PERBAIKAN REGEX: Hanya mencari 'file:' atau 'source:', DILARANG MENCARI 'src='
+                val videoRegex = """["']?(?:file|source)["']?\s*:\s*["'](https?://[^"']+)["']""".toRegex(RegexOption.IGNORE_CASE)
                 
                 val allMatches = videoRegex.findAll(unpacked).map { it.groupValues[1] }.toList() + 
                                  videoRegex.findAll(embedText).map { it.groupValues[1] }.toList()
                 
-                // Saring URL agar kita tidak mengambil file subtitle (.vtt) atau gambar (.jpg)
+                // Saring URL agar tidak mengambil file subtitle/gambar
                 val streamUrl = allMatches.firstOrNull { 
                     !it.endsWith(".vtt") && !it.endsWith(".srt") && !it.endsWith(".jpg") && !it.endsWith(".png") 
                 }
                 
                 streamUrl?.let {
-                    // Deteksi apakah ini HLS/M3U8 dengan cara mengecek isi URL-nya
-                    val isM3u = it.contains(".m3u8") || it.contains("/stream/variant/") || it.contains("hls")
-                    val sourceName = if (finalUrl.contains("abysscdn")) "AbyssCDN (VIP)" else "Rebahin VIP"
+                    val isM3u = it.contains(".m3u8") || it.contains("/stream/") || it.contains("hls")
+                    val sourceName = if (finalUrl.contains("abysscdn")) "AbyssCDN (HD)" else "Rebahin VIP"
                     
                     callback.invoke(
                         ExtractorLink(
