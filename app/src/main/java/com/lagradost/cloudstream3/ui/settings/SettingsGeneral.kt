@@ -44,8 +44,9 @@ import com.lagradost.cloudstream3.utils.UIHelper.dismissSafe
 import com.lagradost.cloudstream3.utils.UIHelper.hideKeyboard
 import com.lagradost.cloudstream3.utils.UIHelper.navigate
 import com.lagradost.cloudstream3.utils.USER_PROVIDER_API
-import com.lagradost.cloudstream3.utils.VideoDownloadManager
-import com.lagradost.cloudstream3.utils.VideoDownloadManager.getBasePath
+import com.lagradost.cloudstream3.utils.downloader.DownloadFileManagement
+import com.lagradost.cloudstream3.utils.downloader.DownloadFileManagement.getBasePath
+import com.lagradost.cloudstream3.utils.downloader.DownloadQueueManager
 import java.util.Locale
 
 // Change local language settings in the app.
@@ -54,16 +55,6 @@ fun getCurrentLocale(context: Context): String {
     return ConfigurationCompat.getLocales(conf).get(0)?.toLanguageTag() ?: "en"
 }
 
-/**
- * List of app supported languages.
- * Language code shall be a IETF BCP 47 conformant tag
- *
- * See locales on:
- * https://github.com/unicode-org/cldr-json/blob/main/cldr-json/cldr-core/availableLocales.json
- * https://www.iana.org/assignments/language-subtag-registry/language-subtag-registry
- * https://android.googlesource.com/platform/frameworks/base/+/android-16.0.0_r2/core/res/res/values/locale_config.xml
- * https://iso639-3.sil.org/code_tables/639/data/all
-*/
 val appLanguages = arrayListOf(
     /* begin language list */
     Pair("Afrikaans", "af"),
@@ -126,13 +117,11 @@ val appLanguages = arrayListOf(
     Pair("正體中文(臺灣)", "zh-TW"),
     Pair("한국어", "ko"),
 /* end language list */
-).sortedBy { it.first.lowercase(Locale.ROOT) } // ye, we go alphabetical, so ppl don't put their lang on top
+).sortedBy { it.first.lowercase(Locale.ROOT) }
 
 fun Pair<String, String>.nameNextToFlagEmoji(): String {
-    // fallback to [A][A] -> [?] question mak flag
     val flag = SubtitleHelper.getFlagFromIso(this.second) ?: "\ud83c\udde6\ud83c\udde6"
-
-    return "$flag\u00a0${this.first}" // \u00a0 non-breaking space
+    return "$flag\u00a0${this.first}" 
 }
 
 class SettingsGeneral : BasePreferenceFragmentCompat() {
@@ -144,7 +133,7 @@ class SettingsGeneral : BasePreferenceFragmentCompat() {
     }
 
     data class CustomSite(
-        @JsonProperty("parentJavaClass") // javaClass.simpleName
+        @JsonProperty("parentJavaClass")
         val parentJavaClass: String,
         @JsonProperty("name")
         val name: String,
@@ -243,7 +232,6 @@ class SettingsGeneral : BasePreferenceFragmentCompat() {
                     val newSite = CustomSite(provider.javaClass.simpleName, name, url, realLang)
                     current.add(newSite)
                     setKey(USER_PROVIDER_API, current.toTypedArray())
-                    // reload apis
                     MainActivity.afterPluginsLoadedEvent.invoke(false)
 
                     dialog.dismissSafe(activity)
@@ -287,13 +275,11 @@ class SettingsGeneral : BasePreferenceFragmentCompat() {
         }
 
         getPref(R.string.override_site_key)?.setOnPreferenceClickListener { _ ->
-
             if (getCurrent().isEmpty()) {
                 showAdd()
             } else {
                 showAddOrDelete()
             }
-
             return@setOnPreferenceClickListener true
         }
 
@@ -328,7 +314,7 @@ class SettingsGeneral : BasePreferenceFragmentCompat() {
         fun getDownloadDirs(): List<String> {
             return safe {
                 context?.let { ctx ->
-                    val defaultDir = VideoDownloadManager.getDefaultDir(ctx)?.filePath()
+                    val defaultDir = DownloadFileManagement.getDefaultDir(ctx)?.filePath()
 
                     val first = listOf(defaultDir)
                     (try {
@@ -350,12 +336,17 @@ class SettingsGeneral : BasePreferenceFragmentCompat() {
             return@setOnPreferenceChangeListener true
         }
 
+        getPref(R.string.download_parallel_key)?.setOnPreferenceChangeListener { _, _ ->
+            DownloadQueueManager.forceRefreshQueue()
+            return@setOnPreferenceChangeListener true
+        }
+
         getPref(R.string.download_path_key)?.setOnPreferenceClickListener {
             val dirs = getDownloadDirs()
 
             val currentDir =
                 settingsManager.getString(getString(R.string.download_path_key_visual), null)
-                    ?: context?.let { ctx -> VideoDownloadManager.getDefaultDir(ctx)?.filePath() }
+                    ?: context?.let { ctx -> DownloadFileManagement.getDefaultDir(ctx)?.filePath() }
 
             activity?.showBottomDialog(
                 dirs + listOf(getString(R.string.custom)),
@@ -363,7 +354,6 @@ class SettingsGeneral : BasePreferenceFragmentCompat() {
                 getString(R.string.download_path_pref),
                 true,
                 {}) {
-                // Last = custom
                 if (it == dirs.size) {
                     try {
                         pathPicker.launch(Uri.EMPTY)
@@ -371,9 +361,6 @@ class SettingsGeneral : BasePreferenceFragmentCompat() {
                         logError(e)
                     }
                 } else {
-                    // Sets both visual and actual paths.
-                    // key = used path
-                    // visual = visual path
                     settingsManager.edit {
                         putString(getString(R.string.download_path_key), dirs[it])
                         putString(getString(R.string.download_path_key_visual), dirs[it])
@@ -384,13 +371,12 @@ class SettingsGeneral : BasePreferenceFragmentCompat() {
         }
 
         try {
+            // --- ADIXTREAM DONATION LINK ---
             getPref(R.string.benene_count)?.let { pref ->
-                // UBAH LOGIKA DI SINI: Langsung buka link Saweria
-                pref.summary = "Dukung pengembangan AdiXtream di Saweria" // Ubah teks ringkasan agar sesuai
+                pref.summary = "Dukung pengembangan AdiXtream di Saweria" 
                 
                 pref.setOnPreferenceClickListener {
                     try {
-                        // Link donasi Saweria milikmu
                         val url = "https://saweria.co/michat88"
                         val i = android.content.Intent(android.content.Intent.ACTION_VIEW)
                         i.data = android.net.Uri.parse(url)
@@ -398,10 +384,10 @@ class SettingsGeneral : BasePreferenceFragmentCompat() {
                     } catch (e: Exception) {
                         logError(e)
                     }
-
                     return@setOnPreferenceClickListener true
                 }
             }
+            // -------------------------------
         } catch (e: Exception) {
             e.printStackTrace()
         }
