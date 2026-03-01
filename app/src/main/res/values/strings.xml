@@ -760,11 +760,4 @@
         <item quantity="one">%d download queued</item>
         <item quantity="other">%d downloads queued</item>
     </plurals>
-        <string name="uprereleases_settings">Pre-release updates</string>
-    <string name="uprereleases_settings_des">Terima pembaruan versi pre-release untuk mencoba fitur baru lebih awal.</string>
-    
-    <string name="nginx_key" translatable="false">nginx_url</string>
-    <string name="prefer_limit_title_rez_key" translatable="false">prefer_limit_title_rez_key</string>
-
 </resources>
-    
