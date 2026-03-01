@@ -377,9 +377,7 @@
     <string name="plugins_updated" formatted="true">%d plugin diperbarui</string>
     <string name="view_public_repositories_button">Lihat Repositori dari Group</string>
     <string name="view_public_repositories_button_short">List Umum</string>
-    <string name="blank_repo_message">AdiXtream tidak memiliki situs yang terinstal secara default. Anda perlu menginstal situs-situs dari repositori.
-\n
-\nBergabunglah dengan Discord kami atau cari secara online.</string>
+    <string name="blank_repo_message">AdiXtream tidak memiliki situs yang terinstal secara default. Anda perlu menginstal situs-situs dari repositori.\n\nBergabunglah dengan Discord kami atau cari secara online.</string>
     <string name="repository_url_hint">URL Arsip atau Kode Pendek</string>
     <string name="create_account">Buat Akun</string>
     <string name="error">Error</string>
@@ -474,8 +472,7 @@
     <string name="action_remove_from_watched">Hapus dari tontonan</string>
     <string name="browser">Peramban</string>
     <string name="select_library">Pilih pustaka</string>
-    <string name="empty_library_no_accounts_message">Yahh daftar pustaka kamu kosong :(
-\nMasuk ke akun pustaka atau tambah perlihatkan ke lokal pustaka kamu.</string>
+    <string name="empty_library_no_accounts_message">Yahh daftar pustaka kamu kosong :(\nMasuk ke akun pustaka atau tambah perlihatkan ke lokal pustaka kamu.</string>
     <string name="library">Pustaka</string>
     <string name="sort_by">Urutkan berdasar</string>
     <string name="sort">Urutkan</string>
@@ -487,8 +484,7 @@
     <string name="sort_alphabetical_z">Abjad (Z ke A)</string>
     <string name="open_with">Buka dengan</string>
     <string name="empty_library_logged_in_message">Yahh daftar ini kosong. Coba ganti ke yang lain.</string>
-    <string name="safe_mode_file">Mode aman file ditemukan!
-\nTidak memuat ekstensi pada startup sampai berkas dihapus.</string>
+    <string name="safe_mode_file">Mode aman file ditemukan!\nTidak memuat ekstensi pada startup sampai berkas dihapus.</string>
     <string name="android_tv_interface_off_seek_settings">Sembunyikan Pemutaran - Geser</string>
     <string name="android_tv_interface_on_seek_settings">Pemutar terlihat - Geser</string>
     <string name="android_tv_interface_on_seek_settings_summary">Geser untuk menghilangkan</string>
@@ -514,13 +510,7 @@
     <string name="watch_quality_pref_data">Kualitas nonton yang diinginkan (Data Seluler)</string>
     <string name="mobile_data">Data seluler</string>
     <string name="help">Bantuan</string>
-    <string name="quality_profile_help">Di sini anda dapat mengubah sumber yang diurutkan. Jika video memiliki prioritas lebih tinggi, video tersebut akan muncul lebih tinggi dalam pemilihan sumber. Jumlah prioritas sumber dan prioritas kualitas adalah prioritas video.
-\n
-\nSumber A: 3
-\nKualitas B: 7
-\nAkan memiliki prioritas video yang digabung 10.
-\n
-\nCATATAN: Jika jumlahnya 10 atau lebih, pemain akan melewatkan pemuatan secara otomatis saat tautan dimuat!</string>
+    <string name="quality_profile_help">Di sini anda dapat mengubah sumber yang diurutkan. Jika video memiliki prioritas lebih tinggi, video tersebut akan muncul lebih tinggi dalam pemilihan sumber. Jumlah prioritas sumber dan prioritas kualitas adalah prioritas video.\n\nSumber A: 3\nKualitas B: 7\nAkan memiliki prioritas video yang digabung 10.\n\nCATATAN: Jika jumlahnya 10 atau lebih, pemain akan melewatkan pemuatan secara otomatis saat tautan dimuat!</string>
     <string name="profile_number">Profil %d</string>
     <string name="wifi">Wifi</string>
     <string name="set_default">Pengaturan default</string>
@@ -538,11 +528,7 @@
     <string name="favorite_removed">%s dihapus dari favorit</string>
     <string name="favorites_list_name">Favorit</string>
     <string name="favorite_added">%s Ditambahkan ke favorit</string>
-    <string name="duplicate_message_multiple" formatted="true">Item duplikat potensial telah ditemukan di perpustakaan Anda:
-\n
-\n%s
-\n
-\nApakah Anda tetap ingin menambahkan item ini, mengganti item yang sudah ada, atau membatalkan tindakan?</string>
+    <string name="duplicate_message_multiple" formatted="true">Item duplikat potensial telah ditemukan di perpustakaan Anda:\n\n%s\n\nApakah Anda tetap ingin menambahkan item ini, mengganti item yang sudah ada, atau membatalkan tindakan?</string>
     <string name="backup_frequency">Frekuensi pencadangan</string>
     <string name="duplicate_title">Potensi Duplikat Ditemukan</string>
     <string name="lock_profile">Kunci Profil</string>
@@ -556,9 +542,7 @@
     <string name="action_subscribe">Subscribe</string>
     <string name="action_remove_from_favorites">Hapus dari favorit</string>
     <string name="select_an_account">Pilih Akun</string>
-    <string name="duplicate_message_single" formatted="true">Tampaknya item yang berpotensi duplikat sudah ada di perpustakaan Anda: \'%s.\'
-\n
-\nApakah Anda tetap ingin menambahkan item ini, mengganti item yang sudah ada, atau membatalkan tindakan?</string>
+    <string name="duplicate_message_single" formatted="true">Tampaknya item yang berpotensi duplikat sudah ada di perpustakaan Anda: \'%s.\'\n\nApakah Anda tetap ingin menambahkan item ini, mengganti item yang sudah ada, atau membatalkan tindakan?</string>
     <string name="enter_pin">Masukan PIN</string>
     <string name="pin">PIN</string>
     <string name="enter_current_pin">Masukkan PIN Saat Ini</string>
@@ -586,8 +570,7 @@
     <string name="biometric_prompt_description">Setelah beberapa kali gagal, perintah akan ditutup. Cukup mulai ulang aplikasi untuk mencoba lagi.</string>
     <string name="unfavorite">Batalkan favorit</string>
     <string name="biometric_authentication_title">Buka kunci AdiXtream</string>
-    <string name="resume_remaining" formatted="true">%s
-\ntersisa</string>
+    <string name="resume_remaining" formatted="true">%s\ntersisa</string>
     <string name="favorite">Favorit</string>
     <string name="biometric_setting">Kunci dengan Biometrik</string>
     <string name="repo_copy_label">Nama dan URL repositori</string>
@@ -632,18 +615,10 @@
     <string name="select_all">Pilih Semua</string>
     <string name="deselect_all">Batal Pilih Semua</string>
     <string name="delete_files">Hapus File</string>
-    <string name="delete_message_multiple" formatted="true">Apakah Anda yakin ingin menghapus item berikut secara permanen?
-\n
-\n%s</string>
-    <string name="delete_message_series_episodes" formatted="true">Apakah Anda yakin ingin menghapus episode berikut di %1$s secara permanen?
-\n
-\n%2$s</string>
-    <string name="delete_message_series_section" formatted="true">Anda juga akan menghapus semua episode dalam seri berikut secara permanen:
-\n
-\n%s</string>
-    <string name="delete_message_series_only" formatted="true">Apakah Anda yakin ingin menghapus semua episode dalam seri berikut secara permanen?
-\n
-\n%s</string>
+    <string name="delete_message_multiple" formatted="true">Apakah Anda yakin ingin menghapus item berikut secara permanen?\n\n%s</string>
+    <string name="delete_message_series_episodes" formatted="true">Apakah Anda yakin ingin menghapus episode berikut di %1$s secara permanen?\n\n%2$s</string>
+    <string name="delete_message_series_section" formatted="true">Anda juga akan menghapus semua episode dalam seri berikut secara permanen:\n\n%s</string>
+    <string name="delete_message_series_only" formatted="true">Apakah Anda yakin ingin menghapus semua episode dalam seri berikut secara permanen?\n\n%s</string>
     <string name="delete_format" formatted="true">Hapus (%1$d | %2$s)</string>
     <string name="delete_plugin">Hapus Plugin</string>
     <string name="device_pin_error_message">Tidak bisa mendapatkan kode PIN perangkat, coba autentikasi lokal</string>
@@ -717,7 +692,7 @@
     <string name="action_remove_mark_watched_up_to_this_episode">Hapus penandaan telah ditonton hingga episode ini</string>
     <string name="action_reload">Dimuat Ulang</string>
     <string name="reload_provider">Muat Ulang Penyedia</string>
-    <string name="episode_action_play_mirror">Putar mirror</string>"
+    <string name="episode_action_play_mirror">Putar mirror</string>
     <string name="name">Nama</string>
     <string name="resolution_and_name">Resolusi dan nama</string>
     <string name="subs_subtitle_alignment">Penyelarasan Subtitle</string>
