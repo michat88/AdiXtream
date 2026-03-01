@@ -48,6 +48,7 @@
     <string name="download_parallel_key" translatable="false">download_parallel_key</string>
     <string name="download_concurrent_key" translatable="false">download_concurrent_key</string>
     <string name="download_path_key_visual" translatable="false">download_path_key_visual</string>
+    <string name="app_name_download_path" translatable="false">AdiXtream</string>
     <string name="app_layout_key" translatable="false">app_layout_key</string>
     <string name="primary_color_key" translatable="false">primary_color_key</string>
     <string name="restore_key" translatable="false">restore_key</string>
@@ -73,7 +74,6 @@
     <string name="rotate_video_key" translatable="false">rotate_video_key</string>
     <string name="auto_rotate_video_key" translatable="false">auto_rotate_video_key</string>
     <string name="biometric_key" translatable="false">biometric_key</string>
-    
     <string name="show_hd_key" translatable="false">show_hd_key</string>
     <string name="show_dub_key" translatable="false">show_dub_key</string>
     <string name="show_sub_key" translatable="false">show_sub_key</string>
@@ -373,25 +373,13 @@
     <string name="site">Site</string>
     <string name="synopsis">Synopsis</string>
     <string name="queued">queued</string>
+    <string name="no_subtitles">No Subtitles</string>
     <string name="action_default">Default</string>
     <string name="default_subtitles" translatable="false">@string/action_default</string>
     <string name="default_account" translatable="false">@string/action_default</string>
     <string name="free_storage">Free</string>
     <string name="used_storage">Used</string>
     <string name="app_storage">App</string>
-    <plurals name="episodes" translatable="false">
-        <item quantity="one">@string/episode</item>
-        <item quantity="other">@string/episodes</item>
-    </plurals>
-    <plurals name="downloads_active">
-        <item quantity="one">%d active download</item>
-        <item quantity="other">%d active downloads</item>
-    </plurals>
-    <plurals name="downloads_queued">
-        <item quantity="one">%d download queued</item>
-        <item quantity="other">%d downloads queued</item>
-    </plurals>
-
     <string name="movies">Movies</string>
     <string name="tv_series">TV Series</string>
     <string name="cartoons">Cartoons</string>
@@ -420,6 +408,7 @@
     <string name="custom_media_singluar">Media</string>
     <string name="audio_singluar">Audio</string>
     <string name="podcast_singluar">Podcast</string>
+    
     <string name="source_error">Source error</string>
     <string name="remote_error">Remote error</string>
     <string name="render_error">Renderer error</string>
@@ -528,6 +517,338 @@
     <string name="app_theme_settings">App theme</string>
     <string name="bottom_title_settings">Poster title location</string>
     <string name="bottom_title_settings_des">Put the title under the poster</string>
+    
+    <string name="example_password">password123</string>
+    <string name="example_username">Username</string>
+    <string name="example_email">hello@world.com</string>
+    <string name="example_ip">127.0.0.1</string>
+    <string name="example_site_name">NewSiteName</string>
+    <string name="example_site_url">https://example.com</string>
+    <string name="example_lang_name">Language code (en)</string>
+    <string name="login_format" formatted="true">%1$s %2$s</string>
+    <string name="account">account</string>
+    <string name="logout">Log out</string>
+    <string name="login">Log in</string>
+    <string name="auth_locally">Auth Locally</string>
+    <string name="switch_account">Switch account</string>
+    <string name="add_account">Add account</string>
+    <string name="create_account">Create account</string>
+    <string name="add_sync">Add tracking</string>
+    <string name="added_sync_format" formatted="true">Added %s</string>
+    <string name="upload_sync">Sync</string>
+    <string name="sync_score">Rated</string>
+    <string name="sync_score_format" formatted="true">%d / 10</string>
+    <string name="sync_total_episodes_none">/??</string>
+    <string name="sync_total_episodes_some" formatted="true">/%d</string>
+    <string name="authenticated_user" formatted="true">%s authenticated</string>
+    <string name="authenticated_user_fail" formatted="true">Could not log in at %s</string>
+    
+    <string name="disable">Disable</string>
+    <string name="none">None</string>
+    <string name="normal">Normal</string>
+    <string name="all">All</string>
+    <string name="max">Max</string>
+    <string name="min">Min</string>
+    <string name="subtitles_outline">Outline</string>
+    <string name="subtitles_depressed">Depressed</string>
+    <string name="subtitles_shadow">Shadow</string>
+    <string name="subtitles_raised">Raised</string>
+    <string name="subtitle_offset">Sync subs</string>
+    <string name="subtitle_offset_hint">1000 ms</string>
+    <string name="subtitle_offset_title">Subtitle delay</string>
+    <string name="subtitle_offset_extra_hint_later_format">Use this if the subtitles are shown %d ms too early</string>
+    <string name="subtitle_offset_extra_hint_before_format">Use this if subtitles are shown %d ms too late</string>
+    <string name="subtitle_offset_extra_hint_none_format">No subtitle delay</string>
+
+    <string name="subtitles_example_text">The quick brown fox jumps over the lazy dog</string>
+    
+    <string name="recommended">Recommended</string>
+    <string name="player_loaded_subtitles" formatted="true">Loaded %s</string>
+    <string name="player_load_subtitles">Load from file</string>
+    <string name="player_load_subtitles_online">Load from Internet</string>
+    <string name="player_load_one_subtitle_online">Load first available</string>
+    <string name="downloaded_file">Downloaded file</string>
+    <string name="actor_main">Main</string>
+    <string name="actor_supporting">Supporting</string>
+    <string name="actor_background">Background</string>
+    <string name="home_source">Source</string>
+    <string name="home_random">Random</string>
+    <string name="coming_soon">Coming soon…</string>
+    <string name="quality_cam">Cam</string>
+    <string name="quality_cam_rip">Cam</string>
+    <string name="quality_cam_hd">Cam</string>
+    <string name="quality_hq">HQ</string>
+    <string name="quality_hd">HD</string>
+    <string name="quality_ts">TS</string>
+    <string name="quality_tc">TC</string>
+    <string name="quality_blueray">Blu-ray</string>
+    <string name="quality_workprint">WP</string>
+    <string name="quality_dvd">DVD</string>
+    <string name="quality_4k">4K</string>
+    <string name="quality_sd">SD</string>
+    <string name="quality_uhd">UHD</string>
+    <string name="quality_hdr">HDR</string>
+    <string name="quality_sdr">SDR</string>
+    <string name="quality_webrip">Web</string>
+    <string name="poster_image">Poster Image</string>
+    <string name="qr_image">QR Code Image</string>
+    <string name="category_player">Player</string>
+    <string name="resolution_and_title">Resolution and title</string>
+    <string name="title">Title</string>
+    <string name="resolution">Resolution</string>
+    <string name="video_info">Media Info</string>
+    <string name="error_invalid_id">Invalid ID</string>
+    <string name="error_invalid_data">Invalid data</string>
+    <string name="error_invalid_url">Invalid URL</string>
+    <string name="error">Error</string>
+    <string name="subtitles_remove_captions">Remove closed captions from subtitles</string>
+    <string name="subtitles_remove_bloat">Remove bloat from subtitles</string>
+    <string name="subtitles_filter_lang">Filter by preferred media language</string>
+    <string name="extras">Extras</string>
+    <string name="trailer">Trailer</string>
+    <string name="network_adress_example">https://example.com/example.mp4</string>
+    <string name="referer">Referer (optional)</string>
+    <string name="next">Next</string>
+    <string name="provider_languages_tip">Watch videos in these languages</string>
+    <string name="previous">Previous</string>
+    <string name="skip_setup">Skip setup</string>
+    <string name="app_layout_subtext">Change the look of the app to suit your device</string>
+    <string name="preferred_media_subtext">What do you want to see</string>
+    <string name="setup_done">Done</string>
+    <string name="extensions">Extensions</string>
+    <string name="add_repository">Add repository</string>
+    <string name="repository_name_hint">Repository name (Optional)</string>
+    <string name="repository_url_hint">Repository URL or Shortcode</string>
+    <string name="plugin_loaded">Plugin Loaded</string>
+    <string name="plugin_downloaded">Plugin Downloaded</string>
+    <string name="plugin_deleted">Plugin Deleted</string>
+    <string name="plugin_load_fail" formatted="true">Could not load %s</string>
+    <string name="is_adult">18+</string>
+    <string name="batch_download_start_format" formatted="true">Started downloading %1$d %2$s…</string>
+    <string name="batch_download_finish_format" formatted="true">Downloaded %1$d %2$s</string>
+    <string name="batch_download_nothing_to_download_format" formatted="true">All %s already downloaded</string>
+    <string name="no_plugins_found_error">No plugins found in repository</string>
+    <string name="no_repository_found_error">Repository not found, check the URL and try VPN</string>
+    <string name="batch_download">Batch download</string>
+    <string name="plugin_singular">plugin</string>
+    <string name="plugin">plugins</string>
+    <string name="delete_repository_plugins">This will also delete all repository plugins</string>
+    <string name="delete_repository">Delete repository</string>
+    <string name="delete_plugin">Delete plugin</string>
+    <string name="setup_extensions_subtext">Download the list of sites you want to use</string>
+    <string name="plugins_downloaded" formatted="true">Downloaded: %d</string>
+    <string name="plugins_disabled" formatted="true">Disabled: %d</string>
+    <string name="plugins_not_downloaded" formatted="true">Not downloaded: %d</string>
+    <string name="plugins_updated" formatted="true">Updated %d plugins</string>
+    <string name="blank_repo_message">AdiXtream has no sites installed by default. You need to install the sites from repositories.\n\nJoin our Discord or search online.</string>
+    <string name="view_public_repositories_button">View community repositories</string>
+    <string name="view_public_repositories_button_short">Public list</string>
+    <string name="uppercase_all_subtitles">Uppercase all subtitles</string>
+    <string name="download_all_plugins_from_repo">Warning: AdiXtream does not take any responsibility for using third-party extensions and does not provide any support for them!</string>
+    <string name="single_plugin_disabled" formatted="true">%s (Disabled)</string>
+    <string name="tracks">Tracks</string>
+    <string name="audio_tracks">Audio tracks</string>
+    <string name="video_tracks">Video tracks</string>
+    <string name="apply_on_restart">Restart the app to see changes.</string>
+    <string name="restart">Restart</string>
+    <string name="stop">Stop</string>
+    <string name="safe_mode_title">Safe mode on</string>
+    <string name="safe_mode_description">All extensions were turned off due to a crash to help you find the one causing trouble.</string>
+    <string name="safe_mode_crash_info">View crash info</string>
+    <string name="extension_rating" formatted="true">Rating: %s</string>
+    <string name="extension_description">Description</string>
+    <string name="extension_version">Version</string>
+    <string name="extension_status">Status</string>
+    <string name="extension_size">Size</string>
+    <string name="extension_authors">Authors</string>
+    <string name="extension_types">Supported</string>
+    <string name="extension_language">Language</string>
+    <string name="extension_install_first">Install the extension first</string>
+    <string name="hls_playlist">HLS Playlist</string>
+    <string name="player_pref">Preferred video player</string>
+    <string name="player_settings_play_in_app">Internal player</string>
+    <string name="player_settings_always_ask">Always ask</string>
+    <string name="player_settings_select_cast_device">Select cast device</string>
+    <string name="app_not_found_error">App not found</string>
+    <string name="all_languages_preference">All Languages</string>
+    <string name="skip_type_format" formatted="true">Skip %s</string>
+    <string name="skip_type_op">Opening</string>
+    <string name="skip_type_ed">Ending</string>
+    <string name="skip_type_recap">Recap</string>
+    <string name="skip_type_mixed_ed">Mixed ending</string>
+    <string name="skip_type_mixed_op">Mixed opening</string>
+    <string name="skip_type_creddits">Credits</string>
+    <string name="skip_type_intro">Intro</string>
+    <string name="clear_history">Clear history</string>
+    <string name="history">History</string>
+    <string name="enable_skip_op_from_database_des">Show skip popups for opening/ending</string>
+    <string name="clipboard_too_large">Too much text. Unable to save to clipboard.</string>
+    <string name="clipboard_permission_error">Error accessing Clipboard, Please try again.</string>
+    <string name="clipboard_unknown_error">Error copying, Please copy logcat and contact app support.</string>
+    <string name="action_mark_as_watched">Mark as watched</string>
+    <string name="action_remove_from_watched">Remove from watched</string>
+    <string name="confirm_exit_dialog">Are you sure you want to exit\?</string>
+    <string name="yes">Yes</string>
+    <string name="no">No</string>
+    <string name="ok">OK</string>
+    <string name="dismiss">Dismiss</string>
+    <string name="open_downloaded_repo">Open repository</string>
+    <string name="battery_dialog_title">Disable Battery optimization</string>
+    <string name="battery_dialog_message">To ensure uninterrupted downloads and notifications for subscribed TV shows, AdiXtream needs permission to run in background. By pressing "OK", you\'ll be shown a request dialog. Please press \'Allow\'.\n\nPlease note, this permission does not mean AdiXtream will drain your battery. It will only operate in the background when necessary, such as when receiving notifications or downloading videos from official extensions.</string>
+    <string name="app_unrestricted_toast">App battery usage is already set to unrestricted</string>
+    <string name="app_info_intent_error">Unable to open AdiXtream\'s App info.</string>
+    <string name="update_notification_downloading">Downloading app update…</string>
+    <string name="update_notification_installing">Installing app update…</string>
+    <string name="update_notification_failed">Could not install the new version of the app</string>
+    <string name="apk_installer_legacy">Legacy</string>
+    <string name="apk_installer_package_installer">PackageInstaller</string>
+    <string name="delayed_update_notice">App will be updated upon exit</string>
+    <string name="sort_by">Sort by</string>
+    <string name="sort">Sort</string>
+    <string name="sort_rating_desc">Rating (High to Low)</string>
+    <string name="sort_rating_asc">Rating (Low to High)</string>
+    <string name="sort_updated_new">Updated (New to Old)</string>
+    <string name="sort_updated_old">Updated (Old to New)</string>
+    <string name="sort_alphabetical_a">Alphabetical (A to Z)</string>
+    <string name="sort_alphabetical_z">Alphabetical (Z to A)</string>
+    <string name="sort_episodes_number_asc">Episode (Ascending)</string>
+    <string name="sort_episodes_number_desc">Episode (Descending)</string>
+    <string name="sort_episodes_rating_high_low">Rating (Highest)</string>
+    <string name="sort_episodes_rating_low_high">Rating (Lowest)</string>
+    <string name="sort_episodes_date_newest">Air Date (Newest)</string>
+    <string name="sort_episodes_date_oldest">Air Date (Oldest)</string>
+    <string name="sort_button_episode">Ep %s</string>
+    <string name="sort_button_rating">Rating %s</string>
+    <string name="sort_button_date">Date %s</string>
+    <string name="select_library">Select Library</string>
+    <string name="open_with">Open with</string>
+    <string name="empty_library_no_accounts_message">Your library is empty :(\nLog in on a library account or add shows to your local library.</string>
+    <string name="empty_library_logged_in_message">This list is empty. Try switching to another one.</string>
+    <string name="safe_mode_file">Safe mode file found!\nNot loading any extensions on startup until file is removed.</string>
+    <string name="revert">Revert</string>
+    <string name="subscription_in_progress_notification">Updating subscribed shows</string>
+    <string name="subscription_list_name">Subscribed</string>
+    <string name="subscription_new">Subscribed to %s</string>
+    <string name="subscription_deleted">Unsubscribed from %s</string>
+    <string name="subscription_episode_released">Episode %d released!</string>
+    <string name="action_subscribe">Subscribe</string>
+    <string name="action_unsubscribe">Unsubscribe</string>
+    <string name="profile_number">Profile %d</string>
+    <string name="wifi">Wi-Fi</string>
+    <string name="mobile_data">Mobile data</string>
+    <string name="set_default">Set default</string>
+    <string name="use">Use</string>
+    <string name="edit">Edit</string>
+    <string name="source_priority">Source priority</string>
+    <string name="source_priority_help">Decide how video sources should be sorted in the player</string>
+    <string name="profiles">Profiles</string>
+    <string name="help">Help</string>
+    <string name="quality_profile_help">Here you can change how the sources are ordered. If a video has a higher priority it will appear higher in the source selection. The sum of the source priority and the quality priority is the video priority.\n\nSource A: 3\nQuality B: 7\nWill have a combined video priority of 10.\n\nNOTE: If the sum is 10 or more the player will automatically skip loading when that link is loaded!</string>
+    <string name="qualities">Qualities</string>
+    <string name="profile_background_des">Profile background</string>
+    <string name="unable_to_inflate">UI was unable to be created correctly, this is a MAJOR BUG and should be reported immediately %s</string>
+    <string name="already_voted">You have already voted</string>
+    <string name="favorites_list_name">Favorites</string>
+    <string name="favorite_added">%s added to favorites</string>
+    <string name="favorite_removed">%s removed from favorites</string>
+    <string name="action_add_to_favorites">Add to favorites</string>
+    <string name="action_remove_from_favorites">Remove from favorites</string>
+    <string name="duplicate_title">Potential Duplicate Found</string>
+    <string name="duplicate_add">Add</string>
+    <string name="duplicate_replace">Replace</string>
+    <string name="duplicate_replace_all">Replace All</string>
+    <string name="duplicate_message_single" formatted="true">It appears that a potentially duplicate item already exists in your library: \'%s.\'\n\nWould you like to add this item anyway, replace the existing one, or cancel the action?</string>
+    <string name="duplicate_message_multiple" formatted="true">Potential duplicate items have been found in your library:\n\n%s\n\nWould you like to add this item anyway, replace the existing ones, or cancel the action?</string>
+    <string name="enter_pin">Enter PIN</string>
+    <string name="enter_pin_with_name" formatted="true">Enter PIN for %s</string>
+    <string name="enter_current_pin">Enter Current PIN</string>
+    <string name="lock_profile">Lock Profile</string>
+    <string name="pin">PIN</string>
+    <string name="pin_error_incorrect">Incorrect PIN. Please try again.</string>
+    <string name="pin_error_length">PIN must be 4 characters</string>
+    <string name="select_an_account">Select an Account</string>
+    <string name="no_account">No account</string>
+    <string name="manage_accounts">Manage Accounts</string>
+    <string name="edit_account">Edit account</string>
+    <string name="logged_account" formatted="true">Logged in as %s</string>
+    <string name="skip_startup_account_select_pref">Skip account selection at startup</string>
+    <string name="use_default_account">Use Default Account</string>
+    <string name="rotate_video">Rotate</string>
+    <string name="rotate_video_desc">Display a toggle button for screen orientation</string>
+    <string name="auto_rotate_video_desc">Enable automatic switching of screen orientation based on video orientation</string>
+    <string name="auto_rotate_video">Auto rotate</string>
+    <string name="favorite">Favorite</string>
+    <string name="unfavorite">Unfavorite</string>
+
+    <string name="biometric_authentication_title">Unlock AdiXtream</string>
+    <string name="biometric_setting">Lock with Biometrics</string>
+    <string name="password_pin_authentication_title">Password/PIN Authentication</string>
+    <string name="biometric_unsupported">Biometric authentication is not supported on this device</string>
+    <string name="biometric_setting_summary">Unlock the app with Fingerprint, Face ID, PIN, Pattern and Password.</string>
+    <string name="biometric_prompt_description">After a few failed attempts, the prompt will close. Simply restart the app to try again.</string>
+    <string name="biometric_warning">Your AdiXtream data has been backed up now. Although the possibility of this is very low, all devices can behave differently. In the rare case, that you get locked out from accessing the app, clear the app data completely and restore from a backup. We are very sorry for any inconvenience arising from this.</string>
+    
+    <string name="reset_btn">Reset</string>
+    <string name="cs3wiki">AdiXtream Wiki</string>
+    <string name="device_pin_url_message">Visit <b>%s</b> on your smartphone or computer and enter the above code</string>
+    <string name="device_pin_error_message">Can\'t get the device PIN code, try local authentication</string>
+    <string name="device_pin_expired_message">PIN code is now expired !</string>
+    <string name="device_pin_counter_text">Code expires in %1$dm %2$ds</string>
+    <string name="sort_release_date_new">Release Date (New to Old)</string>
+    <string name="sort_release_date_old">Release Date (Old to New)</string>
+    <string name="hide_player_control_names">Hide names of the player\'s controls</string>
+    <string name="preview_seekbar">Seekbar preview</string>
+    <string name="preview_seekbar_desc">Enable preview thumbnail on seekbar</string>
+    <string name="no_subtitles_loaded">No subtitles loaded yet</string>
+    <string name="backup_path_title">Backup folder location</string>
+    <string name="custom">Custom</string>
+    
+    <string name="confirm_before_exiting_title">Confirm before exiting</string>
+    <string name="confirm_before_exiting_desc">Show dialog before exiting the app</string>
+    <string name="show">Show</string>
+    <string name="dont_show">Don\'t Show</string>
+    <string name="subs_edge_size">Edge Size</string>
+    <string name="torrent_preferred_media">Enable torrent in Settings/Providers/Preferred media</string>
+    <string name="torrent_not_accepted">Restart app and accept Stream Torrent pop-up to proceed.</string>
+    <string name="software_decoding">Software decoding</string>
+    <string name="software_decoding_desc">Software decoding enables the player to play video files not supported by your device, but may cause laggy or unstable playback on high resolution.</string>
+    <string name="volume_exceeded_100">Volume has exceeded 100%</string>
+    <string name="slide_up_again_to_exceed_100">Slide up again to go beyond 100%</string>
+    <string name="update_plugins">Update Plugins</string>
+    
+    <string name="update_plugins_manually">Update plugins manually</string>
+    <string name="starting_plugin_update_manually">Starting plugin update process!</string>
+    <string name="plugins_updated_manually">Successfully updated %d plugin(s)!</string>
+    <string name="no_plugins_updated_manually">No plugins were updated.</string>
+    
+    <string name="player_notification_channel_name">Player notifications</string>
+    <string name="player_notification_channel_description">The player notification for controlling the playback from the background</string>
+    <string name="subtitles_from_embedded">Embedded</string>
+    <string name="subtitles_from_online">Online</string>
+    <string name="all_subtitles_bold">Make all subtitles bold</string>
+    <string name="all_subtitles_italic">Make all subtitles italic</string>
+    <string name="background_radius">Background Radius</string>
+    <string name="download_parallel_settings_des">How many different items that can be downloaded in parallel</string>
+    <string name="parallel_downloads">Parallel downloads</string>
+    <string name="concurrent_connections">Concurrent connections</string>
+    <string name="concurrent_connections_settings_des">How many concurrent connections each download can use while downloading</string>
+    <string name="go_to_downloads">Go to Downloads</string>
+    <string name="no_internet_connection">No internet connection.\n\nPlease connect to the internet and try again, or watch your downloads while you are offline.</string>
+    <string name="overscan_settings_des">Changes the bounds of the screen</string>
+    <string name="overscan_settings">Overscan</string>
+    <string name="poster_size_settings_des">Changes size of posters</string>
+    <string name="poster_size_settings">Poster size</string>
+    <string name="speedup_title">LongPress Speed Toggle</string>
+    <string name="speedup_summary">Hold to get 2x speed</string>
+    <string name="edit_profile_image_title">Edit Profile Image</string>
+    <string name="edit_profile_image_hint">Enter Profile Image URL</string>
+    <string name="edit_profile_image_error_empty">No URL Found</string>
+    <string name="edit_profile_image_error_invalid">Invalid URL or Image</string>
+    <string name="edit_profile_image_success">Successfully Image Updated</string>
+    <string name="action_mark_watched_up_to_this_episode">Mark as watched up to this episode</string>
+    <string name="action_remove_mark_watched_up_to_this_episode">Remove watched up to this episode</string>
+    <string name="action_reload">Reloaded</string>
+    <string name="reload_provider">Reload Provider</string>
     <string name="name">Name</string>
     <string name="source_name">Source Name</string>
     <string name="download_all">Download all</string>
@@ -544,10 +865,18 @@
     <string name="top_left">Top left</string>
     <string name="top_center">Top center</string>
     <string name="top_right">Top right</string>
-
-    <string name="resolution_and_name">Resolution and name</string>
-    <string name="subtitles_none" translatable="false">@string/none</string>
-    <string name="uprereleases_settings">Update to prereleases</string>
-    <string name="uprereleases_settings_des">Search for prerelease updates instead of full releases only</string>
-
+    
+    <plurals name="episodes" translatable="false">
+        <item quantity="one">@string/episode</item>
+        <item quantity="other">@string/episodes</item>
+    </plurals>
+    <plurals name="downloads_active">
+        <item quantity="one">%d active download</item>
+        <item quantity="other">%d active downloads</item>
+    </plurals>
+    <plurals name="downloads_queued">
+        <item quantity="one">%d download queued</item>
+        <item quantity="other">%d downloads queued</item>
+    </plurals>
+    
 </resources>
