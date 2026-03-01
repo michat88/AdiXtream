@@ -660,7 +660,6 @@ class CS3IPlayer : IPlayer {
         exoPlayer?.setPlaybackSpeed(speed)
         playBackSpeed = speed
     }
-
     companion object {
         private const val CRONET_TIMEOUT_MS = 15_000
 
@@ -1040,6 +1039,7 @@ class CS3IPlayer : IPlayer {
             delay(1000)
         }
     }
+    
     private fun buildExoPlayer(
         context: Context,
         mediaItemSlices: List<MediaItemSlice>,
@@ -1324,7 +1324,6 @@ class CS3IPlayer : IPlayer {
             setPlaybackSpeed(playBackSpeed)
         }
     }
-
     private fun loadExo(
         context: Context,
         mediaSlices: List<MediaItemSlice>,
@@ -1391,24 +1390,26 @@ class CS3IPlayer : IPlayer {
                         val exoPlayerReportedTracks =
                             tracks.groups.filter { it.type == TRACK_TYPE_TEXT }.getFormats()
                                 .mapNotNull { (format, _) ->
-                                    // Filter out non subs, already used subs and subs without languages
+                                    // PERBAIKAN ERROR: Menggunakan if-else alih-alih return@mapNotNull null
                                     if (format.id == null ||
                                         format.language == null ||
                                         format.language?.startsWith("-") == true
-                                    ) return@mapNotNull null
-
-                                    return@mapNotNull SubtitleData(
-                                        // Nicer looking displayed names
-                                        fromTagToLanguageName(format.language)
-                                            ?: format.language!!,
-                                        format.label ?: "",
-                                        // See setPreferredTextLanguage
-                                        format.id!!.stripTrackId(),
-                                        SubtitleOrigin.EMBEDDED_IN_VIDEO,
-                                        format.sampleMimeType ?: MimeTypes.APPLICATION_SUBRIP,
-                                        emptyMap(),
-                                        format.language,
-                                    )
+                                    ) {
+                                        null
+                                    } else {
+                                        SubtitleData(
+                                            // Nicer looking displayed names
+                                            fromTagToLanguageName(format.language)
+                                                ?: format.language!!,
+                                            format.label ?: "",
+                                            // See setPreferredTextLanguage
+                                            format.id!!.stripTrackId(),
+                                            SubtitleOrigin.EMBEDDED_IN_VIDEO,
+                                            format.sampleMimeType ?: MimeTypes.APPLICATION_SUBRIP,
+                                            emptyMap(),
+                                            format.language,
+                                        )
+                                    }
                                 }
 
                         event(EmbeddedSubtitlesFetchedEvent(tracks = exoPlayerReportedTracks))
