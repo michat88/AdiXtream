@@ -10,7 +10,7 @@
     <string name="download_time_left_hour_min_sec_format" formatted="true">%1$dh %2$dm %3$ds</string>
     <string name="download_time_left_min_sec_format" formatted="true">%1$dm %2$ds</string>
     <string name="download_time_left_sec_format" formatted="true">%1$ds</string>
-    
+
     <string name="result_poster_img_des">Poster</string>
     <string name="search_poster_img_des">Poster</string>
     <string name="episode_poster_img_des">Episode Poster</string>
@@ -20,7 +20,7 @@
     <string name="play_from_beginning_img_des">Play from the Beginning</string>
     <string name="home_change_provider_img_des">Change Provider</string>
     <string name="preview_background_img_des">Preview Background</string>
-    
+
     <string name="player_speed_text_format" formatted="true">Speed (%.2fx)</string>
     <string name="rated_format" formatted="true">Rated: %.1f</string>
     <string name="new_update_format" formatted="true">New update found!\n%1$s -&gt; %2$s</string>
@@ -129,7 +129,7 @@
     <string name="continue_watching">Continue Watching</string>
     <string name="action_remove_watching">Remove</string>
     <string name="action_open_watching">More Info</string>
-    <string name="action_open_play">@string/home_play </string>
+    <string name="action_open_play">@string/home_play</string>
     <string name="vpn_might_be_needed">A VPN might be needed for this provider to work correctly</string>
     <string name="vpn_torrent">This provider is a torrent, a VPN is recommended</string>
     <string name="provider_info_meta">Metadata is not provided by site, video loading will fail if it does not exist on site.</string>
@@ -504,9 +504,7 @@
     <string name="plugins_disabled" formatted="true">Disabled: %d</string>
     <string name="plugins_not_downloaded" formatted="true">Not downloaded: %d</string>
     <string name="plugins_updated" formatted="true">Updated %d plugins</string>
-    <string name="blank_repo_message">AdiXtream has no sites installed by default. You need to install the sites from repositories.
-\n
-\nJoin our Discord or search online.</string>
+    <string name="blank_repo_message">AdiXtream has no sites installed by default. You need to install the sites from repositories.\n\nJoin our Discord or search online.</string>
     <string name="view_public_repositories_button">View community repositories</string>
     <string name="view_public_repositories_button_short">Public list</string>
     <string name="uppercase_all_subtitles">Uppercase all subtitles</string>
@@ -560,10 +558,7 @@
     <string name="dismiss">Dismiss</string>
     <string name="open_downloaded_repo">Open repository</string>
     <string name="battery_dialog_title">Disable Battery optimization</string>
-    <string name="battery_dialog_message">To ensure uninterrupted downloads and notifications for subscribed
-        TV shows, AdiXtream needs permission to run in background. By pressing "OK", you\'ll be shown a request dialog.
-        Please press \'Allow\'.\n\nPlease note, this permission does not mean AdiXtream will drain your battery. It will only operate in the background when necessary, such as
-        when receiving notifications or downloading videos from official extensions.</string>
+    <string name="battery_dialog_message">To ensure uninterrupted downloads and notifications for subscribed\nTV shows, AdiXtream needs permission to run in background. By pressing \"OK\", you\'ll be shown a request dialog.\nPlease press \'Allow\'.\n\nPlease note, this permission does not mean AdiXtream will drain your battery. It will only operate in the background when necessary, such as\nwhen receiving notifications or downloading videos from official extensions.</string>
     <string name="app_unrestricted_toast">App battery usage is already set to unrestricted</string>
     <string name="app_info_intent_error">Unable to open AdiXtream\'s App info.</string>
     <string name="update_notification_downloading">Downloading app update…</string>
@@ -591,8 +586,7 @@
     <string name="sort_button_date">Date %s</string>
     <string name="select_library">Select Library</string>
     <string name="open_with">Open with</string>
-    <string name="empty_library_no_accounts_message">Your library is empty :(
-\nLog in on a library account or add shows to your local library.</string>
+    <string name="empty_library_no_accounts_message">Your library is empty :(\nLog in on a library account or add shows to your local library.</string>
     <string name="empty_library_logged_in_message">This list is empty. Try switching to another one.</string>
     <string name="safe_mode_file">Safe mode file found!\nNot loading any extensions on startup until file is removed.</string>
     <string name="revert">Revert</string>
@@ -635,18 +629,8 @@
     <string name="duplicate_add">Add</string>
     <string name="duplicate_replace">Replace</string>
     <string name="duplicate_replace_all">Replace All</string>
-    <string name="duplicate_message_single" formatted="true">
-        It appears that a potentially duplicate item already exists in your library: \'%s.\'
-
-        \n\nWould you like to add this item anyway, replace the existing one, or cancel the action?
-    </string>
-    <string name="duplicate_message_multiple" formatted="true">
-        Potential duplicate items have been found in your library:
-
-        \n\n%s
-
-        \n\nWould you like to add this item anyway, replace the existing ones, or cancel the action?
-    </string>
+    <string name="duplicate_message_single" formatted="true">It appears that a potentially duplicate item already exists in your library: \'%s.\'\n\nWould you like to add this item anyway, replace the existing one, or cancel the action?</string>
+    <string name="duplicate_message_multiple" formatted="true">Potential duplicate items have been found in your library:\n\n%s\n\nWould you like to add this item anyway, replace the existing ones, or cancel the action?</string>
     <string name="enter_pin">Enter PIN</string>
     <string name="enter_pin_with_name" formatted="true">Enter PIN for %s</string>
     <string name="enter_current_pin">Enter Current PIN</string>
@@ -716,10 +700,7 @@
     <string name="concurrent_connections">Concurrent connections</string>
     <string name="concurrent_connections_settings_des">How many concurrent connections each download can use while downloading</string>
     <string name="go_to_downloads">Go to Downloads</string>
-    <string name="no_internet_connection">
-        No internet connection.
-        \n\nPlease connect to the internet and try again, or watch your downloads while you are offline.
-    </string>
+    <string name="no_internet_connection">No internet connection.\n\nPlease connect to the internet and try again, or watch your downloads while you are offline.</string>
     <string name="overscan_settings_des">Changes the bounds of the screen</string>
     <string name="overscan_settings">Overscan</string>
     <string name="poster_size_settings_des">Changes size of posters</string>
@@ -752,6 +733,13 @@
     <string name="top_left">Top left</string>
     <string name="top_center">Top center</string>
     <string name="top_right">Top right</string>
+
+    <string name="prefer_limit_title_rez_key" translatable="false">limit_title_rez</string>
+    <string name="nginx_key" translatable="false">nginx_url</string>
+    <string name="uprereleases_settings">Install pre-release version</string>
+    <string name="uprereleases_settings_des">Only search for pre-release updates instead of full releases</string>
+    <string name="legal_notice_text" translatable="false">PERHATIAN: AdiXtream adalah alat peramban media (media browser). Aplikasi ini bekerja sebagai mesin pencari canggih yang mengumpulkan tautan dari internet.\n\nPENTING: Ekstensi atau Penyedia dengan label "Adi" (seperti AdiDrakor, Adicinemax21, dll) hanyalah MEREK UNTUK SKRIP PENCARIAN (Scraper) yang kami kembangkan untuk mempermudah akses ke situs web publik. Kami TIDAK memiliki hubungan, afiliasi, atau kepemilikan atas situs web sumber yang dituju oleh skrip tersebut.\n\nPengembang AdiXtream tidak menyimpan, mengunggah, atau mengelola konten video apa pun di server kami. Semua konten diambil secara real-time dari situs pihak ketiga yang tersedia untuk umum.\n\nDengan menggunakan aplikasi ini, Anda memahami bahwa "AdiXtream" hanyalah alat penghubung (jembatan), dan segala risiko hukum terkait hak cipta adalah tanggung jawab penuh pengguna dan pemilik situs web hosting yang bersangkutan.</string>
+
     <plurals name="downloads_active">
         <item quantity="one">%d active download</item>
         <item quantity="other">%d active downloads</item>
