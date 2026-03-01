@@ -1,110 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="search_providers_list_key" translatable="false">search_providers_list</string>
-    <string name="locale_key" translatable="false">app_locale</string>
-    <string name="search_types_list_key" translatable="false">search_type_list</string>
-    <string name="auto_update_key" translatable="false">auto_update</string>
-    <string name="auto_update_plugins_key" translatable="false">auto_update_plugins</string>
-    <string name="auto_download_plugins_key" translatable="false">auto_download_plugins_key2</string>
-    <string name="skip_update_key" translatable="false">skip_update_key</string>
-    <string name="prerelease_update_key" translatable="false">prerelease_update</string>
-    <string name="manual_check_update_key" translatable="false">manual_check_update</string>
-    <string name="fast_forward_button_time_key" translatable="false">fast_forward_button_time</string>
-    <string name="benene_count" translatable="false">benene_count</string>
-    <string name="subtitle_settings_key" translatable="false">subtitle_settings_key</string>
-    <string name="test_providers_key" translatable="false">test_providers_key</string>
-    <string name="subtitle_settings_chromecast_key" translatable="false">subtitle_settings_chromecast_key</string>
-    <string name="quality_pref_key" translatable="false">quality_pref_key</string>
-    <string name="quality_pref_mobile_data_key" translatable="false">quality_pref_mobile_data_key</string>
-    <string name="player_default_key" translatable="false">player_default_key</string>
-    <string name="prefer_limit_title_key" translatable="false">prefer_limit_title_key</string>
-    <string name="prefer_limit_title_rez_key" translatable="false">prefer_limit_title_rez_key</string>
-    <string name="apk_installer_key" translatable="false">apk_installer_key</string>
-    <string name="video_buffer_size_key" translatable="false">video_buffer_size_key</string>
-    <string name="video_buffer_length_key" translatable="false">video_buffer_length_key</string>
-    <string name="video_buffer_clear_key" translatable="false">video_buffer_clear_key</string>
-    <string name="video_buffer_disk_key" translatable="false">video_buffer_disk_key</string>
-    <string name="use_system_brightness_key" translatable="false">use_system_brightness_key</string>
-    <string name="swipe_enabled_key" translatable="false">swipe_enabled_key</string>
-    <string name="playback_speed_enabled_key" translatable="false">playback_speed_enabled_key</string>
-    <string name="player_resize_enabled_key" translatable="false">player_resize_enabled_key</string>
-    <string name="pip_enabled_key" translatable="false">pip_enabled_key</string>
-    <string name="double_tap_enabled_key" translatable="false">double_tap_enabled_key</string>
-    <string name="double_tap_pause_enabled_key" translatable="false">double_tap_pause_enabled_key</string>
-    <string name="double_tap_seek_time_key" translatable="false">double_tap_seek_time_key2</string>
-    <string name="android_tv_interface_off_seek_key" translatable="false">android_tv_interface_off_seek_key</string>
-    <string name="android_tv_interface_on_seek_key" translatable="false">android_tv_interface_on_seek_key</string>
-    <string name="swipe_vertical_enabled_key" translatable="false">swipe_vertical_enabled_key</string>
-    <string name="autoplay_next_key" translatable="false">autoplay_next_key</string>
-    <string name="display_sub_key" translatable="false">display_sub_key</string>
-    <string name="show_fillers_key" translatable="false">show_fillers_key</string>
-    <string name="show_trailers_key" translatable="false">show_trailers_key</string>
-    <string name="show_kitsu_posters_key" translatable="false">show_kitsu_posters_key</string>
-    <string name="random_button_key" translatable="false">random_button_key</string>
-    <string name="provider_lang_key" translatable="false">provider_lang_key</string>
-    <string name="dns_key" translatable="false">dns_key</string>
-    <string name="jsdelivr_proxy_key" translatable="false">jsdelivr_proxy_key</string>
-    <string name="download_path_key" translatable="false">download_path_key</string>
-    <string name="download_parallel_key" translatable="false">download_parallel_key</string>
-    <string name="download_concurrent_key" translatable="false">download_concurrent_key</string>
-    <string name="download_path_key_visual" translatable="false">download_path_key_visual</string>
-    <string name="app_name_download_path" translatable="false">AdiXtream</string>
-    <string name="app_layout_key" translatable="false">app_layout_key</string>
-    <string name="primary_color_key" translatable="false">primary_color_key</string>
-    <string name="restore_key" translatable="false">restore_key</string>
-    <string name="backup_key" translatable="false">backup_key</string>
-    <string name="automatic_backup_key" translatable="false">automatic_backup_key</string>
-    <string name="prefer_media_type_key" translatable="false">prefer_media_type_key_2</string>
-    <string name="app_theme_key" translatable="false">app_theme_key</string>
-    <string name="episode_sync_enabled_key" translatable="false">episode_sync_enabled_key</string>
-    <string name="log_enabled_key" translatable="false">log_enabled_key</string>
-    <string name="show_logcat_key" translatable="false">show_logcat_key</string>
-    <string name="bottom_title_key" translatable="false">bottom_title_key</string>
-    <string name="poster_ui_key" translatable="false">poster_ui_key</string>
-    <string name="overscan_key" translatable="false">overscan_key</string>
-    <string name="poster_size_key" translatable="false">poster_size_key</string>
-    <string name="subtitles_encoding_key" translatable="false">subtitles_encoding_key</string>
-    <string name="override_site_key" translatable="false">override_site_key</string>
-    <string name="redo_setup_key" translatable="false">redo_setup_key</string>
-    <string name="filter_sub_lang_key" translatable="false">filter_sub_lang_key</string>
-    <string name="pref_filter_search_quality_key" translatable="false">pref_filter_search_quality_key</string>
-    <string name="enable_nsfw_on_providers_key" translatable="false">enable_nsfw_on_providers_key</string>
-    <string name="skip_startup_account_select_key" translatable="false">skip_startup_account_select_key</string>
-    <string name="enable_skip_op_from_database" translatable="false">enable_skip_op_from_database</string>
-    <string name="rotate_video_key" translatable="false">rotate_video_key</string>
-    <string name="auto_rotate_video_key" translatable="false">auto_rotate_video_key</string>
-    <string name="biometric_key" translatable="false">biometric_key</string>
-    <string name="show_hd_key" translatable="false">show_hd_key</string>
-    <string name="show_dub_key" translatable="false">show_dub_key</string>
-    <string name="show_sub_key" translatable="false">show_sub_key</string>
-    <string name="show_rating_key" translatable="false">show_rating_key</string>
-    <string name="show_title_key" translatable="false">show_title_key</string>
-    <string name="legal_notice_key" translatable="false">legal_notice_key</string>
-    <string name="pref_category_android_tv_key" translatable="false">pref_category_android_tv_key</string>
-    <string name="pref_category_gestures_key" translatable="false">pref_category_gestures_key</string>
-    <string name="pref_category_security_key" translatable="false">pref_category_security_key</string>
-    <string name="anilist_key" translatable="false">anilist_key</string>
-    <string name="simkl_key" translatable="false">simkl_key</string>
-    <string name="mal_key" translatable="false">mal_key</string>
-    <string name="opensubtitles_key" translatable="false">opensubtitles_key</string>
-    <string name="subdl_key" translatable="false">subdl_key</string>
-    <string name="nginx_key" translatable="false">nginx_key</string>
-    <string name="battery_optimisation_key" translatable="false">battery_optimisation</string>
-    <string name="hide_player_control_names_key" translatable="false">hide_player_control_names_key</string>
-    <string name="preview_seekbar_key" translatable="false">preview_seekbar_key</string>
-    <string name="backup_path_key" translatable="false">backup_path_key</string>
-    <string name="backup_dir_key" translatable="false">backup_dir_key</string>
-    <string name="confirm_exit_key" translatable="false">confirm_exit_key</string>
-    <string name="software_decoding_key" translatable="false">software_decoding_key2</string>
-    <string name="manual_update_plugins_key" translatable="false">manual_update_plugins</string>
-    <string name="speedup_key" translatable="false">speedup_key</string>
-    <string name="extra_brightness_key" translatable="false">extra_brightness_enabled</string>
-    <string name="show_name_key" translatable="false">show_name_key</string>
-    <string name="show_resolution_key" translatable="false">show_resolution_key</string>
-    <string name="show_media_info_key" translatable="false">show_media_info_key</string>
-    <string name="prefer_title_limit_key" translatable="false">prefer_title_limit_key</string>
-    <string name="tv_no_focus_tag" translatable="false">tv_no_focus_tag</string>
-
     <string name="app_dub_sub_episode_text_format" formatted="true">%1$s Ep %2$d</string>
     <string name="cast_format" formatted="true">Cast: %s</string>
     <string name="next_episode_format" formatted="true">Episode %d will be released in</string>
@@ -115,17 +10,7 @@
     <string name="download_time_left_hour_min_sec_format" formatted="true">%1$dh %2$dm %3$ds</string>
     <string name="download_time_left_min_sec_format" formatted="true">%1$dm %2$ds</string>
     <string name="download_time_left_sec_format" formatted="true">%1$ds</string>
-    <string name="extra_info_format" formatted="true" translatable="false">%d %s | %s</string>
-    <string name="storage_size_format" formatted="true" translatable="false">%s • %s</string>
-    <string name="download_size_format" formatted="true" translatable="false">%s / %s</string>
-    <string name="episode_name_format" formatted="true" translatable="false">%s %s</string>
-    <string name="ffw_text_format" formatted="true" translatable="false">+%d</string>
-    <string name="rew_text_format" formatted="true" translatable="false">-%d</string>
-    <string name="ffw_text_regular_format" formatted="true" translatable="false">%d</string>
-    <string name="rew_text_regular_format" formatted="true" translatable="false">%d</string>
-    <string name="rating_format" formatted="true" translatable="false">%s/10.0</string>
-    <string name="year_format" formatted="true" translatable="false">%d</string>
-
+    
     <string name="result_poster_img_des">Poster</string>
     <string name="search_poster_img_des">Poster</string>
     <string name="episode_poster_img_des">Episode Poster</string>
@@ -135,9 +20,7 @@
     <string name="play_from_beginning_img_des">Play from the Beginning</string>
     <string name="home_change_provider_img_des">Change Provider</string>
     <string name="preview_background_img_des">Preview Background</string>
-    <string name="change_providers_img_des" translatable="false">@string/home_change_provider_img_des</string>
-    <string name="episode_play_img_des" translatable="false">@string/play_episode</string>
-
+    
     <string name="player_speed_text_format" formatted="true">Speed (%.2fx)</string>
     <string name="rated_format" formatted="true">Rated: %.1f</string>
     <string name="new_update_format" formatted="true">New update found!\n%1$s -&gt; %2$s</string>
@@ -157,7 +40,6 @@
     <string name="no_data">No Data</string>
     <string name="episode_more_options_des">More Options</string>
     <string name="next_episode">Next episode</string>
-    <string name="result_plot" translatable="false">@string/synopsis</string>
     <string name="result_tags">Genres</string>
     <string name="result_share">Share</string>
     <string name="result_open_in_browser">Open In Browser</string>
@@ -170,7 +52,6 @@
     <string name="type_dropped">Dropped</string>
     <string name="type_plan_to_watch">Plan to Watch</string>
     <string name="type_re_watching">Rewatching</string>
-    <string name="type_none" translatable="false">@string/none</string>
     <string name="play_movie_button">Play Movie</string>
     <string name="play_trailer_button">Play Trailer</string>
     <string name="play_livestream_button">Play Livestream</string>
@@ -190,7 +71,6 @@
     <string name="download_failed">Download Failed</string>
     <string name="download_canceled">Download Canceled</string>
     <string name="download_done">Download Done</string>
-    <string name="download_format" translatable="false">%s - %s</string>
     <string name="downloads_delete_select">Select Items to Delete</string>
     <string name="downloads_empty">There are currently no downloads.</string>
     <string name="queue_empty_message">There are currently no queued downloads.</string>
@@ -218,7 +98,6 @@
     <string name="action_remove_from_bookmarks">Remove</string>
     <string name="action_add_to_bookmarks">Set watch status</string>
     <string name="sort_apply">Apply</string>
-    <string name="sort_cancel" translatable="false">@string/cancel</string>
     <string name="sort_copy">Copy</string>
     <string name="sort_close">Close</string>
     <string name="sort_clear">Clear</string>
@@ -284,6 +163,7 @@
     <string name="use_system_brightness_settings_des">Use system brightness in the app player instead of a dark overlay</string>
     <string name="extra_brightness_settings">Extra brightness</string>
     <string name="extra_brightness_settings_des">Enable brightness filter when 100% display brightness is exceeded</string>
+    <string name="extra_brightness_key">extra_brightness_enabled</string>
     <string name="episode_sync_settings">Update watch progress</string>
     <string name="episode_sync_settings_des">Automatically sync your current episode progress</string>
     <string name="restore_settings">Restore data from backup</string>
@@ -375,8 +255,6 @@
     <string name="queued">queued</string>
     <string name="no_subtitles">No Subtitles</string>
     <string name="action_default">Default</string>
-    <string name="default_subtitles" translatable="false">@string/action_default</string>
-    <string name="default_account" translatable="false">@string/action_default</string>
     <string name="free_storage">Free</string>
     <string name="used_storage">Used</string>
     <string name="app_storage">App</string>
@@ -391,7 +269,6 @@
     <string name="livestreams">Livestreams</string>
     <string name="nsfw">NSFW</string>
     <string name="others">Others</string>
-
     <string name="movies_singular">Movie</string>
     <string name="tv_series_singular">Series</string>
     <string name="cartoons_singular">Cartoon</string>
@@ -408,7 +285,6 @@
     <string name="custom_media_singluar">Media</string>
     <string name="audio_singluar">Audio</string>
     <string name="podcast_singluar">Podcast</string>
-    
     <string name="source_error">Source error</string>
     <string name="remote_error">Remote error</string>
     <string name="render_error">Renderer error</string>
@@ -471,14 +347,6 @@
     <string name="resize_fill">Stretch</string>
     <string name="resize_zoom">Zoom</string>
     <string name="legal_notice">Disclaimer</string>
-    <string name="legal_notice_text" translatable="false">ATTENTION: AdiXtream is a media browser tool. This application works as an advanced search engine that collects links from the internet.
-
-        \n\nIMPORTANT: Extensions or Providers with the "Adi" label (such as AdiDrakor, Adicinemax21, etc.) are just BRANDS FOR SEARCH SCRIPTS (Scrapers) that we developed to facilitate access to public websites. We do NOT have any relationship, affiliation, or ownership of the source websites targeted by those scripts.
-
-        \n\nAdiXtream developers do not store, upload, or manage any video content on our servers. All content is fetched in real-time from third-party sites available to the public.
-
-        \n\nBy using this application, you understand that "AdiXtream" is just a connection tool (bridge), and all legal risks regarding copyright are the full responsibility of the user and the respective hosting website owners.
-    </string>
     <string name="pref_category_bypass">ISP Bypasses</string>
     <string name="pref_category_links">Links</string>
     <string name="pref_category_app_updates">App updates</string>
@@ -517,7 +385,6 @@
     <string name="app_theme_settings">App theme</string>
     <string name="bottom_title_settings">Poster title location</string>
     <string name="bottom_title_settings_des">Put the title under the poster</string>
-    
     <string name="example_password">password123</string>
     <string name="example_username">Username</string>
     <string name="example_email">hello@world.com</string>
@@ -542,7 +409,6 @@
     <string name="sync_total_episodes_some" formatted="true">/%d</string>
     <string name="authenticated_user" formatted="true">%s authenticated</string>
     <string name="authenticated_user_fail" formatted="true">Could not log in at %s</string>
-    
     <string name="disable">Disable</string>
     <string name="none">None</string>
     <string name="normal">Normal</string>
@@ -559,9 +425,7 @@
     <string name="subtitle_offset_extra_hint_later_format">Use this if the subtitles are shown %d ms too early</string>
     <string name="subtitle_offset_extra_hint_before_format">Use this if subtitles are shown %d ms too late</string>
     <string name="subtitle_offset_extra_hint_none_format">No subtitle delay</string>
-
     <string name="subtitles_example_text">The quick brown fox jumps over the lazy dog</string>
-    
     <string name="recommended">Recommended</string>
     <string name="player_loaded_subtitles" formatted="true">Loaded %s</string>
     <string name="player_load_subtitles">Load from file</string>
@@ -640,7 +504,9 @@
     <string name="plugins_disabled" formatted="true">Disabled: %d</string>
     <string name="plugins_not_downloaded" formatted="true">Not downloaded: %d</string>
     <string name="plugins_updated" formatted="true">Updated %d plugins</string>
-    <string name="blank_repo_message">AdiXtream has no sites installed by default. You need to install the sites from repositories.\n\nJoin our Discord or search online.</string>
+    <string name="blank_repo_message">AdiXtream has no sites installed by default. You need to install the sites from repositories.
+\n
+\nJoin our Discord or search online.</string>
     <string name="view_public_repositories_button">View community repositories</string>
     <string name="view_public_repositories_button_short">Public list</string>
     <string name="uppercase_all_subtitles">Uppercase all subtitles</string>
@@ -694,7 +560,10 @@
     <string name="dismiss">Dismiss</string>
     <string name="open_downloaded_repo">Open repository</string>
     <string name="battery_dialog_title">Disable Battery optimization</string>
-    <string name="battery_dialog_message">To ensure uninterrupted downloads and notifications for subscribed TV shows, AdiXtream needs permission to run in background. By pressing "OK", you\'ll be shown a request dialog. Please press \'Allow\'.\n\nPlease note, this permission does not mean AdiXtream will drain your battery. It will only operate in the background when necessary, such as when receiving notifications or downloading videos from official extensions.</string>
+    <string name="battery_dialog_message">To ensure uninterrupted downloads and notifications for subscribed
+        TV shows, AdiXtream needs permission to run in background. By pressing "OK", you\'ll be shown a request dialog.
+        Please press \'Allow\'.\n\nPlease note, this permission does not mean AdiXtream will drain your battery. It will only operate in the background when necessary, such as
+        when receiving notifications or downloading videos from official extensions.</string>
     <string name="app_unrestricted_toast">App battery usage is already set to unrestricted</string>
     <string name="app_info_intent_error">Unable to open AdiXtream\'s App info.</string>
     <string name="update_notification_downloading">Downloading app update…</string>
@@ -722,7 +591,8 @@
     <string name="sort_button_date">Date %s</string>
     <string name="select_library">Select Library</string>
     <string name="open_with">Open with</string>
-    <string name="empty_library_no_accounts_message">Your library is empty :(\nLog in on a library account or add shows to your local library.</string>
+    <string name="empty_library_no_accounts_message">Your library is empty :(
+\nLog in on a library account or add shows to your local library.</string>
     <string name="empty_library_logged_in_message">This list is empty. Try switching to another one.</string>
     <string name="safe_mode_file">Safe mode file found!\nNot loading any extensions on startup until file is removed.</string>
     <string name="revert">Revert</string>
@@ -743,7 +613,15 @@
     <string name="source_priority_help">Decide how video sources should be sorted in the player</string>
     <string name="profiles">Profiles</string>
     <string name="help">Help</string>
-    <string name="quality_profile_help">Here you can change how the sources are ordered. If a video has a higher priority it will appear higher in the source selection. The sum of the source priority and the quality priority is the video priority.\n\nSource A: 3\nQuality B: 7\nWill have a combined video priority of 10.\n\nNOTE: If the sum is 10 or more the player will automatically skip loading when that link is loaded!</string>
+    <string name="quality_profile_help">
+        Here you can change how the sources are ordered. If a video has a higher priority it will appear higher in the source selection.
+        The sum of the source priority and the quality priority is the video priority.
+        \n\nSource A: 3
+        \nQuality B: 7
+        \nWill have a combined video priority of 10.
+
+        \n\nNOTE: If the sum is 10 or more the player will automatically skip loading when that link is loaded!
+    </string>
     <string name="qualities">Qualities</string>
     <string name="profile_background_des">Profile background</string>
     <string name="unable_to_inflate">UI was unable to be created correctly, this is a MAJOR BUG and should be reported immediately %s</string>
@@ -757,8 +635,18 @@
     <string name="duplicate_add">Add</string>
     <string name="duplicate_replace">Replace</string>
     <string name="duplicate_replace_all">Replace All</string>
-    <string name="duplicate_message_single" formatted="true">It appears that a potentially duplicate item already exists in your library: \'%s.\'\n\nWould you like to add this item anyway, replace the existing one, or cancel the action?</string>
-    <string name="duplicate_message_multiple" formatted="true">Potential duplicate items have been found in your library:\n\n%s\n\nWould you like to add this item anyway, replace the existing ones, or cancel the action?</string>
+    <string name="duplicate_message_single" formatted="true">
+        It appears that a potentially duplicate item already exists in your library: \'%s.\'
+
+        \n\nWould you like to add this item anyway, replace the existing one, or cancel the action?
+    </string>
+    <string name="duplicate_message_multiple" formatted="true">
+        Potential duplicate items have been found in your library:
+
+        \n\n%s
+
+        \n\nWould you like to add this item anyway, replace the existing ones, or cancel the action?
+    </string>
     <string name="enter_pin">Enter PIN</string>
     <string name="enter_pin_with_name" formatted="true">Enter PIN for %s</string>
     <string name="enter_current_pin">Enter Current PIN</string>
@@ -779,7 +667,6 @@
     <string name="auto_rotate_video">Auto rotate</string>
     <string name="favorite">Favorite</string>
     <string name="unfavorite">Unfavorite</string>
-
     <string name="biometric_authentication_title">Unlock AdiXtream</string>
     <string name="biometric_setting">Lock with Biometrics</string>
     <string name="password_pin_authentication_title">Password/PIN Authentication</string>
@@ -787,7 +674,6 @@
     <string name="biometric_setting_summary">Unlock the app with Fingerprint, Face ID, PIN, Pattern and Password.</string>
     <string name="biometric_prompt_description">After a few failed attempts, the prompt will close. Simply restart the app to try again.</string>
     <string name="biometric_warning">Your AdiXtream data has been backed up now. Although the possibility of this is very low, all devices can behave differently. In the rare case, that you get locked out from accessing the app, clear the app data completely and restore from a backup. We are very sorry for any inconvenience arising from this.</string>
-    
     <string name="reset_btn">Reset</string>
     <string name="cs3wiki">AdiXtream Wiki</string>
     <string name="device_pin_url_message">Visit <b>%s</b> on your smartphone or computer and enter the above code</string>
@@ -802,7 +688,6 @@
     <string name="no_subtitles_loaded">No subtitles loaded yet</string>
     <string name="backup_path_title">Backup folder location</string>
     <string name="custom">Custom</string>
-    
     <string name="confirm_before_exiting_title">Confirm before exiting</string>
     <string name="confirm_before_exiting_desc">Show dialog before exiting the app</string>
     <string name="show">Show</string>
@@ -815,12 +700,10 @@
     <string name="volume_exceeded_100">Volume has exceeded 100%</string>
     <string name="slide_up_again_to_exceed_100">Slide up again to go beyond 100%</string>
     <string name="update_plugins">Update Plugins</string>
-    
     <string name="update_plugins_manually">Update plugins manually</string>
     <string name="starting_plugin_update_manually">Starting plugin update process!</string>
     <string name="plugins_updated_manually">Successfully updated %d plugin(s)!</string>
     <string name="no_plugins_updated_manually">No plugins were updated.</string>
-    
     <string name="player_notification_channel_name">Player notifications</string>
     <string name="player_notification_channel_description">The player notification for controlling the playback from the background</string>
     <string name="subtitles_from_embedded">Embedded</string>
@@ -833,7 +716,10 @@
     <string name="concurrent_connections">Concurrent connections</string>
     <string name="concurrent_connections_settings_des">How many concurrent connections each download can use while downloading</string>
     <string name="go_to_downloads">Go to Downloads</string>
-    <string name="no_internet_connection">No internet connection.\n\nPlease connect to the internet and try again, or watch your downloads while you are offline.</string>
+    <string name="no_internet_connection">
+        No internet connection.
+        \n\nPlease connect to the internet and try again, or watch your downloads while you are offline.
+    </string>
     <string name="overscan_settings_des">Changes the bounds of the screen</string>
     <string name="overscan_settings">Overscan</string>
     <string name="poster_size_settings_des">Changes size of posters</string>
@@ -851,6 +737,7 @@
     <string name="reload_provider">Reload Provider</string>
     <string name="name">Name</string>
     <string name="source_name">Source Name</string>
+    <string name="resolution_and_name">Resolution and name</string>
     <string name="download_all">Download all</string>
     <string name="cancel_all">Cancel all</string>
     <string name="download_episode_range">Do you want to download episode %s?</string>
@@ -865,11 +752,6 @@
     <string name="top_left">Top left</string>
     <string name="top_center">Top center</string>
     <string name="top_right">Top right</string>
-    
-    <plurals name="episodes" translatable="false">
-        <item quantity="one">@string/episode</item>
-        <item quantity="other">@string/episodes</item>
-    </plurals>
     <plurals name="downloads_active">
         <item quantity="one">%d active download</item>
         <item quantity="other">%d active downloads</item>
@@ -878,5 +760,4 @@
         <item quantity="one">%d download queued</item>
         <item quantity="other">%d downloads queued</item>
     </plurals>
-    
 </resources>
