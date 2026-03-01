@@ -63,6 +63,9 @@ android {
         versionCode = 80
         versionName = "4.7.3"
 
+        // Filter Bahasa: Hanya memasukkan bahasa Inggris dan Indonesia
+        resConfigs("en", "id", "in")
+
         resValue("string", "commit_hash", getGitCommitHash())
         resValue("bool", "is_prerelease", "false")
         resValue("string", "app_name", "AdiXtream")
