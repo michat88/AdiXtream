@@ -38,6 +38,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.cardview.widget.CardView
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.content.edit
+import androidx.core.net.toUri
 import androidx.core.view.children
 import androidx.core.view.get
 import androidx.core.view.isGone
@@ -90,9 +91,9 @@ import com.lagradost.cloudstream3.databinding.ActivityMainTvBinding
 import com.lagradost.cloudstream3.databinding.BottomResultviewPreviewBinding
 import com.lagradost.cloudstream3.mvvm.Resource
 import com.lagradost.cloudstream3.mvvm.logError
-import com.lagradost.cloudstream3.mvvm.safe
 import com.lagradost.cloudstream3.mvvm.observe
 import com.lagradost.cloudstream3.mvvm.observeNullable
+import com.lagradost.cloudstream3.mvvm.safe
 import com.lagradost.cloudstream3.network.initClient
 import com.lagradost.cloudstream3.plugins.PluginManager
 import com.lagradost.cloudstream3.plugins.PluginManager.___DO_NOT_CALL_FROM_A_PLUGIN_loadAllOnlinePlugins
@@ -113,6 +114,7 @@ import com.lagradost.cloudstream3.ui.SyncWatchType
 import com.lagradost.cloudstream3.ui.WatchType
 import com.lagradost.cloudstream3.ui.account.AccountHelper.showAccountSelectLinear
 import com.lagradost.cloudstream3.ui.download.DOWNLOAD_NAVIGATE_TO
+import com.lagradost.cloudstream3.ui.home.HomeFragment
 import com.lagradost.cloudstream3.ui.home.HomeViewModel
 import com.lagradost.cloudstream3.ui.library.LibraryViewModel
 import com.lagradost.cloudstream3.ui.player.BasicLink
@@ -165,9 +167,10 @@ import com.lagradost.cloudstream3.utils.DataStoreHelper.accounts
 import com.lagradost.cloudstream3.utils.DataStoreHelper.migrateResumeWatching
 import com.lagradost.cloudstream3.utils.Event
 import com.lagradost.cloudstream3.utils.ImageLoader.loadImage
-import com.lagradost.cloudstream3.utils.InAppUpdater.Companion.runAutoUpdate
+import com.lagradost.cloudstream3.utils.InAppUpdater.runAutoUpdate
 import com.lagradost.cloudstream3.utils.SingleSelectionHelper.showBottomDialog
 import com.lagradost.cloudstream3.utils.SnackbarHelper.showSnackbar
+import com.lagradost.cloudstream3.utils.TvChannelUtils
 import com.lagradost.cloudstream3.utils.UIHelper.changeStatusBarState
 import com.lagradost.cloudstream3.utils.UIHelper.checkWrite
 import com.lagradost.cloudstream3.utils.UIHelper.dismissSafe
@@ -181,6 +184,7 @@ import com.lagradost.cloudstream3.utils.UIHelper.setNavigationBarColorCompat
 import com.lagradost.cloudstream3.utils.UIHelper.toPx
 import com.lagradost.cloudstream3.utils.USER_PROVIDER_API
 import com.lagradost.cloudstream3.utils.USER_SELECTED_HOMEPAGE_API
+import com.lagradost.cloudstream3.utils.downloader.DownloadQueueManager
 import com.lagradost.cloudstream3.utils.setText
 import com.lagradost.cloudstream3.utils.setTextHtml
 import com.lagradost.cloudstream3.utils.txt
@@ -195,13 +199,6 @@ import java.nio.charset.Charset
 import kotlin.math.abs
 import kotlin.math.absoluteValue
 import kotlin.system.exitProcess
-import androidx.core.net.toUri
-import androidx.tvprovider.media.tv.Channel
-import androidx.tvprovider.media.tv.TvContractCompat
-import android.content.ComponentName
-import android.content.ContentUris
-import com.lagradost.cloudstream3.ui.home.HomeFragment
-import com.lagradost.cloudstream3.utils.TvChannelUtils
 
 // --- IMPORT TAMBAHAN ADIXTREAM ---
 import com.lagradost.cloudstream3.plugins.RepositoryManager
@@ -218,6 +215,18 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
         const val ANIMATED_OUTLINE: Boolean = false
         var lastError: String? = null
 
+        fun setLastError(context: Context) {
+            if (lastError != null) return
+
+            val errorFile = context.filesDir.resolve("last_error")
+            if (errorFile.exists() && errorFile.isFile) {
+                lastError = errorFile.readText(Charset.defaultCharset())
+                errorFile.delete()
+            } else {
+                lastError = null
+            }
+        }
+
         private const val FILE_DELETE_KEY = "FILES_TO_DELETE_KEY"
         const val API_NAME_EXTRA_KEY = "API_NAME_EXTRA_KEY"
 
@@ -230,8 +239,9 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
         }
 
         var nextSearchQuery: String? = null
+
         val afterPluginsLoadedEvent = Event<Boolean>()
-        val mainPluginsLoadedEvent = Event<Boolean>() 
+        val mainPluginsLoadedEvent = Event<Boolean>()
         val afterRepositoryLoadedEvent = Event<Boolean>()
         val bookmarksUpdatedEvent = Event<Boolean>()
         val reloadHomeEvent = Event<Boolean>()
@@ -390,7 +400,6 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
             }
         }
     }
-
     var lastPopup: SearchResponse? = null
     fun loadPopup(result: SearchResponse, load: Boolean = true) {
         lastPopup = result
@@ -433,6 +442,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
             supportFragmentManager.findFragmentById(R.id.nav_host_fragment) as NavHostFragment
         navHostFragment.navController.currentDestination?.let { updateNavBar(it) }
     }
+    
     private fun updateNavBar(destination: NavDestination) {
         this.hideKeyboard()
 
@@ -499,6 +509,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
             }
         }
     }
+    
     var mSessionManager: SessionManager? = null
     private val mSessionManagerListener: SessionManagerListener<Session> by lazy { SessionManagerListenerImpl() }
 
@@ -677,6 +688,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
             false
         }
     }
+    
     private val pluginsLock = Mutex()
     private fun onAllPluginsLoaded(success: Boolean = false) {
         ioSafe {
@@ -761,7 +773,6 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
     }
 
     var binding: ActivityMainBinding? = null
-
     object TvFocus {
         data class FocusTarget(
             val width: Int,
@@ -938,6 +949,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
             }
         }
     }
+
     @Suppress("DEPRECATION_ERROR")
     override fun onCreate(savedInstanceState: Bundle?) {
         app.initClient(this)
@@ -962,37 +974,25 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
 
         // --- LOGIKA REPOSITORY & UPDATE (ADIXTREAM ANTI-BUG V3) ---
         ioSafe {
-            // 1. Tentukan target URL berdasarkan status aktual user
             val isPremium = PremiumManager.isPremium(this@MainActivity)
             val targetRepoUrl = if (isPremium) PremiumManager.PREMIUM_REPO_URL else PremiumManager.FREE_REPO_URL
             
-            // 2. Ambil daftar repo yang sedang terpasang di HP user saat ini
             val currentRepos = RepositoryManager.getRepositories()
-            
-            // 3. Evaluasi Kondisi Nyata
-            // Cek apakah target repo sudah ada, dan cek apakah ada repo 'nyasar' (misal repo lama)
             val hasTargetRepo = currentRepos.any { it.url == targetRepoUrl }
             val hasInvalidRepos = currentRepos.any { it.url != targetRepoUrl }
-            
             var isRepoChanged = false
 
-            // 4. JIKA KONDISI TIDAK SESUAI (Baru Install, Baru Aktivasi, Expired, atau URL Ganti)
             if (!hasTargetRepo || hasInvalidRepos) {
                 Log.d(TAG, "Status Repo tidak sinkron. Melakukan penyesuaian otomatis...")
-                
-                // LANGKAH A: Sapu bersih semua repo lama agar tidak ada konflik
                 currentRepos.forEach { repo ->
                     RepositoryManager.removeRepository(this@MainActivity, repo)
                 }
-                
-                // LANGKAH B: Pasang repo yang benar sesuai hak user
                 try {
                     val parsedRepo = RepositoryManager.parseRepository(targetRepoUrl)
                     if (parsedRepo != null) {
                         val repoData = RepositoryData(parsedRepo.iconUrl, parsedRepo.name, targetRepoUrl)
                         RepositoryManager.addRepository(repoData)
-                        
-                        isRepoChanged = true // Tandai bahwa kita baru saja merombak repo
+                        isRepoChanged = true 
                         Log.d(TAG, "Repo berhasil disinkronkan ke: $targetRepoUrl")
                     }
                 } catch (e: Exception) { 
@@ -1000,30 +1000,18 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                 }
             }
 
-            // ==========================================================
-            // 5. MANAJEMEN DOWNLOAD & UPDATE PLUGIN YANG AMAN DARI CRASH
-            // ==========================================================
-            Thread.sleep(1000) // Beri jeda 1 detik agar database HP selesai menyimpan status Repo
+            Thread.sleep(1000) 
 
             if (isRepoChanged) {
-                // -> KONDISI A: REPO BARU SAJA DIGANTI
-                // Karena kita baru ganti repo, kita harus download ulang plugin dari repo tersebut.
                 try {
                     Log.d(TAG, "Mengunduh plugin dari Repo Baru...")
-                    
-                    // Download secara paksa (Aman, karena auto-update CloudStream tidak dijalankan di sini)
                     PluginsViewModel.downloadAll(this@MainActivity, targetRepoUrl, null)
-                    
-                    // Setelah selesai, load langsung ke memori
                     PluginManager.___DO_NOT_CALL_FROM_A_PLUGIN_loadAllOnlinePlugins(this@MainActivity)
                     PluginManager.___DO_NOT_CALL_FROM_A_PLUGIN_loadAllLocalPlugins(this@MainActivity, false)
-                    
                 } catch (e: Exception) {
                     logError(e)
                 }
             } else {
-                // -> KONDISI B: REPO TIDAK BERUBAH (Pemakaian sehari-hari)
-                // Biarkan sistem auto-update bawaan CloudStream berjalan normal.
                 if (settingsManager.getBoolean(getString(R.string.auto_update_plugins_key), true)) {
                     PluginManager.___DO_NOT_CALL_FROM_A_PLUGIN_updateAllOnlinePluginsAndLoadThem(this@MainActivity)
                 } else {
@@ -1122,659 +1110,658 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                 padTop = false
             )
         }
-
-        if (getKey(HAS_DONE_SETUP_KEY, false) != true) {
-             setKey(HAS_DONE_SETUP_KEY, true)
-             updateLocale() 
-        }
-
-        val padding = settingsManager.getInt(getString(R.string.overscan_key), 0).toPx
-        binding?.homeRoot?.setPadding(padding, padding, padding, padding)
-
-        changeStatusBarState(isLayout(EMULATOR))
-
-        val noAccounts = settingsManager.getBoolean(
-            getString(R.string.skip_startup_account_select_key),
-            false
-        ) || accounts.count() <= 1
-
-        if (isLayout(PHONE) && isAuthEnabled(this) && noAccounts) {
-            if (deviceHasPasswordPinLock(this)) {
-                startBiometricAuthentication(this, R.string.biometric_authentication_title, false)
-                promptInfo?.let { prompt -> biometricPrompt?.authenticate(prompt) }
-                binding?.navHostFragment?.isInvisible = true
+            if (getKey(HAS_DONE_SETUP_KEY, false) != true) {
+                 setKey(HAS_DONE_SETUP_KEY, true)
+                 updateLocale() 
             }
-        }
 
-        if (this.getKey<Boolean>(getString(R.string.jsdelivr_proxy_key)) == null && isNetworkAvailable()) {
-            main {
-                if (checkGithubConnectivity()) {
-                    this.setKey(getString(R.string.jsdelivr_proxy_key), false)
-                } else {
-                    this.setKey(getString(R.string.jsdelivr_proxy_key), true)
-                    showSnackbar(
-                        this@MainActivity,
-                        R.string.jsdelivr_enabled,
-                        Snackbar.LENGTH_LONG,
-                        R.string.revert
-                    ) { setKey(getString(R.string.jsdelivr_proxy_key), false) }
+            val padding = settingsManager.getInt(getString(R.string.overscan_key), 0).toPx
+            binding?.homeRoot?.setPadding(padding, padding, padding, padding)
+
+            changeStatusBarState(isLayout(EMULATOR))
+
+            val noAccounts = settingsManager.getBoolean(
+                getString(R.string.skip_startup_account_select_key),
+                false
+            ) || accounts.count() <= 1
+
+            if (isLayout(PHONE) && isAuthEnabled(this) && noAccounts) {
+                if (deviceHasPasswordPinLock(this)) {
+                    startBiometricAuthentication(this, R.string.biometric_authentication_title, false)
+                    promptInfo?.let { prompt -> biometricPrompt?.authenticate(prompt) }
+                    binding?.navHostFragment?.isInvisible = true
                 }
             }
-        }
 
-        ioSafe { SafeFile.check(this@MainActivity) }
-
-        if (PluginManager.checkSafeModeFile()) {
-            safe { showToast(R.string.safe_mode_file, Toast.LENGTH_LONG) }
-        }
-
-        fun setUserData(status: Resource<SyncAPI.AbstractSyncStatus>?) {
-            if (isLocalList) return
-            bottomPreviewBinding?.apply {
-                when (status) {
-                    is Resource.Success -> {
-                        resultviewPreviewBookmark.isEnabled = true
-                        resultviewPreviewBookmark.setText(status.value.status.stringRes)
-                        resultviewPreviewBookmark.setIconResource(status.value.status.iconRes)
-                    }
-                    is Resource.Failure -> {
-                        resultviewPreviewBookmark.isEnabled = false
-                        resultviewPreviewBookmark.setIconResource(R.drawable.ic_baseline_bookmark_border_24)
-                        resultviewPreviewBookmark.text = status.errorString
-                    }
-                    else -> {
-                        resultviewPreviewBookmark.isEnabled = false
-                        resultviewPreviewBookmark.setIconResource(R.drawable.ic_baseline_bookmark_border_24)
-                        resultviewPreviewBookmark.setText(R.string.loading)
-                    }
-                }
-            }
-        }
-
-        fun setWatchStatus(state: WatchType?) {
-            if (!isLocalList || state == null) return
-            bottomPreviewBinding?.resultviewPreviewBookmark?.apply {
-                setIconResource(state.iconRes)
-                setText(state.stringRes)
-            }
-        }
-
-        fun setSubscribeStatus(state: Boolean?) {
-            bottomPreviewBinding?.resultviewPreviewSubscribe?.apply {
-                if (state != null) {
-                    val drawable = if (state) R.drawable.ic_baseline_notifications_active_24 else R.drawable.baseline_notifications_none_24
-                    setImageResource(drawable)
-                }
-                isVisible = state != null
-                setOnClickListener {
-                    viewModel.toggleSubscriptionStatus(context) { newStatus: Boolean? ->
-                        if (newStatus == null) return@toggleSubscriptionStatus
-                        val message = if (newStatus) {
-                            SubscriptionWorkManager.enqueuePeriodicWork(context)
-                            R.string.subscription_new
-                        } else {
-                            R.string.subscription_deleted
-                        }
-                        val name = (viewModel.page.value as? Resource.Success)?.value?.title ?: txt(R.string.no_data).asStringNull(context) ?: ""
-                        showToast(txt(message, name), Toast.LENGTH_SHORT)
-                    }
-                }
-            }
-        }
-
-        observe(viewModel.watchStatus, ::setWatchStatus)
-        observe(syncViewModel.userData, ::setUserData)
-        observeNullable(viewModel.subscribeStatus, ::setSubscribeStatus)
-        observeNullable(viewModel.page) { resource ->
-            if (resource == null) {
-                hidePreviewPopupDialog()
-                return@observeNullable
-            }
-            when (resource) {
-                is Resource.Failure -> {
-                    showToast(R.string.error)
-                    viewModel.clear()
-                    hidePreviewPopupDialog()
-                }
-                is Resource.Loading -> {
-                    showPreviewPopupDialog().apply {
-                        resultviewPreviewLoading.isVisible = true
-                        resultviewPreviewResult.isVisible = false
-                        resultviewPreviewLoadingShimmer.startShimmer()
-                    }
-                }
-                is Resource.Success -> {
-                    val d = resource.value
-                    showPreviewPopupDialog().apply {
-                        resultviewPreviewLoading.isVisible = false
-                        resultviewPreviewResult.isVisible = true
-                        resultviewPreviewLoadingShimmer.stopShimmer()
-
-                        resultviewPreviewTitle.text = d.title
-                        resultviewPreviewMetaType.setText(d.typeText)
-                        resultviewPreviewMetaYear.setText(d.yearText)
-                        resultviewPreviewMetaDuration.setText(d.durationText)
-                        resultviewPreviewMetaRating.setText(d.ratingText)
-                        resultviewPreviewDescription.setTextHtml(d.plotText)
-                        if (isLayout(PHONE)) {
-                            resultviewPreviewPoster.loadImage(d.posterImage ?: d.posterBackgroundImage, headers = d.posterHeaders)
-                        } else {
-                            resultviewPreviewPoster.loadImage(d.posterBackgroundImage ?: d.posterImage, headers = d.posterHeaders)
-                        }
-
-                        setUserData(syncViewModel.userData.value)
-                        setWatchStatus(viewModel.watchStatus.value)
-                        setSubscribeStatus(viewModel.subscribeStatus.value)
-
-                        resultviewPreviewBookmark.setOnClickListener {
-                            if (isLocalList) {
-                                val value = viewModel.watchStatus.value ?: WatchType.NONE
-                                this@MainActivity.showBottomDialog(
-                                    WatchType.entries.map { getString(it.stringRes) }.toList(),
-                                    value.ordinal,
-                                    this@MainActivity.getString(R.string.action_add_to_bookmarks),
-                                    showApply = false,
-                                    {}) { viewModel.updateWatchStatus(WatchType.entries[it], this@MainActivity) }
-                            } else {
-                                val value = (syncViewModel.userData.value as? Resource.Success)?.value?.status ?: SyncWatchType.NONE
-                                this@MainActivity.showBottomDialog(
-                                    SyncWatchType.entries.map { getString(it.stringRes) }.toList(),
-                                    value.ordinal,
-                                    this@MainActivity.getString(R.string.action_add_to_bookmarks),
-                                    showApply = false,
-                                    {}) {
-                                    syncViewModel.setStatus(SyncWatchType.entries[it].internalId)
-                                    syncViewModel.publishUserData()
-                                }
-                            }
-                        }
-
-                        observeNullable(viewModel.favoriteStatus) observeFavoriteStatus@{ isFavorite ->
-                            resultviewPreviewFavorite.isVisible = isFavorite != null
-                            if (isFavorite == null) return@observeFavoriteStatus
-                            val drawable = if (isFavorite) R.drawable.ic_baseline_favorite_24 else R.drawable.ic_baseline_favorite_border_24
-                            resultviewPreviewFavorite.setImageResource(drawable)
-                        }
-
-                        resultviewPreviewFavorite.setOnClickListener {
-                            viewModel.toggleFavoriteStatus(this@MainActivity) { newStatus: Boolean? ->
-                                if (newStatus == null) return@toggleFavoriteStatus
-                                val message = if (newStatus) R.string.favorite_added else R.string.favorite_removed
-                                val name = (viewModel.page.value as? Resource.Success)?.value?.title ?: txt(R.string.no_data).asStringNull(this@MainActivity) ?: ""
-                                showToast(txt(message, name), Toast.LENGTH_SHORT)
-                            }
-                        }
-
-                        if (isLayout(PHONE)) 
-                            resultviewPreviewDescription.setOnClickListener { view ->
-                                view.context?.let { ctx ->
-                                    val builder: AlertDialog.Builder = AlertDialog.Builder(ctx, R.style.AlertDialogCustom)
-                                    builder.setMessage(d.plotText.asString(ctx).html()).setTitle(d.plotHeaderText.asString(ctx)).show()
-                                }
-                            }
-
-                        resultviewPreviewMoreInfo.setOnClickListener {
-                            viewModel.clear()
-                            hidePreviewPopupDialog()
-                            lastPopup?.let { loadSearchResult(it) }
-                        }
-                    }
-                }
-            }
-        }
-
-        ioSafe {
-            this@MainActivity.runOnUiThread {
-                libraryViewModel = ViewModelProvider(this@MainActivity)[LibraryViewModel::class.java]
-                libraryViewModel?.currentApiName?.observe(this@MainActivity) {
-                    val syncAPI = libraryViewModel?.currentSyncApi
-                    val icon = if (syncAPI?.idPrefix == localListApi.idPrefix) {
-                        R.drawable.library_icon_selector
+            if (this.getKey<Boolean>(getString(R.string.jsdelivr_proxy_key)) == null && isNetworkAvailable()) {
+                main {
+                    if (checkGithubConnectivity()) {
+                        this.setKey(getString(R.string.jsdelivr_proxy_key), false)
                     } else {
-                        syncAPI?.icon ?: R.drawable.library_icon_selector
+                        this.setKey(getString(R.string.jsdelivr_proxy_key), true)
+                        showSnackbar(
+                            this@MainActivity,
+                            R.string.jsdelivr_enabled,
+                            Snackbar.LENGTH_LONG,
+                            R.string.revert
+                        ) { setKey(getString(R.string.jsdelivr_proxy_key), false) }
                     }
-                    binding?.apply {
-                        navRailView.menu.findItem(R.id.navigation_library)?.setIcon(icon)
-                        navView.menu.findItem(R.id.navigation_library)?.setIcon(icon)
+                }
+            }
+
+            ioSafe { SafeFile.check(this@MainActivity) }
+
+            if (PluginManager.checkSafeModeFile()) {
+                safe { showToast(R.string.safe_mode_file, Toast.LENGTH_LONG) }
+            }
+
+            fun setUserData(status: Resource<SyncAPI.AbstractSyncStatus>?) {
+                if (isLocalList) return
+                bottomPreviewBinding?.apply {
+                    when (status) {
+                        is Resource.Success -> {
+                            resultviewPreviewBookmark.isEnabled = true
+                            resultviewPreviewBookmark.setText(status.value.status.stringRes)
+                            resultviewPreviewBookmark.setIconResource(status.value.status.iconRes)
+                        }
+                        is Resource.Failure -> {
+                            resultviewPreviewBookmark.isEnabled = false
+                            resultviewPreviewBookmark.setIconResource(R.drawable.ic_baseline_bookmark_border_24)
+                            resultviewPreviewBookmark.text = status.errorString
+                        }
+                        else -> {
+                            resultviewPreviewBookmark.isEnabled = false
+                            resultviewPreviewBookmark.setIconResource(R.drawable.ic_baseline_bookmark_border_24)
+                            resultviewPreviewBookmark.setText(R.string.loading)
+                        }
                     }
                 }
             }
-        }
 
-        SearchResultBuilder.updateCache(this)
-
-        ioSafe {
-            initAll()
-            apis = synchronized(allProviders) { allProviders.distinctBy { it } }
-        }
-
-        setUpBackup()
-        CommonActivity.init(this)
-        val navHostFragment = supportFragmentManager.findFragmentById(R.id.nav_host_fragment) as NavHostFragment
-        val navController = navHostFragment.navController
-
-        navController.addOnDestinationChangedListener { _: NavController, navDestination: NavDestination, bundle: Bundle? ->
-            
-            // --- SECURITY GUARD ADIXTREAM (ON CHANGE) ---
-            if (navDestination.id == R.id.navigation_settings_extensions || navDestination.id == R.id.navigation_settings_plugins) {
-                if (!PremiumManager.isPremium(this@MainActivity)) {
-                    showPremiumUnlockDialog()
-                    navController.popBackStack()
-                    return@addOnDestinationChangedListener
+            fun setWatchStatus(state: WatchType?) {
+                if (!isLocalList || state == null) return
+                bottomPreviewBinding?.resultviewPreviewBookmark?.apply {
+                    setIconResource(state.iconRes)
+                    setText(state.stringRes)
                 }
             }
-            // --------------------------------------------
 
-            updateNavBar(navDestination)
-            if (navDestination.matchDestination(R.id.navigation_search) && !nextSearchQuery.isNullOrBlank()) {
-                bundle?.apply { this.putString(SearchFragment.SEARCH_QUERY, nextSearchQuery) }
+            fun setSubscribeStatus(state: Boolean?) {
+                bottomPreviewBinding?.resultviewPreviewSubscribe?.apply {
+                    if (state != null) {
+                        val drawable = if (state) R.drawable.ic_baseline_notifications_active_24 else R.drawable.baseline_notifications_none_24
+                        setImageResource(drawable)
+                    }
+                    isVisible = state != null
+                    setOnClickListener {
+                        viewModel.toggleSubscriptionStatus(context) { newStatus: Boolean? ->
+                            if (newStatus == null) return@toggleSubscriptionStatus
+                            val message = if (newStatus) {
+                                SubscriptionWorkManager.enqueuePeriodicWork(context)
+                                R.string.subscription_new
+                            } else {
+                                R.string.subscription_deleted
+                            }
+                            val name = (viewModel.page.value as? Resource.Success)?.value?.title ?: txt(R.string.no_data).asStringNull(context) ?: ""
+                            showToast(txt(message, name), Toast.LENGTH_SHORT)
+                        }
+                    }
+                }
             }
 
-            if (navDestination.matchDestination(R.id.navigation_home)) {
-                attachBackPressedCallback("MainActivity") {
-                    showConfirmExitDialog(settingsManager)
-                    setNavigationBarColorCompat(R.attr.primaryGrayBackground)
-                    updateLocale()
+            observe(viewModel.watchStatus, ::setWatchStatus)
+            observe(syncViewModel.userData, ::setUserData)
+            observeNullable(viewModel.subscribeStatus, ::setSubscribeStatus)
+            observeNullable(viewModel.page) { resource ->
+                if (resource == null) {
+                    hidePreviewPopupDialog()
+                    return@observeNullable
                 }
-            } else detachBackPressedCallback("MainActivity")
-        }
+                when (resource) {
+                    is Resource.Failure -> {
+                        showToast(R.string.error)
+                        viewModel.clear()
+                        hidePreviewPopupDialog()
+                    }
+                    is Resource.Loading -> {
+                        showPreviewPopupDialog().apply {
+                            resultviewPreviewLoading.isVisible = true
+                            resultviewPreviewResult.isVisible = false
+                            resultviewPreviewLoadingShimmer.startShimmer()
+                        }
+                    }
+                    is Resource.Success -> {
+                        val d = resource.value
+                        showPreviewPopupDialog().apply {
+                            resultviewPreviewLoading.isVisible = false
+                            resultviewPreviewResult.isVisible = true
+                            resultviewPreviewLoadingShimmer.stopShimmer()
 
-        val rippleColor = ColorStateList.valueOf(getResourceColor(R.attr.colorPrimary, 0.1f))
-        binding?.navView?.apply {
-            itemRippleColor = rippleColor
-            itemActiveIndicatorColor = rippleColor
-            setupWithNavController(navController)
-            setOnItemSelectedListener { item -> onNavDestinationSelected(item, navController) }
-        }
+                            resultviewPreviewTitle.text = d.title
+                            resultviewPreviewMetaType.setText(d.typeText)
+                            resultviewPreviewMetaYear.setText(d.yearText)
+                            resultviewPreviewMetaDuration.setText(d.durationText)
+                            resultviewPreviewMetaRating.setText(d.ratingText)
+                            resultviewPreviewDescription.setTextHtml(d.plotText)
+                            if (isLayout(PHONE)) {
+                                resultviewPreviewPoster.loadImage(d.posterImage ?: d.posterBackgroundImage, headers = d.posterHeaders)
+                            } else {
+                                resultviewPreviewPoster.loadImage(d.posterBackgroundImage ?: d.posterImage, headers = d.posterHeaders)
+                            }
 
-        binding?.navRailView?.apply {
-            if (isLayout(PHONE)) {
+                            setUserData(syncViewModel.userData.value)
+                            setWatchStatus(viewModel.watchStatus.value)
+                            setSubscribeStatus(viewModel.subscribeStatus.value)
+
+                            resultviewPreviewBookmark.setOnClickListener {
+                                if (isLocalList) {
+                                    val value = viewModel.watchStatus.value ?: WatchType.NONE
+                                    this@MainActivity.showBottomDialog(
+                                        WatchType.entries.map { getString(it.stringRes) }.toList(),
+                                        value.ordinal,
+                                        this@MainActivity.getString(R.string.action_add_to_bookmarks),
+                                        showApply = false,
+                                        {}) { viewModel.updateWatchStatus(WatchType.entries[it], this@MainActivity) }
+                                } else {
+                                    val value = (syncViewModel.userData.value as? Resource.Success)?.value?.status ?: SyncWatchType.NONE
+                                    this@MainActivity.showBottomDialog(
+                                        SyncWatchType.entries.map { getString(it.stringRes) }.toList(),
+                                        value.ordinal,
+                                        this@MainActivity.getString(R.string.action_add_to_bookmarks),
+                                        showApply = false,
+                                        {}) {
+                                        syncViewModel.setStatus(SyncWatchType.entries[it].internalId)
+                                        syncViewModel.publishUserData()
+                                    }
+                                }
+                            }
+
+                            observeNullable(viewModel.favoriteStatus) observeFavoriteStatus@{ isFavorite ->
+                                resultviewPreviewFavorite.isVisible = isFavorite != null
+                                if (isFavorite == null) return@observeFavoriteStatus
+                                val drawable = if (isFavorite) R.drawable.ic_baseline_favorite_24 else R.drawable.ic_baseline_favorite_border_24
+                                resultviewPreviewFavorite.setImageResource(drawable)
+                            }
+
+                            resultviewPreviewFavorite.setOnClickListener {
+                                viewModel.toggleFavoriteStatus(this@MainActivity) { newStatus: Boolean? ->
+                                    if (newStatus == null) return@toggleFavoriteStatus
+                                    val message = if (newStatus) R.string.favorite_added else R.string.favorite_removed
+                                    val name = (viewModel.page.value as? Resource.Success)?.value?.title ?: txt(R.string.no_data).asStringNull(this@MainActivity) ?: ""
+                                    showToast(txt(message, name), Toast.LENGTH_SHORT)
+                                }
+                            }
+
+                            if (isLayout(PHONE)) 
+                                resultviewPreviewDescription.setOnClickListener { view ->
+                                    view.context?.let { ctx ->
+                                        val builder: AlertDialog.Builder = AlertDialog.Builder(ctx, R.style.AlertDialogCustom)
+                                        builder.setMessage(d.plotText.asString(ctx).html()).setTitle(d.plotHeaderText.asString(ctx)).show()
+                                    }
+                                }
+
+                            resultviewPreviewMoreInfo.setOnClickListener {
+                                viewModel.clear()
+                                hidePreviewPopupDialog()
+                                lastPopup?.let { loadSearchResult(it) }
+                            }
+                        }
+                    }
+                }
+            }
+
+            ioSafe {
+                this@MainActivity.runOnUiThread {
+                    libraryViewModel = ViewModelProvider(this@MainActivity)[LibraryViewModel::class.java]
+                    libraryViewModel?.currentApiName?.observe(this@MainActivity) {
+                        val syncAPI = libraryViewModel?.currentSyncApi
+                        val icon = if (syncAPI?.idPrefix == localListApi.idPrefix) {
+                            R.drawable.library_icon_selector
+                        } else {
+                            syncAPI?.icon ?: R.drawable.library_icon_selector
+                        }
+                        binding?.apply {
+                            navRailView.menu.findItem(R.id.navigation_library)?.setIcon(icon)
+                            navView.menu.findItem(R.id.navigation_library)?.setIcon(icon)
+                        }
+                    }
+                }
+            }
+
+            SearchResultBuilder.updateCache(this)
+
+            ioSafe {
+                initAll()
+                apis = synchronized(allProviders) { allProviders.distinctBy { it } }
+            }
+
+            setUpBackup()
+            CommonActivity.init(this)
+            val navHostFragment = supportFragmentManager.findFragmentById(R.id.nav_host_fragment) as NavHostFragment
+            val navController = navHostFragment.navController
+
+            navController.addOnDestinationChangedListener { _: NavController, navDestination: NavDestination, bundle: Bundle? ->
+                
+                // --- SECURITY GUARD ADIXTREAM (ON CHANGE) ---
+                if (navDestination.id == R.id.navigation_settings_extensions || navDestination.id == R.id.navigation_settings_plugins) {
+                    if (!PremiumManager.isPremium(this@MainActivity)) {
+                        showPremiumUnlockDialog()
+                        navController.popBackStack()
+                        return@addOnDestinationChangedListener
+                    }
+                }
+                // --------------------------------------------
+
+                updateNavBar(navDestination)
+                if (navDestination.matchDestination(R.id.navigation_search) && !nextSearchQuery.isNullOrBlank()) {
+                    bundle?.apply { this.putString(SearchFragment.SEARCH_QUERY, nextSearchQuery) }
+                }
+
+                if (navDestination.matchDestination(R.id.navigation_home)) {
+                    attachBackPressedCallback("MainActivity") {
+                        showConfirmExitDialog(settingsManager)
+                        setNavigationBarColorCompat(R.attr.primaryGrayBackground)
+                        updateLocale()
+                    }
+                } else detachBackPressedCallback("MainActivity")
+            }
+
+            val rippleColor = ColorStateList.valueOf(getResourceColor(R.attr.colorPrimary, 0.1f))
+            binding?.navView?.apply {
                 itemRippleColor = rippleColor
                 itemActiveIndicatorColor = rippleColor
-            } else {
-                val rippleColor = ColorStateList.valueOf(getResourceColor(R.attr.textColor, 1.0f))
-                val rippleColorTransparent = ColorStateList.valueOf(getResourceColor(R.attr.textColor, 0.2f))
-                itemSpacing = 12.toPx 
-                itemRippleColor = rippleColorTransparent
-                itemActiveIndicatorColor = rippleColor
-            }
-            setupWithNavController(navController)
-            setOnItemSelectedListener { item -> onNavDestinationSelected(item, navController) }
-
-            fun noFocus(view: View) {
-                view.tag = view.context.getString(R.string.tv_no_focus_tag)
-                (view as? ViewGroup)?.let { for (child in it.children) noFocus(child) }
+                setupWithNavController(navController)
+                setOnItemSelectedListener { item -> onNavDestinationSelected(item, navController) }
             }
 
-            val navProfileRoot = findViewById<LinearLayout>(R.id.nav_footer_root)
-
-            if (isLayout(TV or EMULATOR)) {
-                val navProfilePic = findViewById<ImageView>(R.id.nav_footer_profile_pic)
-                val navProfileCard = findViewById<CardView>(R.id.nav_footer_profile_card)
-
-                navProfileCard?.setOnClickListener { showAccountSelectLinear() }
-                val homeViewModel = ViewModelProvider(this@MainActivity)[HomeViewModel::class.java]
-                observe(homeViewModel.currentAccount) { currentAccount ->
-                    if (currentAccount != null) {
-                        navProfilePic?.loadImage(currentAccount.image)
-                        navProfileRoot.isVisible = true
-                    } else {
-                        navProfileRoot.isGone = true
-                    }
+            binding?.navRailView?.apply {
+                if (isLayout(PHONE)) {
+                    itemRippleColor = rippleColor
+                    itemActiveIndicatorColor = rippleColor
+                } else {
+                    val rippleColor = ColorStateList.valueOf(getResourceColor(R.attr.textColor, 1.0f))
+                    val rippleColorTransparent = ColorStateList.valueOf(getResourceColor(R.attr.textColor, 0.2f))
+                    itemSpacing = 12.toPx 
+                    itemRippleColor = rippleColorTransparent
+                    itemActiveIndicatorColor = rippleColor
                 }
-            } else {
-                navProfileRoot.isGone = true
-            }
-        }
+                setupWithNavController(navController)
+                setOnItemSelectedListener { item -> onNavDestinationSelected(item, navController) }
 
-        val rail = binding?.navRailView
-        if (rail != null) {
-            binding?.navRailView?.labelVisibilityMode = NavigationRailView.LABEL_VISIBILITY_UNLABELED
-            var prevId: Int? = null
-            var prevView: View? = null
-            rail.findViewById<View?>(R.id.navigation_settings)?.nextFocusDownId = R.id.nav_footer_profile_card
-            for (id in arrayOf(R.id.navigation_home, R.id.navigation_search, R.id.navigation_library, R.id.navigation_downloads, R.id.navigation_settings)) {
-                val view = rail.findViewById<View?>(id) ?: continue
-                prevId?.let { view.nextFocusUpId = it }
-                prevView?.nextFocusDownId = id
-                prevView = view
-                prevId = id
-            }
-        }
-
-        for (view in listOf(binding?.navView, binding?.navRailView)) {
-            view?.findViewById<View?>(R.id.navigation_home)?.setOnLongClickListener {
-                val recycler = binding?.root?.findViewById<RecyclerView?>(R.id.home_master_recycler)
-                recycler?.smoothScrollToPosition(0)
-                return@setOnLongClickListener recycler != null
-            }
-            view?.findViewById<View?>(R.id.navigation_library)?.setOnLongClickListener {
-                val viewPager = binding?.root?.findViewById<ViewPager2?>(R.id.viewpager) ?: return@setOnLongClickListener false
-                try {
-                    val children = (viewPager[0] as? RecyclerView)?.children ?: return@setOnLongClickListener false
-                    for (child in children) {
-                        child.findViewById<RecyclerView?>(R.id.page_recyclerview)?.smoothScrollToPosition(0)
-                    }
-                } catch (_: Exception) {}
-                return@setOnLongClickListener true
-            }
-            view?.findViewById<View?>(R.id.navigation_search)?.setOnLongClickListener {
-                for (recyclerId in arrayOf(R.id.search_master_recycler, R.id.search_autofit_results, R.id.search_history_recycler)) {
-                    val recycler = binding?.root?.findViewById<RecyclerView?>(recyclerId) ?: return@setOnLongClickListener false
-                    recycler.smoothScrollToPosition(0)
+                fun noFocus(view: View) {
+                    view.tag = view.context.getString(R.string.tv_no_focus_tag)
+                    (view as? ViewGroup)?.let { for (child in it.children) noFocus(child) }
                 }
-                return@setOnLongClickListener true
-            }
-            view?.findViewById<View?>(R.id.navigation_downloads)?.setOnLongClickListener {
-                val recycler: RecyclerView? = binding?.root?.findViewById(R.id.download_list) ?: binding?.root?.findViewById(R.id.download_child_list)
-                recycler?.smoothScrollToPosition(0)
-                return@setOnLongClickListener recycler != null
-            }
-        }
 
-        loadCache()
-        updateHasTrailers()
-        if (!checkWrite()) {
-            requestRW()
-            if (checkWrite()) return
-        }
-        
-        handleAppIntent(intent)
-        ioSafe { runAutoUpdate() }
-        FcastManager().init(this, false)
-        APIRepository.dubStatusActive = getApiDubstatusSettings()
+                val navProfileRoot = findViewById<LinearLayout>(R.id.nav_footer_root)
 
-        try {
+                if (isLayout(TV or EMULATOR)) {
+                    val navProfilePic = findViewById<ImageView>(R.id.nav_footer_profile_pic)
+                    val navProfileCard = findViewById<CardView>(R.id.nav_footer_profile_card)
+
+                    navProfileCard?.setOnClickListener { showAccountSelectLinear() }
+                    val homeViewModel = ViewModelProvider(this@MainActivity)[HomeViewModel::class.java]
+                    observe(homeViewModel.currentAccount) { currentAccount ->
+                        if (currentAccount != null) {
+                            navProfilePic?.loadImage(currentAccount.image)
+                            navProfileRoot.isVisible = true
+                        } else {
+                            navProfileRoot.isGone = true
+                        }
+                    }
+                } else {
+                    navProfileRoot.isGone = true
+                }
+            }
+
+            val rail = binding?.navRailView
+            if (rail != null) {
+                binding?.navRailView?.labelVisibilityMode = NavigationRailView.LABEL_VISIBILITY_UNLABELED
+                var prevId: Int? = null
+                var prevView: View? = null
+                rail.findViewById<View?>(R.id.navigation_settings)?.nextFocusDownId = R.id.nav_footer_profile_card
+                for (id in arrayOf(R.id.navigation_home, R.id.navigation_search, R.id.navigation_library, R.id.navigation_downloads, R.id.navigation_settings)) {
+                    val view = rail.findViewById<View?>(id) ?: continue
+                    prevId?.let { view.nextFocusUpId = it }
+                    prevView?.nextFocusDownId = id
+                    prevView = view
+                    prevId = id
+                }
+            }
+
+            for (view in listOf(binding?.navView, binding?.navRailView)) {
+                view?.findViewById<View?>(R.id.navigation_home)?.setOnLongClickListener {
+                    val recycler = binding?.root?.findViewById<RecyclerView?>(R.id.home_master_recycler)
+                    recycler?.smoothScrollToPosition(0)
+                    return@setOnLongClickListener recycler != null
+                }
+                view?.findViewById<View?>(R.id.navigation_library)?.setOnLongClickListener {
+                    val viewPager = binding?.root?.findViewById<ViewPager2?>(R.id.viewpager) ?: return@setOnLongClickListener false
+                    try {
+                        val children = (viewPager[0] as? RecyclerView)?.children ?: return@setOnLongClickListener false
+                        for (child in children) {
+                            child.findViewById<RecyclerView?>(R.id.page_recyclerview)?.smoothScrollToPosition(0)
+                        }
+                    } catch (_: Exception) {}
+                    return@setOnLongClickListener true
+                }
+                view?.findViewById<View?>(R.id.navigation_search)?.setOnLongClickListener {
+                    for (recyclerId in arrayOf(R.id.search_master_recycler, R.id.search_autofit_results, R.id.search_history_recycler)) {
+                        val recycler = binding?.root?.findViewById<RecyclerView?>(recyclerId) ?: return@setOnLongClickListener false
+                        recycler.smoothScrollToPosition(0)
+                    }
+                    return@setOnLongClickListener true
+                }
+                view?.findViewById<View?>(R.id.navigation_downloads)?.setOnLongClickListener {
+                    val recycler: RecyclerView? = binding?.root?.findViewById(R.id.download_list) ?: binding?.root?.findViewById(R.id.download_child_list)
+                    recycler?.smoothScrollToPosition(0)
+                    return@setOnLongClickListener recycler != null
+                }
+            }
+
             loadCache()
-            File(filesDir, "exoplayer").deleteRecursively()
-            deleteFileOnExit(File(cacheDir, "exoplayer"))
-        } catch (e: Exception) { logError(e) }
-
-        ioSafe { migrateResumeWatching() }
-
-        main {
-            val channelId = TvChannelUtils.getChannelId(this@MainActivity, getString(R.string.app_name))
-            if (channelId == null) TvChannelUtils.createTvChannel(this@MainActivity)
-        }
-
-        getKey<String>(USER_SELECTED_HOMEPAGE_API)?.let { homepage ->
-            DataStoreHelper.currentHomePage = homepage
-            removeKey(USER_SELECTED_HOMEPAGE_API)
-        }
-
-        onBackPressedDispatcher.addCallback(
-            this,
-            object : OnBackPressedCallback(true) {
-                override fun handleOnBackPressed() {
-                    setNavigationBarColorCompat(R.attr.primaryGrayBackground)
-                    updateLocale()
-                    isEnabled = false
-                    onBackPressedDispatcher.onBackPressed()
-                    isEnabled = true
-                }
-            }
-        )
-    }
-    override fun onAuthenticationSuccess() { binding?.navHostFragment?.isInvisible = false }
-    override fun onAuthenticationError() { finish() }
-
-    suspend fun checkGithubConnectivity(): Boolean {
-        return try {
-            app.get("https://raw.githubusercontent.com/recloudstream/.github/master/connectivitycheck", timeout = 5).text.trim() == "ok"
-        } catch (t: Throwable) { false }
-    }
-
-    // --- POPUP UNLOCK ADIXTREAM (NEW PREMIUM DESIGN) ---
-    private fun showPremiumUnlockDialog() {
-        val context = this
-        
-        // 1. Container dengan Gradient Background
-        val gradient = GradientDrawable(
-            GradientDrawable.Orientation.TOP_BOTTOM,
-            intArrayOf(0xFF1A1A1A.toInt(), 0xFF000000.toInt()) // Dark Gray to Black
-        )
-        gradient.cornerRadius = 16f.toPx.toFloat()
-
-        val layout = LinearLayout(context).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(40, 40, 40, 40)
-            background = gradient
-        }
-
-        val scroll = ScrollView(context).apply {
-            addView(layout)
-        }
-
-        // 2. Icon Mahkota
-        val icon = TextView(context).apply {
-            text = "👑"
-            textSize = 40f
-            gravity = Gravity.CENTER
-            setPadding(0, 10, 0, 10)
-        }
-
-        // 3. Judul
-        val title = TextView(context).apply {
-            text = "PREMIUM ACCESS"
-            textSize = 22f
-            setTextColor(android.graphics.Color.WHITE)
-            typeface = android.graphics.Typeface.DEFAULT_BOLD
-            gravity = Gravity.CENTER
-            setPadding(0, 0, 0, 10)
-        }
-        
-        val subTitle = TextView(context).apply {
-            text = "Fitur ini terkunci. Silakan hubungi admin untuk berlangganan."
-            textSize = 14f
-            setTextColor(android.graphics.Color.LTGRAY)
-            gravity = Gravity.CENTER
-            setPadding(0, 0, 0, 30)
-        }
-
-        // 4. Daftar Harga (List)
-        val priceLayout = LinearLayout(context).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(20, 20, 20, 20)
-            setBackgroundColor(0xFF252525.toInt()) // Dark card bg
-            gravity = Gravity.CENTER
-            
-            fun addPrice(dur: String, price: String) {
-                val row = LinearLayout(context).apply {
-                    orientation = LinearLayout.HORIZONTAL
-                    setPadding(0, 5, 0, 5)
-                    weightSum = 2f
-                }
-                val t1 = TextView(context).apply {
-                    text = dur
-                    setTextColor(android.graphics.Color.WHITE)
-                    layoutParams = LinearLayout.LayoutParams(0, -2, 1f)
-                }
-                val t2 = TextView(context).apply {
-                    text = price
-                    setTextColor(android.graphics.Color.GREEN)
-                    layoutParams = LinearLayout.LayoutParams(0, -2, 1f)
-                    gravity = Gravity.END
-                }
-                row.addView(t1)
-                row.addView(t2)
-                addView(row)
+            updateHasTrailers()
+            if (!checkWrite()) {
+                requestRW()
+                if (checkWrite()) return
             }
             
-            addPrice("1 Bulan", "Rp 10.000")
-            addPrice("6 Bulan", "Rp 50.000")
-            addPrice("1 Tahun", "Rp 100.000")
-        }
+            handleAppIntent(intent)
+            ioSafe { runAutoUpdate() }
+            FcastManager().init(this, false)
+            APIRepository.dubStatusActive = getApiDubstatusSettings()
 
-        // --- TAMBAHAN QRIS ADIXTREAM ---
-        val qrisContainer = LinearLayout(context).apply {
-            orientation = LinearLayout.VERTICAL
-            gravity = Gravity.CENTER
-            setPadding(0, 40, 0, 20)
-        }
+            try {
+                loadCache()
+                File(filesDir, "exoplayer").deleteRecursively()
+                deleteFileOnExit(File(cacheDir, "exoplayer"))
+            } catch (e: Exception) { logError(e) }
 
-        val qrisTitle = TextView(context).apply {
-            text = "SCAN UNTUK BAYAR"
-            textSize = 12f
-            setTextColor(android.graphics.Color.GRAY)
-            gravity = Gravity.CENTER
-            setPadding(0, 0, 0, 20)
-        }
+            ioSafe { migrateResumeWatching() }
 
-        // CardView agar pinggiran gambar melengkung
-        val qrisCard = CardView(context).apply {
-            radius = 16f.toPx.toFloat()
-            setCardBackgroundColor(android.graphics.Color.WHITE)
-            layoutParams = LinearLayout.LayoutParams(220.toPx, 220.toPx)
-            clipChildren = true
-            clipToPadding = true
-        }
-
-        val qrisImage = ImageView(context).apply {
-            layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
-            scaleType = ImageView.ScaleType.FIT_CENTER
-            // Memuat gambar dari link GitHub yang kamu berikan
-            loadImage("https://raw.githubusercontent.com/michat88/Zaneta/main/Icons/qris.png")
-        }
-        
-        qrisCard.addView(qrisImage)
-
-        val qrisFooter = TextView(context).apply {
-            text = "OVO / DANA / GOPAY / SHOPEEPAY / BANK"
-            textSize = 10f
-            setTextColor(android.graphics.Color.GRAY)
-            gravity = Gravity.CENTER
-            setPadding(0, 20, 0, 0)
-        }
-
-        qrisContainer.addView(qrisTitle)
-        qrisContainer.addView(qrisCard)
-        qrisContainer.addView(qrisFooter)
-        // -------------------------------
-
-        // 5. Device ID Box (Bisa dicopy)
-        val deviceIdVal = PremiumManager.getDeviceId(context)
-        
-        val idContainer = LinearLayout(context).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(20, 20, 20, 20)
-            setOnClickListener {
-                val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
-                val clip = android.content.ClipData.newPlainText("Device ID", deviceIdVal)
-                clipboard.setPrimaryClip(clip)
-                Toast.makeText(context, "ID Disalin!", Toast.LENGTH_SHORT).show()
+            main {
+                val channelId = TvChannelUtils.getChannelId(this@MainActivity, getString(R.string.app_name))
+                if (channelId == null) TvChannelUtils.createTvChannel(this@MainActivity)
             }
-            setBackgroundColor(0xFF333333.toInt()) // Box color
-        }
-        val idLabel = TextView(context).apply {
-            text = "DEVICE ID ANDA (Tap to copy):"
-            textSize = 12f
-            setTextColor(android.graphics.Color.GRAY)
-            gravity = Gravity.CENTER
-        }
-        val idValue = TextView(context).apply {
-            text = deviceIdVal
-            textSize = 24f
-            setTextColor(android.graphics.Color.YELLOW)
-            typeface = android.graphics.Typeface.DEFAULT_BOLD
-            gravity = Gravity.CENTER
-            setPadding(0, 5, 0, 0)
-        }
-        idContainer.addView(idLabel)
-        idContainer.addView(idValue)
 
-        // 6. Input Kode
-        val inputCode = EditText(context).apply {
-            hint = "Masukkan KODE di sini"
-            setHintTextColor(android.graphics.Color.GRAY)
-            setTextColor(android.graphics.Color.WHITE)
-            gravity = Gravity.CENTER
-            setPadding(30, 40, 30, 40)
-            textSize = 18f
-            setSingleLine()
-            setBackgroundColor(android.graphics.Color.TRANSPARENT)
-        }
-
-        // 7. Tombol Unlock
-        val btnUnlock = Button(context).apply {
-            text = "UNLOCK NOW"
-            textSize = 16f
-            setBackgroundColor(android.graphics.Color.parseColor("#FFD700")) // Gold
-            setTextColor(android.graphics.Color.BLACK)
-            typeface = android.graphics.Typeface.DEFAULT_BOLD
-            setPadding(0, 30, 0, 30)
-        }
-        
-        val btnAdmin = Button(context).apply {
-            text = "TELEGRAM ADMIN"
-            setBackgroundColor(android.graphics.Color.TRANSPARENT)
-            setTextColor(android.graphics.Color.CYAN)
-            setOnClickListener {
-                try {
-                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://t.me/michat88"))
-                    startActivity(intent)
-                } catch (e: Exception) {
-                    Toast.makeText(context, "Telegram tidak ditemukan", Toast.LENGTH_SHORT).show()
-                }
+            getKey<String>(USER_SELECTED_HOMEPAGE_API)?.let { homepage ->
+                DataStoreHelper.currentHomePage = homepage
+                removeKey(USER_SELECTED_HOMEPAGE_API)
             }
-        }
 
-        // --- Logic Tombol ---
-        btnUnlock.setOnClickListener {
-            val code = inputCode.text.toString().trim().uppercase()
-            val isSuccess = PremiumManager.activatePremiumWithCode(context, code, deviceIdVal)
-            
-            if (isSuccess) {
-                (btnUnlock.tag as? Dialog)?.dismiss()
-                val expiryDate = PremiumManager.getExpiryDateString(context)
-                
-                AlertDialog.Builder(context)
-                    .setTitle("✅ PREMIUM DIAKTIFKAN")
-                    .setMessage("Terima kasih telah berlangganan!\n\n" +
-                                "📅 Masa Aktif: $expiryDate\n\n" +
-                                "Aplikasi akan direstart...")
-                    .setCancelable(false)
-                    .setPositiveButton("OK") { _, _ ->
-                        val packageManager = context.packageManager
-                        val intent = packageManager.getLaunchIntentForPackage(context.packageName)
-                        val componentName = intent?.component
-                        val mainIntent = Intent.makeRestartActivityTask(componentName)
-                        context.startActivity(mainIntent)
-                        Runtime.getRuntime().exit(0)
+            onBackPressedDispatcher.addCallback(
+                this,
+                object : OnBackPressedCallback(true) {
+                    override fun handleOnBackPressed() {
+                        setNavigationBarColorCompat(R.attr.primaryGrayBackground)
+                        updateLocale()
+                        isEnabled = false
+                        onBackPressedDispatcher.onBackPressed()
+                        isEnabled = true
                     }
-                    .show()
-            } else {
-                Toast.makeText(context, "⛔ Kode Salah / Sudah Expired!", Toast.LENGTH_SHORT).show()
-            }
+                }
+            )
+        }
+        
+        override fun onAuthenticationSuccess() { binding?.navHostFragment?.isInvisible = false }
+        override fun onAuthenticationError() { finish() }
+
+        suspend fun checkGithubConnectivity(): Boolean {
+            return try {
+                app.get("https://raw.githubusercontent.com/recloudstream/.github/master/connectivitycheck", timeout = 5).text.trim() == "ok"
+            } catch (t: Throwable) { false }
         }
 
-        // Menyusun Layout
-        layout.addView(icon)
-        layout.addView(title)
-        layout.addView(subTitle)
-        
-        // Spacer
-        layout.addView(View(context).apply { layoutParams = LinearLayout.LayoutParams(-1, 20) })
-        layout.addView(priceLayout)
-        
-        // Memasukkan kontainer QRIS ke dalam urutan Layout
-        layout.addView(qrisContainer)
-        
-        layout.addView(View(context).apply { layoutParams = LinearLayout.LayoutParams(-1, 30) })
-        layout.addView(idContainer)
-        
-        layout.addView(View(context).apply { layoutParams = LinearLayout.LayoutParams(-1, 30) })
-        layout.addView(inputCode)
-        layout.addView(View(context).apply { layoutParams = LinearLayout.LayoutParams(-1, 2, 0f).apply { setMargins(0,0,0,20); setBackgroundColor(android.graphics.Color.GRAY) } }) // Garis bawah input
-        
-        layout.addView(btnUnlock)
-        layout.addView(btnAdmin)
+        // --- POPUP UNLOCK ADIXTREAM (NEW PREMIUM DESIGN) ---
+        private fun showPremiumUnlockDialog() {
+            val context = this
+            
+            // 1. Container dengan Gradient Background
+            val gradient = GradientDrawable(
+                GradientDrawable.Orientation.TOP_BOTTOM,
+                intArrayOf(0xFF1A1A1A.toInt(), 0xFF000000.toInt()) // Dark Gray to Black
+            )
+            gradient.cornerRadius = 16f.toPx.toFloat()
 
-        val alert = AlertDialog.Builder(context)
-            .setView(scroll)
-            .setCancelable(true)
-            .create()
-        
-        btnUnlock.tag = alert
-        alert.show()
+            val layout = LinearLayout(context).apply {
+                orientation = LinearLayout.VERTICAL
+                setPadding(40, 40, 40, 40)
+                background = gradient
+            }
+
+            val scroll = ScrollView(context).apply {
+                addView(layout)
+            }
+
+            // 2. Icon Mahkota
+            val icon = TextView(context).apply {
+                text = "👑"
+                textSize = 40f
+                gravity = Gravity.CENTER
+                setPadding(0, 10, 0, 10)
+            }
+
+            // 3. Judul
+            val title = TextView(context).apply {
+                text = "PREMIUM ACCESS"
+                textSize = 22f
+                setTextColor(android.graphics.Color.WHITE)
+                typeface = android.graphics.Typeface.DEFAULT_BOLD
+                gravity = Gravity.CENTER
+                setPadding(0, 0, 0, 10)
+            }
+            
+            val subTitle = TextView(context).apply {
+                text = "Fitur ini terkunci. Silakan hubungi admin untuk berlangganan."
+                textSize = 14f
+                setTextColor(android.graphics.Color.LTGRAY)
+                gravity = Gravity.CENTER
+                setPadding(0, 0, 0, 30)
+            }
+
+            // 4. Daftar Harga (List)
+            val priceLayout = LinearLayout(context).apply {
+                orientation = LinearLayout.VERTICAL
+                setPadding(20, 20, 20, 20)
+                setBackgroundColor(0xFF252525.toInt()) // Dark card bg
+                gravity = Gravity.CENTER
+                
+                fun addPrice(dur: String, price: String) {
+                    val row = LinearLayout(context).apply {
+                        orientation = LinearLayout.HORIZONTAL
+                        setPadding(0, 5, 0, 5)
+                        weightSum = 2f
+                    }
+                    val t1 = TextView(context).apply {
+                        text = dur
+                        setTextColor(android.graphics.Color.WHITE)
+                        layoutParams = LinearLayout.LayoutParams(0, -2, 1f)
+                    }
+                    val t2 = TextView(context).apply {
+                        text = price
+                        setTextColor(android.graphics.Color.GREEN)
+                        layoutParams = LinearLayout.LayoutParams(0, -2, 1f)
+                        gravity = Gravity.END
+                    }
+                    row.addView(t1)
+                    row.addView(t2)
+                    addView(row)
+                }
+                
+                addPrice("1 Bulan", "Rp 10.000")
+                addPrice("6 Bulan", "Rp 50.000")
+                addPrice("1 Tahun", "Rp 100.000")
+            }
+
+            // --- TAMBAHAN QRIS ADIXTREAM ---
+            val qrisContainer = LinearLayout(context).apply {
+                orientation = LinearLayout.VERTICAL
+                gravity = Gravity.CENTER
+                setPadding(0, 40, 0, 20)
+            }
+
+            val qrisTitle = TextView(context).apply {
+                text = "SCAN UNTUK BAYAR"
+                textSize = 12f
+                setTextColor(android.graphics.Color.GRAY)
+                gravity = Gravity.CENTER
+                setPadding(0, 0, 0, 20)
+            }
+
+            // CardView agar pinggiran gambar melengkung
+            val qrisCard = CardView(context).apply {
+                radius = 16f.toPx.toFloat()
+                setCardBackgroundColor(android.graphics.Color.WHITE)
+                layoutParams = LinearLayout.LayoutParams(220.toPx, 220.toPx)
+                clipChildren = true
+                clipToPadding = true
+            }
+
+            val qrisImage = ImageView(context).apply {
+                layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
+                scaleType = ImageView.ScaleType.FIT_CENTER
+                loadImage("https://raw.githubusercontent.com/michat88/Zaneta/main/Icons/qris.png")
+            }
+            
+            qrisCard.addView(qrisImage)
+
+            val qrisFooter = TextView(context).apply {
+                text = "OVO / DANA / GOPAY / SHOPEEPAY / BANK"
+                textSize = 10f
+                setTextColor(android.graphics.Color.GRAY)
+                gravity = Gravity.CENTER
+                setPadding(0, 20, 0, 0)
+            }
+
+            qrisContainer.addView(qrisTitle)
+            qrisContainer.addView(qrisCard)
+            qrisContainer.addView(qrisFooter)
+            // -------------------------------
+
+            // 5. Device ID Box (Bisa dicopy)
+            val deviceIdVal = PremiumManager.getDeviceId(context)
+            
+            val idContainer = LinearLayout(context).apply {
+                orientation = LinearLayout.VERTICAL
+                setPadding(20, 20, 20, 20)
+                setOnClickListener {
+                    val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+                    val clip = android.content.ClipData.newPlainText("Device ID", deviceIdVal)
+                    clipboard.setPrimaryClip(clip)
+                    Toast.makeText(context, "ID Disalin!", Toast.LENGTH_SHORT).show()
+                }
+                setBackgroundColor(0xFF333333.toInt()) // Box color
+            }
+            val idLabel = TextView(context).apply {
+                text = "DEVICE ID ANDA (Tap to copy):"
+                textSize = 12f
+                setTextColor(android.graphics.Color.GRAY)
+                gravity = Gravity.CENTER
+            }
+            val idValue = TextView(context).apply {
+                text = deviceIdVal
+                textSize = 24f
+                setTextColor(android.graphics.Color.YELLOW)
+                typeface = android.graphics.Typeface.DEFAULT_BOLD
+                gravity = Gravity.CENTER
+                setPadding(0, 5, 0, 0)
+            }
+            idContainer.addView(idLabel)
+            idContainer.addView(idValue)
+
+            // 6. Input Kode
+            val inputCode = EditText(context).apply {
+                hint = "Masukkan KODE di sini"
+                setHintTextColor(android.graphics.Color.GRAY)
+                setTextColor(android.graphics.Color.WHITE)
+                gravity = Gravity.CENTER
+                setPadding(30, 40, 30, 40)
+                textSize = 18f
+                setSingleLine()
+                setBackgroundColor(android.graphics.Color.TRANSPARENT)
+            }
+
+            // 7. Tombol Unlock
+            val btnUnlock = Button(context).apply {
+                text = "UNLOCK NOW"
+                textSize = 16f
+                setBackgroundColor(android.graphics.Color.parseColor("#FFD700")) // Gold
+                setTextColor(android.graphics.Color.BLACK)
+                typeface = android.graphics.Typeface.DEFAULT_BOLD
+                setPadding(0, 30, 0, 30)
+            }
+            
+            val btnAdmin = Button(context).apply {
+                text = "TELEGRAM ADMIN"
+                setBackgroundColor(android.graphics.Color.TRANSPARENT)
+                setTextColor(android.graphics.Color.CYAN)
+                setOnClickListener {
+                    try {
+                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://t.me/michat88"))
+                        startActivity(intent)
+                    } catch (e: Exception) {
+                        Toast.makeText(context, "Telegram tidak ditemukan", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            }
+
+            // --- Logic Tombol ---
+            btnUnlock.setOnClickListener {
+                val code = inputCode.text.toString().trim().uppercase()
+                val isSuccess = PremiumManager.activatePremiumWithCode(context, code, deviceIdVal)
+                
+                if (isSuccess) {
+                    (btnUnlock.tag as? Dialog)?.dismiss()
+                    val expiryDate = PremiumManager.getExpiryDateString(context)
+                    
+                    AlertDialog.Builder(context)
+                        .setTitle("✅ PREMIUM DIAKTIFKAN")
+                        .setMessage("Terima kasih telah berlangganan!\n\n" +
+                                    "📅 Masa Aktif: $expiryDate\n\n" +
+                                    "Aplikasi akan direstart...")
+                        .setCancelable(false)
+                        .setPositiveButton("OK") { _, _ ->
+                            val packageManager = context.packageManager
+                            val intent = packageManager.getLaunchIntentForPackage(context.packageName)
+                            val componentName = intent?.component
+                            val mainIntent = Intent.makeRestartActivityTask(componentName)
+                            context.startActivity(mainIntent)
+                            Runtime.getRuntime().exit(0)
+                        }
+                        .show()
+                } else {
+                    Toast.makeText(context, "⛔ Kode Salah / Sudah Expired!", Toast.LENGTH_SHORT).show()
+                }
+            }
+
+            // Menyusun Layout
+            layout.addView(icon)
+            layout.addView(title)
+            layout.addView(subTitle)
+            
+            // Spacer
+            layout.addView(View(context).apply { layoutParams = LinearLayout.LayoutParams(-1, 20) })
+            layout.addView(priceLayout)
+            
+            // Memasukkan kontainer QRIS ke dalam urutan Layout
+            layout.addView(qrisContainer)
+            
+            layout.addView(View(context).apply { layoutParams = LinearLayout.LayoutParams(-1, 30) })
+            layout.addView(idContainer)
+            
+            layout.addView(View(context).apply { layoutParams = LinearLayout.LayoutParams(-1, 30) })
+            layout.addView(inputCode)
+            layout.addView(View(context).apply { layoutParams = LinearLayout.LayoutParams(-1, 2, 0f).apply { setMargins(0,0,0,20); setBackgroundColor(android.graphics.Color.GRAY) } }) // Garis bawah input
+            
+            layout.addView(btnUnlock)
+            layout.addView(btnAdmin)
+
+            val alert = AlertDialog.Builder(context)
+                .setView(scroll)
+                .setCancelable(true)
+                .create()
+            
+            btnUnlock.tag = alert
+            alert.show()
+        }
     }
-}
