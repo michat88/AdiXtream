@@ -30,6 +30,7 @@ import com.lagradost.cloudstream3.ui.settings.utils.getChooseFolderLauncher
 import com.lagradost.cloudstream3.utils.BackupUtils
 import com.lagradost.cloudstream3.utils.BackupUtils.restorePrompt
 import com.lagradost.cloudstream3.utils.Coroutines.ioSafe
+import com.lagradost.cloudstream3.utils.InAppUpdater.Companion.installPreReleaseIfNeeded
 import com.lagradost.cloudstream3.utils.InAppUpdater.Companion.runAutoUpdate
 import com.lagradost.cloudstream3.utils.SingleSelectionHelper.showBottomDialog
 import com.lagradost.cloudstream3.utils.SingleSelectionHelper.showDialog
@@ -132,7 +133,6 @@ class SettingsUpdates : BasePreferenceFragmentCompat() {
         }
 
         // --- ADIXTREAM SECURITY: DISABLE LOGCAT ---
-        // Sembunyikan sepenuhnya dari UI agar tidak bisa ditekan
         getPref(R.string.show_logcat_key)?.isVisible = false
         // ------------------------------------------
 
@@ -140,7 +140,7 @@ class SettingsUpdates : BasePreferenceFragmentCompat() {
             val prefNames = resources.getStringArray(R.array.apk_installer_pref)
             val prefValues = resources.getIntArray(R.array.apk_installer_values)
 
-            // Mengubah nilai default dari 0 menjadi 1 (Versi lama)
+            // Mengubah nilai default menjadi 1 (Versi lama)
             val currentInstaller =
                 settingsManager.getInt(getString(R.string.apk_installer_key), 1)
 
@@ -163,7 +163,7 @@ class SettingsUpdates : BasePreferenceFragmentCompat() {
         }
 
         getPref(R.string.manual_check_update_key)?.let { pref ->
-            pref.summary = BuildConfig.APP_VERSION
+            pref.summary = BuildConfig.VERSION_NAME
             pref.setOnPreferenceClickListener {
                 ioSafe {
                     if (activity?.runAutoUpdate(false) == false) {
@@ -175,6 +175,14 @@ class SettingsUpdates : BasePreferenceFragmentCompat() {
                         }
                     }
                 }
+                return@setOnPreferenceClickListener true
+            }
+        }
+        
+        getPref(R.string.install_prerelease_key)?.let { pref ->
+            pref.isVisible = BuildConfig.FLAVOR == "stable"
+            pref.setOnPreferenceClickListener {
+                activity?.installPreReleaseIfNeeded()
                 return@setOnPreferenceClickListener true
             }
         }
