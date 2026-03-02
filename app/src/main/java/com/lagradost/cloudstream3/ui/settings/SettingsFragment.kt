@@ -1,5 +1,7 @@
 package com.lagradost.cloudstream3.ui.settings
 
+import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import android.util.Log
 import android.view.View
@@ -41,6 +43,16 @@ import java.util.Date
 import java.util.Locale
 import java.util.TimeZone
 
+// --- IMPORT TAMBAHAN ADIXTREAM ---
+import android.graphics.Color
+import android.text.Spannable
+import android.text.SpannableString
+import android.text.style.ForegroundColorSpan
+import android.widget.Button
+import androidx.appcompat.app.AlertDialog
+import com.lagradost.cloudstream3.PremiumManager
+// -----------------------
+
 class SettingsFragment : BaseFragment<MainSettingsBinding>(
     BaseFragment.BindingCreator.Inflate(MainSettingsBinding::inflate)
 ) {
@@ -55,12 +67,8 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
             }
         }
 
-        /**
-         * Hide many Preferences on selected layouts.
-         **/
         fun PreferenceFragmentCompat?.hidePrefs(ids: List<Int>, layoutFlags: Int) {
             if (this == null) return
-
             try {
                 ids.forEach {
                     getPref(it)?.isVisible = !isLayout(layoutFlags)
@@ -70,22 +78,12 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
             }
         }
 
-        /**
-         * Hide the [Preference] on selected layouts.
-         * @return [Preference] if visible otherwise null.
-         *
-         * [hideOn] is usually followed by some actions on the preference which are mostly
-         * unnecessary when the preference is disabled for the said layout thus returning null.
-         **/
         fun Preference?.hideOn(layoutFlags: Int): Preference? {
             if (this == null) return null
             this.isVisible = !isLayout(layoutFlags)
             return if(this.isVisible) this else null
         }
 
-        /**
-         * On TV you cannot properly scroll to the bottom of settings, this fixes that.
-         * */
         fun PreferenceFragmentCompat.setPaddingBottom() {
             if (isLayout(TV or EMULATOR)) {
                 listView?.setPadding(0, 0, 0, 100.toPx)
@@ -95,7 +93,6 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
         fun PreferenceFragmentCompat.setToolBarScrollFlags() {
             if (isLayout(TV or EMULATOR)) {
                 val settingsAppbar = view?.findViewById<MaterialToolbar>(R.id.settings_toolbar)
-
                 settingsAppbar?.updateLayoutParams<AppBarLayout.LayoutParams> {
                     scrollFlags = AppBarLayout.LayoutParams.SCROLL_FLAG_NO_SCROLL
                 }
@@ -105,7 +102,6 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
         fun Fragment?.setToolBarScrollFlags() {
             if (isLayout(TV or EMULATOR)) {
                 val settingsAppbar = this?.view?.findViewById<MaterialToolbar>(R.id.settings_toolbar)
-
                 settingsAppbar?.updateLayoutParams<AppBarLayout.LayoutParams> {
                     scrollFlags = AppBarLayout.LayoutParams.SCROLL_FLAG_NO_SCROLL
                 }
@@ -115,7 +111,6 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
         fun Fragment?.setUpToolbar(title: String) {
             if (this == null) return
             val settingsToolbar = view?.findViewById<MaterialToolbar>(R.id.settings_toolbar) ?: return
-
             settingsToolbar.apply {
                 setTitle(title)
                 if (isLayout(PHONE or EMULATOR)) {
@@ -130,7 +125,6 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
         fun Fragment?.setUpToolbar(@StringRes title: Int) {
             if (this == null) return
             val settingsToolbar = view?.findViewById<MaterialToolbar>(R.id.settings_toolbar) ?: return
-
             settingsToolbar.apply {
                 setTitle(title)
                 if (isLayout(PHONE or EMULATOR)) {
@@ -157,13 +151,9 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
             var size: Long = 0
             dir.listFiles()?.let {
                 for (file in it) {
-                    size += if (file.isFile) {
-                        // System.out.println(file.getName() + " " + file.length());
-                        file.length()
-                    } else getFolderSize(file)
+                    size += if (file.isFile) file.length() else getFolderSize(file)
                 }
             }
-
             return size
         }
     }
@@ -181,45 +171,109 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
             activity?.navigate(id, Bundle())
         }
 
-        /** used to debug leaks
-        showToast(activity,"${VideoDownloadManager.downloadStatusEvent.size} :
-        ${VideoDownloadManager.downloadProgressEvent.size}") **/
-
         fun hasProfilePictureFromAccountManagers(accountManagers: Array<AuthRepo>): Boolean {
             for (syncApi in accountManagers) {
                 val login = syncApi.authUser()
                 val pic = login?.profilePicture ?: continue
-
                 binding.settingsProfilePic.let { imageView ->
                     imageView.loadImage(pic) {
-                        // Fallback to random error drawable
                         error { getImageFromDrawable(context ?: return@error null, errorProfilePic) }
                     }
                 }
                 binding.settingsProfileText.text = login.name
-                return true // sync profile exists
+                return true 
             }
-            return false // not syncing
+            return false 
         }
 
-        // display local account information if not syncing
         if (!hasProfilePictureFromAccountManagers(AccountManager.allApis)) {
             val activity = activity ?: return
             val currentAccount = try {
                 DataStoreHelper.accounts.firstOrNull {
                     it.keyIndex == DataStoreHelper.selectedKeyIndex
                 } ?: activity.let { DataStoreHelper.getDefaultAccount(activity) }
-
             } catch (t: IllegalStateException) {
                 Log.e("AccountManager", "Activity not found", t)
                 null
             }
-
             binding.settingsProfilePic.loadImage(currentAccount?.image)
             binding.settingsProfileText.text = currentAccount?.name
         }
 
         binding.apply {
+
+            // --- 1. MODIFIKASI ADIXTREAM: BYPASS MASUK LANGSUNG KE PLUGINS ---
+            settingsExtensions.setOnClickListener {
+                try {
+                    val bundle = Bundle()
+                    val context = requireContext()
+
+                    // Cek Status Premium User
+                    val isPremium = PremiumManager.isPremium(context)
+
+                    // Tentukan Nama Repo & URL berdasarkan status
+                    val repoName = if (isPremium) "Repository Premium" else "Repository Gratis"
+                    val repoUrl = if (isPremium) PremiumManager.PREMIUM_REPO_URL else PremiumManager.FREE_REPO_URL
+
+                    // Masukkan ke Bundle
+                    bundle.putString("name", repoName)
+                    bundle.putString("url", repoUrl)
+                    bundle.putBoolean("isLocal", false)
+
+                    // Navigasi langsung ke PluginsFragment (melewati Extensions)
+                    activity?.navigate(R.id.navigation_settings_plugins, bundle)
+                } catch (e: Exception) {
+                    logError(e)
+                }
+            }
+            // --------------------------------------------------------
+
+            // --- 2. MODIFIKASI ADIXTREAM: LOGIKA TOMBOL TENTANG (MERAH PUTIH) ---
+            settingsAbout.setOnClickListener {
+                val builder = AlertDialog.Builder(requireContext(), R.style.AlertDialogCustom)
+                builder.setTitle("Tentang AdiXtream")
+                builder.setMessage("AdiXtream dikembangkan oleh michat88.\n\nAplikasi ini berbasis pada proyek open-source CloudStream.\n\nTerima kasih kepada Developer CloudStream (Lagradost & Tim) atas kode sumber yang luar biasa ini.")
+
+                builder.setNeutralButton("Kode Sumber") { _, _ ->
+                    try {
+                        val browserIntent = Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/michat88/AdiXtream"))
+                        startActivity(browserIntent)
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
+                }
+
+                builder.setPositiveButton("Tutup") { dialog, _ ->
+                    dialog.dismiss()
+                }
+
+                val dialog: AlertDialog = builder.create()
+                dialog.show()
+
+                val sourceCodeButton: Button? = dialog.getButton(AlertDialog.BUTTON_NEUTRAL)
+                sourceCodeButton?.let { button ->
+                    val fullText = "Kode Sumber"
+                    val spannable = SpannableString(fullText)
+
+                    spannable.setSpan(
+                        ForegroundColorSpan(Color.parseColor("#FF0000")),
+                        0, 4,
+                        Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
+                    )
+
+                    spannable.setSpan(
+                        ForegroundColorSpan(Color.WHITE),
+                        5, fullText.length,
+                        Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
+                    )
+
+                    button.text = spannable
+                }
+            }
+            // --------------------------------------------------
+
+            // --- 3. DAFTAR MENU LAINNYA ---
+            // Catatan: settingsExtensions dihapus dari loop ini karena dilayani logika kustom di atas
             listOf(
                 settingsGeneral to R.id.action_navigation_global_to_navigation_settings_general,
                 settingsPlayer to R.id.action_navigation_global_to_navigation_settings_player,
@@ -227,7 +281,6 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
                 settingsUi to R.id.action_navigation_global_to_navigation_settings_ui,
                 settingsProviders to R.id.action_navigation_global_to_navigation_settings_providers,
                 settingsUpdates to R.id.action_navigation_global_to_navigation_settings_updates,
-                settingsExtensions to R.id.action_navigation_global_to_navigation_settings_extensions,
             ).forEach { (view, navigationId) ->
                 view.apply {
                     setOnClickListener {
@@ -246,7 +299,8 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
             }
         }
 
-        val appVersion = BuildConfig.VERSION_NAME
+        // Menggunakan APP_VERSION milik AdiXtream (sesuai build.gradle)
+        val appVersion = BuildConfig.APP_VERSION
         val commitInfo = getString(R.string.commit_hash)
         val buildTimestamp = SimpleDateFormat.getDateTimeInstance(DateFormat.LONG, DateFormat.LONG,
             Locale.getDefault()
