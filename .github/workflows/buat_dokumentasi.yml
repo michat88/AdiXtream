@@ -1,0 +1,33 @@
+name: Buat Dokumentasi AdiXtream
+
+on:
+  workflow_dispatch:
+
+jobs:
+  generate_docs:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Ambil Kode (Checkout)
+        uses: actions/checkout@v4
+
+      - name: Siapkan Java (JDK 17)
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Beri Izin Eksekusi Gradle
+        run: chmod +x gradlew
+
+      - name: Generate Dokumentasi (Dokka V2)
+        # PERBAIKAN: Menggunakan dokkaGenerateHtml dan mematikan configuration-cache
+        run: ./gradlew dokkaGenerateHtml --no-configuration-cache --no-daemon
+
+      - name: Upload Hasil Dokumentasi
+        uses: actions/upload-artifact@v4
+        with:
+          name: Dokumentasi-AdiXtream-HTML
+          # PERBAIKAN PATH: Dokka V2 biasanya outputnya ada di folder build/dokka/html
+          # Kita ambil folder build/dokka agar lebih aman menangkap hasilnya
+          path: app/build/dokka/html/
