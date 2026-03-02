@@ -709,7 +709,7 @@
     <string name="action_remove_mark_watched_up_to_this_episode">Hapus penandaan telah ditonton hingga episode ini</string>
     <string name="action_reload">Dimuat Ulang</string>
     <string name="reload_provider">Muat Ulang Penyedia</string>
-    <string name="episode_action_play_mirror">Putar mirror</string>"
+    <string name="episode_action_play_mirror">Putar mirror</string>
     <string name="name">Nama</string>
     <string name="resolution_and_name">Resolusi dan nama</string>
     <string name="subs_subtitle_alignment">Penyelarasan Subtitel</string>
@@ -750,4 +750,11 @@
     <string name="cancel_all">Batalkan semua</string>
     <string name="download_episode_range">Apakah kamu ingin mengunduh episode %s?</string>
     <string name="cancel_queue_message">Apakah kamu ingin membatalkan semua unduhan dalam antrean?</string>
+
+    <string name="legal_notice_text">Segala masalah hukum terkait konten yang diakses melalui aplikasi ini harus ditujukan langsung kepada penyedia dan host file yang bersangkutan.
+
+        AdiXtream dilengkapi dengan repositori kustom bawaan untuk plugin ekstensi guna mengakses berbagai situs web pihak ketiga. Namun, AdiXtream sama sekali tidak meng-host, mengunggah, atau mengelola media, video, atau film apa pun yang ditemukan melalui ekstensi tersebut. Aplikasi ini murni berfungsi sebagai klien dan agregator yang mengambil data (scraping) dari situs web yang dapat diakses secara publik.
+
+        Kami memohon kebijaksanaan Anda untuk memastikan bahwa penggunaan aplikasi beserta plugin bawaannya selaras dengan peraturan yang berlaku di wilayah Anda. Dengan menggunakan AdiXtream, Anda memahami bahwa segala risiko penggunaan merupakan tanggung jawab pribadi.
+    </string>
 </resources>
