@@ -168,6 +168,7 @@
     <string name="extra_brightness_key">extra_brightness_enabled</string>
     <string name="episode_sync_settings">Update watch progress</string>
     <string name="episode_sync_settings_des">Automatically sync your current episode progress</string>
+
     <string name="restore_settings">Restore data from backup</string>
     <string name="backup_settings">Back up data</string>
     <string name="backup_frequency">Backup frequency</string>
@@ -216,9 +217,13 @@
     <string name="play_episode_toast">Play Episode</string>
     <string name="subs_default_reset_toast">Reset to default value</string>
     <string name="season">Season</string>
+    <string name="season_format">%1$s %2$d%3$s</string>
     <string name="no_season">No Season</string>
     <string name="episode">Episode</string>
     <string name="episodes">Episodes</string>
+    <string name="episodes_range">%1$d-%2$d</string>
+    <string name="episode_format" formatted="true">%1$d %2$s</string>
+    <string name="episode_upcoming_format" formatted="true">Upcoming in %s</string>
     <string name="season_short">S</string>
     <string name="episode_short">E</string>
     <string name="no_episodes_found">No Episodes found</string>
@@ -386,9 +391,6 @@ It is the user\'s responsibility to ensure their use of this application complie
     <string name="enable_nsfw_on_providers">Enable NSFW on supported Extensions</string>
     <string name="subtitles_encoding">Subtitle encoding</string>
     <string name="category_providers">Providers</string>
-    <string name="category_provider_test">Provider test</string>
-    <string name="test_extensions">Test all Extensions</string>
-    <string name="test_extensions_summary">This Test is meant for developers only and does not verify any extension functionality.</string>
     <string name="category_ui">Layout</string>
     <string name="automatic">Auto</string>
     <string name="tv_layout">TV layout</string>
@@ -454,6 +456,22 @@ It is the user\'s responsibility to ensure their use of this application complie
     <string name="home_random">Random</string>
     <string name="coming_soon">Coming soon…</string>
 
+    <string name="quality_cam">Cam</string>
+    <string name="quality_cam_rip">Cam</string>
+    <string name="quality_cam_hd">Cam</string>
+    <string name="quality_hq">HQ</string>
+    <string name="quality_hd">HD</string>
+    <string name="quality_ts">TS</string>
+    <string name="quality_tc">TC</string>
+    <string name="quality_blueray">Blu-ray</string>
+    <string name="quality_workprint">WP</string>
+    <string name="quality_dvd">DVD</string>
+    <string name="quality_4k">4K</string>
+    <string name="quality_sd">SD</string>
+    <string name="quality_uhd">UHD</string>
+    <string name="quality_hdr">HDR</string>
+    <string name="quality_sdr">SDR</string>
+    <string name="quality_webrip">Web</string>
     <string name="poster_image">Poster Image</string>
     <string name="qr_image">QR Code Image</string>
     <string name="category_player">Player</string>
@@ -558,6 +576,7 @@ It is the user\'s responsibility to ensure their use of this application complie
     <string name="ok">OK</string>
     <string name="dismiss">Dismiss</string>
     <string name="open_downloaded_repo">Open repository</string>
+
     <string name="battery_dialog_title">Disable Battery optimization</string>
     <string name="battery_dialog_message">To ensure uninterrupted downloads and notifications for favorite shows, AdiXtream requires permission to operate in the background. Pressing "OK" will show a request dialog—please select \'Allow\'. This does not mean AdiXtream will drain your battery; it only operates in the background when necessary.</string>
     <string name="app_unrestricted_toast">App battery usage is already set to unrestricted</string>
@@ -623,7 +642,6 @@ It is the user\'s responsibility to ensure their use of this application complie
     <string name="duplicate_replace">Replace</string>
     <string name="duplicate_replace_all">Replace All</string>
     <string name="duplicate_message_single" formatted="true">It appears a potential duplicate item already exists in your library: \'%s.\' Would you like to add it anyway or replace the existing one?</string>
-    <string name="duplicate_message_multiple" formatted="true">Potential duplicate items have been found in your library: \n\n%s \n\nWould you like to add this item anyway, replace the existing ones, or cancel the action?</string>
     <string name="enter_pin">Enter PIN</string>
     <string name="enter_pin_with_name" formatted="true">Enter PIN for %s</string>
     <string name="enter_current_pin">Enter Current PIN</string>
@@ -648,7 +666,7 @@ It is the user\'s responsibility to ensure their use of this application complie
     <string name="biometric_setting">Lock with Biometrics</string>
     <string name="password_pin_authentication_title">Password/PIN Authentication</string>
     <string name="biometric_unsupported">Biometric authentication is not supported on this device</string>
-    <string name="biometric_setting_summary">Unlock the app with Fingerprint, Face ID, or PIN perangkat.</string>
+    <string name="biometric_setting_summary">Unlock the app with Fingerprint, Face ID, or PIN.</string>
     <string name="biometric_prompt_description">After a few failed attempts, the prompt will close. Restart the app to try again.</string>
     <string name="biometric_warning">Your AdiXtream data has been backed up. If you are locked out, clear app data completely and restore from your latest backup.</string>
     <string name="reset_btn">Reset</string>
@@ -726,6 +744,7 @@ It is the user\'s responsibility to ensure their use of this application complie
     <string name="top_left">Top left</string>
     <string name="top_center">Top center</string>
     <string name="top_right">Top right</string>
+
     <plurals name="downloads_active">
         <item quantity="one">%d active download</item>
         <item quantity="other">%d active downloads</item>
