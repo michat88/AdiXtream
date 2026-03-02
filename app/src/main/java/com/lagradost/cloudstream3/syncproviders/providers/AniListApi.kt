@@ -35,8 +35,12 @@ class AniListApi : SyncAPI() {
     override var name = "AniList"
     override val idPrefix = "anilist"
 
-    val key = "6871"
+    // === MODIFIKASI ADIXTREAM ===
+    // Menggunakan Client ID milikmu
+    val key = "33370" 
     override val redirectUrlIdentifier = "anilistlogin"
+    // ============================
+    
     override var requireLibraryRefresh = true
     override val hasOAuth2 = true
     override var mainUrl = "https://anilist.co"
@@ -184,7 +188,6 @@ class AniListApi : SyncAPI() {
             newStatus.watchedEpisodes
         )
     }
-
     companion object {
         const val MAX_STALE = 60 * 10
         private val aniListStatusString =
@@ -273,7 +276,7 @@ class AniListApi : SyncAPI() {
                 ).text.replace("\\", "")
                 return res.toKotlinObject()
             } catch (e: Exception) {
-                logError(e)
+               logError(e)
             }
             return null
         }
@@ -513,18 +516,16 @@ class AniListApi : SyncAPI() {
                 "Authorization" to "Bearer ${token.accessToken ?: return null}",
                 if (cache) "Cache-Control" to "max-stale=$MAX_STALE" else "Cache-Control" to "no-cache"
             ),
-            cacheTime = 0,
+             cacheTime = 0,
             data = mapOf(
                 "query" to URLEncoder.encode(
                     q,
                     "UTF-8"
                 )
-            ), //(if (vars == null) mapOf("query" to q) else mapOf("query" to q, "variables" to vars))
+             ), //(if (vars == null) mapOf("query" to q) else mapOf("query" to q, "variables" to vars))
             timeout = 5 // REASONABLE TIMEOUT
         ).text.replace("\\/", "/")
     }
-
-
     data class MediaRecommendation(
         @JsonProperty("id") val id: Int,
         @JsonProperty("title") val title: Title?,
@@ -760,7 +761,7 @@ class AniListApi : SyncAPI() {
                 val listId =
                     tryParseJson<MediaListItemRoot>(response)?.data?.mediaList?.id ?: return false
                 """
-                    mutation(${'$'}id: Int = $listId) {
+                  mutation(${'$'}id: Int = $listId) {
                         DeleteMediaListEntry(id: ${'$'}id) {
                             deleted
                         }
