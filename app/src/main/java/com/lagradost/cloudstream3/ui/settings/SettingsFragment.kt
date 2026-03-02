@@ -229,7 +229,8 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
             // --------------------------------------------------------
 
             // --- 2. MODIFIKASI ADIXTREAM: LOGIKA TOMBOL TENTANG (MERAH PUTIH) ---
-            settingsAbout.setOnClickListener {
+            // Menggunakan appVersionInfo sebagai tombol "About"
+            appVersionInfo.setOnClickListener {
                 val builder = AlertDialog.Builder(requireContext(), R.style.AlertDialogCustom)
                 builder.setTitle("Tentang AdiXtream")
                 builder.setMessage("AdiXtream dikembangkan oleh michat88.\n\nAplikasi ini berbasis pada proyek open-source CloudStream.\n\nTerima kasih kepada Developer CloudStream (Lagradost & Tim) atas kode sumber yang luar biasa ini.")
@@ -273,7 +274,6 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
             // --------------------------------------------------
 
             // --- 3. DAFTAR MENU LAINNYA ---
-            // Catatan: settingsExtensions dihapus dari loop ini karena dilayani logika kustom di atas
             listOf(
                 settingsGeneral to R.id.action_navigation_global_to_navigation_settings_general,
                 settingsPlayer to R.id.action_navigation_global_to_navigation_settings_player,
