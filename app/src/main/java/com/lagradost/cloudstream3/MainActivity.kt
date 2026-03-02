@@ -166,7 +166,7 @@ import com.lagradost.cloudstream3.utils.DataStoreHelper.accounts
 import com.lagradost.cloudstream3.utils.DataStoreHelper.migrateResumeWatching
 import com.lagradost.cloudstream3.utils.Event
 import com.lagradost.cloudstream3.utils.ImageLoader.loadImage
-import com.lagradost.cloudstream3.utils.InAppUpdater.Companion.runAutoUpdate
+import com.lagradost.cloudstream3.utils.InAppUpdater.runAutoUpdate
 import com.lagradost.cloudstream3.utils.SingleSelectionHelper.showBottomDialog
 import com.lagradost.cloudstream3.utils.SnackbarHelper.showSnackbar
 import com.lagradost.cloudstream3.utils.TvChannelUtils
@@ -186,7 +186,6 @@ import com.lagradost.cloudstream3.utils.USER_SELECTED_HOMEPAGE_API
 import com.lagradost.cloudstream3.utils.setText
 import com.lagradost.cloudstream3.utils.setTextHtml
 import com.lagradost.cloudstream3.utils.txt
-import com.lagradost.cloudstream3.utils.downloader.DownloadQueueManager
 import com.lagradost.safefile.SafeFile
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -198,6 +197,7 @@ import java.nio.charset.Charset
 import kotlin.math.abs
 import kotlin.math.absoluteValue
 import kotlin.system.exitProcess
+import com.lagradost.cloudstream3.utils.downloader.DownloadQueueManager
 
 // --- IMPORT TAMBAHAN ADIXTREAM ---
 import com.lagradost.cloudstream3.plugins.RepositoryManager
@@ -968,14 +968,10 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
 
         // --- LOGIKA REPOSITORY & UPDATE (ADIXTREAM ANTI-BUG V3) ---
         ioSafe {
-            // 1. Tentukan target URL berdasarkan status aktual user
             val isPremium = PremiumManager.isPremium(this@MainActivity)
             val targetRepoUrl = if (isPremium) PremiumManager.PREMIUM_REPO_URL else PremiumManager.FREE_REPO_URL
             
-            // 2. Ambil daftar repo yang sedang terpasang di HP user saat ini
             val currentRepos = RepositoryManager.getRepositories()
-            
-            // 3. Evaluasi Kondisi Nyata
             val hasTargetRepo = currentRepos.any { it.url == targetRepoUrl }
             val hasInvalidRepos = currentRepos.any { it.url != targetRepoUrl }
             
@@ -999,7 +995,6 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
 
             Thread.sleep(1000)
 
-            // Jika tidak crash (Safe mode mati)
             if (lastError == null && !PluginManager.checkSafeModeFile()) {
                 if (isRepoChanged) {
                     try {
@@ -1009,7 +1004,6 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                         PluginManager.___DO_NOT_CALL_FROM_A_PLUGIN_loadAllLocalPlugins(this@MainActivity, false)
                     } catch (e: Exception) { logError(e) }
                 } else {
-                    // CloudStream Default Plugin Loading
                     DataStoreHelper.currentHomePage?.let { homeApi ->
                         mainPluginsLoadedEvent.invoke(loadSinglePlugin(this@MainActivity, homeApi))
                     } ?: run {
@@ -1251,7 +1245,6 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                         resultviewPreviewMetaDuration.setText(d.durationText)
                         resultviewPreviewMetaRating.setText(d.ratingText)
                         resultviewPreviewDescription.setTextHtml(d.plotText)
-                        
                         if (isLayout(PHONE)) {
                             resultviewPreviewPoster.loadImage(d.posterImage ?: d.posterBackgroundImage, headers = d.posterHeaders)
                         } else {
@@ -1496,15 +1489,14 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
             removeKey(USER_SELECTED_HOMEPAGE_API)
         }
 
+        // --- PERBAIKAN ERROR RUN DEFAULT ADIXTREAM ---
         attachBackPressedCallback("MainActivityDefault") {
             setNavigationBarColorCompat(R.attr.primaryGrayBackground)
             updateLocale()
-            isEnabled = false
-            onBackPressedDispatcher.onBackPressed()
-            isEnabled = true
+            runDefault()
         }
         
-        // Start the download queue (FITUR BARU CLOUDSTREAM)
+        // Start the download queue
         DownloadQueueManager.init(this)
     }
 
@@ -1521,7 +1513,6 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
     private fun showPremiumUnlockDialog() {
         val context = this
         
-        // 1. Container dengan Gradient Background
         val gradient = GradientDrawable(
             GradientDrawable.Orientation.TOP_BOTTOM,
             intArrayOf(0xFF1A1A1A.toInt(), 0xFF000000.toInt())
@@ -1538,7 +1529,6 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
             addView(layout)
         }
 
-        // 2. Icon Mahkota
         val icon = TextView(context).apply {
             text = "👑"
             textSize = 40f
@@ -1546,7 +1536,6 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
             setPadding(0, 10, 0, 10)
         }
 
-        // 3. Judul
         val title = TextView(context).apply {
             text = "PREMIUM ACCESS"
             textSize = 22f
@@ -1564,7 +1553,6 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
             setPadding(0, 0, 0, 30)
         }
 
-        // 4. Daftar Harga (List)
         val priceLayout = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(20, 20, 20, 20)
@@ -1641,7 +1629,6 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
         qrisContainer.addView(qrisCard)
         qrisContainer.addView(qrisFooter)
 
-        // 5. Device ID Box
         val deviceIdVal = PremiumManager.getDeviceId(context)
         
         val idContainer = LinearLayout(context).apply {
@@ -1672,7 +1659,6 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
         idContainer.addView(idLabel)
         idContainer.addView(idValue)
 
-        // 6. Input Kode
         val inputCode = EditText(context).apply {
             hint = "Masukkan KODE di sini"
             setHintTextColor(android.graphics.Color.GRAY)
@@ -1684,7 +1670,6 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
             setBackgroundColor(android.graphics.Color.TRANSPARENT)
         }
 
-        // 7. Tombol Unlock
         val btnUnlock = Button(context).apply {
             text = "UNLOCK NOW"
             textSize = 16f
