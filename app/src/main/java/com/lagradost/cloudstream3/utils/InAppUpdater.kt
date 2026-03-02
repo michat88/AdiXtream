@@ -35,8 +35,11 @@ import java.io.IOException
 import java.io.InputStreamReader
 
 object InAppUpdater {
-    private const val GITHUB_USER_NAME = "recloudstream"
-    private const val GITHUB_REPO = "cloudstream"
+    // --- PENYESUAIAN ADIXTREAM ---
+    // Mengarahkan update ke repo michat88/AdiXtream
+    private const val GITHUB_USER_NAME = "michat88"
+    private const val GITHUB_REPO = "AdiXtream"
+    // -----------------------------
 
     private const val PRERELEASE_PACKAGE_NAME = "com.lagradost.cloudstream3.prerelease"
     private const val LOG_TAG = "InAppUpdater"
