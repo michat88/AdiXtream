@@ -123,7 +123,6 @@ class SettingsUpdates : BasePreferenceFragmentCompat() {
                 true,
                 {}
             ) {
-                // Last = custom
                 if (it == dirs.size) {
                     try {
                         pathPicker.launch(Uri.EMPTY)
@@ -131,9 +130,6 @@ class SettingsUpdates : BasePreferenceFragmentCompat() {
                         logError(e)
                     }
                 } else {
-                    // Sets both visual and actual paths.
-                    // path = used uri
-                    // dir = dir path
                     settingsManager.edit {
                         putString(getString(R.string.backup_path_key), dirs[it])
                         putString(getString(R.string.backup_dir_key), dirs[it])
@@ -154,12 +150,11 @@ class SettingsUpdates : BasePreferenceFragmentCompat() {
 
             val logList = mutableListOf<String>()
             try {
-                // https://developer.android.com/studio/command-line/logcat
                 val process = Runtime.getRuntime().exec("logcat -d")
                 val bufferedReader = BufferedReader(InputStreamReader(process.inputStream))
                 bufferedReader.lineSequence().forEach { logList.add(it) }
             } catch (e: Exception) {
-                logError(e) // kinda ironic
+                logError(e) 
             }
 
             val adapter = LogcatAdapter().apply { submitList(logList) }
@@ -228,7 +223,8 @@ class SettingsUpdates : BasePreferenceFragmentCompat() {
         }
 
         getPref(R.string.manual_check_update_key)?.let { pref ->
-            pref.summary = BuildConfig.VERSION_NAME
+            // Menampilkan Versi AdiXtream (APP_VERSION)
+            pref.summary = BuildConfig.APP_VERSION
             pref.setOnPreferenceClickListener {
                 ioSafe {
                     if (activity?.runAutoUpdate(false) == false) {
@@ -278,7 +274,7 @@ class SettingsUpdates : BasePreferenceFragmentCompat() {
             ioSafe {
                 PluginManager.___DO_NOT_CALL_FROM_A_PLUGIN_manuallyReloadAndUpdatePlugins(activity ?: return@ioSafe)
             }
-            return@setOnPreferenceClickListener true // Return true for the listener
+            return@setOnPreferenceClickListener true 
         }
     }
 
