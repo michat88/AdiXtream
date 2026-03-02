@@ -41,11 +41,11 @@ android {
         enable = true
     }
 
+    // --- IDENTITAS KEYSTORE ADIXTREAM ---
     signingConfigs {
         create("release") {
             val envKeystorePath = System.getenv("KEYSTORE_PATH")
             storeFile = if (envKeystorePath != null) file(envKeystorePath) else file("keystore.jks")
-            
             storePassword = System.getenv("KEY_STORE_PASSWORD") ?: "161105"
             keyAlias = System.getenv("ALIAS") ?: "adixtream"
             keyPassword = System.getenv("KEY_PASSWORD") ?: "161105"
@@ -55,13 +55,18 @@ android {
     compileSdk = libs.versions.compileSdk.get().toInt()
 
     defaultConfig {
-        // Identitas aplikasi AdiXtream
+        // --- IDENTITAS APLIKASI ADIXTREAM ---
         applicationId = "com.adixtream.app"
         minSdk = libs.versions.minSdk.get().toInt()
         targetSdk = libs.versions.targetSdk.get().toInt()
         
         versionCode = 80
         versionName = "4.7.3"
+
+        // --- PEMBATASAN BAHASA ADIXTREAM ---
+        // Hanya memasukkan bahasa Inggris ("en") dan Indonesia ("id" / "in") agar ukuran APK jauh lebih kecil
+        resConfigs("en", "id", "in")
+        // -----------------------------------
 
         resValue("string", "commit_hash", getGitCommitHash())
         resValue("bool", "is_prerelease", "false")
