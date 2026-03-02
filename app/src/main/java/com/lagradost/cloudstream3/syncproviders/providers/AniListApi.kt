@@ -47,11 +47,11 @@ class AniListApi : SyncAPI() {
     override val createAccountUrl = "$mainUrl/signup"
     override val syncIdName = SyncIdName.Anilist
 
-    // PERBAIKAN 1: Memaksa AniList mengirim balik ke adixtream://anilistlogin
+    // KEMBALI KE ASLI: Menghapus redirect_uri agar server AniList tidak error
     override fun loginRequest(): AuthLoginPage? =
-        AuthLoginPage("https://anilist.co/api/v2/oauth/authorize?client_id=$key&response_type=token&redirect_uri=adixtream://anilistlogin")
+        AuthLoginPage("https://anilist.co/api/v2/oauth/authorize?client_id=$key&response_type=token")
 
-    // PERBAIKAN 2: Mencegah aplikasi crash saat membaca waktu token
+    // PERBAIKAN: TETAP DIPERTAHANKAN (Mencegah aplikasi crash saat membaca waktu token)
     override suspend fun login(redirectUrl: String, payload: String?): AuthToken? {
         val sanitizer = splitRedirectUrl(redirectUrl)
         val tokenStr = sanitizer["access_token"] ?: throw ErrorLoadingException("No access token")
