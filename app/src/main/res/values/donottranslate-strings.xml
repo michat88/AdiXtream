@@ -50,7 +50,9 @@
     <string name="download_parallel_key">download_parallel_key</string>
     <string name="download_concurrent_key">download_concurrent_key</string>
     <string name="download_path_key_visual">download_path_key_visual</string>
+    
     <string name="app_name_download_path">AdiXtream</string>
+    
     <string name="app_layout_key">app_layout_key</string>
     <string name="primary_color_key">primary_color_key</string>
     <string name="restore_key">restore_key</string>
@@ -133,6 +135,12 @@
     <string name="show_resolution_key">show_resolution</string>
     <string name="show_media_info_key">show_media_info</string>
     <string name="prefer_title_limit_key">prefer_title_limit</string>
+
+    <string name="legal_notice_text">AdiXtream beroperasi sebagai mesin pencari konten pihak ketiga dan tidak memiliki kendali atas media yang diunggah. Kami tidak menyimpan, menghosting, atau mendistribusikan berkas video apa pun di server kami sendiri. Semua tautan yang ditampilkan diindeks secara otomatis dari sumber yang tersedia untuk umum di internet.
+
+Segala masalah terkait hak cipta harus diajukan langsung kepada pemilik sumber konten atau penyedia hosting berkas asli, karena AdiXtream tidak memiliki afiliasi dengan mereka. 
+
+Penggunaan aplikasi ini sepenuhnya menjadi tanggung jawab pengguna untuk memastikan kepatuhan terhadap hukum lokal yang berlaku. AdiXtream disediakan hanya untuk tujuan penggunaan pribadi dan edukasi. Gunakan aplikasi ini atas kebijakan Anda sendiri.</string>
 
     <plurals name="episodes">
         <item quantity="one">@string/episode</item>
