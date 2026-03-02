@@ -327,33 +327,19 @@ class SettingsGeneral : BasePreferenceFragmentCompat() {
         }
 
         try {
-            beneneCount =
-                settingsManager.getInt(getString(R.string.benene_count), 0)
             getPref(R.string.benene_count)?.let { pref ->
-                pref.summary =
-                    if (beneneCount <= 0) getString(R.string.benene_count_text_none) else getString(
-                        R.string.benene_count_text
-                    ).format(
-                        beneneCount
-                    )
+                // Mengubah teks ringkasan (summary) di bawah judul tombol
+                pref.summary = "Dukung saya melalui Saweria" 
 
                 pref.setOnPreferenceClickListener {
                     try {
-                        beneneCount++
-                        if (beneneCount%20 == 0) {
-                            activity?.navigate(R.id.action_navigation_settings_general_to_easterEggMonkeFragment)
-                        }
-                        settingsManager.edit {
-                            putInt(
-                                getString(R.string.benene_count),
-                                beneneCount
-                            )
-                        }
-                        it.summary = getString(R.string.benene_count_text).format(beneneCount)
+                        // Membuka tautan Saweria menggunakan browser bawaan HP
+                        val intent = android.content.Intent(android.content.Intent.ACTION_VIEW)
+                        intent.data = Uri.parse("https://saweria.co/michat88")
+                        startActivity(intent)
                     } catch (e: Exception) {
                         logError(e)
                     }
-
                     return@setOnPreferenceClickListener true
                 }
             }
