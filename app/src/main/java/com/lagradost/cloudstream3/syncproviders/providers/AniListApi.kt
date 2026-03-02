@@ -36,7 +36,6 @@ class AniListApi : SyncAPI() {
     override val idPrefix = "anilist"
 
     // === MODIFIKASI ADIXTREAM ===
-    // Menggunakan Client ID milikmu
     val key = "33370" 
     override val redirectUrlIdentifier = "anilistlogin"
     // ============================
@@ -48,15 +47,20 @@ class AniListApi : SyncAPI() {
     override val createAccountUrl = "$mainUrl/signup"
     override val syncIdName = SyncIdName.Anilist
 
+    // PERBAIKAN 1: Memaksa AniList mengirim balik ke adixtream://anilistlogin
     override fun loginRequest(): AuthLoginPage? =
-        AuthLoginPage("https://anilist.co/api/v2/oauth/authorize?client_id=$key&response_type=token")
+        AuthLoginPage("https://anilist.co/api/v2/oauth/authorize?client_id=$key&response_type=token&redirect_uri=adixtream://anilistlogin")
 
+    // PERBAIKAN 2: Mencegah aplikasi crash saat membaca waktu token
     override suspend fun login(redirectUrl: String, payload: String?): AuthToken? {
         val sanitizer = splitRedirectUrl(redirectUrl)
+        val tokenStr = sanitizer["access_token"] ?: throw ErrorLoadingException("No access token")
+        
+        val expiresIn = sanitizer["expires_in"]?.toLongOrNull() ?: 31536000L
+        
         val token = AuthToken(
-            accessToken = sanitizer["access_token"] ?: throw ErrorLoadingException("No access token"),
-            //refreshToken = sanitizer["refresh_token"],
-            accessTokenLifetime = unixTime + sanitizer["expires_in"]!!.toLong(),
+            accessToken = tokenStr,
+            accessTokenLifetime = unixTime + expiresIn,
         )
         return token
     }
@@ -81,7 +85,6 @@ class AniListApi : SyncAPI() {
 
     override fun urlToId(url: String): String? =
         url.removePrefix("$mainUrl/anime/").removeSuffix("/")
-
 
     private fun getUrlFromId(id: Int): String {
         return "$mainUrl/anime/$id"
