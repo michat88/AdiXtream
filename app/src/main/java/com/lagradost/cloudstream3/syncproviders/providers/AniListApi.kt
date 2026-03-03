@@ -35,7 +35,7 @@ class AniListApi : SyncAPI() {
     override var name = "AniList"
     override val idPrefix = "anilist"
 
-    // PERUBAHAN: Menggunakan Client ID 33370 milik AdiXtream
+    // PERUBAHAN ADIXTREAM: Menggunakan ID Client yang baru
     val key = "33370"
     override val redirectUrlIdentifier = "anilistlogin"
     override var requireLibraryRefresh = true
@@ -456,9 +456,10 @@ class AniListApi : SyncAPI() {
                 cacheTime = 0,
             ).text
 
-            return tryParseJson(data) ?: throw ErrorLoadingException("Error parsing ${"$"}data")
+            return tryParseJson(data) ?: throw ErrorLoadingException("Error parsing $data")
         }
     }
+
     private suspend fun getDataAboutId(auth : AuthData, id: Int): AniListTitleHolder? {
         val q =
             """query (${'$'}id: Int = $id) { # Define which variables will be used in the query (id)
@@ -523,8 +524,6 @@ class AniListApi : SyncAPI() {
             timeout = 5 // REASONABLE TIMEOUT
         ).text.replace("\\/", "/")
     }
-
-
     data class MediaRecommendation(
         @JsonProperty("id") val id: Int,
         @JsonProperty("title") val title: Title?,
@@ -1041,7 +1040,7 @@ class AniListApi : SyncAPI() {
     )
 
     data class LikeAnime(
-        @JsonProperty("nodes") val nodes: List<LikeNode>?,
+        @JsonProperty("nodes") val nodes: LikeNode?,
         @JsonProperty("pageInfo") val pageInfo: LikePageInfo?,
     )
 
