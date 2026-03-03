@@ -35,11 +35,8 @@ class AniListApi : SyncAPI() {
     override var name = "AniList"
     override val idPrefix = "anilist"
 
-    // === MODIFIKASI ADIXTREAM ===
-    val key = "33370" 
+    val key = "6871"
     override val redirectUrlIdentifier = "anilistlogin"
-    // ============================
-    
     override var requireLibraryRefresh = true
     override val hasOAuth2 = true
     override var mainUrl = "https://anilist.co"
@@ -47,20 +44,15 @@ class AniListApi : SyncAPI() {
     override val createAccountUrl = "$mainUrl/signup"
     override val syncIdName = SyncIdName.Anilist
 
-    // KEMBALI KE ASLI: Menghapus redirect_uri agar server AniList tidak error
     override fun loginRequest(): AuthLoginPage? =
         AuthLoginPage("https://anilist.co/api/v2/oauth/authorize?client_id=$key&response_type=token")
 
-    // PERBAIKAN: TETAP DIPERTAHANKAN (Mencegah aplikasi crash saat membaca waktu token)
     override suspend fun login(redirectUrl: String, payload: String?): AuthToken? {
         val sanitizer = splitRedirectUrl(redirectUrl)
-        val tokenStr = sanitizer["access_token"] ?: throw ErrorLoadingException("No access token")
-        
-        val expiresIn = sanitizer["expires_in"]?.toLongOrNull() ?: 31536000L
-        
         val token = AuthToken(
-            accessToken = tokenStr,
-            accessTokenLifetime = unixTime + expiresIn,
+            accessToken = sanitizer["access_token"] ?: throw ErrorLoadingException("No access token"),
+            //refreshToken = sanitizer["refresh_token"],
+            accessTokenLifetime = unixTime + sanitizer["expires_in"]!!.toLong(),
         )
         return token
     }
@@ -85,6 +77,7 @@ class AniListApi : SyncAPI() {
 
     override fun urlToId(url: String): String? =
         url.removePrefix("$mainUrl/anime/").removeSuffix("/")
+
 
     private fun getUrlFromId(id: Int): String {
         return "$mainUrl/anime/$id"
@@ -191,6 +184,7 @@ class AniListApi : SyncAPI() {
             newStatus.watchedEpisodes
         )
     }
+
     companion object {
         const val MAX_STALE = 60 * 10
         private val aniListStatusString =
@@ -279,7 +273,7 @@ class AniListApi : SyncAPI() {
                 ).text.replace("\\", "")
                 return res.toKotlinObject()
             } catch (e: Exception) {
-               logError(e)
+                logError(e)
             }
             return null
         }
@@ -519,16 +513,18 @@ class AniListApi : SyncAPI() {
                 "Authorization" to "Bearer ${token.accessToken ?: return null}",
                 if (cache) "Cache-Control" to "max-stale=$MAX_STALE" else "Cache-Control" to "no-cache"
             ),
-             cacheTime = 0,
+            cacheTime = 0,
             data = mapOf(
                 "query" to URLEncoder.encode(
                     q,
                     "UTF-8"
                 )
-             ), //(if (vars == null) mapOf("query" to q) else mapOf("query" to q, "variables" to vars))
+            ), //(if (vars == null) mapOf("query" to q) else mapOf("query" to q, "variables" to vars))
             timeout = 5 // REASONABLE TIMEOUT
         ).text.replace("\\/", "/")
     }
+
+
     data class MediaRecommendation(
         @JsonProperty("id") val id: Int,
         @JsonProperty("title") val title: Title?,
@@ -764,7 +760,7 @@ class AniListApi : SyncAPI() {
                 val listId =
                     tryParseJson<MediaListItemRoot>(response)?.data?.mediaList?.id ?: return false
                 """
-                  mutation(${'$'}id: Int = $listId) {
+                    mutation(${'$'}id: Int = $listId) {
                         DeleteMediaListEntry(id: ${'$'}id) {
                             deleted
                         }
