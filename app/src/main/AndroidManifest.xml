@@ -76,8 +76,7 @@
 
                 <data android:scheme="magnet" />
             </intent-filter>
-        </activity>
-        
+            </activity>
         <activity
             android:name=".MainActivity"
             android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout|keyboard|keyboardHidden|navigation|uiMode"
@@ -101,7 +100,9 @@
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
 
-                <data android:scheme="adixtream" />
+                <data 
+                    android:scheme="adixtream" 
+                    android:host="anilistlogin" />
             </intent-filter>
             
             <intent-filter>
