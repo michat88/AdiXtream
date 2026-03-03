@@ -127,17 +127,19 @@ abstract class AccountManager {
             SyncRepo(localListApi)
         )
 
-        const val APP_STRING = "cloudstreamapp"
-        const val APP_STRING_REPO = "cloudstreamrepo"
-        const val APP_STRING_PLAYER = "cloudstreamplayer"
+        // --- PERUBAHAN ADIXTREAM DI SINI ---
+        const val APP_STRING = "adixtream"
+        const val APP_STRING_REPO = "adixtreamrepo"
+        const val APP_STRING_PLAYER = "adixtreamplayer"
 
         // Instantly start the search given a query
-        const val APP_STRING_SEARCH = "cloudstreamsearch"
+        const val APP_STRING_SEARCH = "adixtreamsearch"
 
         // Instantly resume watching a show
-        const val APP_STRING_RESUME_WATCHING = "cloudstreamcontinuewatching"
+        const val APP_STRING_RESUME_WATCHING = "adixtreamcontinuewatching"
 
-        const val APP_STRING_SHARE = "csshare"
+        const val APP_STRING_SHARE = "adixtreamshare"
+        // -----------------------------------
 
         fun secondsToReadable(seconds: Int, completedValue: String): String {
             var secondsLong = seconds.toLong()
