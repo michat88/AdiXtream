@@ -263,7 +263,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                         println("Repository url: $realUrl")
                         loadRepository(realUrl)
                         return true
-                    } else if (str.contains("adixtream")) { // DIUBAH DARI APP_STRING
+                    } else if (str.contains(APP_STRING)) {
                         for (api in AccountManager.allApis) {
                             if (api.isValidRedirectUrl(str)) {
                                 ioSafe {
@@ -292,19 +292,19 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                                 return true
                             }
                         }
-                        if (str == "adixtream:") { // DIUBAH
+                        if (str == "$APP_STRING:") {
                             ioSafe {
                                 PluginManager.___DO_NOT_CALL_FROM_A_PLUGIN_hotReloadAllLocalPlugins(
                                     activity
                                 )
                             }
                         }
-                    } else if (safeURI(str)?.scheme == "adixtreamrepo") { // DIUBAH
-                        val url = str.replaceFirst("adixtreamrepo", "https") // DIUBAH
+                    } else if (safeURI(str)?.scheme == APP_STRING_REPO) {
+                        val url = str.replaceFirst(APP_STRING_REPO, "https")
                         loadRepository(url)
                         return true
-                    } else if (safeURI(str)?.scheme == "adixtreamsearch") { // DIUBAH
-                        val query = str.substringAfter("adixtreamsearch://") // DIUBAH
+                    } else if (safeURI(str)?.scheme == APP_STRING_SEARCH) {
+                        val query = str.substringAfter("$APP_STRING_SEARCH://")
                         nextSearchQuery =
                             try {
                                 URLDecoder.decode(query, "UTF-8")
@@ -316,7 +316,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                             R.id.navigation_search
                         activity?.findViewById<NavigationRailView>(R.id.nav_rail_view)?.selectedItemId =
                             R.id.navigation_search
-                    } else if (safeURI(str)?.scheme == "adixtreamplayer") { // DIUBAH
+                    } else if (safeURI(str)?.scheme == APP_STRING_PLAYER) {
                         val uri = str.toUri()
                         val name = uri.getQueryParameter("name")
                         val url = URLDecoder.decode(uri.authority, "UTF-8")
@@ -330,9 +330,9 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                                 )
                             )
                         )
-                    } else if (safeURI(str)?.scheme == "adixtreamcontinuewatching") { // DIUBAH
+                    } else if (safeURI(str)?.scheme == APP_STRING_RESUME_WATCHING) {
                         val id =
-                            str.substringAfter("adixtreamcontinuewatching://").toIntOrNull() // DIUBAH
+                            str.substringAfter("$APP_STRING_RESUME_WATCHING://").toIntOrNull()
                                 ?: return false
                         ioSafe {
                             val resumeWatchingCard =
@@ -343,9 +343,9 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                                 START_ACTION_RESUME_LATEST
                             )
                         }
-                    } else if (str.startsWith("adixtreamshare")) { // DIUBAH
+                    } else if (str.startsWith(APP_STRING_SHARE)) {
                         try {
-                            val data = str.substringAfter("adixtreamshare:") // DIUBAH
+                            val data = str.substringAfter("$APP_STRING_SHARE:")
                             val parts = data.split("?", limit = 2)
                             loadResult(
                                 String(base64DecodeArray(parts[1]), Charsets.UTF_8),
@@ -399,6 +399,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
             }
         }
     }
+
     var lastPopup: SearchResponse? = null
     fun loadPopup(result: SearchResponse, load: Boolean = true) {
         lastPopup = result
