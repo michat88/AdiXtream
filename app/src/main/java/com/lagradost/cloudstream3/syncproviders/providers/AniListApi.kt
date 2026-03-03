@@ -35,7 +35,8 @@ class AniListApi : SyncAPI() {
     override var name = "AniList"
     override val idPrefix = "anilist"
 
-    val key = "6871"
+    // PERUBAHAN: Menggunakan Client ID 33370 milik AdiXtream
+    val key = "33370"
     override val redirectUrlIdentifier = "anilistlogin"
     override var requireLibraryRefresh = true
     override val hasOAuth2 = true
@@ -455,10 +456,9 @@ class AniListApi : SyncAPI() {
                 cacheTime = 0,
             ).text
 
-            return tryParseJson(data) ?: throw ErrorLoadingException("Error parsing $data")
+            return tryParseJson(data) ?: throw ErrorLoadingException("Error parsing ${"$"}data")
         }
     }
-
     private suspend fun getDataAboutId(auth : AuthData, id: Int): AniListTitleHolder? {
         val q =
             """query (${'$'}id: Int = $id) { # Define which variables will be used in the query (id)
