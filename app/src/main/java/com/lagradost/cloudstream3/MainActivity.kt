@@ -344,26 +344,11 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                             )
                         }
                     } else if (str.startsWith(APP_STRING_SHARE)) {
+                        // Trik menangkap link dari Web Penendang AdiXtream
                         try {
-                            val data = str.substringAfter("$APP_STRING_SHARE:")
-                            val parts = data.split("?", limit = 2)
-                            loadResult(
-                                String(base64DecodeArray(parts[1]), Charsets.UTF_8),
-                                String(base64DecodeArray(parts[0]), Charsets.UTF_8),
-                                ""
-                            )
-                            return true
-                        } catch (e: Exception) {
-                            showToast("Invalid Uri", Toast.LENGTH_SHORT)
-                            return false
-                        }
-                    } else if (str.contains("github.com/michat88/AdiXtream") && str.contains("share=")) {
-                        // Trik menangkap link bagikan dari GitHub
-                        try {
-                            val encodedData = str.substringAfter("share=")
-                            val data = java.net.URLDecoder.decode(encodedData, "UTF-8")
+                            val data = str.substringAfter("$APP_STRING_SHARE://")
                             
-                            // Pisahkan data menggunakan pemisah unik kita tadi
+                            // Pisahkan data menggunakan pemisah unik "_=_"
                             val parts = data.split("_=_", limit = 2)
                             loadResult(
                                 String(base64DecodeArray(parts[1]), Charsets.UTF_8), // url
