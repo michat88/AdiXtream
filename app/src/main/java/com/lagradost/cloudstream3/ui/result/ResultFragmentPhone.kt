@@ -854,9 +854,10 @@ open class ResultFragmentPhone : FullScreenPlayer() {
                             try {
                                 val i = Intent(Intent.ACTION_SEND)
                                 
-                                // GUNAKAN URL_SAFE AGAR TIDAK ERROR SAAT DI-DECODE
-                                val nameBase64 = android.util.Base64.encodeToString(d.apiName.toString().toByteArray(Charsets.UTF_8), android.util.Base64.URL_SAFE or android.util.Base64.NO_WRAP)
-                                val urlBase64 = android.util.Base64.encodeToString(d.url.toByteArray(Charsets.UTF_8), android.util.Base64.URL_SAFE or android.util.Base64.NO_WRAP)
+                                // Tambahkan NO_PADDING agar hasil Base64 bebas dari karakter '=' dan tidak error di URL browser
+                                val flags = android.util.Base64.URL_SAFE or android.util.Base64.NO_WRAP or android.util.Base64.NO_PADDING
+                                val nameBase64 = android.util.Base64.encodeToString(d.apiName.toString().toByteArray(Charsets.UTF_8), flags)
+                                val urlBase64 = android.util.Base64.encodeToString(d.url.toByteArray(Charsets.UTF_8), flags)
                                 
                                 // Gabungkan data
                                 val shareData = "${nameBase64}_=_${urlBase64}"
@@ -1041,9 +1042,6 @@ open class ResultFragmentPhone : FullScreenPlayer() {
                 }
             }
             binding?.resultOverlappingPanels?.setStartPanelLockState(if (closed) OverlappingPanelsLayout.LockState.CLOSE else OverlappingPanelsLayout.LockState.UNLOCKED)
-        }
-        observe(viewModel.recommendations) { recommendations ->
-            setRecommendations(recommendations, null)
         }
         context?.let { ctx ->
             val arrayAdapter = ArrayAdapter<String>(ctx, R.layout.sort_bottom_single_choice)
