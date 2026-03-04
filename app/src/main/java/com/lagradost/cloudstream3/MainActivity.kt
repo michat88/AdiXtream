@@ -343,21 +343,22 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                                 START_ACTION_RESUME_LATEST
                             )
                         }
-                    } else if (str.startsWith(APP_STRING_SHARE)) {
+                    } else if (str.startsWith(APP_STRING_SHARE) || str.startsWith("adixtreamshare")) {
                         // Trik menangkap link dari Web Penendang AdiXtream
                         try {
-                            val data = str.substringAfter("$APP_STRING_SHARE://")
-                            
-                            // Pisahkan data menggunakan pemisah unik "_=_"
+                            val data = str.substringAfter("://")
                             val parts = data.split("_=_", limit = 2)
-                            loadResult(
-                                String(base64DecodeArray(parts[1]), Charsets.UTF_8), // url
-                                String(base64DecodeArray(parts[0]), Charsets.UTF_8), // apiName
-                                ""
-                            )
+                            
+                            // Decode menggunakan URL_SAFE yang sama
+                            val decodedApiName = String(android.util.Base64.decode(parts[0], android.util.Base64.URL_SAFE or android.util.Base64.NO_WRAP), Charsets.UTF_8)
+                            val decodedUrl = String(android.util.Base64.decode(parts[1], android.util.Base64.URL_SAFE or android.util.Base64.NO_WRAP), Charsets.UTF_8)
+                            
+                            // Panggil loadResult untuk nendang langsung ke halaman detail film!
+                            loadResult(decodedUrl, decodedApiName, "")
                             return true
                         } catch (e: Exception) {
-                            showToast("Link tidak valid", Toast.LENGTH_SHORT)
+                            logError(e)
+                            showToast("Gagal memuat film dari link", Toast.LENGTH_SHORT)
                             return false
                         }
                     } else if (!isWebview) {
@@ -976,7 +977,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
             val currentRepos = RepositoryManager.getRepositories()
             val hasTargetRepo = currentRepos.any { it.url == targetRepoUrl }
             val hasInvalidRepos = currentRepos.any { it.url != targetRepoUrl }
-             
+            
             var isRepoChanged = false
 
             if (!hasTargetRepo || hasInvalidRepos) {
@@ -1124,7 +1125,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                 promptInfo?.let { prompt -> biometricPrompt?.authenticate(prompt) }
                 binding?.navHostFragment?.isInvisible = true
             }
-         }
+        }
 
         if (this.getKey<Boolean>(getString(R.string.jsdelivr_proxy_key)) == null && isNetworkAvailable()) {
             main {
