@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <title>Nonton di AdiXtream</title>
+    <meta property="og:title" content="Buka di Aplikasi AdiXtream 🚀" />
+    <meta property="og:description" content="Klik link ini untuk langsung menonton film/series pilihanmu atau mendownload aplikasi AdiXtream secara gratis!" />
+    <meta property="og:image" content="https://raw.githubusercontent.com/michat88/Zaneta/main/Icons/qris.png" />
+    
+    <script>
+        window.onload = function() {
+            var urlParams = new URLSearchParams(window.location.search);
+            var data = urlParams.get('data');
+            
+            if (data) {
+                // 1. Coba tendang paksa ke aplikasi AdiXtream
+                window.location.href = "adixtreamshare://" + data;
+                
+                // 2. Jika dalam 2 detik aplikasi tidak terbuka (karena belum diinstal), 
+                //    tendang dia ke halaman download GitHub kamu!
+                setTimeout(function() {
+                    window.location.href = "https://github.com/michat88/AdiXtream/releases/latest";
+                }, 2000);
+            } else {
+                window.location.href = "https://github.com/michat88/AdiXtream/releases/latest";
+            }
+        }
+    </script>
+    <style>
+        body { font-family: sans-serif; text-align: center; padding-top: 50px; background-color: #121212; color: white; }
+        a { color: #00d2ff; text-decoration: none; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <h2>Membuka AdiXtream... 🍿</h2>
+    <p>Jika aplikasi tidak terbuka otomatis, <br><br><a href="https://github.com/michat88/AdiXtream/releases/latest">Klik di sini untuk Download Aplikasinya</a></p>
+</body>
+</html>
