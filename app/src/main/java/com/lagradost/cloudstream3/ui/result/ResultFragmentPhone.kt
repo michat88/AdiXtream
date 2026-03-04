@@ -849,26 +849,38 @@ open class ResultFragmentPhone : FullScreenPlayer() {
                             QuickSearchFragment.pushSearch(activity, d.title)
                         }
 
-                        // --- MODIFIKASI SHARE ADIXTREAM (GITHUB PAGES REDIRECT) ---
+                        // --- MODIFIKASI SHARE ADIXTREAM (DYNAMIC PREVIEW) ---
                         resultShare.setOnClickListener {
                             try {
                                 val i = Intent(Intent.ACTION_SEND)
                                 
-                                // Tambahkan NO_PADDING agar hasil Base64 bebas dari karakter '=' dan tidak error di URL browser
                                 val flags = android.util.Base64.URL_SAFE or android.util.Base64.NO_WRAP or android.util.Base64.NO_PADDING
                                 val nameBase64 = android.util.Base64.encodeToString(d.apiName.toString().toByteArray(Charsets.UTF_8), flags)
                                 val urlBase64 = android.util.Base64.encodeToString(d.url.toByteArray(Charsets.UTF_8), flags)
-                                
-                                // Gabungkan data
                                 val shareData = "${nameBase64}_=_${urlBase64}"
                                 
-                                // Arahkan ke web penendang barumu!
-                                val redirectUrl = "https://michat88.github.io/AdiXtream/share.html?data=$shareData"
+                                // 1. Encode Judul
+                                val titleEncoded = URLEncoder.encode(d.title, "UTF-8")
+                                
+                                // 2. Ambil Poster, kalau kosong pakai banner default
+                                val posterUrl = d.posterImage ?: d.posterBackgroundImage ?: "https://raw.githubusercontent.com/michat88/Zaneta/main/Icons/banner_nonton_adixtream.png"
+                                val posterEncoded = URLEncoder.encode(posterUrl, "UTF-8")
+                                
+                                // 3. Ambil Deskripsi, potong maksimal 150 huruf biar link tidak terlalu panjang
+                                val rawDesc = d.plotText?.toString() ?: "Nonton film seru di AdiXtream!"
+                                val shortDesc = if (rawDesc.length > 150) rawDesc.substring(0, 150) + "..." else rawDesc
+                                val descEncoded = URLEncoder.encode(shortDesc, "UTF-8")
+                                
+                                // ==== URL CLOUDFLARE WORKER MILIKMU ====
+                                val workerUrl = "https://share-adixtream.gokilmichat.workers.dev"
+                                // =====================================================================
+
+                                // Susun URL Pintar
+                                val redirectUrl = "$workerUrl/?data=$shareData&title=$titleEncoded&poster=$posterEncoded&desc=$descEncoded"
                                 
                                 i.type = "text/plain"
                                 i.putExtra(Intent.EXTRA_SUBJECT, d.title)
                                 
-                                // Bikin pesan lebih menarik
                                 val pesanShare = "Nonton ${d.title} di AdiXtream! 🍿\n\n🎥 Klik link ini untuk menonton:\n$redirectUrl"
                                 i.putExtra(Intent.EXTRA_TEXT, pesanShare)
                                 
