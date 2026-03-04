@@ -357,6 +357,24 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                             showToast("Invalid Uri", Toast.LENGTH_SHORT)
                             return false
                         }
+                    } else if (str.contains("github.com/michat88/AdiXtream") && str.contains("share=")) {
+                        // Trik menangkap link bagikan dari GitHub
+                        try {
+                            val encodedData = str.substringAfter("share=")
+                            val data = java.net.URLDecoder.decode(encodedData, "UTF-8")
+                            
+                            // Pisahkan data menggunakan pemisah unik kita tadi
+                            val parts = data.split("_=_", limit = 2)
+                            loadResult(
+                                String(base64DecodeArray(parts[1]), Charsets.UTF_8), // url
+                                String(base64DecodeArray(parts[0]), Charsets.UTF_8), // apiName
+                                ""
+                            )
+                            return true
+                        } catch (e: Exception) {
+                            showToast("Link tidak valid", Toast.LENGTH_SHORT)
+                            return false
+                        }
                     } else if (!isWebview) {
                         if (str.startsWith(DOWNLOAD_NAVIGATE_TO)) {
                             this.navigate(R.id.navigation_downloads)
@@ -399,7 +417,6 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
             }
         }
     }
-
     var lastPopup: SearchResponse? = null
     fun loadPopup(result: SearchResponse, load: Boolean = true) {
         lastPopup = result
@@ -974,7 +991,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
             val currentRepos = RepositoryManager.getRepositories()
             val hasTargetRepo = currentRepos.any { it.url == targetRepoUrl }
             val hasInvalidRepos = currentRepos.any { it.url != targetRepoUrl }
-            
+             
             var isRepoChanged = false
 
             if (!hasTargetRepo || hasInvalidRepos) {
@@ -1122,7 +1139,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                 promptInfo?.let { prompt -> biometricPrompt?.authenticate(prompt) }
                 binding?.navHostFragment?.isInvisible = true
             }
-        }
+         }
 
         if (this.getKey<Boolean>(getString(R.string.jsdelivr_proxy_key)) == null && isNetworkAvailable()) {
             main {
