@@ -849,7 +849,7 @@ open class ResultFragmentPhone : FullScreenPlayer() {
                             QuickSearchFragment.pushSearch(activity, d.title)
                         }
 
-                        // --- MODIFIKASI SHARE ADIXTREAM (CLOUDFLARE WORKER - RAPI) ---
+                        // --- MODIFIKASI SHARE ADIXTREAM (DYNAMIC PREVIEW) ---
                         resultShare.setOnClickListener {
                             try {
                                 val i = Intent(Intent.ACTION_SEND)
@@ -859,27 +859,29 @@ open class ResultFragmentPhone : FullScreenPlayer() {
                                 val urlBase64 = android.util.Base64.encodeToString(d.url.toByteArray(Charsets.UTF_8), flags)
                                 val shareData = "${nameBase64}_=_${urlBase64}"
                                 
-                                // Encode Judul
+                                // 1. Encode Judul
                                 val titleEncoded = URLEncoder.encode(d.title, "UTF-8")
                                 
-                                // Ambil Poster, kalau kosong pakai banner default
+                                // 2. Ambil Poster, kalau kosong pakai banner default
                                 val posterUrl = d.posterImage ?: d.posterBackgroundImage ?: "https://raw.githubusercontent.com/michat88/Zaneta/main/Icons/banner_nonton_adixtream.png"
                                 val posterEncoded = URLEncoder.encode(posterUrl, "UTF-8")
                                 
-                                // Ambil Deskripsi, potong maksimal 150 huruf
+                                // 3. Ambil Deskripsi, potong maksimal 150 huruf biar link tidak terlalu panjang
                                 val rawDesc = d.plotText?.toString() ?: "Nonton film seru di AdiXtream!"
                                 val shortDesc = if (rawDesc.length > 150) rawDesc.substring(0, 150) + "..." else rawDesc
                                 val descEncoded = URLEncoder.encode(shortDesc, "UTF-8")
                                 
                                 // ==== URL CLOUDFLARE WORKER MILIKMU ====
                                 val workerUrl = "https://share-adixtream.gokilmichat.workers.dev"
+                                // =====================================================================
+
+                                // Susun URL Pintar
                                 val redirectUrl = "$workerUrl/?data=$shareData&title=$titleEncoded&poster=$posterEncoded&desc=$descEncoded"
                                 
                                 i.type = "text/plain"
                                 i.putExtra(Intent.EXTRA_SUBJECT, d.title)
                                 
-                                // Susun Pesan: Info dan Sinopsis di atas, Link panjang disembunyikan di bawah
-                                val pesanShare = "Nonton ${d.title} di AdiXtream! 🍿\n\n📝 Sinopsis:\n$shortDesc\n\n⬇️ Klik link di bawah ini untuk mulai menonton:\n$redirectUrl"
+                                val pesanShare = "Nonton ${d.title} di AdiXtream! 🍿\n\n🎥 Klik link ini untuk menonton:\n$redirectUrl"
                                 i.putExtra(Intent.EXTRA_TEXT, pesanShare)
                                 
                                 startActivity(Intent.createChooser(i, "Bagikan film ini"))
@@ -1053,10 +1055,6 @@ open class ResultFragmentPhone : FullScreenPlayer() {
             }
             binding?.resultOverlappingPanels?.setStartPanelLockState(if (closed) OverlappingPanelsLayout.LockState.CLOSE else OverlappingPanelsLayout.LockState.UNLOCKED)
         }
-        observe(viewModel.recommendations) { recommendations ->
-            setRecommendations(recommendations, null)
-        }
-
         context?.let { ctx ->
             val arrayAdapter = ArrayAdapter<String>(ctx, R.layout.sort_bottom_single_choice)
             val items = listOf(
