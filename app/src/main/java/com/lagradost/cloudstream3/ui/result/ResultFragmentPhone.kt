@@ -165,6 +165,7 @@ open class ResultFragmentPhone : FullScreenPlayer() {
     }
 
     private fun loadTrailer(index: Int? = null) {
+
         val isSuccess =
             currentTrailers.getOrNull(index ?: currentTrailerIndex)
                 ?.let { (extractedTrailerLink, _) ->
@@ -542,7 +543,6 @@ open class ResultFragmentPhone : FullScreenPlayer() {
                     }
             }
         }
-
         observeNullable(viewModel.resumeWatching) { resume ->
             resultBinding?.apply {
                 if (resume == null) {
@@ -849,24 +849,23 @@ open class ResultFragmentPhone : FullScreenPlayer() {
                             QuickSearchFragment.pushSearch(activity, d.title)
                         }
 
-                        // --- MODIFIKASI SHARE ADIXTREAM (GITHUB FALLBACK) ---
+                        // --- MODIFIKASI SHARE ADIXTREAM (GITHUB PAGES REDIRECT) ---
                         resultShare.setOnClickListener {
                             try {
                                 val i = Intent(Intent.ACTION_SEND)
                                 val nameBase64 = base64Encode(d.apiName.toString().toByteArray(Charsets.UTF_8))
                                 val urlBase64 = base64Encode(d.url.toByteArray(Charsets.UTF_8))
                         
-                                // Kita gabungkan data dengan pemisah unik "_=_" agar tidak bentrok, lalu di-encode
-                                val shareData = java.net.URLEncoder.encode("${nameBase64}_=_${urlBase64}", "UTF-8")
+                                // Gabungkan data
+                                val shareData = "${nameBase64}_=_${urlBase64}"
                                 
-                                // Trik URL GitHub AdiXtream
-                                val redirectUrl = "https://github.com/michat88/AdiXtream/releases/latest?share=$shareData"
+                                // Arahkan ke web penendang barumu!
+                                val redirectUrl = "https://michat88.github.io/AdiXtream/share.html?data=$shareData"
                         
                                 i.type = "text/plain"
                                 i.putExtra(Intent.EXTRA_SUBJECT, d.title)
                                 
-                                // Bikin pesan WhatsApp-nya jadi lebih interaktif
-                                val pesanShare = "Nonton ${d.title} di AdiXtream!\n\nKlik link ini buat nonton atau download aplikasinya:\n$redirectUrl"
+                                val pesanShare = "Nonton ${d.title} di AdiXtream!\n\nKlik link ini:\n$redirectUrl"
                                 i.putExtra(Intent.EXTRA_TEXT, pesanShare)
                                 
                                 startActivity(Intent.createChooser(i, d.title))
