@@ -301,7 +301,6 @@ class SimklApi : SyncAPI() {
                 }
             }
         }
-
         /**
          * https://simkl.docs.apiary.io/#introduction/about-simkl-api/standard-media-objects
          * Useful for finding shows from metadata
