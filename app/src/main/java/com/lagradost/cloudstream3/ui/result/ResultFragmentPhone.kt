@@ -157,7 +157,7 @@ open class ResultFragmentPhone : FullScreenPlayer() {
     }
 
     override fun playerError(exception: Throwable) {
-        if (player.getIsPlaying()) { // because we don't want random toasts in player
+        if (player.getIsPlaying()) { 
             super.playerError(exception)
         } else {
             nextMirror()
@@ -165,7 +165,6 @@ open class ResultFragmentPhone : FullScreenPlayer() {
     }
 
     private fun loadTrailer(index: Int? = null) {
-
         val isSuccess =
             currentTrailers.getOrNull(index ?: currentTrailerIndex)
                 ?.let { (extractedTrailerLink, _) ->
@@ -189,16 +188,10 @@ open class ResultFragmentPhone : FullScreenPlayer() {
                 } ?: run {
                 false
             }
-        //result_trailer_thumbnail?.setImageBitmap(result_poster_background?.drawable?.toBitmap())
 
-
-        // result_trailer_loading?.isVisible = isSuccess
         val turnVis = !isSuccess && !isFullScreenPlayer
         resultBinding?.apply {
-            // If we load a trailer, then cancel the big logo and only show the small title
             if (isSuccess) {
-                // This is still a bit of a race condition, but it should work if we have the
-                // trailers observe after the page observe!
                 bindLogo(
                     url = null,
                     headers = null,
@@ -217,7 +210,6 @@ open class ResultFragmentPhone : FullScreenPlayer() {
                 startAnimation(fadeIn)
             }
 
-            // We don't want the trailer to be focusable if it's not visible
             resultSmallscreenHolder.descendantFocusability = if (isSuccess) {
                 ViewGroup.FOCUS_AFTER_DESCENDANTS
             } else {
@@ -225,20 +217,6 @@ open class ResultFragmentPhone : FullScreenPlayer() {
             }
             binding?.resultFullscreenHolder?.isVisible = !isSuccess && isFullScreenPlayer
         }
-        //player_view?.apply {
-        //alpha = 0.0f
-        //ObjectAnimator.ofFloat(player_view, "alpha", 1f).apply {
-        //    duration = 200
-        //    start()
-        //}
-
-        //val fadeIn: Animation = AlphaAnimation(0.0f, 1f).apply {
-        //    interpolator = DecelerateInterpolator()
-        //    duration = 2000
-        //    fillAfter = true
-        //}
-        //startAnimation(fadeIn)
-        //}
     }
 
     private fun setTrailers(trailers: List<Pair<ExtractorLink, String>>?) {
@@ -270,10 +248,6 @@ open class ResultFragmentPhone : FullScreenPlayer() {
     var loadingDialog: Dialog? = null
     var popupDialog: Dialog? = null
 
-    /**
-     * Sets next focus to allow navigation up and down between 2 views
-     * if either of them is null nothing happens.
-     **/
     private fun setFocusUpAndDown(upper: View?, down: View?) {
         if (upper == null || down == null) return
         upper.nextFocusDownId = down.id
@@ -370,9 +344,6 @@ open class ResultFragmentPhone : FullScreenPlayer() {
         syncModel.addFromUrl(storedData.url)
         val api = APIHolder.getApiFromNameNull(storedData.apiName)
 
-        // This may not be 100% reliable, and may delay for small period
-        // before resultCastItems will be scrollable again, but this does work
-        // most of the time.
         binding?.resultOverlappingPanels?.registerEndPanelStateListeners(
             object : OverlappingPanelsLayout.PanelStateListener {
                 override fun onPanelStateChange(panelState: PanelState) {
@@ -407,25 +378,7 @@ open class ResultFragmentPhone : FullScreenPlayer() {
                 nextLeft = FOCUS_SELF,
                 nextRight = FOCUS_SELF
             )
-            /*resultCastItems.layoutManager = object : LinearListLayout(view.context) {
-                override fun onRequestChildFocus(
-                    parent: RecyclerView,
-                    state: RecyclerView.State,
-                    child: View,
-                    focused: View?
-                ): Boolean {
-                    // Make the cast always focus the first visible item when focused
-                    // from somewhere else. Otherwise it jumps to the last item.
-                    return if (parent.focusedChild == null) {
-                        scrollToPosition(this.findFirstCompletelyVisibleItemPosition())
-                        true
-                    } else {
-                        super.onRequestChildFocus(parent, state, child, focused)
-                    }
-                }
-            }.apply {
-                this.orientation = RecyclerView.HORIZONTAL
-            }*/
+            
             resultCastItems.setRecycledViewPool(ActorAdaptor.sharedPool)
             resultCastItems.adapter = ActorAdaptor()
             resultEpisodes.setRecycledViewPool(EpisodeAdapter.sharedPool)
@@ -467,7 +420,7 @@ open class ResultFragmentPhone : FullScreenPlayer() {
 
             resultScroll.setOnScrollChangeListener(NestedScrollView.OnScrollChangeListener { _, _, scrollY, _, oldScrollY ->
                 val dy = scrollY - oldScrollY
-                if (dy > 0) { //check for scroll down
+                if (dy > 0) { 
                     binding?.resultBookmarkFab?.shrink()
                 } else if (dy < -5) {
                     binding?.resultBookmarkFab?.extend()
@@ -501,24 +454,11 @@ open class ResultFragmentPhone : FullScreenPlayer() {
                 } else resultOverlappingPanels.closePanels()
             }
 
-            /*
-            resultMiniSync.setRecycledViewPool(ImageAdapter.sharedPool)
-            resultMiniSync.adapter = ImageAdapter(
-                nextFocusDown = R.id.result_sync_set_score,
-                clickCallback = { action ->
-                    if (action == IMAGE_CLICK || action == IMAGE_LONG_CLICK) {
-                        if (resultOverlappingPanels.getSelectedPanel().ordinal == 1) {
-                            resultOverlappingPanels.openStartPanel()
-                        } else resultOverlappingPanels.closePanels()
-                    }
-                })
-            */
             resultSubscribe.setOnClickListener {
                 viewModel.toggleSubscriptionStatus(context) { newStatus: Boolean? ->
                     if (newStatus == null) return@toggleSubscriptionStatus
 
                     val message = if (newStatus) {
-                        // Kinda icky to have this here, but it works.
                         SubscriptionWorkManager.enqueuePeriodicWork(context)
                         R.string.subscription_new
                     } else {
@@ -574,10 +514,6 @@ open class ResultFragmentPhone : FullScreenPlayer() {
                             }.addOnCompleteListener {
                                 isGone = !it.isSuccessful
                             }
-                            // this shit leaks for some reason
-                            //castContext.addCastStateListener { state ->
-                            //    media_route_button?.isGone = state == CastState.NO_DEVICES_AVAILABLE
-                            //}
                         } catch (e: Exception) {
                             logError(e)
                         }
@@ -606,18 +542,6 @@ open class ResultFragmentPhone : FullScreenPlayer() {
                     }
             }
         }
-
-
-        /*
-        result_bookmark_button?.setOnClickListener {
-            it.popupMenuNoIcons(
-                items = WatchType.values()
-                    .map { watchType -> Pair(watchType.internalId, watchType.stringRes) },
-                //.map { watchType -> Triple(watchType.internalId, watchType.iconRes, watchType.stringRes) },
-            ) {
-                viewModel.updateWatchStatus(WatchType.fromInternalId(this.itemId))
-            }
-        }*/
 
         observeNullable(viewModel.resumeWatching) { resume ->
             resultBinding?.apply {
@@ -702,7 +626,6 @@ open class ResultFragmentPhone : FullScreenPlayer() {
 
         observeNullable(viewModel.episodes) { episodes ->
             resultBinding?.apply {
-                // no failure?
                 resultEpisodeLoading.isVisible = episodes is Resource.Loading
                 resultEpisodes.isVisible = episodes is Resource.Success
                 resultBatchDownloadButton.isVisible =
@@ -711,7 +634,6 @@ open class ResultFragmentPhone : FullScreenPlayer() {
                 if (episodes is Resource.Success) {
                     (resultEpisodes.adapter as? EpisodeAdapter)?.submitList(episodes.value)
 
-                    // Show quality dialog with all sources
                     resultBatchDownloadButton.setOnLongClickListener {
                         ioSafe {
                             val defaultSources = QualityProfileDialog.getAllDefaultSources()
@@ -724,7 +646,6 @@ open class ResultFragmentPhone : FullScreenPlayer() {
                                 ).show()
                             }
                         }
-
                         true
                     }
 
@@ -761,22 +682,15 @@ open class ResultFragmentPhone : FullScreenPlayer() {
                                                 episode
                                             )
                                         )
-                                            // Join to make the episodes ordered
                                             .join()
                                     }
                                 }
                             }
                             .setNegativeButton(R.string.cancel) { _, _ ->
-
                             }.show()
-
                     }
-
                 }
-
-
             }
-
         }
 
         observeNullable(viewModel.movie) { data ->
@@ -829,7 +743,6 @@ open class ResultFragmentPhone : FullScreenPlayer() {
                                     EpisodeClickEvent(ACTION_DOWNLOAD_EPISODE, ep)
                                 )
                             }
-
                             DOWNLOAD_ACTION_LONG_CLICK -> {
                                 viewModel.handleAction(
                                     EpisodeClickEvent(
@@ -838,7 +751,6 @@ open class ResultFragmentPhone : FullScreenPlayer() {
                                     )
                                 )
                             }
-
                             else -> DownloadButtonSetup.handleDownloadClick(click)
                         }
                     }
@@ -921,7 +833,6 @@ open class ResultFragmentPhone : FullScreenPlayer() {
                     (resultCastItems.adapter as? ActorAdaptor)?.submitList(if (showCast) d.actors else emptyList())
 
                     if (d.contentRatingText == null) {
-                        // If there is no rating to display, we don't want an empty gap
                         resultMetaContentRating.width = 0
                     }
 
@@ -938,26 +849,33 @@ open class ResultFragmentPhone : FullScreenPlayer() {
                             QuickSearchFragment.pushSearch(activity, d.title)
                         }
 
+                        // --- MODIFIKASI SHARE ADIXTREAM (GITHUB FALLBACK) ---
                         resultShare.setOnClickListener {
                             try {
                                 val i = Intent(Intent.ACTION_SEND)
-                                val nameBase64 =
-                                    base64Encode(d.apiName.toString().toByteArray(Charsets.UTF_8))
+                                val nameBase64 = base64Encode(d.apiName.toString().toByteArray(Charsets.UTF_8))
                                 val urlBase64 = base64Encode(d.url.toByteArray(Charsets.UTF_8))
-                                val encodedUri = URLEncoder.encode(
-                                    "$APP_STRING_SHARE:$nameBase64?$urlBase64",
-                                    "UTF-8"
-                                )
-                                val redirectUrl =
-                                    "https://recloudstream.github.io/csredirect?redirectto=$encodedUri"
+                        
+                                // Kita gabungkan data dengan pemisah unik "_=_" agar tidak bentrok, lalu di-encode
+                                val shareData = java.net.URLEncoder.encode("${nameBase64}_=_${urlBase64}", "UTF-8")
+                                
+                                // Trik URL GitHub AdiXtream
+                                val redirectUrl = "https://github.com/michat88/AdiXtream/releases/latest?share=$shareData"
+                        
                                 i.type = "text/plain"
                                 i.putExtra(Intent.EXTRA_SUBJECT, d.title)
-                                i.putExtra(Intent.EXTRA_TEXT, redirectUrl)
+                                
+                                // Bikin pesan WhatsApp-nya jadi lebih interaktif
+                                val pesanShare = "Nonton ${d.title} di AdiXtream!\n\nKlik link ini buat nonton atau download aplikasinya:\n$redirectUrl"
+                                i.putExtra(Intent.EXTRA_TEXT, pesanShare)
+                                
                                 startActivity(Intent.createChooser(i, d.title))
                             } catch (e: Exception) {
                                 logError(e)
                             }
                         }
+                        // ----------------------------------------------------
+
                         setUrl(d.url)
                         resultBookmarkFab.apply {
                             isVisible = true
@@ -988,7 +906,6 @@ open class ResultFragmentPhone : FullScreenPlayer() {
                 }
             }
         }
-
         observeNullable(viewModel.episodesCountText) { count ->
             resultBinding?.resultEpisodesText.setText(count)
         }
@@ -1018,7 +935,7 @@ open class ResultFragmentPhone : FullScreenPlayer() {
         }
 
         observe(viewModel.trailers) { trailers ->
-            setTrailers(trailers.flatMap { it.mirros }) // I dont care about subtitles yet!
+            setTrailers(trailers.flatMap { it.mirros }) 
         }
 
         observe(syncModel.synced) { list ->
@@ -1028,7 +945,6 @@ open class ResultFragmentPhone : FullScreenPlayer() {
             val newList = list.filter { it.isSynced && it.hasAccount }
 
             binding?.resultMiniSync?.isVisible = newList.isNotEmpty()
-            //(binding?.resultMiniSync?.adapter as? ImageAdapter)?.submitList(newList.mapNotNull { it.icon })
         }
 
 
@@ -1099,7 +1015,6 @@ open class ResultFragmentPhone : FullScreenPlayer() {
                         currentSyncProgress = watchedEpisodes
 
                         d.maxEpisodes?.let {
-                            // don't directly call it because we don't want to override metadata observe
                             setSyncMaxEpisodes(it)
                         }
 
@@ -1110,7 +1025,7 @@ open class ResultFragmentPhone : FullScreenPlayer() {
                         }
                         resultSyncCurrentEpisodes.text =
                             Editable.Factory.getInstance()?.newEditable(watchedEpisodes.toString())
-                        safe { // format might fail
+                        safe { 
                             val text = d.score?.toFloat(10)?.roundToInt()?.let {
                                 context?.getString(R.string.sync_score_format)?.format(it)
                             } ?: "?"
@@ -1130,15 +1045,6 @@ open class ResultFragmentPhone : FullScreenPlayer() {
         }
         context?.let { ctx ->
             val arrayAdapter = ArrayAdapter<String>(ctx, R.layout.sort_bottom_single_choice)
-            /*
-            -1 -> None
-            0 -> Watching
-            1 -> Completed
-            2 -> OnHold
-            3 -> Dropped
-            4 -> PlanToWatch
-            5 -> ReWatching
-            */
             val items = listOf(
                 R.string.none,
                 R.string.type_watching,
@@ -1250,7 +1156,7 @@ open class ResultFragmentPhone : FullScreenPlayer() {
 
                 selectSeason =
                     text?.asStringNull(resultSeasonButton.context)
-                // If the season button is visible the result season button will be next focus down
+                
                 if (resultSeasonButton.isVisible && resultResumeParent.isVisible) {
                     setFocusUpAndDown(resultResumeSeriesButton, resultSeasonButton)
                 }
@@ -1271,14 +1177,13 @@ open class ResultFragmentPhone : FullScreenPlayer() {
                 resultEpisodeSelect.setText(range)
 
                 selectEpisodeRange = range?.asStringNull(resultEpisodeSelect.context)
-                // If Season button is invisible then the bookmark button next focus is episode select
+                
                 if (resultEpisodeSelect.isVisible && !resultSeasonButton.isVisible && resultResumeParent.isVisible) {
                     setFocusUpAndDown(resultResumeSeriesButton, resultEpisodeSelect)
                 }
             }
         }
 
-//        val preferDub = context?.getApiDubstatusSettings()?.all { it == DubStatus.Dubbed } == true
 
         observe(viewModel.dubSubSelections) { range ->
             resultBinding?.resultDubSelect?.setOnClickListener { view ->
@@ -1334,13 +1239,6 @@ open class ResultFragmentPhone : FullScreenPlayer() {
                         {}) { itemId ->
                         viewModel.changeSeason(names[itemId].first)
                     }
-
-
-                    //view.popupMenuNoIconsAndNoStringRes(names.mapIndexed { index, (_, name) ->
-                    //    index to name
-                    //}) {
-                    //    viewModel.changeSeason(names[itemId].first)
-                    //}
                 }
             }
         }
@@ -1352,7 +1250,7 @@ open class ResultFragmentPhone : FullScreenPlayer() {
     ) {
         viewModel.handleAction(
             EpisodeClickEvent(
-                storedData.playerAction, //?: ACTION_PLAY_EPISODE_IN_PLAYER,
+                storedData.playerAction, 
                 resume.result
             )
         )
@@ -1397,7 +1295,6 @@ open class ResultFragmentPhone : FullScreenPlayer() {
             resultOverlappingPanels.setEndPanelLockState(if (isInvalid) OverlappingPanelsLayout.LockState.CLOSE else OverlappingPanelsLayout.LockState.UNLOCKED)
 
             rec?.map { it.apiName }?.distinct()?.let { apiNames ->
-                // very dirty selection
                 recommendationBinding?.resultRecommendationsFilterButton?.apply {
                     isVisible = apiNames.size > 1
                     text = matchAgainst
