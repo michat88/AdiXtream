@@ -757,7 +757,6 @@ open class ResultFragmentPhone : FullScreenPlayer() {
                 }
             }
         }
-
         observe(viewModel.page) { data ->
             if (data == null) return@observe
             resultBinding?.apply {
@@ -787,6 +786,7 @@ open class ResultFragmentPhone : FullScreenPlayer() {
                             )
                         }
                     }
+
                     resultPosterBackground.loadImage(
                         d.posterBackgroundImage,
                         headers = d.posterHeaders
@@ -853,22 +853,25 @@ open class ResultFragmentPhone : FullScreenPlayer() {
                         resultShare.setOnClickListener {
                             try {
                                 val i = Intent(Intent.ACTION_SEND)
-                                val nameBase64 = base64Encode(d.apiName.toString().toByteArray(Charsets.UTF_8))
-                                val urlBase64 = base64Encode(d.url.toByteArray(Charsets.UTF_8))
-                        
+                                
+                                // GUNAKAN URL_SAFE AGAR TIDAK ERROR SAAT DI-DECODE
+                                val nameBase64 = android.util.Base64.encodeToString(d.apiName.toString().toByteArray(Charsets.UTF_8), android.util.Base64.URL_SAFE or android.util.Base64.NO_WRAP)
+                                val urlBase64 = android.util.Base64.encodeToString(d.url.toByteArray(Charsets.UTF_8), android.util.Base64.URL_SAFE or android.util.Base64.NO_WRAP)
+                                
                                 // Gabungkan data
                                 val shareData = "${nameBase64}_=_${urlBase64}"
                                 
                                 // Arahkan ke web penendang barumu!
                                 val redirectUrl = "https://michat88.github.io/AdiXtream/share.html?data=$shareData"
-                        
+                                
                                 i.type = "text/plain"
                                 i.putExtra(Intent.EXTRA_SUBJECT, d.title)
                                 
-                                val pesanShare = "Nonton ${d.title} di AdiXtream!\n\nKlik link ini:\n$redirectUrl"
+                                // Bikin pesan lebih menarik
+                                val pesanShare = "Nonton ${d.title} di AdiXtream! 🍿\n\n🎥 Klik link ini untuk menonton:\n$redirectUrl"
                                 i.putExtra(Intent.EXTRA_TEXT, pesanShare)
                                 
-                                startActivity(Intent.createChooser(i, d.title))
+                                startActivity(Intent.createChooser(i, "Bagikan film ini"))
                             } catch (e: Exception) {
                                 logError(e)
                             }
