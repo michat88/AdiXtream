@@ -849,44 +849,52 @@ open class ResultFragmentPhone : FullScreenPlayer() {
                             QuickSearchFragment.pushSearch(activity, d.title)
                         }
 
-                        // --- MODIFIKASI SHARE ADIXTREAM (DYNAMIC PREVIEW) ---
+                        // --- MODIFIKASI SHARE ADIXTREAM (TINYURL SHORTENER) ---
                         resultShare.setOnClickListener {
-                            try {
-                                val i = Intent(Intent.ACTION_SEND)
-                                
-                                val flags = android.util.Base64.URL_SAFE or android.util.Base64.NO_WRAP or android.util.Base64.NO_PADDING
-                                val nameBase64 = android.util.Base64.encodeToString(d.apiName.toString().toByteArray(Charsets.UTF_8), flags)
-                                val urlBase64 = android.util.Base64.encodeToString(d.url.toByteArray(Charsets.UTF_8), flags)
-                                val shareData = "${nameBase64}_=_${urlBase64}"
-                                
-                                // 1. Encode Judul
-                                val titleEncoded = URLEncoder.encode(d.title, "UTF-8")
-                                
-                                // 2. Ambil Poster, kalau kosong pakai banner default
-                                val posterUrl = d.posterImage ?: d.posterBackgroundImage ?: "https://raw.githubusercontent.com/michat88/Zaneta/main/Icons/banner_nonton_adixtream.png"
-                                val posterEncoded = URLEncoder.encode(posterUrl, "UTF-8")
-                                
-                                // 3. Ambil Deskripsi, potong maksimal 150 huruf biar link tidak terlalu panjang
-                                val rawDesc = d.plotText?.toString() ?: "Nonton film seru di AdiXtream!"
-                                val shortDesc = if (rawDesc.length > 150) rawDesc.substring(0, 150) + "..." else rawDesc
-                                val descEncoded = URLEncoder.encode(shortDesc, "UTF-8")
-                                
-                                // ==== URL CLOUDFLARE WORKER MILIKMU ====
-                                val workerUrl = "https://share-adixtream.gokilmichat.workers.dev"
-                                // =====================================================================
-
-                                // Susun URL Pintar
-                                val redirectUrl = "$workerUrl/?data=$shareData&title=$titleEncoded&poster=$posterEncoded&desc=$descEncoded"
-                                
-                                i.type = "text/plain"
-                                i.putExtra(Intent.EXTRA_SUBJECT, d.title)
-                                
-                                val pesanShare = "Nonton ${d.title} di AdiXtream! 🍿\n\n🎥 Klik link ini untuk menonton:\n$redirectUrl"
-                                i.putExtra(Intent.EXTRA_TEXT, pesanShare)
-                                
-                                startActivity(Intent.createChooser(i, "Bagikan film ini"))
-                            } catch (e: Exception) {
-                                logError(e)
+                            // Tampilkan toast agar user tahu sedang memproses link
+                            showToast("Menyiapkan link, mohon tunggu...", Toast.LENGTH_SHORT)
+                            
+                            // Gunakan thread background agar aplikasi tidak freeze saat ambil link pendek
+                            ioSafe {
+                                try {
+                                    val flags = android.util.Base64.URL_SAFE or android.util.Base64.NO_WRAP or android.util.Base64.NO_PADDING
+                                    val nameBase64 = android.util.Base64.encodeToString(d.apiName.toString().toByteArray(Charsets.UTF_8), flags)
+                                    val urlBase64 = android.util.Base64.encodeToString(d.url.toByteArray(Charsets.UTF_8), flags)
+                                    val shareData = "${nameBase64}_=_${urlBase64}"
+                                    
+                                    val titleEncoded = URLEncoder.encode(d.title, "UTF-8")
+                                    val posterUrl = d.posterImage ?: d.posterBackgroundImage ?: "https://raw.githubusercontent.com/michat88/Zaneta/main/Icons/banner_nonton_adixtream.png"
+                                    val posterEncoded = URLEncoder.encode(posterUrl, "UTF-8")
+                                    
+                                    val rawDesc = d.plotText?.toString() ?: "Nonton film seru di AdiXtream!"
+                                    val shortDesc = if (rawDesc.length > 150) rawDesc.substring(0, 150) + "..." else rawDesc
+                                    val descEncoded = URLEncoder.encode(shortDesc, "UTF-8")
+                                    
+                                    val workerUrl = "https://share-adixtream.gokilmichat.workers.dev"
+                                    val redirectUrl = "$workerUrl/?data=$shareData&title=$titleEncoded&poster=$posterEncoded&desc=$descEncoded"
+                                    
+                                    // 🚀 SULAP LINK JADI PENDEK PAKE TINYURL API
+                                    val tinyUrlApi = "https://tinyurl.com/api-create.php?url=" + URLEncoder.encode(redirectUrl, "UTF-8")
+                                    val shortUrl = java.net.URL(tinyUrlApi).readText()
+                                    
+                                    // Kembali ke thread utama untuk memunculkan popup share
+                                    activity?.runOnUiThread {
+                                        val i = Intent(Intent.ACTION_SEND)
+                                        i.type = "text/plain"
+                                        i.putExtra(Intent.EXTRA_SUBJECT, d.title)
+                                        
+                                        // Gunakan link pendeknya
+                                        val pesanShare = "Nonton ${d.title} di AdiXtream! 🍿\n\n$shortUrl"
+                                        i.putExtra(Intent.EXTRA_TEXT, pesanShare)
+                                        
+                                        startActivity(Intent.createChooser(i, "Bagikan film ini"))
+                                    }
+                                } catch (e: Exception) {
+                                    logError(e)
+                                    activity?.runOnUiThread {
+                                        showToast("Gagal membuat link share", Toast.LENGTH_SHORT)
+                                    }
+                                }
                             }
                         }
                         // ----------------------------------------------------
@@ -1055,6 +1063,10 @@ open class ResultFragmentPhone : FullScreenPlayer() {
             }
             binding?.resultOverlappingPanels?.setStartPanelLockState(if (closed) OverlappingPanelsLayout.LockState.CLOSE else OverlappingPanelsLayout.LockState.UNLOCKED)
         }
+        observe(viewModel.recommendations) { recommendations ->
+            setRecommendations(recommendations, null)
+        }
+
         context?.let { ctx ->
             val arrayAdapter = ArrayAdapter<String>(ctx, R.layout.sort_bottom_single_choice)
             val items = listOf(
