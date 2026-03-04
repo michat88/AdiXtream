@@ -34,7 +34,9 @@ class MALApi : SyncAPI() {
     override var name = "MAL"
     override val idPrefix = "mal"
 
-    val key = "1714d6f2f4f7cc19644384f8c4629910"
+    // CLIENT ID ADIXTREAM MILIKMU (Dipertahankan)
+    val key = "c4530aae80910ab29dab91a963664e64" 
+    
     private val apiUrl = "https://api.myanimelist.net"
     override val hasOAuth2 = true
     override val redirectUrlIdentifier: String? = "mallogin"
@@ -619,7 +621,7 @@ class MALApi : SyncAPI() {
         also, but not used
         main_picture ->
             public string medium;
-			public string large;
+            public string large;
          */
     )
 
