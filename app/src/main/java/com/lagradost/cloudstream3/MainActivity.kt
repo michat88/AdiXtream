@@ -258,7 +258,28 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                 fun safeURI(uri: String) = safe { URI(uri) }
 
                 if (str != null && this != null) {
-                    if (str.startsWith("https://cs.repo")) {
+                    // === PENANGKAP SHARE KITA PINDAH KE PALING ATAS! ===
+                    if (str.startsWith(APP_STRING_SHARE) || str.startsWith("adixtreamshare")) {
+                        try {
+                            val data = str.substringAfter("://")
+                            val parts = data.split("_=_", limit = 2)
+                            
+                            // Tambahkan NO_PADDING agar 100% aman saat lewat URL Browser
+                            val flags = android.util.Base64.URL_SAFE or android.util.Base64.NO_WRAP or android.util.Base64.NO_PADDING
+                            val decodedApiName = String(android.util.Base64.decode(parts[0], flags), Charsets.UTF_8)
+                            val decodedUrl = String(android.util.Base64.decode(parts[1], flags), Charsets.UTF_8)
+                            
+                            // Langsung tendang ke detail film!
+                            loadResult(decodedUrl, decodedApiName, "")
+                            return true
+                        } catch (e: Exception) {
+                            logError(e)
+                            showToast("Gagal memuat film dari link", Toast.LENGTH_SHORT)
+                            return false
+                        }
+                    } 
+                    // ===================================================
+                    else if (str.startsWith("https://cs.repo")) {
                         val realUrl = "https://" + str.substringAfter("?")
                         println("Repository url: $realUrl")
                         loadRepository(realUrl)
@@ -342,24 +363,6 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                                 resumeWatchingCard,
                                 START_ACTION_RESUME_LATEST
                             )
-                        }
-                    } else if (str.startsWith(APP_STRING_SHARE) || str.startsWith("adixtreamshare")) {
-                        // Trik menangkap link dari Web Penendang AdiXtream
-                        try {
-                            val data = str.substringAfter("://")
-                            val parts = data.split("_=_", limit = 2)
-                            
-                            // Decode menggunakan URL_SAFE yang sama
-                            val decodedApiName = String(android.util.Base64.decode(parts[0], android.util.Base64.URL_SAFE or android.util.Base64.NO_WRAP), Charsets.UTF_8)
-                            val decodedUrl = String(android.util.Base64.decode(parts[1], android.util.Base64.URL_SAFE or android.util.Base64.NO_WRAP), Charsets.UTF_8)
-                            
-                            // Panggil loadResult untuk nendang langsung ke halaman detail film!
-                            loadResult(decodedUrl, decodedApiName, "")
-                            return true
-                        } catch (e: Exception) {
-                            logError(e)
-                            showToast("Gagal memuat film dari link", Toast.LENGTH_SHORT)
-                            return false
                         }
                     } else if (!isWebview) {
                         if (str.startsWith(DOWNLOAD_NAVIGATE_TO)) {
