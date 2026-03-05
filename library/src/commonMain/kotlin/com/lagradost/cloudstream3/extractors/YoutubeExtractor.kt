@@ -66,36 +66,26 @@ open class YoutubeExtractor : ExtractorApi() {
         callback: (ExtractorLink) -> Unit
     ): Boolean {
 
-        var hasStreams = false
+        val videoStreams = info.videoOnlyStreams.orEmpty()
 
-        // STRATEGI BARU: Kita abaikan Muxed (karena sering mentok di 360p)
-        // Kita gunakan video terpisah, TAPI dengan batas resolusi maksimal 720p!
-        
-        // Memfilter video agar yang dilempar ke ExoPlayer hanya yang resolusinya <= 720
-        val separatedVideoStreams = info.videoOnlyStreams.orEmpty().filter { stream ->
-            stream.height <= 720 
-        }
-        
-        // Ambil link audio untuk dipasangkan nanti
+        if (videoStreams.isEmpty()) return false
+
         val audioStreams = info.audioStreams.orEmpty()
 
-        // Lempar link video yang sudah difilter (max 720p) ke player
-        separatedVideoStreams.forEach { video ->
-            hasStreams = true
+        videoStreams.forEach { video ->
+
             callback(
                 newExtractorLink(
                     source = name,
-                    name = "YouTube HD ${normalizeCodec(video.codec)}",
+                    name = "YouTube ${normalizeCodec(video.codec)}",
                     url = video.content
                 ) {
                     quality = video.height
-                    // Gabungkan dengan audio secara manual
                     audioTracks = audioStreams.map { newAudioFile(it.content) }
                 }
             )
         }
 
-        if (!hasStreams) return false
 
         info.subtitles.forEach { subtitle ->
             subtitleCallback(
