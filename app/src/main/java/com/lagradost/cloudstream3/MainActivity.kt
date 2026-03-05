@@ -261,8 +261,15 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                     // === PENANGKAP SHARE KITA PINDAH KE PALING ATAS! ===
                     if (str.startsWith(APP_STRING_SHARE) || str.startsWith("adixtreamshare")) {
                         try {
-                            val data = str.substringAfter("://")
-                            val parts = data.split("_=_", limit = 2)
+                            // Ambil data dari parameter "?data=" (Format Baru Cloudflare KV)
+                            // Kalau tidak ada, baru ambil setelah "://" (Untuk jaga-jaga link versi lama)
+                            val rawData = if (str.contains("?data=")) {
+                                str.substringAfter("?data=")
+                            } else {
+                                str.substringAfter("://")
+                            }
+                            
+                            val parts = rawData.split("_=_", limit = 2)
                             
                             // Tambahkan NO_PADDING agar 100% aman saat lewat URL Browser
                             val flags = android.util.Base64.URL_SAFE or android.util.Base64.NO_WRAP or android.util.Base64.NO_PADDING
@@ -980,7 +987,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
             val currentRepos = RepositoryManager.getRepositories()
             val hasTargetRepo = currentRepos.any { it.url == targetRepoUrl }
             val hasInvalidRepos = currentRepos.any { it.url != targetRepoUrl }
-            
+             
             var isRepoChanged = false
 
             if (!hasTargetRepo || hasInvalidRepos) {
