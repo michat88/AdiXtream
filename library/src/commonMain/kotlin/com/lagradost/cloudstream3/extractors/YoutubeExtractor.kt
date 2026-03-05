@@ -66,26 +66,50 @@ open class YoutubeExtractor : ExtractorApi() {
         callback: (ExtractorLink) -> Unit
     ): Boolean {
 
-        val videoStreams = info.videoOnlyStreams.orEmpty()
-
-        if (videoStreams.isEmpty()) return false
-
+        // 1. Ambil stream MUXED (Video + Audio gabung, biasanya mentok di 360p atau 720p). Sangat ringan!
+        val muxedStreams = info.videoStreams.orEmpty()
+        
+        // 2. Ambil stream TERPISAH (Video Only), tapi kita filter MAKSIMAL 1080p agar tidak bikin player macet.
+        val separatedVideoStreams = info.videoOnlyStreams.orEmpty().filter { it.height <= 1080 }
+        
+        // Audio stream untuk digabungkan dengan separatedVideoStreams
         val audioStreams = info.audioStreams.orEmpty()
 
-        videoStreams.forEach { video ->
+        var hasStreams = false
 
+        // --- MASUKKAN VIDEO MUXED ---
+        muxedStreams.forEach { video ->
+            hasStreams = true
             callback(
                 newExtractorLink(
                     source = name,
-                    name = "YouTube ${normalizeCodec(video.codec)}",
+                    // Kita beri nama "Muxed" agar nanti mudah dilacak di logcat jika player memilih ini
+                    name = "YouTube Muxed ${normalizeCodec(video.codec)}",
                     url = video.content
                 ) {
                     quality = video.height
+                    // Tidak perlu map audioTracks karena sudah gabung di dalam video
+                }
+            )
+        }
+
+        // --- MASUKKAN VIDEO TERPISAH (Max 1080p) ---
+        separatedVideoStreams.forEach { video ->
+            hasStreams = true
+            callback(
+                newExtractorLink(
+                    source = name,
+                    name = "YouTube HD ${normalizeCodec(video.codec)}",
+                    url = video.content
+                ) {
+                    quality = video.height
+                    // Harus pakai audioTracks karena videonya bisu
                     audioTracks = audioStreams.map { newAudioFile(it.content) }
                 }
             )
         }
 
+        if (!hasStreams) return false
 
         info.subtitles.forEach { subtitle ->
             subtitleCallback(
