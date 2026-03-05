@@ -66,43 +66,33 @@ open class YoutubeExtractor : ExtractorApi() {
         callback: (ExtractorLink) -> Unit
     ): Boolean {
 
-        // HANYA AMBIL VIDEO MUXED (Video + Audio sudah menyatu 1 file)
-        val muxedStreams = info.videoStreams.orEmpty()
         var hasStreams = false
 
-        if (muxedStreams.isNotEmpty()) {
-            // Jika ada versi Muxed (biasanya up to 720p), KITA HANYA PAKAI INI
-            muxedStreams.forEach { video ->
-                hasStreams = true
-                callback(
-                    newExtractorLink(
-                        source = name,
-                        name = "YouTube Muxed ${normalizeCodec(video.codec)}",
-                        url = video.content
-                    ) {
-                        quality = video.height
-                    }
-                )
-            }
-        } else {
-            // FALLBACK DARURAT: Jika video jadul tidak punya format Muxed
-            // Kita pakai yang terpisah, tapi dibatasi maksimal 720p agar tetap super ringan
-            val separatedVideoStreams = info.videoOnlyStreams.orEmpty().filter { it.height <= 720 }
-            val audioStreams = info.audioStreams.orEmpty()
+        // STRATEGI BARU: Kita abaikan Muxed (karena sering mentok di 360p)
+        // Kita gunakan video terpisah, TAPI dengan batas resolusi maksimal 720p!
+        
+        // Memfilter video agar yang dilempar ke ExoPlayer hanya yang resolusinya <= 720
+        val separatedVideoStreams = info.videoOnlyStreams.orEmpty().filter { stream ->
+            stream.height <= 720 
+        }
+        
+        // Ambil link audio untuk dipasangkan nanti
+        val audioStreams = info.audioStreams.orEmpty()
 
-            separatedVideoStreams.forEach { video ->
-                hasStreams = true
-                callback(
-                    newExtractorLink(
-                        source = name,
-                        name = "YouTube HD ${normalizeCodec(video.codec)}",
-                        url = video.content
-                    ) {
-                        quality = video.height
-                        audioTracks = audioStreams.map { newAudioFile(it.content) }
-                    }
-                )
-            }
+        // Lempar link video yang sudah difilter (max 720p) ke player
+        separatedVideoStreams.forEach { video ->
+            hasStreams = true
+            callback(
+                newExtractorLink(
+                    source = name,
+                    name = "YouTube HD ${normalizeCodec(video.codec)}",
+                    url = video.content
+                ) {
+                    quality = video.height
+                    // Gabungkan dengan audio secara manual
+                    audioTracks = audioStreams.map { newAudioFile(it.content) }
+                }
+            )
         }
 
         if (!hasStreams) return false
