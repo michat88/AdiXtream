@@ -1218,9 +1218,9 @@ class CS3IPlayer : IPlayer {
                                 videoBufferMs.toInt()
                             },
                             // --- MODIFIKASI: KITA UBAH MENJADI 5000 (5 DETIK) ---
-                            0001,
+                            100,
                             // --- MODIFIKASI: KITA UBAH MENJADI 5000 (5 DETIK) ---
-                            0001
+                            100
                         ).build()
                 )
 
