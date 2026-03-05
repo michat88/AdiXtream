@@ -66,47 +66,43 @@ open class YoutubeExtractor : ExtractorApi() {
         callback: (ExtractorLink) -> Unit
     ): Boolean {
 
-        // 1. Ambil stream MUXED (Video + Audio gabung, biasanya mentok di 360p atau 720p). Sangat ringan!
+        // HANYA AMBIL VIDEO MUXED (Video + Audio sudah menyatu 1 file)
         val muxedStreams = info.videoStreams.orEmpty()
-        
-        // 2. Ambil stream TERPISAH (Video Only), tapi kita filter MAKSIMAL 1080p agar tidak bikin player macet.
-        val separatedVideoStreams = info.videoOnlyStreams.orEmpty().filter { it.height <= 1080 }
-        
-        // Audio stream untuk digabungkan dengan separatedVideoStreams
-        val audioStreams = info.audioStreams.orEmpty()
-
         var hasStreams = false
 
-        // --- MASUKKAN VIDEO MUXED ---
-        muxedStreams.forEach { video ->
-            hasStreams = true
-            callback(
-                newExtractorLink(
-                    source = name,
-                    // Kita beri nama "Muxed" agar nanti mudah dilacak di logcat jika player memilih ini
-                    name = "YouTube Muxed ${normalizeCodec(video.codec)}",
-                    url = video.content
-                ) {
-                    quality = video.height
-                    // Tidak perlu map audioTracks karena sudah gabung di dalam video
-                }
-            )
-        }
+        if (muxedStreams.isNotEmpty()) {
+            // Jika ada versi Muxed (biasanya up to 720p), KITA HANYA PAKAI INI
+            muxedStreams.forEach { video ->
+                hasStreams = true
+                callback(
+                    newExtractorLink(
+                        source = name,
+                        name = "YouTube Muxed ${normalizeCodec(video.codec)}",
+                        url = video.content
+                    ) {
+                        quality = video.height
+                    }
+                )
+            }
+        } else {
+            // FALLBACK DARURAT: Jika video jadul tidak punya format Muxed
+            // Kita pakai yang terpisah, tapi dibatasi maksimal 720p agar tetap super ringan
+            val separatedVideoStreams = info.videoOnlyStreams.orEmpty().filter { it.height <= 720 }
+            val audioStreams = info.audioStreams.orEmpty()
 
-        // --- MASUKKAN VIDEO TERPISAH (Max 1080p) ---
-        separatedVideoStreams.forEach { video ->
-            hasStreams = true
-            callback(
-                newExtractorLink(
-                    source = name,
-                    name = "YouTube HD ${normalizeCodec(video.codec)}",
-                    url = video.content
-                ) {
-                    quality = video.height
-                    // Harus pakai audioTracks karena videonya bisu
-                    audioTracks = audioStreams.map { newAudioFile(it.content) }
-                }
-            )
+            separatedVideoStreams.forEach { video ->
+                hasStreams = true
+                callback(
+                    newExtractorLink(
+                        source = name,
+                        name = "YouTube HD ${normalizeCodec(video.codec)}",
+                        url = video.content
+                    ) {
+                        quality = video.height
+                        audioTracks = audioStreams.map { newAudioFile(it.content) }
+                    }
+                )
+            }
         }
 
         if (!hasStreams) return false
