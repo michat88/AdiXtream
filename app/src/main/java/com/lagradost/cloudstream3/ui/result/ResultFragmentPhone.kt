@@ -919,8 +919,8 @@ open class ResultFragmentPhone : FullScreenPlayer() {
                                         i.type = "text/plain"
                                         i.putExtra(Intent.EXTRA_SUBJECT, d.title)
 
-                                        // Hasil Akhir: Judul & Deskripsi Cerita utuh 100% + Link Super Pendek & Elegan!
-                                        val pesanShare = "*${d.title}*\n\n$rawDesc\n\n🎥 Klik link ini untuk menonton:\n$finalShortUrl"
+                                        // Tampilan Super Bersih: HANYA mengirimkan link, biarkan WhatsApp yang memunculkan Preview
+                                        val pesanShare = finalShortUrl
                                         i.putExtra(Intent.EXTRA_TEXT, pesanShare)
 
                                         startActivity(Intent.createChooser(i, "Bagikan film ini"))
