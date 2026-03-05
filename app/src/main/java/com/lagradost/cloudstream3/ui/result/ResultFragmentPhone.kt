@@ -849,44 +849,88 @@ open class ResultFragmentPhone : FullScreenPlayer() {
                             QuickSearchFragment.pushSearch(activity, d.title)
                         }
 
-                        // --- MODIFIKASI SHARE ADIXTREAM (DYNAMIC PREVIEW) ---
+                        // --- MODIFIKASI SHARE ADIXTREAM (LEVEL PRO: CLOUDFLARE KV) ---
                         resultShare.setOnClickListener {
-                            try {
-                                val i = Intent(Intent.ACTION_SEND)
-                                
-                                val flags = android.util.Base64.URL_SAFE or android.util.Base64.NO_WRAP or android.util.Base64.NO_PADDING
-                                val nameBase64 = android.util.Base64.encodeToString(d.apiName.toString().toByteArray(Charsets.UTF_8), flags)
-                                val urlBase64 = android.util.Base64.encodeToString(d.url.toByteArray(Charsets.UTF_8), flags)
-                                val shareData = "${nameBase64}_=_${urlBase64}"
-                                
-                                // 1. Encode Judul
-                                val titleEncoded = URLEncoder.encode(d.title, "UTF-8")
-                                
-                                // 2. Ambil Poster, kalau kosong pakai banner default
-                                val posterUrl = d.posterImage ?: d.posterBackgroundImage ?: "https://raw.githubusercontent.com/michat88/Zaneta/main/Icons/banner_nonton_adixtream.png"
-                                val posterEncoded = URLEncoder.encode(posterUrl, "UTF-8")
-                                
-                                // 3. Ambil Deskripsi, potong maksimal 150 huruf biar link tidak terlalu panjang
-                                val rawDesc = d.plotText?.toString() ?: "Nonton film seru di AdiXtream!"
-                                val shortDesc = if (rawDesc.length > 150) rawDesc.substring(0, 150) + "..." else rawDesc
-                                val descEncoded = URLEncoder.encode(shortDesc, "UTF-8")
-                                
-                                // ==== URL CLOUDFLARE WORKER MILIKMU ====
-                                val workerUrl = "https://share-adixtream.gokilmichat.workers.dev"
-                                // =====================================================================
+                            // Beri tahu user kalau sistem sedang membuat link
+                            showToast("Menyiapkan link premium...", Toast.LENGTH_SHORT)
 
-                                // Susun URL Pintar
-                                val redirectUrl = "$workerUrl/?data=$shareData&title=$titleEncoded&poster=$posterEncoded&desc=$descEncoded"
-                                
-                                i.type = "text/plain"
-                                i.putExtra(Intent.EXTRA_SUBJECT, d.title)
-                                
-                                val pesanShare = "Nonton ${d.title} di AdiXtream! 🍿\n\n🎥 Klik link ini untuk menonton:\n$redirectUrl"
-                                i.putExtra(Intent.EXTRA_TEXT, pesanShare)
-                                
-                                startActivity(Intent.createChooser(i, "Bagikan film ini"))
-                            } catch (e: Exception) {
-                                logError(e)
+                            // Gunakan ioSafe agar proses network berjalan di background dan tidak bikin aplikasi freeze
+                            ioSafe {
+                                try {
+                                    val flags = android.util.Base64.URL_SAFE or android.util.Base64.NO_WRAP or android.util.Base64.NO_PADDING
+                                    val nameBase64 = android.util.Base64.encodeToString(d.apiName.toString().toByteArray(Charsets.UTF_8), flags)
+                                    val urlBase64 = android.util.Base64.encodeToString(d.url.toByteArray(Charsets.UTF_8), flags)
+                                    val shareData = "${nameBase64}_=_${urlBase64}"
+
+                                    // Siapkan data untuk preview
+                                    val posterUrl = d.posterImage ?: d.posterBackgroundImage ?: "https://raw.githubusercontent.com/michat88/Zaneta/main/Icons/banner_nonton_adixtream.png"
+                                    
+                                    val rawDesc = d.plotText?.toString() ?: "Nonton film seru di AdiXtream!"
+                                    
+                                    // Potong deskripsi sedikit saja khusus untuk preview HTML di Cloudflare agar rapi
+                                    val shortDescForMeta = if (rawDesc.length > 150) rawDesc.substring(0, 150) + "..." else rawDesc
+
+                                    // Siapkan data JSON untuk dikirim ke Server Cloudflare-mu
+                                    // Hapus tanda kutip ganda dan enter agar format JSON tidak error saat dikirim
+                                    val safeTitle = d.title.replace("\"", "\\\"").replace("\n", " ")
+                                    val safeDesc = shortDescForMeta.replace("\"", "\\\"").replace("\n", " ")
+                                    
+                                    val jsonInputString = """
+                                        {
+                                            "data": "$shareData",
+                                            "title": "$safeTitle",
+                                            "poster": "$posterUrl",
+                                            "desc": "$safeDesc"
+                                        }
+                                    """.trimIndent()
+
+                                    // Panggil Worker API kita (Method: POST)
+                                    val workerApiUrl = "https://share-adixtream.gokilmichat.workers.dev/api/shorten"
+                                    val url = java.net.URL(workerApiUrl)
+                                    val connection = url.openConnection() as java.net.HttpURLConnection
+                                    connection.requestMethod = "POST"
+                                    connection.setRequestProperty("Content-Type", "application/json; utf-8")
+                                    connection.setRequestProperty("Accept", "application/json")
+                                    connection.doOutput = true
+
+                                    // Kirim data JSON
+                                    connection.outputStream.use { os ->
+                                        val input = jsonInputString.toByteArray(Charsets.UTF_8)
+                                        os.write(input, 0, input.size)
+                                    }
+
+                                    var finalShortUrl = ""
+                                    // Jika sukses (Kode HTTP 200 OK), tangkap balasan link pendeknya
+                                    if (connection.responseCode == 200) {
+                                        connection.inputStream.bufferedReader().use { reader ->
+                                            val response = reader.readText()
+                                            // Memotong teks json manual untuk mengambil URL-nya saja
+                                            finalShortUrl = response.substringAfter("\"shortUrl\":\"").substringBefore("\"")
+                                        }
+                                    }
+
+                                    if (finalShortUrl.isBlank()) {
+                                        throw Exception("Gagal mendapatkan link pendek dari Server")
+                                    }
+
+                                    // Kembali ke UI Thread untuk menampilkan menu Share (WA/Telegram/dll)
+                                    activity?.runOnUiThread {
+                                        val i = Intent(Intent.ACTION_SEND)
+                                        i.type = "text/plain"
+                                        i.putExtra(Intent.EXTRA_SUBJECT, d.title)
+
+                                        // Hasil Akhir: Judul & Deskripsi Cerita utuh 100% + Link Super Pendek & Elegan!
+                                        val pesanShare = "*${d.title}*\n\n$rawDesc\n\n🎥 Klik link ini untuk menonton:\n$finalShortUrl"
+                                        i.putExtra(Intent.EXTRA_TEXT, pesanShare)
+
+                                        startActivity(Intent.createChooser(i, "Bagikan film ini"))
+                                    }
+                                } catch (e: Exception) {
+                                    logError(e)
+                                    activity?.runOnUiThread {
+                                        showToast("Gagal menyiapkan link share, periksa koneksi internet.", Toast.LENGTH_SHORT)
+                                    }
+                                }
                             }
                         }
                         // ----------------------------------------------------
