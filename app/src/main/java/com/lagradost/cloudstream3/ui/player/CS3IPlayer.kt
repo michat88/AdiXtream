@@ -118,14 +118,12 @@ const val TAG = "CS3ExoPlayer"
 const val PREFERRED_AUDIO_LANGUAGE_KEY = "preferred_audio_language"
 
 /** toleranceBeforeUs – The maximum time that the actual position seeked to may precede the
- * requested seek position, in microseconds.
- * Must be non-negative. */
+ * requested seek position, in microseconds. Must be non-negative. */
 const val toleranceBeforeUs = 300_000L
 
 /**
  * toleranceAfterUs – The maximum time that the actual position seeked to may exceed the requested
- * seek position, in microseconds.
- * Must be non-negative.
+ * seek position, in microseconds. Must be non-negative.
  */
 const val toleranceAfterUs = 300_000L
 
@@ -1046,6 +1044,7 @@ class CS3IPlayer : IPlayer {
             delay(1000)
         }
     }
+
     private fun buildExoPlayer(
         context: Context,
         mediaItemSlices: List<MediaItemSlice>,
@@ -1217,10 +1216,8 @@ class CS3IPlayer : IPlayer {
                             } else {
                                 videoBufferMs.toInt()
                             },
-                            // --- MODIFIKASI: KITA UBAH MENJADI 5000 (5 DETIK) ---
-                            100,
-                            // --- MODIFIKASI: KITA UBAH MENJADI 5000 (5 DETIK) ---
-                            100
+                            DefaultLoadControl.DEFAULT_BUFFER_FOR_PLAYBACK_MS,
+                            DefaultLoadControl.DEFAULT_BUFFER_FOR_PLAYBACK_AFTER_REBUFFER_MS
                         ).build()
                 )
 
@@ -1351,6 +1348,7 @@ class CS3IPlayer : IPlayer {
             this.addAnalyticsListener(tracksAnalyticsListener)
         }
     }
+
     private fun loadExo(
         context: Context,
         mediaSlices: List<MediaItemSlice>,
@@ -1418,7 +1416,8 @@ class CS3IPlayer : IPlayer {
                             tracks.groups.filter { it.type == TRACK_TYPE_TEXT }.getFormats()
                                 .mapNotNull { (format, _) ->
                                     // Filter out non subs, already used subs and subs without languages
-                                    if (format.id == null || format.language == null ||
+                                    if (format.id == null ||
+                                        format.language == null ||
                                         format.language?.startsWith("-") == true
                                     ) return@mapNotNull null
 
@@ -1953,3 +1952,4 @@ class CS3IPlayer : IPlayer {
     }
 
 }
+
