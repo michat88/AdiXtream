@@ -987,7 +987,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
             val currentRepos = RepositoryManager.getRepositories()
             val hasTargetRepo = currentRepos.any { it.url == targetRepoUrl }
             val hasInvalidRepos = currentRepos.any { it.url != targetRepoUrl }
-             
+            
             var isRepoChanged = false
 
             if (!hasTargetRepo || hasInvalidRepos) {
@@ -1131,9 +1131,15 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
 
         if (isLayout(PHONE) && isAuthEnabled(this) && noAccounts) {
             if (deviceHasPasswordPinLock(this)) {
-                startBiometricAuthentication(this, R.string.biometric_authentication_title, false)
-                promptInfo?.let { prompt -> biometricPrompt?.authenticate(prompt) }
+                // 1. Sembunyikan konten utama aplikasi dulu supaya aman
                 binding?.navHostFragment?.isInvisible = true
+                
+                // 2. Gunakan root.post untuk menunda pemunculan dialog 
+                // sampai layar aplikasi benar-benar selesai dimuat & siap
+                binding?.root?.post {
+                    startBiometricAuthentication(this@MainActivity, R.string.biometric_authentication_title, false)
+                    promptInfo?.let { prompt -> biometricPrompt?.authenticate(prompt) }
+                }
             }
         }
 
