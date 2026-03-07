@@ -118,12 +118,14 @@ const val TAG = "CS3ExoPlayer"
 const val PREFERRED_AUDIO_LANGUAGE_KEY = "preferred_audio_language"
 
 /** toleranceBeforeUs – The maximum time that the actual position seeked to may precede the
- * requested seek position, in microseconds. Must be non-negative. */
+ * requested seek position, in microseconds.
+ * Must be non-negative. */
 const val toleranceBeforeUs = 300_000L
 
 /**
  * toleranceAfterUs – The maximum time that the actual position seeked to may exceed the requested
- * seek position, in microseconds. Must be non-negative.
+ * seek position, in microseconds.
+ * Must be non-negative.
  */
 const val toleranceAfterUs = 300_000L
 
@@ -770,7 +772,7 @@ class CS3IPlayer : IPlayer {
                 CronetEngine.Builder(context)
                     .enableBrotli(true)
                     .enableHttp2(true)
-                    .enableQuic(false) // QUIC DISABLED UNTUK KESTABILAN KONEKSI LOKAL
+                    .enableQuic(false) // [DIMODIFIKASI: QUIC dimatikan di sini]
                     .setStoragePath(cacheDirectory.absolutePath)
                     .setLibraryLoader(null)
                     .enableHttpCache(CronetEngine.Builder.HTTP_CACHE_DISK, diskCacheSize)
@@ -883,399 +885,6 @@ class CS3IPlayer : IPlayer {
         private var currentSubtitleDecoder: CustomSubtitleDecoderFactory? = null
         private var currentTextRenderer: TextRenderer? = null
     }
-    override fun setPreferredAudioTrack(trackLanguage: String?, id: String?) {
-        preferredAudioTrackLanguage = trackLanguage
-
-        if (id != null) {
-            val audioTrack =
-                exoPlayer?.currentTracks?.groups?.filter { it.type == TRACK_TYPE_AUDIO }
-                    ?.getTrack(id)
-
-            if (audioTrack != null) {
-                exoPlayer?.trackSelectionParameters = exoPlayer?.trackSelectionParameters
-                    ?.buildUpon()
-                    ?.setOverrideForType(
-                        TrackSelectionOverride(
-                            audioTrack.first,
-                            audioTrack.second
-                        )
-                    )
-                    ?.build()
-                    ?: return
-                return
-            }
-        }
-
-        exoPlayer?.trackSelectionParameters = exoPlayer?.trackSelectionParameters
-            ?.buildUpon()
-            ?.setPreferredAudioLanguage(trackLanguage)
-            ?.build()
-            ?: return
-    }
-
-
-    /**
-     * Gets all supported formats in a list
-     * */
-    private fun List<Tracks.Group>.getFormats(): List<Pair<Format, Int>> {
-        return this.map {
-            it.getFormats()
-        }.flatten()
-    }
-
-    private fun Tracks.Group.getFormats(): List<Pair<Format, Int>> {
-        return (0 until this.mediaTrackGroup.length).mapNotNull { i ->
-            if (this.isSupported)
-                this.mediaTrackGroup.getFormat(i) to i
-            else null
-        }
-    }
-
-    private fun Format.toAudioTrack(): AudioTrack {
-        return AudioTrack(
-            this.id?.stripTrackId(),
-            this.label,
-            this.language
-        )
-    }
-
-    private fun Format.toSubtitleTrack(): TextTrack {
-        return TextTrack(
-            this.id?.stripTrackId(),
-            this.label,
-            this.language,
-            this.sampleMimeType
-        )
-    }
-
-    private fun Format.toVideoTrack(): VideoTrack {
-        return VideoTrack(
-            this.id?.stripTrackId(),
-            this.label,
-            this.language,
-            this.width,
-            this.height,
-        )
-    }
-
-    override fun getVideoTracks(): CurrentTracks {
-        val allTracks = exoPlayer?.currentTracks?.groups ?: emptyList()
-        val videoTracks = allTracks.filter { it.type == TRACK_TYPE_VIDEO }
-            .getFormats()
-            .map { it.first.toVideoTrack() }
-        val audioTracks = allTracks.filter { it.type == TRACK_TYPE_AUDIO }.getFormats()
-            .map { it.first.toAudioTrack() }
-
-        val textTracks = allTracks.filter { it.type == TRACK_TYPE_TEXT }.getFormats()
-            .map { it.first.toSubtitleTrack() }
-
-        val currentTextTracks = textTracks.filter { track ->
-            playerSelectedSubtitleTracks.any { it.second && it.first == track.id }
-        }
-
-        return CurrentTracks(
-            exoPlayer?.videoFormat?.toVideoTrack(),
-            exoPlayer?.audioFormat?.toAudioTrack(),
-            currentTextTracks,
-            videoTracks,
-            audioTracks,
-            textTracks
-        )
-    }
-
-    /**
-     * @return True if the player should be reloaded
-     * */
-    override fun setPreferredSubtitles(subtitle: SubtitleData?): Boolean {
-        Log.i(TAG, "setPreferredSubtitles init $subtitle")
-        currentSubtitles = subtitle
-
-        fun getTextTrack(id: String) =
-            exoPlayer?.currentTracks?.groups?.filter { it.type == TRACK_TYPE_TEXT }
-                ?.getTrack(id)
-
-        return (exoPlayer?.trackSelector as? DefaultTrackSelector?)?.let { trackSelector ->
-            if (subtitle == null) {
-                trackSelector.setParameters(
-                    trackSelector.buildUponParameters()
-                        .setTrackTypeDisabled(TRACK_TYPE_TEXT, true)
-                        .clearOverridesOfType(TRACK_TYPE_TEXT)
-                )
-            } else {
-                when (subtitleHelper.subtitleStatus(subtitle)) {
-                    SubtitleStatus.REQUIRES_RELOAD -> {
-                        Log.i(TAG, "setPreferredSubtitles REQUIRES_RELOAD")
-                        return@let true
-                    }
-
-                    SubtitleStatus.IS_ACTIVE -> {
-                        Log.i(TAG, "setPreferredSubtitles IS_ACTIVE")
-
-                        trackSelector.setParameters(
-                            trackSelector.buildUponParameters()
-                                .apply {
-                                    val track = getTextTrack(subtitle.getId())
-                                    if (track != null) {
-                                        setTrackTypeDisabled(TRACK_TYPE_TEXT, false)
-                                        setOverrideForType(
-                                            TrackSelectionOverride(
-                                                track.first,
-                                                track.second
-                                            )
-                                        )
-                                    }
-                                }
-                        )
-
-                        // ugliest code I have written, it seeks 1ms to *update* the subtitles
-                        //exoPlayer?.applicationLooper?.let {
-                        //    Handler(it).postDelayed({
-                        //        seekTime(1L)
-                        //    }, 1)
-                        //}
-                    }
-
-                    SubtitleStatus.NOT_FOUND -> {
-                        Log.i(TAG, "setPreferredSubtitles NOT_FOUND")
-                        return@let true
-                    }
-                }
-            }
-            return false
-        } ?: false
-    }
-
-    private var currentSubtitleOffset: Long = 0
-
-    override fun setSubtitleOffset(offset: Long) {
-        currentSubtitleOffset = offset
-        CustomDecoder.subtitleOffset = offset
-        if (currentTextRenderer?.state == STATE_ENABLED || currentTextRenderer?.state == STATE_STARTED) {
-            exoPlayer?.currentPosition?.let { pos ->
-                // This seems to properly refresh all subtitles
-                // It needs to be done as all subtitle cues with timings are pre-processed
-                currentTextRenderer?.resetPosition(pos)
-            }
-        }
-    }
-
-    override fun getSubtitleOffset(): Long {
-        return currentSubtitleOffset
-    }
-
-    override fun getSubtitleCues(): List<SubtitleCue> {
-        return currentSubtitleDecoder?.getSubtitleCues() ?: emptyList()
-    }
-
-    override fun getCurrentPreferredSubtitle(): SubtitleData? {
-        return subtitleHelper.getAllSubtitles().firstOrNull { sub ->
-            playerSelectedSubtitleTracks.any { (id, isSelected) ->
-                isSelected && sub.getId() == id
-            }
-        }
-    }
-
-    override fun getAspectRatio(): Rational? {
-        return exoPlayer?.videoFormat?.let { format ->
-            Rational(format.width, format.height)
-        }
-    }
-
-    override fun updateSubtitleStyle(style: SaveCaptionStyle) {
-        subtitleHelper.setSubStyle(style)
-    }
-
-    override fun saveData() {
-        Log.i(TAG, "saveData")
-        updatedTime()
-
-        exoPlayer?.let { exo ->
-            playbackPosition = exo.currentPosition
-            currentWindow = exo.currentMediaItemIndex
-            isPlaying = exo.isPlaying
-        }
-    }
-
-    private fun releasePlayer(saveTime: Boolean = true) {
-        Log.i(TAG, "releasePlayer")
-        eventLooperIndex += 1
-        if (saveTime)
-            updatedTime()
-
-        currentTextRenderer = null
-        currentSubtitleDecoder = null
-
-        exoPlayer?.apply {
-            playWhenReady = false
-
-            // This may look weird, however on some TV devices the audio does not stop playing
-            // so this may fix it?
-            try {
-                pause()
-            } catch (t: Throwable) {
-                // No documented exception, but just to be extra safe
-                logError(t)
-            }
-
-            stop()
-            release()
-        }
-        //simpleCache?.release()
-
-        exoPlayer = null
-        event(PlayerAttachedEvent(null))
-        //simpleCache = null
-    }
-
-    override fun onStop() {
-        Log.i(TAG, "onStop")
-
-        saveData()
-        if (!isAudioOnlyBackground) {
-            handleEvent(CSPlayerEvent.Pause, PlayerEventSource.Player)
-        }
-        //releasePlayer()
-    }
-
-    override fun onPause() {
-        Log.i(TAG, "onPause")
-        saveData()
-        if (!isAudioOnlyBackground) {
-            handleEvent(CSPlayerEvent.Pause, PlayerEventSource.Player)
-        }
-        //releasePlayer()
-    }
-
-    override fun onResume(context: Context) {
-        isAudioOnlyBackground = false
-        if (exoPlayer == null)
-            reloadPlayer(context)
-    }
-
-    override fun release() {
-        imageGenerator.release()
-        releasePlayer()
-    }
-
-    override fun setPlaybackSpeed(speed: Float) {
-        exoPlayer?.setPlaybackSpeed(speed)
-        playBackSpeed = speed
-    }
-
-    companion object {
-        /**
-         * Setting this variable is permanent across app sessions.
-         **/
-        var preferredAudioTrackLanguage: String? = null
-            get() {
-                return field ?: getKey(
-                    "$currentAccount/$PREFERRED_AUDIO_LANGUAGE_KEY",
-                    field
-                )?.also {
-                    field = it
-                }
-            }
-            set(value) {
-                setKey("$currentAccount/$PREFERRED_AUDIO_LANGUAGE_KEY", value)
-                field = value
-            }
-
-        private var simpleCache: SimpleCache? = null
-        private fun createOnlineSource(headers: Map<String, String>): HttpDataSource.Factory {
-            val source = OkHttpDataSource.Factory(app.baseClient).setUserAgent(USER_AGENT)
-            return source.apply {
-                setDefaultRequestProperties(headers)
-            }
-        }
-
-        private fun createOnlineSource(link: ExtractorLink): HttpDataSource.Factory {
-            val provider = getApiFromNameNull(link.source)
-            val interceptor = provider?.getVideoInterceptor(link)
-            val userAgent = link.headers.entries.find {
-                it.key.equals("User-Agent", ignoreCase = true)
-            }?.value
-
-            val source = if (interceptor == null) {
-                DefaultHttpDataSource.Factory() //TODO USE app.baseClient
-                    .setUserAgent(userAgent ?: USER_AGENT)
-                    .setAllowCrossProtocolRedirects(true)   //https://stackoverflow.com/questions/69040127/error-code-io-bad-http-status-exoplayer-android
-            } else {
-                val client = app.baseClient.newBuilder()
-                    .addInterceptor(interceptor)
-                    .build()
-                OkHttpDataSource.Factory(client).setUserAgent(userAgent ?: USER_AGENT)
-            }
-
-            // Do no include empty referer, if the provider wants those they can use the header map.
-            val refererMap =
-                if (link.referer.isBlank()) emptyMap() else mapOf("referer" to link.referer)
-            val headers = mapOf(
-                "accept" to "*/*",
-                "sec-ch-ua" to "\"Chromium\";v=\"91\", \" Not;A Brand\";v=\"99\"",
-                "sec-ch-ua-mobile" to "?0",
-                "sec-fetch-user" to "?1",
-                "sec-fetch-mode" to "navigate",
-                "sec-fetch-dest" to "video"
-            ) + refererMap + link.headers // Adds the headers from the provider, e.g Authorization
-
-            return source.apply {
-                setDefaultRequestProperties(headers)
-            }
-        }
-
-        private fun Context.createOfflineSource(): DataSource.Factory {
-            return DefaultDataSource.Factory(
-                this,
-                DefaultHttpDataSource.Factory().setUserAgent(USER_AGENT)
-            )
-        }
-
-        private fun getCache(context: Context, cacheSize: Long): SimpleCache? {
-            return try {
-                val databaseProvider = StandaloneDatabaseProvider(context)
-                SimpleCache(
-                    File(
-                        context.cacheDir, "exoplayer"
-                    ).also { deleteFileOnExit(it) }, // Ensures always fresh file
-                    LeastRecentlyUsedCacheEvictor(cacheSize),
-                    databaseProvider
-                )
-            } catch (e: Exception) {
-                logError(e)
-                null
-            }
-        }
-
-        private fun getMediaItemBuilder(mimeType: String):
-                MediaItem.Builder {
-            return MediaItem.Builder()
-                //Replace needed for android 6.0.0  https://github.com/google/ExoPlayer/issues/5983
-                .setMimeType(mimeType)
-        }
-
-        private fun getMediaItem(mimeType: String, uri: Uri): MediaItem {
-            return getMediaItemBuilder(mimeType).setUri(uri).build()
-        }
-
-        private fun getMediaItem(mimeType: String, url: String): MediaItem {
-            return getMediaItemBuilder(mimeType).setUri(url).build()
-        }
-
-        private fun getTrackSelector(context: Context, maxVideoHeight: Int?): TrackSelector {
-            val trackSelector = DefaultTrackSelector(context)
-            trackSelector.parameters = trackSelector.buildUponParameters()
-                // This will not force higher quality videos to fail
-                // but will make the m3u8 pick the correct preferred
-                .setMaxVideoSize(Int.MAX_VALUE, maxVideoHeight ?: Int.MAX_VALUE)
-                .setPreferredAudioLanguage(null)
-                .build()
-            return trackSelector
-        }
-
-        private var currentSubtitleDecoder: CustomSubtitleDecoderFactory? = null
-        private var currentTextRenderer: TextRenderer? = null
-    }
-
     private fun getCurrentTimestamp(writePosition: Long? = null): EpisodeSkip.SkipStamp? {
         val position = writePosition ?: this@CS3IPlayer.getPosition() ?: return null
         for (lastTimeStamp in lastTimeStamps) {
@@ -1330,6 +939,7 @@ class CS3IPlayer : IPlayer {
             Log.i(TAG, "Media is not seekable, we can not seek to $time")
         }
     }
+
     override fun handleEvent(event: CSPlayerEvent, source: PlayerEventSource) {
         Log.i(TAG, "handleEvent ${event.name}")
         try {
@@ -1600,15 +1210,16 @@ class CS3IPlayer : IPlayer {
                             30000,
                             true
                         )
+                        // [DIMODIFIKASI: Mengubah parameter buffering untuk inisialisasi yang lebih cepat]
                         .setBufferDurationsMs(
-                            25000, // <--- UBAHAN CUSTOM BUFFER
+                            25000, // Parameter 1: Min Buffer Ms
                             if (videoBufferMs <= 0) {
-                                DefaultLoadControl.DEFAULT_MAX_BUFFER_MS
+                                DefaultLoadControl.DEFAULT_MAX_BUFFER_MS // Parameter 2: Tetap pertahankan logika awal
                             } else {
                                 videoBufferMs.toInt()
                             },
-                            1500, // <--- UBAHAN CUSTOM BUFFER START 1.5s
-                            2000  // <--- UBAHAN CUSTOM REBUFFER START 2s
+                            1500, // Parameter 3: Playback Start Ms (Waktu inisialisasi awal)
+                            2000  // Parameter 4: Rebuffer Start Ms
                         ).build()
                 )
 
@@ -1739,7 +1350,6 @@ class CS3IPlayer : IPlayer {
             this.addAnalyticsListener(tracksAnalyticsListener)
         }
     }
-
     private fun loadExo(
         context: Context,
         mediaSlices: List<MediaItemSlice>,
@@ -1807,8 +1417,7 @@ class CS3IPlayer : IPlayer {
                             tracks.groups.filter { it.type == TRACK_TYPE_TEXT }.getFormats()
                                 .mapNotNull { (format, _) ->
                                     // Filter out non subs, already used subs and subs without languages
-                                    if (format.id == null ||
-                                        format.language == null ||
+                                    if (format.id == null || format.language == null ||
                                         format.language?.startsWith("-") == true
                                     ) return@mapNotNull null
 
@@ -2009,7 +1618,7 @@ class CS3IPlayer : IPlayer {
                     }
                         .setLooper(Looper.getMainLooper())
                         .setPosition(contentDuration * percentage / 100)
-                        //   .setPayload(customPayloadData)
+//   .setPayload(customPayloadData)
                         .setDeleteAfterDelivery(false)
                         .send()
                 }
