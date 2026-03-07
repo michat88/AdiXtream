@@ -66,14 +66,16 @@ open class YoutubeExtractor : ExtractorApi() {
         callback: (ExtractorLink) -> Unit
     ): Boolean {
 
-        val videoStreams = info.videoOnlyStreams.orEmpty()
-
-        if (videoStreams.isEmpty()) return false
-
+        // Mengambil info.videoStreams (muxed/gabungan) alih-alih info.videoOnlyStreams
+        val muxedStreams = info.videoStreams.orEmpty()
+        
+        // Fallback: Kalau ternyata video gabungan kosong, kita pakai videoOnly
+        val streamsToProcess = muxedStreams.ifEmpty { info.videoOnlyStreams.orEmpty() }
         val audioStreams = info.audioStreams.orEmpty()
 
-        videoStreams.forEach { video ->
+        if (streamsToProcess.isEmpty()) return false
 
+        streamsToProcess.forEach { video ->
             callback(
                 newExtractorLink(
                     source = name,
@@ -81,11 +83,14 @@ open class YoutubeExtractor : ExtractorApi() {
                     url = video.content
                 ) {
                     quality = video.height
-                    audioTracks = audioStreams.map { newAudioFile(it.content) }
+                    
+                    // Hanya tambahkan trek audio eksternal jika kita terpaksa memakai videoOnlyStreams
+                    if (muxedStreams.isEmpty() && audioStreams.isNotEmpty()) {
+                        audioTracks = audioStreams.map { newAudioFile(it.content) }
+                    }
                 }
             )
         }
-
 
         info.subtitles.forEach { subtitle ->
             subtitleCallback(
