@@ -65,17 +65,19 @@ open class YoutubeExtractor : ExtractorApi() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-
-        // Mengambil info.videoStreams (muxed/gabungan) alih-alih info.videoOnlyStreams
-        val muxedStreams = info.videoStreams.orEmpty()
         
-        // Fallback: Kalau ternyata video gabungan kosong, kita pakai videoOnly
-        val streamsToProcess = muxedStreams.ifEmpty { info.videoOnlyStreams.orEmpty() }
+        // 1. Ekstrak audio track terpisah untuk disatukan dengan video 1080p
         val audioStreams = info.audioStreams.orEmpty()
+        val audioTracksList = audioStreams.map { newAudioFile(it.content) }
 
-        if (streamsToProcess.isEmpty()) return false
+        // 2. Ambil unmuxed video (1080p ke atas)
+        // KUNCI: Buang codec AV1 biar gak bikin stuck (Hardware limit)
+        val unmuxedStreams = info.videoOnlyStreams.orEmpty().filter { video ->
+            val codec = video.codec?.lowercase() ?: ""
+            !codec.startsWith("av01") 
+        }
 
-        streamsToProcess.forEach { video ->
+        unmuxedStreams.forEach { video ->
             callback(
                 newExtractorLink(
                     source = name,
@@ -83,11 +85,21 @@ open class YoutubeExtractor : ExtractorApi() {
                     url = video.content
                 ) {
                     quality = video.height
-                    
-                    // Hanya tambahkan trek audio eksternal jika kita terpaksa memakai videoOnlyStreams
-                    if (muxedStreams.isEmpty() && audioStreams.isNotEmpty()) {
-                        audioTracks = audioStreams.map { newAudioFile(it.content) }
-                    }
+                    audioTracks = audioTracksList // Gabungin audionya di sini
+                }
+            )
+        }
+
+        // 3. Masukkan juga versi Muxed (360p/720p) sebagai cadangan resolusi di settingan
+        val muxedStreams = info.videoStreams.orEmpty()
+        muxedStreams.forEach { video ->
+            callback(
+                newExtractorLink(
+                    source = name,
+                    name = "YouTube Muxed",
+                    url = video.content
+                ) {
+                    quality = video.height
                 }
             )
         }
