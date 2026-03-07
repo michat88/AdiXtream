@@ -308,11 +308,9 @@ class CS3IPlayer : IPlayer {
         releasePlayer()
 
         if (link != null) {
-            // [MODIFIKASI KETIGA]: Matikan paksa preview untuk koneksi online agar tidak berebut bandwidth
-            val safePreview = false
-
+            // only video support atm
             (imageGenerator as? PreviewGenerator)?.let { gen ->
-                if (safePreview) {
+                if (preview) {
                     gen.load(link, sameEpisode)
                 } else {
                     gen.clear(sameEpisode)
@@ -626,6 +624,7 @@ class CS3IPlayer : IPlayer {
         event(PlayerAttachedEvent(null))
         //simpleCache = null
     }
+
     override fun onStop() {
         Log.i(TAG, "onStop")
 
@@ -773,7 +772,7 @@ class CS3IPlayer : IPlayer {
                 CronetEngine.Builder(context)
                     .enableBrotli(true)
                     .enableHttp2(true)
-                    .enableQuic(false) // [MODIFIKASI KESATU]: QUIC dimatikan
+                    .enableQuic(false) // [DIMODIFIKASI: QUIC dimatikan di sini]
                     .setStoragePath(cacheDirectory.absolutePath)
                     .setLibraryLoader(null)
                     .enableHttpCache(CronetEngine.Builder.HTTP_CACHE_DISK, diskCacheSize)
@@ -886,7 +885,6 @@ class CS3IPlayer : IPlayer {
         private var currentSubtitleDecoder: CustomSubtitleDecoderFactory? = null
         private var currentTextRenderer: TextRenderer? = null
     }
-
     private fun getCurrentTimestamp(writePosition: Long? = null): EpisodeSkip.SkipStamp? {
         val position = writePosition ?: this@CS3IPlayer.getPosition() ?: return null
         for (lastTimeStamp in lastTimeStamps) {
@@ -1212,16 +1210,16 @@ class CS3IPlayer : IPlayer {
                             30000,
                             true
                         )
-                        // [MODIFIKASI KEDUA]: Mengubah parameter buffering untuk inisialisasi yang lebih cepat
+                        // [DIMODIFIKASI: Mengubah parameter buffering untuk inisialisasi yang lebih cepat]
                         .setBufferDurationsMs(
-                            25000, 
+                            25000, // Parameter 1: Min Buffer Ms
                             if (videoBufferMs <= 0) {
-                                DefaultLoadControl.DEFAULT_MAX_BUFFER_MS 
+                                DefaultLoadControl.DEFAULT_MAX_BUFFER_MS // Parameter 2: Tetap pertahankan logika awal
                             } else {
                                 videoBufferMs.toInt()
                             },
-                            1500, 
-                            2000  
+                            1500, // Parameter 3: Playback Start Ms (Waktu inisialisasi awal)
+                            2000  // Parameter 4: Rebuffer Start Ms
                         ).build()
                 )
 
@@ -1361,21 +1359,10 @@ class CS3IPlayer : IPlayer {
     ) {
         Log.i(TAG, "loadExo")
         val settingsManager = PreferenceManager.getDefaultSharedPreferences(context)
-        var maxVideoHeight = settingsManager.getInt(
+        val maxVideoHeight = settingsManager.getInt(
             context.getString(if (context.isUsingMobileData()) R.string.quality_pref_mobile_data_key else R.string.quality_pref_key),
             Int.MAX_VALUE
         )
-
-        // [MODIFIKASI CERDAS]: Cek apakah link saat ini adalah YouTube (Trailer)
-        val isYouTube = currentLink?.source?.equals("youtube", ignoreCase = true) == true || 
-                        currentLink?.name?.contains("youtube", ignoreCase = true) == true
-
-        // Batasi ke 1080p HANYA untuk YouTube agar tidak buffering/stuttering karena file 4K. 
-        // Plugin lain akan tetap menggunakan resolusi asli (Int.MAX_VALUE).
-        if (isYouTube && maxVideoHeight == Int.MAX_VALUE) {
-            maxVideoHeight = 1080
-            Log.i(TAG, "Trailer YouTube terdeteksi, membatasi resolusi ke 1080p")
-        }
 
         try {
             hasUsedFirstRender = false
