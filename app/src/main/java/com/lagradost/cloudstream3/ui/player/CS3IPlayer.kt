@@ -308,9 +308,11 @@ class CS3IPlayer : IPlayer {
         releasePlayer()
 
         if (link != null) {
-            // only video support atm
+            // [MODIFIKASI KETIGA]: Matikan paksa preview untuk koneksi online agar tidak berebut bandwidth dan menyebabkan SocketException
+            val safePreview = false
+
             (imageGenerator as? PreviewGenerator)?.let { gen ->
-                if (preview) {
+                if (safePreview) {
                     gen.load(link, sameEpisode)
                 } else {
                     gen.clear(sameEpisode)
@@ -624,7 +626,6 @@ class CS3IPlayer : IPlayer {
         event(PlayerAttachedEvent(null))
         //simpleCache = null
     }
-
     override fun onStop() {
         Log.i(TAG, "onStop")
 
@@ -772,7 +773,7 @@ class CS3IPlayer : IPlayer {
                 CronetEngine.Builder(context)
                     .enableBrotli(true)
                     .enableHttp2(true)
-                    .enableQuic(false) // [DIMODIFIKASI: QUIC dimatikan di sini]
+                    .enableQuic(false) // [MODIFIKASI KESATU]: QUIC dimatikan
                     .setStoragePath(cacheDirectory.absolutePath)
                     .setLibraryLoader(null)
                     .enableHttpCache(CronetEngine.Builder.HTTP_CACHE_DISK, diskCacheSize)
@@ -885,6 +886,7 @@ class CS3IPlayer : IPlayer {
         private var currentSubtitleDecoder: CustomSubtitleDecoderFactory? = null
         private var currentTextRenderer: TextRenderer? = null
     }
+
     private fun getCurrentTimestamp(writePosition: Long? = null): EpisodeSkip.SkipStamp? {
         val position = writePosition ?: this@CS3IPlayer.getPosition() ?: return null
         for (lastTimeStamp in lastTimeStamps) {
@@ -1210,16 +1212,16 @@ class CS3IPlayer : IPlayer {
                             30000,
                             true
                         )
-                        // [DIMODIFIKASI: Mengubah parameter buffering untuk inisialisasi yang lebih cepat]
+                        // [MODIFIKASI KEDUA]: Mengubah parameter buffering untuk inisialisasi yang lebih cepat
                         .setBufferDurationsMs(
-                            25000, // Parameter 1: Min Buffer Ms
+                            25000, 
                             if (videoBufferMs <= 0) {
-                                DefaultLoadControl.DEFAULT_MAX_BUFFER_MS // Parameter 2: Tetap pertahankan logika awal
+                                DefaultLoadControl.DEFAULT_MAX_BUFFER_MS 
                             } else {
                                 videoBufferMs.toInt()
                             },
-                            1500, // Parameter 3: Playback Start Ms (Waktu inisialisasi awal)
-                            2000  // Parameter 4: Rebuffer Start Ms
+                            1500, 
+                            2000  
                         ).build()
                 )
 
