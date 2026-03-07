@@ -308,7 +308,7 @@ class CS3IPlayer : IPlayer {
         releasePlayer()
 
         if (link != null) {
-            // [MODIFIKASI KETIGA]: Matikan paksa preview untuk koneksi online agar tidak berebut bandwidth dan menyebabkan SocketException
+            // [MODIFIKASI KETIGA]: Matikan paksa preview untuk koneksi online agar tidak berebut bandwidth
             val safePreview = false
 
             (imageGenerator as? PreviewGenerator)?.let { gen ->
@@ -1361,10 +1361,21 @@ class CS3IPlayer : IPlayer {
     ) {
         Log.i(TAG, "loadExo")
         val settingsManager = PreferenceManager.getDefaultSharedPreferences(context)
-        val maxVideoHeight = settingsManager.getInt(
+        var maxVideoHeight = settingsManager.getInt(
             context.getString(if (context.isUsingMobileData()) R.string.quality_pref_mobile_data_key else R.string.quality_pref_key),
             Int.MAX_VALUE
         )
+
+        // [MODIFIKASI CERDAS]: Cek apakah link saat ini adalah YouTube (Trailer)
+        val isYouTube = currentLink?.source?.equals("youtube", ignoreCase = true) == true || 
+                        currentLink?.name?.contains("youtube", ignoreCase = true) == true
+
+        // Batasi ke 1080p HANYA untuk YouTube agar tidak buffering/stuttering karena file 4K. 
+        // Plugin lain akan tetap menggunakan resolusi asli (Int.MAX_VALUE).
+        if (isYouTube && maxVideoHeight == Int.MAX_VALUE) {
+            maxVideoHeight = 1080
+            Log.i(TAG, "Trailer YouTube terdeteksi, membatasi resolusi ke 1080p")
+        }
 
         try {
             hasUsedFirstRender = false
