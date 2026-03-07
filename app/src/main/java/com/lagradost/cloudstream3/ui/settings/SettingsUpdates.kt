@@ -274,8 +274,14 @@ class SettingsUpdates : BasePreferenceFragmentCompat() {
         // 1. Menyembunyikan tombol "Pasang versi pra-rilis"
         getPref(R.string.install_prerelease_key)?.isVisible = false
         
-        // 2. Menyembunyikan seluruh menu di bawah kategori "Cadangkan"
-        getPref(R.string.backup_key)?.isVisible = false
+        // 2. Mencari salah satu item di dalam kategori Backup untuk mendapatkan akses ke Header Kategorinya
+        val backupPref = getPref(R.string.backup_key)
+        
+        // Menyembunyikan *Parent* (yaitu Header teks biru "Cadangkan")
+        backupPref?.parent?.isVisible = false 
+        
+        // Menyembunyikan item-item di dalamnya (hanya untuk memastikan tidak ada sisa)
+        backupPref?.isVisible = false
         getPref(R.string.automatic_backup_key)?.isVisible = false
         getPref(R.string.restore_key)?.isVisible = false
         getPref(R.string.backup_path_key)?.isVisible = false
