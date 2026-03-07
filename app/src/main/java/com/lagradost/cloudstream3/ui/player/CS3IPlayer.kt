@@ -2,9 +2,7 @@
 
 package com.lagradost.cloudstream3.ui.player
 
-import android.annotation.SuppressLint
 import android.content.Context
-import android.content.DialogInterface
 import android.graphics.Bitmap
 import android.net.Uri
 import android.os.Handler
@@ -12,10 +10,7 @@ import android.os.Looper
 import android.util.Log
 import android.util.Rational
 import android.widget.FrameLayout
-import androidx.annotation.MainThread
 import androidx.annotation.OptIn
-import androidx.appcompat.app.AlertDialog
-import androidx.core.net.toUri
 import androidx.media3.common.C.TIME_UNSET
 import androidx.media3.common.C.TRACK_TYPE_AUDIO
 import androidx.media3.common.C.TRACK_TYPE_TEXT
@@ -28,7 +23,6 @@ import androidx.media3.common.Player
 import androidx.media3.common.TrackGroup
 import androidx.media3.common.TrackSelectionOverride
 import androidx.media3.common.Tracks
-import androidx.media3.common.VideoSize
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.database.StandaloneDatabaseProvider
 import androidx.media3.datasource.DataSource
@@ -43,19 +37,16 @@ import androidx.media3.datasource.okhttp.OkHttpDataSource
 import androidx.media3.exoplayer.DecoderCounters
 import androidx.media3.exoplayer.DecoderReuseEvaluation
 import androidx.media3.exoplayer.DefaultLoadControl
-import androidx.media3.exoplayer.DefaultRenderersFactory
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.Renderer.STATE_ENABLED
 import androidx.media3.exoplayer.Renderer.STATE_STARTED
 import androidx.media3.exoplayer.SeekParameters
 import androidx.media3.exoplayer.analytics.AnalyticsListener
-import androidx.media3.exoplayer.dash.DashMediaSource
 import androidx.media3.exoplayer.drm.DefaultDrmSessionManager
 import androidx.media3.exoplayer.drm.FrameworkMediaDrm
 import androidx.media3.exoplayer.drm.HttpMediaDrmCallback
 import androidx.media3.exoplayer.drm.LocalMediaDrmCallback
 import androidx.media3.exoplayer.source.ClippingMediaSource
-import androidx.media3.exoplayer.source.ConcatenatingMediaSource
 import androidx.media3.exoplayer.source.ConcatenatingMediaSource2
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.media3.exoplayer.source.MediaSource
@@ -65,66 +56,35 @@ import androidx.media3.exoplayer.text.TextOutput
 import androidx.media3.exoplayer.text.TextRenderer
 import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
 import androidx.media3.exoplayer.trackselection.TrackSelector
-import androidx.media3.extractor.mp4.FragmentedMp4Extractor
 import androidx.media3.ui.SubtitleView
-import androidx.preference.PreferenceManager
-import com.lagradost.cloudstream3.APIHolder.getApiFromNameNull
-import com.lagradost.cloudstream3.AudioFile
-import com.lagradost.cloudstream3.CloudStreamApp.Companion.getKey
-import com.lagradost.cloudstream3.CloudStreamApp.Companion.setKey
-import com.lagradost.cloudstream3.CommonActivity.activity
-import com.lagradost.cloudstream3.ErrorLoadingException
-import com.lagradost.cloudstream3.MainActivity.Companion.deleteFileOnExit
-import com.lagradost.cloudstream3.R
-import com.lagradost.cloudstream3.TvType
-import com.lagradost.cloudstream3.USER_AGENT
 import com.lagradost.cloudstream3.app
+import com.lagradost.cloudstream3.USER_AGENT
 import com.lagradost.cloudstream3.mvvm.debugAssert
 import com.lagradost.cloudstream3.mvvm.logError
-import com.lagradost.cloudstream3.mvvm.safe
-import com.lagradost.cloudstream3.ui.player.CustomDecoder.Companion.fixSubtitleAlignment
-import com.lagradost.cloudstream3.ui.settings.Globals.EMULATOR
-import com.lagradost.cloudstream3.ui.settings.Globals.PHONE
-import com.lagradost.cloudstream3.ui.settings.Globals.isLayout
 import com.lagradost.cloudstream3.ui.subtitles.SaveCaptionStyle
-import com.lagradost.cloudstream3.ui.subtitles.SubtitlesFragment.Companion.applyStyle
-import com.lagradost.cloudstream3.utils.AppContextUtils.isUsingMobileData
-import com.lagradost.cloudstream3.utils.AppContextUtils.setDefaultFocus
-import com.lagradost.cloudstream3.utils.CLEARKEY_UUID
-import com.lagradost.cloudstream3.utils.Coroutines.ioSafe
-import com.lagradost.cloudstream3.utils.Coroutines.runOnMainThread
 import com.lagradost.cloudstream3.utils.DataStoreHelper.currentAccount
+import com.lagradost.cloudstream3.CloudStreamApp.Companion.getKey
+import com.lagradost.cloudstream3.CloudStreamApp.Companion.setKey
+import com.lagradost.cloudstream3.MainActivity.Companion.deleteFileOnExit
 import com.lagradost.cloudstream3.utils.DrmExtractorLink
-import com.lagradost.cloudstream3.utils.EpisodeSkip
+    import com.lagradost.cloudstream3.utils.EpisodeSkip
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.ExtractorLinkPlayList
 import com.lagradost.cloudstream3.utils.ExtractorLinkType
+import com.lagradost.cloudstream3.utils.CLEARKEY_UUID
 import com.lagradost.cloudstream3.utils.PLAYREADY_UUID
-import com.lagradost.cloudstream3.utils.SubtitleHelper.fromTagToLanguageName
 import com.lagradost.cloudstream3.utils.WIDEVINE_UUID
 import io.github.anilbeesetti.nextlib.media3ext.ffdecoder.NextRenderersFactory
-import kotlinx.coroutines.delay
 import okhttp3.Interceptor
 import org.chromium.net.CronetEngine
 import java.io.File
-import java.security.SecureRandom
 import java.util.UUID
 import java.util.concurrent.Executors
-import javax.net.ssl.HttpsURLConnection
-import javax.net.ssl.SSLContext
-import javax.net.ssl.SSLSession
 
 const val TAG = "CS3ExoPlayer"
 const val PREFERRED_AUDIO_LANGUAGE_KEY = "preferred_audio_language"
 
-/** toleranceBeforeUs – The maximum time that the actual position seeked to may precede the
- * requested seek position, in microseconds. Must be non-negative. */
 const val toleranceBeforeUs = 300_000L
-
-/**
- * toleranceAfterUs – The maximum time that the actual position seeked to may exceed the requested
- * seek position, in microseconds. Must be non-negative.
- */
 const val toleranceAfterUs = 300_000L
 
 @OptIn(UnstableApi::class)
@@ -133,7 +93,6 @@ class CS3IPlayer : IPlayer {
     private var isPlaying = false
     private var exoPlayer: ExoPlayer? = null
         set(value) {
-            // If the old value is not null then the player has not been properly released.
             debugAssert(
                 { field != null && value != null },
                 { "Previous player instance should be released!" })
@@ -166,13 +125,15 @@ class CS3IPlayer : IPlayer {
 
     private val subtitleHelper = PlayerSubtitleHelper()
 
-    /** If we want to play the audio only in the background when the app is not open */
     private var isAudioOnlyBackground = false
+    
+    // UBAHAN: Menambahkan fungsi override dari interface IPlayer
+    override fun isActive(): Boolean = isPlayerActive
 
-    /**
-     * This is a way to combine the MediaItem and its duration for the concatenating MediaSource.
-     * @param durationUs does not matter if only one slice is present, since it will not concatenate
-     * */
+    override fun addTimeStamps(timeStamps: List<EpisodeSkip.SkipStamp>) {
+        // Timestamp skip episode handling
+    }
+
     data class MediaItemSlice(
         val mediaItem: MediaItem,
         val durationUs: Long,
@@ -193,11 +154,6 @@ class CS3IPlayer : IPlayer {
     override fun getIsPlaying(): Boolean = isPlaying
     override fun getPlaybackSpeed(): Float = playBackSpeed
 
-    /**
-     * Tracks reported to be used by exoplayer, since sometimes it has a mind of it's own when selecting subs.
-     * String = id (without exoplayer track number)
-     * Boolean = if it's active
-     * */
     private var playerSelectedSubtitleTracks = listOf<Pair<String, Boolean>>()
     private var requestedListeningPercentages: List<Int>? = null
 
@@ -205,7 +161,6 @@ class CS3IPlayer : IPlayer {
     private val mainHandler = Handler(Looper.getMainLooper())
 
     fun event(event: PlayerEvent) {
-        // Ensure that all work is done on the main looper, aka main thread
         if (Looper.myLooper() == mainHandler.looper) {
             eventHandler?.invoke(event)
         } else {
@@ -215,10 +170,6 @@ class CS3IPlayer : IPlayer {
         }
     }
 
-    /**
-     * As initCallbacks and releaseCallbacks must always be done,
-     * we use this to say that the player is in use.
-     * */
     @Volatile
     var isPlayerActive: Boolean = false
 
@@ -243,13 +194,12 @@ class CS3IPlayer : IPlayer {
         }
     }
 
-    // I know, this is not a perfect solution, however it works for fixing subs
     private fun reloadSubs() {
         exoPlayer?.applicationLooper?.let {
             try {
                 Handler(it).post {
                     try {
-                        seekTime(1L, source = PlayerEventSource.Player)
+                        seekTo(exoPlayer?.currentPosition?.plus(1L) ?: 0L, PlayerEventSource.Player)
                     } catch (e: Exception) {
                         logError(e)
                     }
@@ -299,14 +249,10 @@ class CS3IPlayer : IPlayer {
             playbackPosition = it
         }
 
-        // we want autoplay because of TV and UX
         isPlaying = autoPlay ?: isPlaying
-
-        // release the current exoplayer and cache
         releasePlayer()
 
         if (link != null) {
-            // only video support atm
             (imageGenerator as? PreviewGenerator)?.let { gen ->
                 if (preview) {
                     gen.load(link, sameEpisode)
@@ -314,7 +260,6 @@ class CS3IPlayer : IPlayer {
                     gen.clear(sameEpisode)
                 }
             }
-
             loadOnlinePlayer(context, link)
         } else if (data != null) {
             (imageGenerator as? PreviewGenerator)?.let { gen ->
@@ -328,7 +273,6 @@ class CS3IPlayer : IPlayer {
         } else {
             throw IllegalArgumentException("Requires link or uri")
         }
-
     }
 
     override fun setActiveSubtitles(subtitles: Set<SubtitleData>) {
@@ -340,18 +284,10 @@ class CS3IPlayer : IPlayer {
 
     private fun List<Tracks.Group>.getTrack(id: String?): Pair<TrackGroup, Int>? {
         if (id == null) return null
-        // This beast of an expression does:
-        // 1. Filter all audio tracks
-        // 2. Get all formats in said audio tacks
-        // 3. Gets all ids of the formats
-        // 4. Filters to find the first audio track with the same id as the audio track we are looking for
-        // 5. Returns the media group and the index of the audio track in the group
         return this.firstNotNullOfOrNull { group ->
             (0 until group.mediaTrackGroup.length).map {
                 group.getTrackFormat(it) to it
             }.firstOrNull {
-                // The format id system is "trackNumber:trackID"
-                // The track number is not generated by us so we filter it out
                 it.first.id?.stripTrackId() == id
             }
                 ?.let { group.mediaTrackGroup to it.second }
@@ -385,7 +321,6 @@ class CS3IPlayer : IPlayer {
             ?.build()
             ?: return
     }
-
     override fun setPreferredAudioTrack(trackLanguage: String?, id: String?, formatIndex: Int?) {
         preferredAudioTrackLanguage = trackLanguage
         id?.let { trackId ->
@@ -408,16 +343,12 @@ class CS3IPlayer : IPlayer {
                     return
                 }
         }
-        // Fallback to language-based selection
         exoPlayer?.trackSelectionParameters = exoPlayer?.trackSelectionParameters
             ?.buildUpon()
             ?.setPreferredAudioLanguage(trackLanguage)
             ?.build() ?: return
     }
 
-    /**
-     * Gets all supported formats in a list
-     * */
     private fun List<Tracks.Group>.getFormats(): List<Pair<Format, Int>> {
         return this.map {
             it.getFormats()
@@ -495,14 +426,10 @@ class CS3IPlayer : IPlayer {
         )
     }
 
-    /**
-     * @return True if the player should be reloaded
-     * */
     override fun setPreferredSubtitles(subtitle: SubtitleData?): Boolean {
         Log.i(TAG, "setPreferredSubtitles init $subtitle")
         currentSubtitles = subtitle
         val trackSelector = exoPlayer?.trackSelector as? DefaultTrackSelector ?: return false
-        // Disable subtitles if null
         if (subtitle == null) {
             trackSelector.setParameters(
                 trackSelector.buildUponParameters()
@@ -511,18 +438,14 @@ class CS3IPlayer : IPlayer {
             )
             return false
         }
-        // Handle subtitle based on status
         when (subtitleHelper.subtitleStatus(subtitle)) {
             SubtitleStatus.REQUIRES_RELOAD -> {
-                Log.i(TAG, "setPreferredSubtitles REQUIRES_RELOAD")
                 return true
             }
             SubtitleStatus.NOT_FOUND -> {
-                Log.i(TAG, "setPreferredSubtitles NOT_FOUND")
                 return true
             }
             SubtitleStatus.IS_ACTIVE -> {
-                Log.i(TAG, "setPreferredSubtitles IS_ACTIVE")
                 exoPlayer?.currentTracks?.groups
                     ?.filter { it.type == TRACK_TYPE_TEXT }
                     ?.getTrack(subtitle.getId())
@@ -545,8 +468,6 @@ class CS3IPlayer : IPlayer {
         CustomDecoder.subtitleOffset = offset
         if (currentTextRenderer?.state == STATE_ENABLED || currentTextRenderer?.state == STATE_STARTED) {
             exoPlayer?.currentPosition?.also { pos ->
-                // This seems to properly refresh all subtitles
-                // It needs to be done as all subtitle cues with timings are pre-processed
                 currentTextRenderer?.resetPosition(pos, false)
             }
         }
@@ -601,12 +522,9 @@ class CS3IPlayer : IPlayer {
         exoPlayer?.apply {
             playWhenReady = false
 
-            // This may look weird, however on some TV devices the audio does not stop playing
-            // so this may fix it?
             try {
                 pause()
             } catch (t: Throwable) {
-                // No documented exception, but just to be extra safe
                 logError(t)
             }
             playerListener?.let {
@@ -616,11 +534,9 @@ class CS3IPlayer : IPlayer {
             stop()
             release()
         }
-        //simpleCache?.release()
 
         exoPlayer = null
         event(PlayerAttachedEvent(null))
-        //simpleCache = null
     }
 
     override fun onStop() {
@@ -630,7 +546,6 @@ class CS3IPlayer : IPlayer {
         if (!isAudioOnlyBackground) {
             handleEvent(CSPlayerEvent.Pause, PlayerEventSource.Player)
         }
-        //releasePlayer()
     }
 
     override fun onPause() {
@@ -639,7 +554,6 @@ class CS3IPlayer : IPlayer {
         if (!isAudioOnlyBackground) {
             handleEvent(CSPlayerEvent.Pause, PlayerEventSource.Player)
         }
-        //releasePlayer()
     }
 
     override fun onResume(context: Context) {
@@ -658,238 +572,42 @@ class CS3IPlayer : IPlayer {
         playBackSpeed = speed
     }
 
-    companion object {
-        private const val CRONET_TIMEOUT_MS = 15_000
-
-        /**
-         * Single shared engine, to minimize the overhead of maintaining many as:
-         * 1. Cpu time/Startup time
-         * 2. Mem consumption/GC
-         * 3. Disk usage, as we simply use the same folder
-         * */
-        private var cronetEngine: CronetEngine? = null
-
-        /**
-         * How many active sessions we have.
-         *
-         * However in reality it should never go negative or be more than 1,
-         * but this makes more sense architecturally.
-         * */
-        @Volatile
-        private var activePlayers = 0
-
-        /** Unique monotonically increasing id to keep track of the last release call */
-        @Volatile
-        private var cronetReleasedId = 0
-
-        fun releaseCronetEngine() {
-            if (cronetEngine == null) return
-
-            // Delayed release, as we do not want to restart it when opening trailers ect
-            val id = ++cronetReleasedId
-            val posted = Handler(Looper.getMainLooper()).postDelayed({
-                // This might get dropped, but that should be very rare
-                // and should not affect it.
-                releaseCronetEngineInstantly(id)
-            }, 60_000) // 1min timeout before release
-
-            // If not posted, then run instantly
-            if (!posted) {
-                releaseCronetEngineInstantly(id)
-            }
-        }
-
-        private fun releaseCronetEngineInstantly(id: Int) {
-            // We should release if and only if this was the last call, and
-            // there is no active players
-            if (activePlayers == 0 && id == cronetReleasedId) {
-                try {
-                    cronetEngine?.shutdown()
-                } catch (t: Throwable) {
-                    logError(t)
-                } finally {
-                    Log.d(TAG, "CronetEngine shutdown")
-                    // Even if it fails to shutdown, the GC should take care of it
-                    cronetEngine = null
-                }
-            }
-        }
-
-        /**
-         * Setting this variable is permanent across app sessions.
-         **/
-        var preferredAudioTrackLanguage: String? = null
-            get() {
-                return field ?: getKey(
-                    "$currentAccount/$PREFERRED_AUDIO_LANGUAGE_KEY",
-                    field
-                )?.also {
-                    field = it
-                }
-            }
-            set(value) {
-                setKey("$currentAccount/$PREFERRED_AUDIO_LANGUAGE_KEY", value)
-                field = value
-            }
-
-        private var simpleCache: SimpleCache? = null
-
-        /// Create a small factory for small things, no cache, no cronet
-        private fun createOnlineSource(
-            headers: Map<String, String>?,
-            interceptor: Interceptor?
-        ): HttpDataSource.Factory {
-            val client = if (interceptor == null) {
-                app.baseClient
-            } else {
-                app.baseClient.newBuilder()
-                    .addInterceptor(interceptor)
-                    .build()
-            }
-            val source = OkHttpDataSource.Factory(client).setUserAgent(USER_AGENT)
-
-            if (!headers.isNullOrEmpty()) {
-                source.setDefaultRequestProperties(headers)
-            }
-            return source
-        }
-
-        fun tryCreateEngine(context: Context, diskCacheSize: Long): CronetEngine? {
-            // Fast case, no need to recreate it
-            cronetEngine?.let {
-                return it
-            }
-
-            // https://gist.github.com/ShivamKumarJha/3c8398b47053ae05112d2a8f8b5de531
-            return try {
-                val cacheDirectory = File(context.cacheDir, "CronetEngine")
-                cacheDirectory.deleteRecursively()
-                if (!cacheDirectory.exists()) {
-                    cacheDirectory.mkdirs()
-                }
-                CronetEngine.Builder(context)
-                    .enableBrotli(true)
-                    .enableHttp2(true)
-                    .enableQuic(false) // QUIC DISABLED
-                    .setStoragePath(cacheDirectory.absolutePath)
-                    .setLibraryLoader(null)
-                    .enableHttpCache(CronetEngine.Builder.HTTP_CACHE_DISK, diskCacheSize)
-                    .build().also { buildEngine ->
-                        Log.d(
-                            TAG,
-                            "Created CronetEngine with cache at ${cacheDirectory.absolutePath}"
-                        )
-                        cronetEngine = buildEngine
-                    }
-            } catch (t: Throwable) {
-                logError(t)
-                // Something went wrong, so we use the backup okhttp
-                null
-            }
-        }
-
-        private fun createVideoSource(
-            link: ExtractorLink,
-            engine: CronetEngine?,
-            interceptor: Interceptor?,
-        ): HttpDataSource.Factory {
-            val userAgent = link.headers.entries.find {
-                it.key.equals("User-Agent", ignoreCase = true)
-            }?.value ?: USER_AGENT
-
-            val source = if (interceptor == null) {
-                if (engine == null) {
-                    Log.d(TAG, "Using DefaultHttpDataSource for $link")
-                    OkHttpDataSource.Factory(app.baseClient).setUserAgent(userAgent)
-                } else {
-                    Log.d(TAG, "Using CronetDataSource for $link")
-                    CronetDataSource.Factory(engine, Executors.newSingleThreadExecutor())
-                        .setUserAgent(userAgent)
-                        .setConnectionTimeoutMs(CRONET_TIMEOUT_MS)
-                        .setReadTimeoutMs(CRONET_TIMEOUT_MS)
-                        .setResetTimeoutOnRedirects(true)
-                        .setHandleSetCookieRequests(true)
-                }
-            } else {
-                Log.d(TAG, "Using OkHttpDataSource for $link")
-                val client = app.baseClient.newBuilder()
-                    .addInterceptor(interceptor)
-                    .build()
-                OkHttpDataSource.Factory(client).setUserAgent(userAgent)
-            }
-
-            // Do no include empty referer, if the provider wants those they can use the header map.
-            val refererMap =
-                if (link.referer.isBlank()) emptyMap() else mapOf("referer" to link.referer)
-
-            // These are extra headers the browser like to insert, not sure if we want to include them
-            // for WIDEVINE/drm as well? Do that if someone gets 404 and creates an issue.
-            val headers = refererMap + link.headers // Adds the headers from the provider, e.g Authorization
-
-            return source.apply {
-                setDefaultRequestProperties(headers)
-            }
-        }
-
-        private fun Context.createOfflineSource(): DataSource.Factory {
-            return DefaultDataSource.Factory(
-                this,
-                DefaultHttpDataSource.Factory().setUserAgent(USER_AGENT)
-            )
-        }
-
-        private fun getCache(context: Context, cacheSize: Long): SimpleCache? {
-            return try {
-                val databaseProvider = StandaloneDatabaseProvider(context)
-                SimpleCache(
-                    File(
-                        context.cacheDir, "exoplayer"
-                    ).also { deleteFileOnExit(it) }, // Ensures always fresh file
-                    LeastRecentlyUsedCacheEvictor(cacheSize),
-                    databaseProvider
-                )
-            } catch (e: Exception) {
-                logError(e)
-                null
-            }
-        }
-
-        private fun getMediaItemBuilder(mimeType: String):
-                MediaItem.Builder {
-            return MediaItem.Builder()
-                //Replace needed for android 6.0.0  https://github.com/google/ExoPlayer/issues/5983
-                .setMimeType(mimeType)
-        }
-
-        private fun getMediaItem(mimeType: String, uri: Uri): MediaItem {
-            return getMediaItemBuilder(mimeType).setUri(uri).build()
-        }
-
-        private fun getMediaItem(mimeType: String, url: String): MediaItem {
-            return getMediaItemBuilder(mimeType).setUri(url).build()
-        }
-
-        private fun getTrackSelector(context: Context, maxVideoHeight: Int?): TrackSelector {
-            val trackSelector = DefaultTrackSelector(context)
-            trackSelector.parameters = trackSelector.buildUponParameters()
-                // This will not force higher quality videos to fail
-                // but will make the m3u8 pick the correct preferred
-                .setMaxVideoSize(Int.MAX_VALUE, maxVideoHeight ?: Int.MAX_VALUE)
-                .setPreferredAudioLanguage(null)
-                .build()
-            return trackSelector
-        }
-
-        private var currentSubtitleDecoder: CustomSubtitleDecoderFactory? = null
-        private var currentTextRenderer: TextRenderer? = null
-    }
     private var eventLooperIndex = 0
 
-    private fun handleEvent(event: CSPlayerEvent, source: PlayerEventSource) {
+    override fun handleEvent(event: CSPlayerEvent, source: PlayerEventSource) {
         val currentIdx = eventLooperIndex
         mainHandler.post {
             if (currentIdx == eventLooperIndex) {
-                event(PlayerEvent(source, event))
+                when(event) {
+                    CSPlayerEvent.Play -> event(PlayEvent(source))
+                    CSPlayerEvent.Pause -> event(PauseEvent(source))
+                    CSPlayerEvent.NextEpisode -> event(NextEpisodeEvent(source))
+                    else -> {}
+                }
+            }
+        }
+    }
+
+    override fun seekTime(timeMs: Long, source: PlayerEventSource) {
+        exoPlayer?.let { exo ->
+            seekTo(exo.currentPosition + timeMs, source)
+        }
+    }
+
+    override fun seekTo(timeMs: Long, source: PlayerEventSource) {
+        exoPlayer?.let { exo ->
+            exo.setSeekParameters(SeekParameters(toleranceBeforeUs, toleranceAfterUs))
+            exo.seekTo(currentWindow, timeMs)
+            playbackPosition = timeMs
+        }
+    }
+
+    private fun updatedTime() {
+        exoPlayer?.let { exo ->
+            val position = exo.currentPosition
+            val duration = exo.duration
+            if (position >= 0 && duration > 0) {
+                event(PositionEvent(PlayerEventSource.Player, position, position, duration))
             }
         }
     }
@@ -904,13 +622,14 @@ class CS3IPlayer : IPlayer {
             override fun buildTextRenderers(
                 context: Context,
                 output: TextOutput,
+                outputLooper: Looper,
                 extensionRendererMode: Int,
                 out: ArrayList<androidx.media3.exoplayer.Renderer>
             ) {
                 val customDecoder = currentSubtitleDecoder ?: CustomSubtitleDecoderFactory().also {
                     currentSubtitleDecoder = it
                 }
-                val textRenderer = TextRenderer(output, handler.looper, customDecoder)
+                val textRenderer = TextRenderer(output, outputLooper, customDecoder)
                 currentTextRenderer = textRenderer
                 out.add(textRenderer)
             }
@@ -934,24 +653,22 @@ class CS3IPlayer : IPlayer {
                         true
                     )
                     .setBufferDurationsMs(
-                        25000, // UBAHAN: MIN BUFFER JADI 25 DETIK
+                        25000, 
                         if (videoBufferMs <= 0) {
                             DefaultLoadControl.DEFAULT_MAX_BUFFER_MS
                         } else {
                             videoBufferMs.toInt()
                         },
-                        1500, // UBAHAN: PLAYBACK START JADI 1.5 DETIK
-                        2000  // UBAHAN: REBUFFER START JADI 2 DETIK
+                        1500, 
+                        2000  
                     ).build()
             )
             .build()
     }
-
     private fun getMediaSource(
         source: DataSource.Factory,
         item: MediaItemSlice,
     ): MediaSource {
-        val isM3u8 = item.mediaItem.localConfiguration?.uri?.toString()?.contains("m3u8") == true
         var mediaSource: MediaSource =
             DefaultMediaSourceFactory(source).createMediaSource(item.mediaItem)
 
@@ -964,22 +681,21 @@ class CS3IPlayer : IPlayer {
                 else -> androidx.media3.common.C.WIDEVINE_UUID
             }
             
-            val httpMediaDrmCallback =
-                if (drmParams.key != null && drmParams.kid != null && drmParams.kty != null) {
-                    val keyString =
-                        "{\"keys\":[{\"kty\":\"${drmParams.kty}\",\"k\":\"${drmParams.key}\",\"kid\":\"${drmParams.kid}\"}],\"type\":\"temporary\"}"
-                    LocalMediaDrmCallback(keyString.toByteArray())
-                } else {
-                    HttpMediaDrmCallback(drmParams.licenseUrl, DefaultHttpDataSource.Factory())
+            val drmCallback = if (drmParams.key != null && drmParams.kid != null && drmParams.kty != null) {
+                val keyString =
+                    "{\"keys\":[{\"kty\":\"${drmParams.kty}\",\"k\":\"${drmParams.key}\",\"kid\":\"${drmParams.kid}\"}],\"type\":\"temporary\"}"
+                LocalMediaDrmCallback(keyString.toByteArray())
+            } else {
+                val httpCallback = HttpMediaDrmCallback(drmParams.licenseUrl, DefaultHttpDataSource.Factory())
+                for ((key, value) in drmParams.keyRequestParameters) {
+                    httpCallback.setKeyRequestProperty(key, value)
                 }
-                
-            for ((key, value) in drmParams.keyRequestParameters) {
-                httpMediaDrmCallback.setKeyRequestProperty(key, value)
+                httpCallback
             }
-            
+                
             val drmSessionManager = DefaultDrmSessionManager.Builder()
                 .setUuidAndExoMediaDrmProvider(drmSchemeUuid, FrameworkMediaDrm.DEFAULT_PROVIDER)
-                .build(httpMediaDrmCallback)
+                .build(drmCallback)
                 
             mediaSource = DefaultMediaSourceFactory(source)
                 .setDrmSessionManagerProvider { drmSessionManager }
@@ -1012,13 +728,13 @@ class CS3IPlayer : IPlayer {
         )
         exoPlayer = player
         
-        val concatenatingMediaSource = ConcatenatingMediaSource2.Builder().build()
+        val sourceBuilder = ConcatenatingMediaSource2.Builder()
         for (item in mediaItems) {
             val mediaSource = getMediaSource(cacheFactory, item)
-            concatenatingMediaSource.addSource(mediaSource)
+            sourceBuilder.add(mediaSource)
         }
 
-        var source: MediaSource = concatenatingMediaSource
+        var source: MediaSource = sourceBuilder.build()
         
         if (subSources != null) {
             source = MergingMediaSource(
@@ -1111,7 +827,7 @@ class CS3IPlayer : IPlayer {
                 .setSelectionFlags(androidx.media3.common.C.SELECTION_FLAG_DEFAULT)
                 .build()
                 
-            val source = if (sub.isDownloaded) {
+            val source = if (sub.url.startsWith("file://")) {
                 offlineSourceFactory
             } else {
                 onlineSourceFactory
@@ -1130,6 +846,7 @@ class CS3IPlayer : IPlayer {
         
         return Pair(subSources.ifEmpty { null }, activeSubtitles)
     }
+
     private fun loadOfflinePlayer(context: Context, data: ExtractorUri) {
         try {
             currentDownloadedFile = data
@@ -1211,11 +928,11 @@ class CS3IPlayer : IPlayer {
                 val trackSourceFactory = createVideoSource(
                     ExtractorLink(
                         source = link.source,
-                        name = track.name ?: "Audio",
+                        name = "Audio",
                         url = track.url,
                         referer = link.referer,
                         quality = 0,
-                        type = ExtractorLinkType.AUDIO,
+                        type = ExtractorLinkType.VIDEO,
                         headers = link.headers,
                         extractorData = link.extractorData
                     ),
@@ -1262,33 +979,7 @@ class CS3IPlayer : IPlayer {
         }
     }
 
-    override fun seekTime(timeMs: Long, source: PlayerEventSource) {
-        exoPlayer?.let { exo ->
-            seekTo(exo.currentPosition + timeMs, source)
-        }
-    }
-
-    override fun seekTo(timeMs: Long, source: PlayerEventSource) {
-        exoPlayer?.let { exo ->
-            exo.setSeekParameters(SeekParameters(toleranceBeforeUs, toleranceAfterUs))
-            exo.seekTo(currentWindow, timeMs)
-            playbackPosition = timeMs
-            handleEvent(CSPlayerEvent.Seek, source)
-        }
-    }
-
-    private fun updatedTime() {
-        exoPlayer?.let { exo ->
-            val position = exo.currentPosition
-            val duration = exo.duration
-            if (position >= 0 && duration > 0) {
-                event(PositionEvent(position, duration))
-            }
-        }
-    }
-
     private val tracksAnalyticsListener = object : AnalyticsListener {
-
         override fun onVideoInputFormatChanged(
             eventTime: AnalyticsListener.EventTime,
             format: Format,
@@ -1318,5 +1009,195 @@ class CS3IPlayer : IPlayer {
         ) {
             event(TracksChangedEvent())
         }
+    }
+
+    companion object {
+        private const val CRONET_TIMEOUT_MS = 15_000
+
+        private var cronetEngine: CronetEngine? = null
+
+        @Volatile
+        private var activePlayers = 0
+
+        @Volatile
+        private var cronetReleasedId = 0
+
+        fun releaseCronetEngine() {
+            if (cronetEngine == null) return
+
+            val id = ++cronetReleasedId
+            val posted = Handler(Looper.getMainLooper()).postDelayed({
+                releaseCronetEngineInstantly(id)
+            }, 60_000) 
+
+            if (!posted) {
+                releaseCronetEngineInstantly(id)
+            }
+        }
+
+        private fun releaseCronetEngineInstantly(id: Int) {
+            if (activePlayers == 0 && id == cronetReleasedId) {
+                try {
+                    cronetEngine?.shutdown()
+                } catch (t: Throwable) {
+                    logError(t)
+                } finally {
+                    Log.d(TAG, "CronetEngine shutdown")
+                    cronetEngine = null
+                }
+            }
+        }
+
+        var preferredAudioTrackLanguage: String? = null
+            get() {
+                return field ?: getKey(
+                    "$currentAccount/$PREFERRED_AUDIO_LANGUAGE_KEY",
+                    field
+                )?.also {
+                    field = it
+                }
+            }
+            set(value) {
+                setKey("$currentAccount/$PREFERRED_AUDIO_LANGUAGE_KEY", value)
+                field = value
+            }
+
+        private var simpleCache: SimpleCache? = null
+
+        private fun createOnlineSource(
+            headers: Map<String, String>?,
+            interceptor: Interceptor?
+        ): HttpDataSource.Factory {
+            val client = if (interceptor == null) {
+                app.baseClient
+            } else {
+                app.baseClient.newBuilder()
+                    .addInterceptor(interceptor)
+                    .build()
+            }
+            val source = OkHttpDataSource.Factory(client).setUserAgent(USER_AGENT)
+
+            if (!headers.isNullOrEmpty()) {
+                source.setDefaultRequestProperties(headers)
+            }
+            return source
+        }
+
+        fun tryCreateEngine(context: Context, diskCacheSize: Long): CronetEngine? {
+            cronetEngine?.let {
+                return it
+            }
+
+            return try {
+                val cacheDirectory = File(context.cacheDir, "CronetEngine")
+                cacheDirectory.deleteRecursively()
+                if (!cacheDirectory.exists()) {
+                    cacheDirectory.mkdirs()
+                }
+                CronetEngine.Builder(context)
+                    .enableBrotli(true)
+                    .enableHttp2(true)
+                    .enableQuic(false) // QUIC DISABLED
+                    .setStoragePath(cacheDirectory.absolutePath)
+                    .setLibraryLoader(null)
+                    .enableHttpCache(CronetEngine.Builder.HTTP_CACHE_DISK, diskCacheSize)
+                    .build().also { buildEngine ->
+                        Log.d(
+                            TAG,
+                            "Created CronetEngine with cache at ${cacheDirectory.absolutePath}"
+                        )
+                        cronetEngine = buildEngine
+                    }
+            } catch (t: Throwable) {
+                logError(t)
+                null
+            }
+        }
+
+        private fun createVideoSource(
+            link: ExtractorLink,
+            engine: CronetEngine?,
+            interceptor: Interceptor?,
+        ): HttpDataSource.Factory {
+            val userAgent = link.headers.entries.find {
+                it.key.equals("User-Agent", ignoreCase = true)
+            }?.value ?: USER_AGENT
+
+            val source = if (interceptor == null) {
+                if (engine == null) {
+                    OkHttpDataSource.Factory(app.baseClient).setUserAgent(userAgent)
+                } else {
+                    CronetDataSource.Factory(engine, Executors.newSingleThreadExecutor())
+                        .setUserAgent(userAgent)
+                        .setConnectionTimeoutMs(CRONET_TIMEOUT_MS)
+                        .setReadTimeoutMs(CRONET_TIMEOUT_MS)
+                        .setResetTimeoutOnRedirects(true)
+                        .setHandleSetCookieRequests(true)
+                }
+            } else {
+                val client = app.baseClient.newBuilder()
+                    .addInterceptor(interceptor)
+                    .build()
+                OkHttpDataSource.Factory(client).setUserAgent(userAgent)
+            }
+
+            val refererMap =
+                if (link.referer.isBlank()) emptyMap() else mapOf("referer" to link.referer)
+
+            val headers = refererMap + link.headers 
+
+            return source.apply {
+                setDefaultRequestProperties(headers)
+            }
+        }
+
+        private fun Context.createOfflineSource(): DataSource.Factory {
+            return DefaultDataSource.Factory(
+                this,
+                DefaultHttpDataSource.Factory().setUserAgent(USER_AGENT)
+            )
+        }
+
+        private fun getCache(context: Context, cacheSize: Long): SimpleCache? {
+            return try {
+                val databaseProvider = StandaloneDatabaseProvider(context)
+                SimpleCache(
+                    File(
+                        context.cacheDir, "exoplayer"
+                    ).also { deleteFileOnExit(it) }, 
+                    LeastRecentlyUsedCacheEvictor(cacheSize),
+                    databaseProvider
+                )
+            } catch (e: Exception) {
+                logError(e)
+                null
+            }
+        }
+
+        private fun getMediaItemBuilder(mimeType: String):
+                MediaItem.Builder {
+            return MediaItem.Builder()
+                .setMimeType(mimeType)
+        }
+
+        private fun getMediaItem(mimeType: String, uri: Uri): MediaItem {
+            return getMediaItemBuilder(mimeType).setUri(uri).build()
+        }
+
+        private fun getMediaItem(mimeType: String, url: String): MediaItem {
+            return getMediaItemBuilder(mimeType).setUri(url).build()
+        }
+
+        private fun getTrackSelector(context: Context, maxVideoHeight: Int?): TrackSelector {
+            val trackSelector = DefaultTrackSelector(context)
+            trackSelector.parameters = trackSelector.buildUponParameters()
+                .setMaxVideoSize(Int.MAX_VALUE, maxVideoHeight ?: Int.MAX_VALUE)
+                .setPreferredAudioLanguage(null)
+                .build()
+            return trackSelector
+        }
+
+        private var currentSubtitleDecoder: CustomSubtitleDecoderFactory? = null
+        private var currentTextRenderer: TextRenderer? = null
     }
 }
