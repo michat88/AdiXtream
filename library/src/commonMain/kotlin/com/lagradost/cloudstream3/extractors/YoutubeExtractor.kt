@@ -65,22 +65,15 @@ open class YoutubeExtractor : ExtractorApi() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        
-        // 1. Ambil audio track. Utamakan MP4/M4A biar sinkron dengan video MP4 (H.264)
-        val allAudio = info.audioStreams.orEmpty()
-        val mp4Audio = allAudio.filter { 
-            it.content.contains("audio%2Fmp4", true) || it.content.contains("audio/mp4", true) 
-        }
-        val finalAudioStreams = mp4Audio.ifEmpty { allAudio }
-        val audioTracksList = finalAudioStreams.map { newAudioFile(it.content) }
 
-        // 2. Ambil unmuxed video (1080p ke atas), buang codec AV1 untuk kelancaran hardware
-        val unmuxedStreams = info.videoOnlyStreams.orEmpty().filter { video ->
-            val codec = video.codec?.lowercase() ?: ""
-            !codec.startsWith("av01") 
-        }
+        val videoStreams = info.videoOnlyStreams.orEmpty()
 
-        unmuxedStreams.forEach { video ->
+        if (videoStreams.isEmpty()) return false
+
+        val audioStreams = info.audioStreams.orEmpty()
+
+        videoStreams.forEach { video ->
+
             callback(
                 newExtractorLink(
                     source = name,
@@ -88,24 +81,11 @@ open class YoutubeExtractor : ExtractorApi() {
                     url = video.content
                 ) {
                     quality = video.height
-                    audioTracks = audioTracksList 
+                    audioTracks = audioStreams.map { newAudioFile(it.content) }
                 }
             )
         }
 
-        // 3. Masukkan versi Muxed (360p/720p) sebagai cadangan fallback
-        val muxedStreams = info.videoStreams.orEmpty()
-        muxedStreams.forEach { video ->
-            callback(
-                newExtractorLink(
-                    source = name,
-                    name = "YouTube Muxed",
-                    url = video.content
-                ) {
-                    quality = video.height
-                }
-            )
-        }
 
         info.subtitles.forEach { subtitle ->
             subtitleCallback(
