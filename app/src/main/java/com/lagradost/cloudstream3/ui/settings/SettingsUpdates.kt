@@ -239,9 +239,6 @@ class SettingsUpdates : BasePreferenceFragmentCompat() {
                 return@setOnPreferenceClickListener true
             }
         }
-        
-        // Menyembunyikan tombol "Pasang versi pra-rilis"
-        getPref(R.string.install_prerelease_key)?.isVisible = false
 
         getPref(R.string.auto_download_plugins_key)?.setOnPreferenceClickListener {
             val prefNames = resources.getStringArray(R.array.auto_download_plugin)
@@ -271,6 +268,18 @@ class SettingsUpdates : BasePreferenceFragmentCompat() {
             }
             return@setOnPreferenceClickListener true 
         }
+
+        // --- MENYEMBUNYIKAN MENU YANG TIDAK DIBUTUHKAN ---
+        
+        // 1. Menyembunyikan tombol "Pasang versi pra-rilis"
+        getPref(R.string.install_prerelease_key)?.isVisible = false
+        
+        // 2. Menyembunyikan seluruh menu di bawah kategori "Cadangkan"
+        getPref(R.string.backup_key)?.isVisible = false
+        getPref(R.string.automatic_backup_key)?.isVisible = false
+        getPref(R.string.restore_key)?.isVisible = false
+        getPref(R.string.backup_path_key)?.isVisible = false
+        // ------------------------------------------------
     }
 
     private fun getBackupDirsForDisplay(): List<String> {
