@@ -240,13 +240,8 @@ class SettingsUpdates : BasePreferenceFragmentCompat() {
             }
         }
         
-        getPref(R.string.install_prerelease_key)?.let { pref ->
-            pref.isVisible = BuildConfig.FLAVOR == "stable"
-            pref.setOnPreferenceClickListener {
-                activity?.installPreReleaseIfNeeded()
-                return@setOnPreferenceClickListener true
-            }
-        }
+        // Menyembunyikan tombol "Pasang versi pra-rilis"
+        getPref(R.string.install_prerelease_key)?.isVisible = false
 
         getPref(R.string.auto_download_plugins_key)?.setOnPreferenceClickListener {
             val prefNames = resources.getStringArray(R.array.auto_download_plugin)
