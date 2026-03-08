@@ -909,10 +909,11 @@ open class ResultFragmentPhone : FullScreenPlayer() {
                                         i.type = "text/plain"
                                         i.putExtra(Intent.EXTRA_SUBJECT, d.title)
 
-                                        // Tampilan Bersih: Hanya link! Telegram akan memunculkan Preview + Tombol Play
-                                        val pesanShare = finalShortUrl
+                                        // Format Share Baru: Gabungan teks pembuka, Link Aplikasi, dan Link Trailer YouTube
+                                        val trailerShare = if (trailerUrl.isNotBlank()) "\n\n🎬 Tonton Trailer:\n$trailerUrl" else ""
+                                        val pesanShare = "Nonton ${d.title} di AdiXtream!\n\n📲 Buka di Aplikasi:\n$finalShortUrl$trailerShare"
+                                        
                                         i.putExtra(Intent.EXTRA_TEXT, pesanShare)
-
                                         startActivity(Intent.createChooser(i, "Bagikan film ini"))
                                     }
                                 } catch (e: Exception) {
