@@ -864,7 +864,7 @@ open class ResultFragmentPhone : FullScreenPlayer() {
                                     val rawDesc = d.plotText?.toString() ?: "Nonton film seru di AdiXtream!"
                                     val shortDescForMeta = if (rawDesc.length > 150) rawDesc.substring(0, 150) + "..." else rawDesc
 
-                                    // AMBIL LINK TRAILER 
+                                    // AMBIL LINK TRAILER
                                     val trailerUrl = currentTrailers.firstOrNull()?.second ?: ""
 
                                     val safeTitle = d.title.replace("\"", "\\\"").replace("\n", " ")
@@ -909,9 +909,9 @@ open class ResultFragmentPhone : FullScreenPlayer() {
                                         i.type = "text/plain"
                                         i.putExtra(Intent.EXTRA_SUBJECT, d.title)
 
-                                        // MUNCULKAN KEDUA LINK AGAR TELEGRAM BISA PLAY YOUTUBE NYA
-                                        val trailerShare = if (trailerUrl.isNotBlank()) "\n\n🎬 Tonton Trailer:\n$trailerUrl" else ""
-                                        val pesanShare = "Nonton ${d.title} di AdiXtream!\n\n📲 Buka di Aplikasi:\n$finalShortUrl$trailerShare"
+                                        // SUSUNAN BARU: YouTube di atas, Aplikasi di bawah
+                                        val trailerShare = if (trailerUrl.isNotBlank()) "🎬 Tonton Trailer ${d.title}:\n$trailerUrl\n\n" else ""
+                                        val pesanShare = "${trailerShare}📖 Sinopsis & Nonton Full di AdiXtream:\n$finalShortUrl"
                                         
                                         i.putExtra(Intent.EXTRA_TEXT, pesanShare)
                                         startActivity(Intent.createChooser(i, "Bagikan film ini"))
