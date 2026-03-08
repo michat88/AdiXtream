@@ -849,7 +849,7 @@ open class ResultFragmentPhone : FullScreenPlayer() {
                             QuickSearchFragment.pushSearch(activity, d.title)
                         }
 
-                        // --- MODIFIKASI SHARE ADIXTREAM (LEVEL PRO: CLOUDFLARE KV) ---
+                        // --- MODIFIKASI SHARE ADIXTREAM ---
                         resultShare.setOnClickListener {
                             showToast("Menyiapkan link premium...", Toast.LENGTH_SHORT)
 
@@ -864,7 +864,7 @@ open class ResultFragmentPhone : FullScreenPlayer() {
                                     val rawDesc = d.plotText?.toString() ?: "Nonton film seru di AdiXtream!"
                                     val shortDescForMeta = if (rawDesc.length > 150) rawDesc.substring(0, 150) + "..." else rawDesc
 
-                                    // AMBIL LINK TRAILER (INI SENJATA RAHASIA KITA UNTUK TELEGRAM)
+                                    // AMBIL LINK TRAILER 
                                     val trailerUrl = currentTrailers.firstOrNull()?.second ?: ""
 
                                     val safeTitle = d.title.replace("\"", "\\\"").replace("\n", " ")
@@ -909,10 +909,11 @@ open class ResultFragmentPhone : FullScreenPlayer() {
                                         i.type = "text/plain"
                                         i.putExtra(Intent.EXTRA_SUBJECT, d.title)
 
-                                        // Format teks murni, tanpa link trailer agar Telegram hanya membuat 1 bingkai
-                                        val pesanShare = "Nonton ${d.title} di AdiXtream!\n\n📲 Buka di Aplikasi:\n$finalShortUrl"
+                                        // MUNCULKAN KEDUA LINK AGAR TELEGRAM BISA PLAY YOUTUBE NYA
+                                        val trailerShare = if (trailerUrl.isNotBlank()) "\n\n🎬 Tonton Trailer:\n$trailerUrl" else ""
+                                        val pesanShare = "Nonton ${d.title} di AdiXtream!\n\n📲 Buka di Aplikasi:\n$finalShortUrl$trailerShare"
+                                        
                                         i.putExtra(Intent.EXTRA_TEXT, pesanShare)
-
                                         startActivity(Intent.createChooser(i, "Bagikan film ini"))
                                     }
                                 } catch (e: Exception) {
