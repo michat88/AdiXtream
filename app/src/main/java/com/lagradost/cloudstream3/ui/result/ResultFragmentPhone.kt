@@ -909,7 +909,7 @@ open class ResultFragmentPhone : FullScreenPlayer() {
                                         i.type = "text/plain"
                                         i.putExtra(Intent.EXTRA_SUBJECT, d.title)
 
-                                        // Hanya membagikan 1 link agar Telegram menggabungkan video dan link web ke dalam 1 bingkai sakti
+                                        // Format teks murni, tanpa link trailer agar Telegram hanya membuat 1 bingkai
                                         val pesanShare = "Nonton ${d.title} di AdiXtream!\n\n📲 Buka di Aplikasi:\n$finalShortUrl"
                                         i.putExtra(Intent.EXTRA_TEXT, pesanShare)
 
