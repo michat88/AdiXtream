@@ -849,9 +849,9 @@ open class ResultFragmentPhone : FullScreenPlayer() {
                             QuickSearchFragment.pushSearch(activity, d.title)
                         }
 
-                        // --- MODIFIKASI SHARE ADIXTREAM ---
+                        // --- MODIFIKASI SHARE ADIXTREAM (UPDATE: TRANSLATE & SEMBUNYI GAMBAR KEDUA) ---
                         resultShare.setOnClickListener {
-                            showToast("Menyiapkan link premium...", Toast.LENGTH_SHORT)
+                            showToast("Menyiapkan sinopsis & link premium...", Toast.LENGTH_SHORT)
 
                             ioSafe {
                                 try {
@@ -860,24 +860,25 @@ open class ResultFragmentPhone : FullScreenPlayer() {
                                     val urlBase64 = android.util.Base64.encodeToString(d.url.toByteArray(Charsets.UTF_8), flags)
                                     val shareData = "${nameBase64}_=_${urlBase64}"
 
-                                    val posterUrl = d.posterImage ?: d.posterBackgroundImage ?: "https://raw.githubusercontent.com/michat88/Zaneta/main/Icons/banner_nonton_adixtream.png"
-                                    val rawDesc = d.plotText?.toString() ?: "Nonton film seru di AdiXtream!"
-                                    val shortDescForMeta = if (rawDesc.length > 150) rawDesc.substring(0, 150) + "..." else rawDesc
-
                                     // AMBIL LINK TRAILER
                                     val trailerUrl = currentTrailers.firstOrNull()?.second ?: ""
 
+                                    // JIKA ADA TRAILER, KOSONGKAN POSTER AGAR TELEGRAM HANYA MUNCUL TEKS SAJA!
+                                    val posterUrl = if (trailerUrl.isNotBlank()) "" else (d.posterImage ?: d.posterBackgroundImage ?: "https://raw.githubusercontent.com/michat88/Zaneta/main/Icons/banner_nonton_adixtream.png")
+                                    
+                                    val rawDesc = d.plotText?.toString() ?: "Nonton film seru di AdiXtream!"
+                                    // Tambah panjang sinopsis jadi 500 karakter biar bacanya puas
+                                    val shortDescForMeta = if (rawDesc.length > 500) rawDesc.substring(0, 500) + "..." else rawDesc
+
                                     val safeTitle = d.title.replace("\"", "\\\"").replace("\n", " ")
                                     val safeDesc = shortDescForMeta.replace("\"", "\\\"").replace("\n", " ")
-                                    val safeTrailer = trailerUrl.replace("\"", "\\\"")
                                     
                                     val jsonInputString = """
                                         {
                                             "data": "$shareData",
                                             "title": "$safeTitle",
                                             "poster": "$posterUrl",
-                                            "desc": "$safeDesc",
-                                            "trailer": "$safeTrailer"
+                                            "desc": "$safeDesc"
                                         }
                                     """.trimIndent()
 
@@ -909,9 +910,10 @@ open class ResultFragmentPhone : FullScreenPlayer() {
                                         i.type = "text/plain"
                                         i.putExtra(Intent.EXTRA_SUBJECT, d.title)
 
-                                        // SUSUNAN BARU: YouTube di atas, Aplikasi di bawah
+                                        // SUSUNAN: YouTube di atas, Aplikasi di bawah
                                         val trailerShare = if (trailerUrl.isNotBlank()) "🎬 Tonton Trailer ${d.title}:\n$trailerUrl\n\n" else ""
-                                        val pesanShare = "${trailerShare}📖 Sinopsis & Nonton Full di AdiXtream:\n$finalShortUrl"
+                                        // TEKS SUDAH DIRAPIKAN SESUAI PERMINTAAN:
+                                        val pesanShare = "${trailerShare}📲 Nonton Videonya hanya di AdiXtream:\n$finalShortUrl"
                                         
                                         i.putExtra(Intent.EXTRA_TEXT, pesanShare)
                                         startActivity(Intent.createChooser(i, "Bagikan film ini"))
