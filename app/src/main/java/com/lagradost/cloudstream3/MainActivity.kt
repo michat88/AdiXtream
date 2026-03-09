@@ -261,8 +261,6 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                     // === PENANGKAP SHARE KITA PINDAH KE PALING ATAS! ===
                     if (str.startsWith(APP_STRING_SHARE) || str.startsWith("adixtreamshare")) {
                         try {
-                            // Ambil data dari parameter "?data=" (Format Baru Cloudflare KV)
-                            // Kalau tidak ada, baru ambil setelah "://" (Untuk jaga-jaga link versi lama)
                             val rawData = if (str.contains("?data=")) {
                                 str.substringAfter("?data=")
                             } else {
@@ -270,13 +268,10 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                             }
                             
                             val parts = rawData.split("_=_", limit = 2)
-                            
-                            // Tambahkan NO_PADDING agar 100% aman saat lewat URL Browser
                             val flags = android.util.Base64.URL_SAFE or android.util.Base64.NO_WRAP or android.util.Base64.NO_PADDING
                             val decodedApiName = String(android.util.Base64.decode(parts[0], flags), Charsets.UTF_8)
                             val decodedUrl = String(android.util.Base64.decode(parts[1], flags), Charsets.UTF_8)
                             
-                            // --- LOGIKA CEK PREMIUM ADIXTREAM ---
                             val isPremium = PremiumManager.isPremium(activity ?: return false)
 
                             if (!isPremium) {
@@ -286,9 +281,6 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                                 }
                                 return true
                             }
-                            // ------------------------------------
-
-                            // Langsung tendang ke detail film!
                             loadResult(decodedUrl, decodedApiName, "")
                             return true
                         } catch (e: Exception) {
@@ -297,7 +289,6 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                             return false
                         }
                     } 
-                    // ===================================================
                     else if (str.startsWith("https://cs.repo")) {
                         val realUrl = "https://" + str.substringAfter("?")
                         println("Repository url: $realUrl")
@@ -718,7 +709,6 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
     private val pluginsLock = Mutex()
     private fun onAllPluginsLoaded(success: Boolean = false) {
         ioSafe {
-            // Siapkan variabel penampung di luar lock agar tidak kena error "suspension point inside critical section"
             var targetApiToLoad: String? = null
 
             pluginsLock.withLock {
@@ -739,23 +729,18 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                                     }
                             }
                         }
-                        apis =
-                            allProviders.distinctBy { it.lang + it.name + it.mainUrl + it.javaClass.name }
+                        apis = allProviders.distinctBy { it.lang + it.name + it.mainUrl + it.javaClass.name }
                         APIHolder.apiMap = null
 
-                        // === LOGIKA AUTO-SELECT ADIXTREAM ===
                         val availableProviders = apis.filter { it.hasMainPage }
                         val currentSelected = DataStoreHelper.currentHomePage
 
-                        // Set nama plugin yang akan dimuat ke dalam memori saja (bukan eksekusi)
                         if (currentSelected == null || availableProviders.none { it.name == currentSelected }) {
                             if (availableProviders.isNotEmpty()) {
                                 targetApiToLoad = availableProviders.first().name
                                 DataStoreHelper.currentHomePage = targetApiToLoad
-                                Log.d(TAG, "Auto-select plugin disiapkan: $targetApiToLoad")
                             }
                         }
-                        // ==============================================
 
                     } catch (e: Exception) {
                         logError(e)
@@ -763,9 +748,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                 }
             }
 
-            // Eksekusi suspend function (load plugin & reload home) dengan aman di LUAR LOCK
             targetApiToLoad?.let { apiName ->
-                Log.d(TAG, "Mengeksekusi load plugin: $apiName")
                 mainPluginsLoadedEvent.invoke(loadSinglePlugin(this@MainActivity, apiName))
                 reloadHomeEvent.invoke(true)
             }
@@ -1018,7 +1001,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
         updateLocale()
         super.onCreate(savedInstanceState)
 
-        // --- LOGIKA REPOSITORY & UPDATE (ADIXTREAM ANTI-BUG V3) ---
+        // --- LOGIKA REPOSITORY & UPDATE (ADIXTREAM ANTI-BUG V4 - POLLING SYSTEM) ---
         ioSafe {
             val isPremium = PremiumManager.isPremium(this@MainActivity)
             val targetRepoUrl = if (isPremium) PremiumManager.PREMIUM_REPO_URL else PremiumManager.FREE_REPO_URL
@@ -1051,7 +1034,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                 if (isRepoChanged) {
                     try {
                         Log.d(TAG, "Mengunduh plugin dari Repo Baru...")
-                        // Download jalan di belakang layar. onAllPluginsLoaded akan mengurus auto-select.
+                        // Download berjalan di background
                         PluginsViewModel.downloadAll(this@MainActivity, targetRepoUrl, null)
                         PluginManager.___DO_NOT_CALL_FROM_A_PLUGIN_loadAllOnlinePlugins(this@MainActivity)
                         PluginManager.___DO_NOT_CALL_FROM_A_PLUGIN_loadAllLocalPlugins(this@MainActivity, false)
@@ -1068,14 +1051,36 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                         PluginManager.___DO_NOT_CALL_FROM_A_PLUGIN_downloadNotExistingPluginsAndLoad(this@MainActivity, autoDownloadPlugin)
                     }
                     PluginManager.___DO_NOT_CALL_FROM_A_PLUGIN_loadAllLocalPlugins(this@MainActivity, false)
-                    
-                    // Kalau repo tidak diganti, eksekusi pemuatan seperti biasa
-                    DataStoreHelper.currentHomePage?.let { homeApi ->
-                        mainPluginsLoadedEvent.invoke(loadSinglePlugin(this@MainActivity, homeApi))
-                    } ?: run {
+                }
+
+                // === SOLUSI FINAL: POLLING UNTUK ASYNCHRONOUS DOWNLOAD ===
+                // Kita "tahan" proses eksekusi pemilihan plugin sampai benar-benar ada datanya
+                var attempts = 0
+                while (APIHolder.allProviders.filter { it.hasMainPage }.isEmpty() && attempts < 30) {
+                    kotlinx.coroutines.delay(500) // Tunggu 500ms tiap siklus (Maksimal 15 detik)
+                    attempts++
+                }
+
+                val availableProviders = APIHolder.allProviders.filter { it.hasMainPage }
+                val currentSelected = DataStoreHelper.currentHomePage
+
+                // Jika daftar plugin sudah muncul, otomatis pilih urutan pertama
+                if (currentSelected == null || availableProviders.none { it.name == currentSelected }) {
+                    if (availableProviders.isNotEmpty()) {
+                        val targetApiToLoad = availableProviders.first().name
+                        DataStoreHelper.currentHomePage = targetApiToLoad
+                        Log.d(TAG, "Auto-select plugin sukses dieksekusi: $targetApiToLoad")
+                        mainPluginsLoadedEvent.invoke(loadSinglePlugin(this@MainActivity, targetApiToLoad))
+                        reloadHomeEvent.invoke(true)
+                    } else {
                         mainPluginsLoadedEvent.invoke(false)
                     }
+                } else {
+                    // Eksekusi jika tidak ada perubahan repo (aplikasi dibuka seperti biasa)
+                    mainPluginsLoadedEvent.invoke(loadSinglePlugin(this@MainActivity, currentSelected))
+                    reloadHomeEvent.invoke(true)
                 }
+                // =========================================================
             }
         }
         // -----------------------------------------------------------
