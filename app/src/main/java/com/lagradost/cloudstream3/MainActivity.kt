@@ -276,6 +276,18 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                             val decodedApiName = String(android.util.Base64.decode(parts[0], flags), Charsets.UTF_8)
                             val decodedUrl = String(android.util.Base64.decode(parts[1], flags), Charsets.UTF_8)
                             
+                            // --- LOGIKA CEK PREMIUM ADIXTREAM ---
+                            val isPremium = PremiumManager.isPremium(activity ?: return false)
+
+                            if (!isPremium) {
+                                (activity as? MainActivity)?.runOnUiThread {
+                                    showToast("Akses Premium Diperlukan", Toast.LENGTH_SHORT)
+                                    (activity as? MainActivity)?.showPremiumUnlockDialog()
+                                }
+                                return true
+                            }
+                            // ------------------------------------
+
                             // Langsung tendang ke detail film!
                             loadResult(decodedUrl, decodedApiName, "")
                             return true
@@ -1521,6 +1533,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
 
     override fun onAuthenticationSuccess() { binding?.navHostFragment?.isInvisible = false }
     override fun onAuthenticationError() { finish() }
+
     suspend fun checkGithubConnectivity(): Boolean {
         return try {
             app.get("https://raw.githubusercontent.com/recloudstream/.github/master/connectivitycheck", timeout = 5).text.trim() == "ok"
@@ -1528,7 +1541,6 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
     }
 
     // --- POPUP UNLOCK ADIXTREAM (NEW PREMIUM DESIGN) ---
-    // (Kata 'private' sudah dihapus agar bisa diakses dari ResultFragmentPhone)
     fun showPremiumUnlockDialog() {
         val context = this
         
