@@ -262,8 +262,13 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                     // --- SAFETY NET: FIRST LAUNCH VIA LINK ADIXTREAM ---
                     // Jika user buka via link tapi belum ada provider yang terpilih di Home
                     if (DataStoreHelper.currentHomePage.isNullOrBlank()) {
-                        val isPremiumCheck = PremiumManager.isPremium(this)
-                        DataStoreHelper.currentHomePage = if (isPremiumCheck) "Adicinemax21" else "LayarKaca21"
+                        // Ambil nama plugin PERTAMA yang aktif dari sistem secara dinamis
+                        val firstProvider = APIHolder.apis.firstOrNull { it.hasMainPage }?.name 
+                                            ?: APIHolder.apis.firstOrNull()?.name
+                        
+                        if (firstProvider != null) {
+                            DataStoreHelper.currentHomePage = firstProvider
+                        }
                     }
                     // ---------------------------------------------------
 
@@ -1033,18 +1038,28 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                 if (isRepoChanged) {
                     try {
                         Log.d(TAG, "Mengunduh plugin dari Repo Baru...")
+                        // 1. Download
                         PluginsViewModel.downloadAll(this@MainActivity, targetRepoUrl, null)
+                        
+                        // 2. Load plugins ke memory sistem
                         PluginManager.___DO_NOT_CALL_FROM_A_PLUGIN_loadAllOnlinePlugins(this@MainActivity)
                         PluginManager.___DO_NOT_CALL_FROM_A_PLUGIN_loadAllLocalPlugins(this@MainActivity, false)
 
-                        // --- TAMBAHAN: OTOMATIS ARAHKAN PROVIDER SESUAI STATUS REPO ---
-                        if (isPremium) {
-                            DataStoreHelper.currentHomePage = "Adicinemax21"
-                        } else {
-                            DataStoreHelper.currentHomePage = "LayarKaca21"
-                        }
-                        // ---------------------------------------------------------------
+                        // 3. AMBIL PROVIDER PERTAMA SECARA DINAMIS (ANTI-HARDCODE)
+                        val firstProvider = APIHolder.apis.firstOrNull { it.hasMainPage }?.name 
+                            ?: APIHolder.apis.firstOrNull()?.name 
+                            ?: "LayarKaca21" // Fallback darurat jika gagal membaca
+                        
+                        // 4. Set default provider otomatis
+                        DataStoreHelper.currentHomePage = firstProvider
+                        
+                        // 5. Pancing beranda agar langsung memuat provider ini
+                        mainPluginsLoadedEvent.invoke(loadSinglePlugin(this@MainActivity, firstProvider))
 
+                        // 6. Beri sinyal ke seluruh aplikasi bahwa plugin sudah siap!
+                        afterPluginsLoadedEvent.invoke(true)
+                        reloadHomeEvent.invoke(true)
+                        
                     } catch (e: Exception) { logError(e) }
                 } else {
                     DataStoreHelper.currentHomePage?.let { homeApi ->
@@ -1148,9 +1163,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
         // --- BYPASS SETUP AWAL ADIXTREAM ---
         if (getKey(HAS_DONE_SETUP_KEY, false) != true) {
              setKey(HAS_DONE_SETUP_KEY, true)
-             // Pastikan menyesuaikan dengan status premium saat itu juga
-             val isPremiumCheck = PremiumManager.isPremium(this@MainActivity)
-             DataStoreHelper.currentHomePage = if (isPremiumCheck) "Adicinemax21" else "LayarKaca21"
+             // Biarkan logika download repo yang menentukan secara otomatis!
              updateLocale() 
         }
         // -----------------------------------
@@ -1753,9 +1766,10 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                 (btnUnlock.tag as? Dialog)?.dismiss()
                 val expiryDate = PremiumManager.getExpiryDateString(context)
                 
-                // --- TAMBAHAN: OTOMATIS PILIH ADICINEMAX21 SAAT PREMIUM AKTIF ---
-                DataStoreHelper.currentHomePage = "Adicinemax21"
-                // ----------------------------------------------------------------
+                // --- KOSONGKAN HOMEPAGE LAMA ---
+                // Saat restart, sistem akan otomatis memilih plugin premium teratas!
+                DataStoreHelper.currentHomePage = null
+                // -------------------------------
 
                 AlertDialog.Builder(context)
                     .setTitle("✅ PREMIUM DIAKTIFKAN")
