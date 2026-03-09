@@ -1521,7 +1521,6 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
 
     override fun onAuthenticationSuccess() { binding?.navHostFragment?.isInvisible = false }
     override fun onAuthenticationError() { finish() }
-
     suspend fun checkGithubConnectivity(): Boolean {
         return try {
             app.get("https://raw.githubusercontent.com/recloudstream/.github/master/connectivitycheck", timeout = 5).text.trim() == "ok"
@@ -1529,7 +1528,8 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
     }
 
     // --- POPUP UNLOCK ADIXTREAM (NEW PREMIUM DESIGN) ---
-    private fun showPremiumUnlockDialog() {
+    // (Kata 'private' sudah dihapus agar bisa diakses dari ResultFragmentPhone)
+    fun showPremiumUnlockDialog() {
         val context = this
         
         val gradient = GradientDrawable(
