@@ -199,7 +199,7 @@ import kotlin.math.absoluteValue
 import kotlin.system.exitProcess
 import com.lagradost.cloudstream3.utils.downloader.DownloadQueueManager
 
-// --- IMPORT TAMBAEM ADIXTREAM ---
+// --- IMPORT TAMBAHAN ADIXTREAM ---
 import com.lagradost.cloudstream3.plugins.RepositoryManager
 import com.lagradost.cloudstream3.ui.settings.extensions.PluginsViewModel
 import com.lagradost.cloudstream3.ui.settings.extensions.RepositoryData
@@ -261,6 +261,8 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                     // === PENANGKAP SHARE KITA PINDAH KE PALING ATAS! ===
                     if (str.startsWith(APP_STRING_SHARE) || str.startsWith("adixtreamshare")) {
                         try {
+                            // Ambil data dari parameter "?data=" (Format Baru Cloudflare KV)
+                            // Kalau tidak ada, baru ambil setelah "://" (Untuk jaga-jaga link versi lama)
                             val rawData = if (str.contains("?data=")) {
                                 str.substringAfter("?data=")
                             } else {
@@ -268,10 +270,13 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                             }
                             
                             val parts = rawData.split("_=_", limit = 2)
+                            
+                            // Tambahkan NO_PADDING agar 100% aman saat lewat URL Browser
                             val flags = android.util.Base64.URL_SAFE or android.util.Base64.NO_WRAP or android.util.Base64.NO_PADDING
                             val decodedApiName = String(android.util.Base64.decode(parts[0], flags), Charsets.UTF_8)
                             val decodedUrl = String(android.util.Base64.decode(parts[1], flags), Charsets.UTF_8)
                             
+                            // --- LOGIKA CEK PREMIUM ADIXTREAM ---
                             val isPremium = PremiumManager.isPremium(activity ?: return false)
 
                             if (!isPremium) {
@@ -281,6 +286,9 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                                 }
                                 return true
                             }
+                            // ------------------------------------
+
+                            // Langsung tendang ke detail film!
                             loadResult(decodedUrl, decodedApiName, "")
                             return true
                         } catch (e: Exception) {
@@ -289,6 +297,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                             return false
                         }
                     } 
+                    // ===================================================
                     else if (str.startsWith("https://cs.repo")) {
                         val realUrl = "https://" + str.substringAfter("?")
                         println("Repository url: $realUrl")
@@ -709,6 +718,9 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
     private val pluginsLock = Mutex()
     private fun onAllPluginsLoaded(success: Boolean = false) {
         ioSafe {
+            // Siapkan variabel penampung di luar lock agar tidak kena error "suspension point inside critical section"
+            var targetApiToLoad: String? = null
+
             pluginsLock.withLock {
                 synchronized(allProviders) {
                     try {
@@ -731,20 +743,16 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                             allProviders.distinctBy { it.lang + it.name + it.mainUrl + it.javaClass.name }
                         APIHolder.apiMap = null
 
-                        // === PINDAHAN LOGIKA AUTO-SELECT ADIXTREAM ===
-                        // Dieksekusi dengan aman SETELAH semua plugin selesai di-load memori
+                        // === LOGIKA AUTO-SELECT ADIXTREAM ===
                         val availableProviders = apis.filter { it.hasMainPage }
                         val currentSelected = DataStoreHelper.currentHomePage
 
+                        // Set nama plugin yang akan dimuat ke dalam memori saja (bukan eksekusi)
                         if (currentSelected == null || availableProviders.none { it.name == currentSelected }) {
                             if (availableProviders.isNotEmpty()) {
-                                val firstApi = availableProviders.first().name
-                                DataStoreHelper.currentHomePage = firstApi
-                                Log.d(TAG, "Auto-select plugin aktif: $firstApi")
-                                
-                                // Panggil event ini agar layar Home langsung me-refresh tampilan!
-                                mainPluginsLoadedEvent.invoke(loadSinglePlugin(this@MainActivity, firstApi))
-                                reloadHomeEvent.invoke(true)
+                                targetApiToLoad = availableProviders.first().name
+                                DataStoreHelper.currentHomePage = targetApiToLoad
+                                Log.d(TAG, "Auto-select plugin disiapkan: $targetApiToLoad")
                             }
                         }
                         // ==============================================
@@ -753,6 +761,13 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                         logError(e)
                     }
                 }
+            }
+
+            // Eksekusi suspend function (load plugin & reload home) dengan aman di LUAR LOCK
+            targetApiToLoad?.let { apiName ->
+                Log.d(TAG, "Mengeksekusi load plugin: $apiName")
+                mainPluginsLoadedEvent.invoke(loadSinglePlugin(this@MainActivity, apiName))
+                reloadHomeEvent.invoke(true)
             }
         }
     }
