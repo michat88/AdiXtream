@@ -283,9 +283,9 @@ class SettingsUpdates : BasePreferenceFragmentCompat() {
         
         // Menyembunyikan item-item di dalamnya (hanya untuk memastikan tidak ada sisa)
         backupPref?.isVisible = false
-        [span_0](start_span)getPref(R.string.automatic_backup_key)?.isVisible = false[span_0](end_span)
-        [span_1](start_span)getPref(R.string.restore_key)?.isVisible = false[span_1](end_span)
-        [span_2](start_span)getPref(R.string.backup_path_key)?.isVisible = false[span_2](end_span)
+        getPref(R.string.automatic_backup_key)?.isVisible = false
+        getPref(R.string.restore_key)?.isVisible = false
+        getPref(R.string.backup_path_key)?.isVisible = false
         
         // 3. Menyembunyikan tombol Logcat
         getPref(R.string.show_logcat_key)?.isVisible = false
