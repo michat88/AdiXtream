@@ -1028,7 +1028,8 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                 } catch (e: Exception) { logError(e) }
             }
 
-            Thread.sleep(1000)
+            // Gunakan delay dari coroutine, bukan Thread.sleep
+            kotlinx.coroutines.delay(1000)
 
             if (lastError == null && !PluginManager.checkSafeModeFile()) {
                 if (isRepoChanged) {
@@ -1053,15 +1054,24 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                     PluginManager.___DO_NOT_CALL_FROM_A_PLUGIN_loadAllLocalPlugins(this@MainActivity, false)
                 }
 
-                // === SOLUSI FINAL: POLLING UNTUK ASYNCHRONOUS DOWNLOAD ===
-                // Kita "tahan" proses eksekusi pemilihan plugin sampai benar-benar ada datanya
-                var attempts = 0
-                while (APIHolder.allProviders.filter { it.hasMainPage }.isEmpty() && attempts < 30) {
-                    kotlinx.coroutines.delay(500) // Tunggu 500ms tiap siklus (Maksimal 15 detik)
-                    attempts++
+                // === SOLUSI FINAL: OPTIMASI POLLING COROUTINES & FILTER NSFW ===
+                val isAdultEnabled = settingsManager.getBoolean(getString(R.string.enable_nsfw_on_providers_key), false)
+
+                // Gunakan withTimeoutOrNull untuk membatasi waktu tunggu maksimal 15 detik (15000 ms)
+                kotlinx.coroutines.withTimeoutOrNull(15_000L) {
+                    // Cek terus setiap 500ms sampai ada setidaknya 1 provider valid (Punya MainPage & Aman dari NSFW jika tidak diizinkan)
+                    while (APIHolder.allProviders.none { provider -> 
+                        provider.hasMainPage && (isAdultEnabled || !provider.supportedTypes.contains(com.lagradost.cloudstream3.TvType.NSFW)) 
+                    }) {
+                        kotlinx.coroutines.delay(500)
+                    }
                 }
 
-                val availableProviders = APIHolder.allProviders.filter { it.hasMainPage }
+                // Ambil daftar provider yang sudah terfilter dengan aman
+                val availableProviders = APIHolder.allProviders.filter { provider ->
+                    provider.hasMainPage && (isAdultEnabled || !provider.supportedTypes.contains(com.lagradost.cloudstream3.TvType.NSFW))
+                }
+                
                 val currentSelected = DataStoreHelper.currentHomePage
 
                 // Jika daftar plugin sudah muncul, otomatis pilih urutan pertama
@@ -1376,7 +1386,6 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                 }
             }
         }
-
         ioSafe {
             this@MainActivity.runOnUiThread {
                 libraryViewModel = ViewModelProvider(this@MainActivity)[LibraryViewModel::class.java]
