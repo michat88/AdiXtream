@@ -425,6 +425,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
             }
         }
     }
+    
     var lastPopup: SearchResponse? = null
     fun loadPopup(result: SearchResponse, load: Boolean = true) {
         lastPopup = result
@@ -535,6 +536,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
             }
         }
     }
+    
     var mSessionManager: SessionManager? = null
     private val mSessionManagerListener: SessionManagerListener<Session> by lazy { SessionManagerListenerImpl() }
 
@@ -1029,12 +1031,6 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                         PluginManager.___DO_NOT_CALL_FROM_A_PLUGIN_loadAllLocalPlugins(this@MainActivity, false)
                     } catch (e: Exception) { logError(e) }
                 } else {
-                    DataStoreHelper.currentHomePage?.let { homeApi ->
-                        mainPluginsLoadedEvent.invoke(loadSinglePlugin(this@MainActivity, homeApi))
-                    } ?: run {
-                        mainPluginsLoadedEvent.invoke(false)
-                    }
-
                     if (settingsManager.getBoolean(getString(R.string.auto_update_plugins_key), true)) {
                         PluginManager.___DO_NOT_CALL_FROM_A_PLUGIN_updateAllOnlinePluginsAndLoadThem(this@MainActivity)
                     } else {
@@ -1047,6 +1043,24 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                     }
                     PluginManager.___DO_NOT_CALL_FROM_A_PLUGIN_loadAllLocalPlugins(this@MainActivity, false)
                 }
+
+                // === PENAMBAHAN LOGIKA AUTO-SELECT PLUGIN TERATAS ===
+                val availableProviders = APIHolder.allProviders.filter { it.hasMainPage }
+                val currentSelected = DataStoreHelper.currentHomePage
+
+                if (currentSelected == null || availableProviders.none { it.name == currentSelected }) {
+                    if (availableProviders.isNotEmpty()) {
+                        val firstApi = availableProviders.first().name
+                        DataStoreHelper.currentHomePage = firstApi
+                        Log.d(TAG, "Auto-select plugin aktif: $firstApi")
+                        mainPluginsLoadedEvent.invoke(loadSinglePlugin(this@MainActivity, firstApi))
+                    } else {
+                        mainPluginsLoadedEvent.invoke(false)
+                    }
+                } else {
+                    mainPluginsLoadedEvent.invoke(loadSinglePlugin(this@MainActivity, currentSelected))
+                }
+                // ====================================================
             }
         }
         // -----------------------------------------------------------
