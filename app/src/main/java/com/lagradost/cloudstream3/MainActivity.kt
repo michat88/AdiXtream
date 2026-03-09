@@ -258,6 +258,15 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                 fun safeURI(uri: String) = safe { URI(uri) }
 
                 if (str != null && this != null) {
+                    
+                    // --- SAFETY NET: FIRST LAUNCH VIA LINK ADIXTREAM ---
+                    // Jika user buka via link tapi belum ada provider yang terpilih di Home
+                    if (DataStoreHelper.currentHomePage.isNullOrBlank()) {
+                        val isPremiumCheck = PremiumManager.isPremium(this)
+                        DataStoreHelper.currentHomePage = if (isPremiumCheck) "Adicinemax21" else "LayarKaca21"
+                    }
+                    // ---------------------------------------------------
+
                     // === PENANGKAP SHARE KITA PINDAH KE PALING ATAS! ===
                     if (str.startsWith(APP_STRING_SHARE) || str.startsWith("adixtreamshare")) {
                         try {
@@ -1027,6 +1036,15 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                         PluginsViewModel.downloadAll(this@MainActivity, targetRepoUrl, null)
                         PluginManager.___DO_NOT_CALL_FROM_A_PLUGIN_loadAllOnlinePlugins(this@MainActivity)
                         PluginManager.___DO_NOT_CALL_FROM_A_PLUGIN_loadAllLocalPlugins(this@MainActivity, false)
+
+                        // --- TAMBAHAN: OTOMATIS ARAHKAN PROVIDER SESUAI STATUS REPO ---
+                        if (isPremium) {
+                            DataStoreHelper.currentHomePage = "Adicinemax21"
+                        } else {
+                            DataStoreHelper.currentHomePage = "LayarKaca21"
+                        }
+                        // ---------------------------------------------------------------
+
                     } catch (e: Exception) { logError(e) }
                 } else {
                     DataStoreHelper.currentHomePage?.let { homeApi ->
@@ -1130,6 +1148,9 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
         // --- BYPASS SETUP AWAL ADIXTREAM ---
         if (getKey(HAS_DONE_SETUP_KEY, false) != true) {
              setKey(HAS_DONE_SETUP_KEY, true)
+             // Pastikan menyesuaikan dengan status premium saat itu juga
+             val isPremiumCheck = PremiumManager.isPremium(this@MainActivity)
+             DataStoreHelper.currentHomePage = if (isPremiumCheck) "Adicinemax21" else "LayarKaca21"
              updateLocale() 
         }
         // -----------------------------------
@@ -1541,7 +1562,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
     }
 
     // --- POPUP UNLOCK ADIXTREAM (NEW PREMIUM DESIGN) ---
-    fun showPremiumUnlockDialog() {
+    private fun showPremiumUnlockDialog() {
         val context = this
         
         val gradient = GradientDrawable(
@@ -1732,6 +1753,10 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                 (btnUnlock.tag as? Dialog)?.dismiss()
                 val expiryDate = PremiumManager.getExpiryDateString(context)
                 
+                // --- TAMBAHAN: OTOMATIS PILIH ADICINEMAX21 SAAT PREMIUM AKTIF ---
+                DataStoreHelper.currentHomePage = "Adicinemax21"
+                // ----------------------------------------------------------------
+
                 AlertDialog.Builder(context)
                     .setTitle("✅ PREMIUM DIAKTIFKAN")
                     .setMessage("Terima kasih telah berlangganan!\n\n" +
