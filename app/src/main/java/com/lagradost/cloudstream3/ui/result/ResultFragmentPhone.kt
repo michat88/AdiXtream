@@ -320,6 +320,7 @@ open class ResultFragmentPhone : FullScreenPlayer() {
         super.onConfigurationChanged(newConfig)
         view?.let { fixSystemBarsPadding(it) }
     }
+
     @SuppressLint("SetTextI18n")
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
@@ -681,7 +682,8 @@ open class ResultFragmentPhone : FullScreenPlayer() {
                                                 ACTION_DOWNLOAD_EPISODE,
                                                 episode
                                             )
-                                        ).join()
+                                        )
+                                            .join()
                                     }
                                 }
                             }
@@ -941,25 +943,9 @@ open class ResultFragmentPhone : FullScreenPlayer() {
                     }
                 }
 
-                // ========================================================
-                // 🛑 MODIFIKASI ADIXTREAM: CEK PROVIDER PREMIUM / ERROR
-                // ========================================================
-                (data as? Resource.Failure)?.let { failureData ->
-                    val errorMsg = failureData.errorString ?: ""
-                    
-                    if (errorMsg.contains("provider does not exist", ignoreCase = true)) {
-                        val isPremium = com.lagradost.cloudstream3.PremiumManager.isPremium(requireContext())
-                        if (!isPremium) {
-                            showToast("Akses Premium Dibutuhkan!", Toast.LENGTH_SHORT)
-                            activity?.popCurrentPage() // Tutup halaman error hitam
-                            (activity as? com.lagradost.cloudstream3.MainActivity)?.showPremiumUnlockDialog() // Munculkan popup Premium
-                            return@observe // Hentikan proses error bawaan
-                        }
-                    }
-
-                    resultErrorText.text = storedData.url.plus("\n") + errorMsg
+                (data as? Resource.Failure)?.let { data ->
+                    resultErrorText.text = storedData.url.plus("\n") + data.errorString
                 }
-                // ========================================================
 
                 binding?.resultBookmarkFab?.isVisible = data is Resource.Success
                 resultFinishLoading.isVisible = data is Resource.Success
