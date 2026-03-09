@@ -285,6 +285,9 @@ class SettingsUpdates : BasePreferenceFragmentCompat() {
         getPref(R.string.automatic_backup_key)?.isVisible = false
         getPref(R.string.restore_key)?.isVisible = false
         getPref(R.string.backup_path_key)?.isVisible = false
+
+        [span_0](start_span)// 3. Menyembunyikan tombol "Tampilkan Logcat" untuk keamanan Repo[span_0](end_span)
+        getPref(R.string.show_logcat_key)?.isVisible = false
         // ------------------------------------------------
     }
 
