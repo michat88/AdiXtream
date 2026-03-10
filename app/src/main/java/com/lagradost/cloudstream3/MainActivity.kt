@@ -163,6 +163,7 @@ import com.lagradost.cloudstream3.utils.DataStore.getKey
 import com.lagradost.cloudstream3.utils.DataStore.setKey
 import com.lagradost.cloudstream3.utils.DataStoreHelper
 import com.lagradost.cloudstream3.utils.DataStoreHelper.accounts
+import com.lagradost.cloudstream3.utils.DataStoreHelper.migrateResumeWatching
 import com.lagradost.cloudstream3.utils.Event
 import com.lagradost.cloudstream3.utils.ImageLoader.loadImage
 import com.lagradost.cloudstream3.utils.InAppUpdater.runAutoUpdate
@@ -198,17 +199,12 @@ import kotlin.math.absoluteValue
 import kotlin.system.exitProcess
 import com.lagradost.cloudstream3.utils.downloader.DownloadQueueManager
 
-// --- IMPORT TAMBAHAN ADIXTREAM ---
+// --- IMPORT TAMBAHAN ADIXTREAM & JACKSON ---
 import com.lagradost.cloudstream3.plugins.RepositoryManager
 import com.lagradost.cloudstream3.ui.settings.extensions.PluginsViewModel
 import com.lagradost.cloudstream3.ui.settings.extensions.RepositoryData
 import com.lagradost.cloudstream3.PremiumManager
-import com.lagradost.cloudstream3.utils.DataStoreHelper.migrateResumeWatching
-import com.fasterxml.jackson.module.kotlin.readValue
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.module.kotlin.kotlinModule
-import com.fasterxml.jackson.databind.DeserializationFeature
-
+import com.fasterxml.jackson.core.type.TypeReference
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -284,7 +280,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                 fun safeURI(uri: String) = safe { URI(uri) }
 
                 if (str != null && this != null) {
-                    // === PENANGKAP SHARE KITA PINDAH KE PALING ATAS! ===
+                    // === PENANGKAP SHARE ===
                     if (str.startsWith(APP_STRING_SHARE) || str.startsWith("adixtreamshare")) {
                         try {
                             val rawData = if (str.contains("?data=")) {
@@ -1581,13 +1577,17 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
         
         DownloadQueueManager.init(this)
 
-        // === FITUR BARU: FETCH DAN TAMPILKAN POPUP JSON ===
+        // === FITUR BARU: FETCH DAN TAMPILKAN POPUP JSON (Menggunakan Jackson bawaan Cloudstream) ===
         ioSafe {
             try {
                 // Fetch JSON menggunakan fungsi network Cloudstream
                 val response = app.get(POPUP_JSON_URL).text
-                val popupListType = object : TypeToken<List<AdiXtreamPopup>>() {}.type
-                val popups: List<AdiXtreamPopup> = Gson().fromJson(response, popupListType)
+                
+                // Gunakan Jackson (DataStore.mapper) untuk decode JSON
+                val popups: List<AdiXtreamPopup> = com.lagradost.cloudstream3.utils.DataStore.mapper.readValue(
+                    response, 
+                    object : com.fasterxml.jackson.core.type.TypeReference<List<AdiXtreamPopup>>() {}
+                )
 
                 val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
                 val todayStr = sdf.format(Date())
