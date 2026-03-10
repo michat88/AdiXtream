@@ -199,31 +199,12 @@ import kotlin.math.absoluteValue
 import kotlin.system.exitProcess
 import com.lagradost.cloudstream3.utils.downloader.DownloadQueueManager
 
-// --- IMPORT TAMBAHAN ADIXTREAM & JACKSON ---
+// --- IMPORT TAMBAHAN ADIXTREAM ---
 import com.lagradost.cloudstream3.plugins.RepositoryManager
 import com.lagradost.cloudstream3.ui.settings.extensions.PluginsViewModel
 import com.lagradost.cloudstream3.ui.settings.extensions.RepositoryData
 import com.lagradost.cloudstream3.PremiumManager
-import com.fasterxml.jackson.core.type.TypeReference
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 // -----------------------
-
-// --- DATA CLASS UNTUK POPUP MANAGER ---
-data class AdiXtreamPopup(
-    val id: String,
-    val title: String,
-    val message: String,
-    val imageUrl: String?,
-    val startDate: String,
-    val endDate: String,
-    val frequency: String,
-    val actionText: String,
-    val actionLink: String?,
-    val isActive: Boolean
-)
-// --------------------------------------
 
 class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCallback {
     companion object {
@@ -266,9 +247,6 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
         val reloadLibraryEvent = Event<Boolean>()
         val reloadAccountEvent = Event<Boolean>()
 
-        // URL GITHUB RAW TEMPAT KAMU MENYIMPAN HASIL JSON DARI REACT ADMIN PANEL
-        const val POPUP_JSON_URL = "https://raw.githubusercontent.com/michat88/Zaneta/main/popups.json"
-
         @Suppress("DEPRECATION_ERROR")
         fun handleAppIntentUrl(
             activity: FragmentActivity?,
@@ -280,7 +258,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                 fun safeURI(uri: String) = safe { URI(uri) }
 
                 if (str != null && this != null) {
-                    // === PENANGKAP SHARE ===
+                    // === PENANGKAP SHARE KITA PINDAH KE PALING ATAS! ===
                     if (str.startsWith(APP_STRING_SHARE) || str.startsWith("adixtreamshare")) {
                         try {
                             val rawData = if (str.contains("?data=")) {
@@ -438,6 +416,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
             }
         }
     }
+    
     var lastPopup: SearchResponse? = null
     fun loadPopup(result: SearchResponse, load: Boolean = true) {
         lastPopup = result
@@ -1049,12 +1028,14 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                 } catch (e: Exception) { logError(e) }
             }
 
+            // Gunakan delay dari coroutine, bukan Thread.sleep
             kotlinx.coroutines.delay(1000)
 
             if (lastError == null && !PluginManager.checkSafeModeFile()) {
                 if (isRepoChanged) {
                     try {
                         Log.d(TAG, "Mengunduh plugin dari Repo Baru...")
+                        // Download berjalan di background
                         PluginsViewModel.downloadAll(this@MainActivity, targetRepoUrl, null)
                         PluginManager.___DO_NOT_CALL_FROM_A_PLUGIN_loadAllOnlinePlugins(this@MainActivity)
                         PluginManager.___DO_NOT_CALL_FROM_A_PLUGIN_loadAllLocalPlugins(this@MainActivity, false)
@@ -1073,9 +1054,12 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                     PluginManager.___DO_NOT_CALL_FROM_A_PLUGIN_loadAllLocalPlugins(this@MainActivity, false)
                 }
 
+                // === SOLUSI FINAL: OPTIMASI POLLING COROUTINES & FILTER NSFW ===
                 val isAdultEnabled = settingsManager.getBoolean(getString(R.string.enable_nsfw_on_providers_key), false)
 
+                // Gunakan withTimeoutOrNull untuk membatasi waktu tunggu maksimal 15 detik (15000 ms)
                 kotlinx.coroutines.withTimeoutOrNull(15_000L) {
+                    // Cek terus setiap 500ms sampai ada setidaknya 1 provider valid
                     while (APIHolder.allProviders.none { provider -> 
                         provider.hasMainPage && (isAdultEnabled || !provider.supportedTypes.contains(com.lagradost.cloudstream3.TvType.NSFW)) 
                     }) {
@@ -1083,12 +1067,14 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                     }
                 }
 
+                // Ambil daftar provider yang sudah terfilter dengan aman
                 val availableProviders = APIHolder.allProviders.filter { provider ->
                     provider.hasMainPage && (isAdultEnabled || !provider.supportedTypes.contains(com.lagradost.cloudstream3.TvType.NSFW))
                 }
                 
                 val currentSelected = DataStoreHelper.currentHomePage
 
+                // Jika daftar plugin sudah muncul, otomatis pilih urutan pertama
                 if (currentSelected == null || availableProviders.none { it.name == currentSelected }) {
                     if (availableProviders.isNotEmpty()) {
                         val targetApiToLoad = availableProviders.first().name
@@ -1100,9 +1086,11 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                         mainPluginsLoadedEvent.invoke(false)
                     }
                 } else {
+                    // Eksekusi jika tidak ada perubahan repo
                     mainPluginsLoadedEvent.invoke(loadSinglePlugin(this@MainActivity, currentSelected))
                     reloadHomeEvent.invoke(true)
                 }
+                // =========================================================
             }
         }
         // -----------------------------------------------------------
@@ -1183,10 +1171,12 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
             fixSystemBarsPadding(navRailView, widthResId = R.dimen.nav_rail_view_width, padRight = false, padTop = false)
         }
 
+        // --- BYPASS SETUP AWAL ADIXTREAM ---
         if (getKey(HAS_DONE_SETUP_KEY, false) != true) {
-            setKey(HAS_DONE_SETUP_KEY, true)
-            updateLocale() 
+             setKey(HAS_DONE_SETUP_KEY, true)
+             updateLocale() 
         }
+        // -----------------------------------
 
         val padding = settingsManager.getInt(getString(R.string.overscan_key), 0).toPx
         binding?.homeRoot?.setPadding(padding, padding, padding, padding)
@@ -1197,7 +1187,11 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
 
         if (isLayout(PHONE) && isAuthEnabled(this) && noAccounts) {
             if (deviceHasPasswordPinLock(this)) {
+                // 1. Sembunyikan konten utama aplikasi dulu supaya aman
                 binding?.navHostFragment?.isInvisible = true
+                
+                // 2. Gunakan root.post untuk menunda pemunculan dialog 
+                // sampai layar aplikasi benar-benar selesai dimuat & siap
                 binding?.root?.post {
                     startBiometricAuthentication(this@MainActivity, R.string.biometric_authentication_title, false)
                     promptInfo?.let { prompt -> biometricPrompt?.authenticate(prompt) }
@@ -1569,153 +1563,18 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
             removeKey(USER_SELECTED_HOMEPAGE_API)
         }
 
+        // --- PERBAIKAN ERROR RUN DEFAULT ADIXTREAM ---
         attachBackPressedCallback("MainActivityDefault") {
             setNavigationBarColorCompat(R.attr.primaryGrayBackground)
             updateLocale()
             runDefault()
         }
         
+        // Start the download queue
         DownloadQueueManager.init(this)
 
-        // === FITUR BARU: FETCH DAN TAMPILKAN POPUP JSON (Menggunakan Jackson bawaan Cloudstream) ===
-        ioSafe {
-            try {
-                // Fetch JSON menggunakan fungsi network Cloudstream
-                val response = app.get(POPUP_JSON_URL).text
-                
-                // Gunakan Jackson (DataStore.mapper) untuk decode JSON
-                val popups: List<AdiXtreamPopup> = com.lagradost.cloudstream3.utils.DataStore.mapper.readValue(
-                    response, 
-                    object : com.fasterxml.jackson.core.type.TypeReference<List<AdiXtreamPopup>>() {}
-                )
-
-                val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-                val todayStr = sdf.format(Date())
-                val todayDate = sdf.parse(todayStr)
-
-                // Cari popup aktif pertama yang memenuhi kriteria tanggal
-                val activePopup = popups.firstOrNull { popup ->
-                    if (!popup.isActive) return@firstOrNull false
-                    
-                    try {
-                        val startDate = sdf.parse(popup.startDate)
-                        val endDate = sdf.parse(popup.endDate)
-                        
-                        if (todayDate != null && startDate != null && endDate != null) {
-                            if (todayDate.before(startDate) || todayDate.after(endDate)) return@firstOrNull false
-                        }
-
-                        val lastSeenDate = settingsManager.getString("POPUP_SEEN_${popup.id}_DATE", "")
-                        
-                        when (popup.frequency) {
-                            "once_ever" -> if (lastSeenDate!!.isNotEmpty()) return@firstOrNull false
-                            "once_per_day" -> if (lastSeenDate == todayStr) return@firstOrNull false
-                        }
-                        return@firstOrNull true
-                    } catch (e: Exception) {
-                        false
-                    }
-                }
-
-                // Jika ada popup yang harus ditampilkan
-                if (activePopup != null) {
-                    main {
-                        val builder = AlertDialog.Builder(this@MainActivity, R.style.AlertDialogCustom)
-                        val layout = LinearLayout(this@MainActivity).apply {
-                            orientation = LinearLayout.VERTICAL
-                            setPadding(40, 40, 40, 40)
-                            gravity = Gravity.CENTER_HORIZONTAL
-                        }
-
-                        // Gambar (Opsional)
-                        if (!activePopup.imageUrl.isNullOrEmpty()) {
-                            val imageView = ImageView(this@MainActivity).apply {
-                                layoutParams = LinearLayout.LayoutParams(
-                                    LinearLayout.LayoutParams.MATCH_PARENT, 
-                                    400.toPx
-                                ).apply { setMargins(0, 0, 0, 20) }
-                                scaleType = ImageView.ScaleType.CENTER_CROP
-                                loadImage(activePopup.imageUrl)
-                            }
-                            layout.addView(imageView)
-                        }
-
-                        // Judul
-                        val titleView = TextView(this@MainActivity).apply {
-                            text = activePopup.title
-                            textSize = 20f
-                            setTextColor(android.graphics.Color.WHITE)
-                            typeface = android.graphics.Typeface.DEFAULT_BOLD
-                            gravity = Gravity.CENTER
-                            setPadding(0, 0, 0, 10)
-                        }
-                        layout.addView(titleView)
-
-                        // Pesan
-                        val messageView = TextView(this@MainActivity).apply {
-                            text = activePopup.message
-                            textSize = 14f
-                            setTextColor(android.graphics.Color.LTGRAY)
-                            gravity = Gravity.CENTER
-                            setPadding(0, 0, 0, 30)
-                        }
-                        layout.addView(messageView)
-
-                        // Fungsi Simpan Status Dilihat
-                        val markAsSeen = {
-                            settingsManager.edit().putString("POPUP_SEEN_${activePopup.id}_DATE", todayStr).apply()
-                        }
-
-                        // Tombol Aksi (Jika ada link)
-                        if (!activePopup.actionLink.isNullOrEmpty()) {
-                            val actionBtn = Button(this@MainActivity).apply {
-                                text = activePopup.actionText
-                                setBackgroundColor(android.graphics.Color.parseColor("#E50914"))
-                                setTextColor(android.graphics.Color.WHITE)
-                                layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply {
-                                    setMargins(0, 0, 0, 10)
-                                }
-                            }
-                            layout.addView(actionBtn)
-
-                            actionBtn.setOnClickListener {
-                                markAsSeen()
-                                // Tangani link navigasi
-                                if (activePopup.actionLink.startsWith("http")) {
-                                    startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(activePopup.actionLink)))
-                                } else {
-                                    // Internal Deeplink
-                                    handleAppIntentUrl(this@MainActivity, activePopup.actionLink, false)
-                                }
-                                (layout.tag as? AlertDialog)?.dismiss()
-                            }
-                        }
-
-                        // Tombol Tutup
-                        val closeBtn = Button(this@MainActivity).apply {
-                            text = if (activePopup.actionLink.isNullOrEmpty()) activePopup.actionText else "Tutup"
-                            setBackgroundColor(android.graphics.Color.DKGRAY)
-                            setTextColor(android.graphics.Color.WHITE)
-                            layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT)
-                        }
-                        layout.addView(closeBtn)
-
-                        val dialog = builder.setView(layout).create()
-                        layout.tag = dialog
-                        
-                        closeBtn.setOnClickListener {
-                            markAsSeen()
-                            dialog.dismiss()
-                        }
-                        
-                        dialog.show()
-                    }
-                }
-            } catch (e: Exception) {
-                Log.e(TAG, "Gagal mengambil atau menampilkan JSON Popup: ${e.message}")
-            }
-        }
-        // ==================================================
+        // === TAMBAHAN ADIXTREAM: CEK POPUP PROMO ===
+        checkAndShowCampaignPopup()
     }
 
     override fun onAuthenticationSuccess() { binding?.navHostFragment?.isInvisible = false }
@@ -1726,7 +1585,6 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
             app.get("https://raw.githubusercontent.com/recloudstream/.github/master/connectivitycheck", timeout = 5).text.trim() == "ok"
         } catch (t: Throwable) { false }
     }
-
     // --- POPUP UNLOCK ADIXTREAM (NEW PREMIUM DESIGN) ---
     fun showPremiumUnlockDialog() {
         val context = this
@@ -1804,6 +1662,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
             addPrice("1 Tahun", "Rp 100.000")
         }
 
+        // --- TAMBAHAN QRIS ADIXTREAM ---
         val qrisContainer = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
             gravity = Gravity.CENTER
@@ -1959,5 +1818,201 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
         
         btnUnlock.tag = alert
         alert.show()
+    }
+
+    // =========================================================================
+    // ================== FITUR POPUP CAMPAIGN ADIXTREAM =======================
+    // =========================================================================
+
+    private fun checkAndShowCampaignPopup() {
+        // PERHATIAN: Ganti URL ini dengan URL raw GitHub dari file popups.json kamu
+        // Contoh: https://raw.githubusercontent.com/michat88/Zaneta/main/popups.json
+        val repoUrl = "https://raw.githubusercontent.com/michat88/Zaneta/main/popups.json" 
+        
+        ioSafe {
+            try {
+                // 1. Ambil Data JSON dari GitHub
+                val response = app.get(repoUrl).text
+                val jsonArray = org.json.JSONArray(response)
+                
+                val prefs = PreferenceManager.getDefaultSharedPreferences(this@MainActivity)
+                val format = java.text.SimpleDateFormat("yyyy-MM-dd HH:mm", java.util.Locale.US)
+                val now = java.util.Date()
+                
+                // 2. Cari Campaign yang Aktif
+                for (i in 0 until jsonArray.length()) {
+                    val item = jsonArray.getJSONObject(i)
+                    val isActive = item.optBoolean("isActive", false)
+                    if (!isActive) continue
+                    
+                    val start = format.parse(item.optString("startDate", "2000-01-01 00:00"))
+                    val end = format.parse(item.optString("endDate", "2099-01-01 00:00"))
+                    
+                    // 3. Cek apakah hari ini berada di dalam rentang tanggal tayang
+                    if (start != null && end != null && now.after(start) && now.before(end)) {
+                        val id = item.optString("id")
+                        val freq = item.optString("frequency", "always")
+                        val lastShown = prefs.getLong("campaign_popup_$id", 0L)
+                        val nowMs = System.currentTimeMillis()
+                        
+                        // 4. Atur Frekuensi Kemunculan (Selalu / 1x Sehari / 1x Saja)
+                        val shouldShow = when (freq) {
+                            "always" -> true
+                            "once_per_day" -> (nowMs - lastShown) > 86400000L // 24 Jam
+                            "once_ever" -> lastShown == 0L
+                            else -> true
+                        }
+                        
+                        if (shouldShow) {
+                            main {
+                                showBeautifulCampaignPopup(item)
+                                prefs.edit().putLong("campaign_popup_$id", nowMs).apply()
+                            }
+                            break // Tampilkan 1 popup saja dalam satu waktu
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Gagal memuat campaign popup", e)
+            }
+        }
+    }
+
+    private fun showBeautifulCampaignPopup(item: org.json.JSONObject) {
+        val titleStr = item.optString("title")
+        val messageStr = item.optString("message")
+        val imageUrl = item.optString("imageUrl")
+        val actionText = item.optString("actionText", "Tutup")
+        val actionLink = item.optString("actionLink")
+
+        // Setup Dialog Tanpa Background Bawaan
+        val dialog = Dialog(this, android.R.style.Theme_Translucent_NoTitleBar)
+        dialog.window?.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(android.graphics.Color.parseColor("#D905080F"))) // Opasitas 85%
+        
+        // Root Container
+        val rootLayout = android.widget.RelativeLayout(this).apply {
+            layoutParams = android.view.ViewGroup.LayoutParams(-1, -1)
+            gravity = android.view.Gravity.CENTER
+        }
+        
+        // CardView Melengkung (Seperti Gambar 2)
+        val card = androidx.cardview.widget.CardView(this).apply {
+            radius = 24f.toPx.toFloat()
+            setCardBackgroundColor(android.graphics.Color.parseColor("#1E293B"))
+            cardElevation = 20f
+            layoutParams = android.widget.RelativeLayout.LayoutParams(
+                (resources.displayMetrics.widthPixels * 0.85).toInt(), -2
+            ).apply { addRule(android.widget.RelativeLayout.CENTER_IN_PARENT) }
+        }
+        
+        val cardContent = android.widget.RelativeLayout(this)
+        
+        // Gambar Base64
+        val imageView = android.widget.ImageView(this).apply {
+            id = android.view.View.generateViewId()
+            layoutParams = android.widget.RelativeLayout.LayoutParams(-1, 220.toPx)
+            scaleType = android.widget.ImageView.ScaleType.CENTER_CROP
+        }
+        
+        if (imageUrl.startsWith("data:image")) {
+            try {
+                val base64Raw = imageUrl.substringAfter(",")
+                val decodedBytes = android.util.Base64.decode(base64Raw, android.util.Base64.DEFAULT)
+                val bitmap = android.graphics.BitmapFactory.decodeByteArray(decodedBytes, 0, decodedBytes.size)
+                imageView.setImageBitmap(bitmap)
+            } catch (e: Exception) { imageView.setBackgroundColor(android.graphics.Color.parseColor("#334155")) }
+        } else { imageView.setBackgroundColor(android.graphics.Color.parseColor("#334155")) }
+        
+        // Efek Fading Linear Gradient (Bawah Gambar)
+        val gradientView = android.view.View(this).apply {
+            layoutParams = android.widget.RelativeLayout.LayoutParams(-1, 80.toPx).apply { addRule(android.widget.RelativeLayout.ALIGN_BOTTOM, imageView.id) }
+            background = android.graphics.drawable.GradientDrawable(
+                android.graphics.drawable.GradientDrawable.Orientation.TOP_BOTTOM,
+                intArrayOf(android.graphics.Color.TRANSPARENT, android.graphics.Color.parseColor("#1E293B"))
+            )
+        }
+        
+        // Tombol Close (X) Kanan Atas
+        val closeBtn = android.widget.ImageView(this).apply {
+            layoutParams = android.widget.RelativeLayout.LayoutParams(36.toPx, 36.toPx).apply {
+                addRule(android.widget.RelativeLayout.ALIGN_PARENT_TOP)
+                addRule(android.widget.RelativeLayout.ALIGN_PARENT_RIGHT)
+                setMargins(0, 16.toPx, 16.toPx, 0)
+            }
+            // Menggunakan ikon bawaan android
+            setImageResource(R.drawable.ic_baseline_close_24) 
+            setColorFilter(android.graphics.Color.parseColor("#CBD5E1"))
+            background = android.graphics.drawable.GradientDrawable().apply {
+                shape = android.graphics.drawable.GradientDrawable.OVAL
+                setColor(android.graphics.Color.parseColor("#66000000")) // Hitam transparan
+            }
+            setPadding(8.toPx, 8.toPx, 8.toPx, 8.toPx)
+            setOnClickListener { dialog.dismiss() }
+        }
+        
+        // Kontainer Teks
+        val textContainer = android.widget.LinearLayout(this).apply {
+            layoutParams = android.widget.RelativeLayout.LayoutParams(-1, -2).apply { addRule(android.widget.RelativeLayout.BELOW, imageView.id) }
+            orientation = android.widget.LinearLayout.VERTICAL
+            setPadding(24.toPx, 10.toPx, 24.toPx, 24.toPx)
+            gravity = android.view.Gravity.CENTER_HORIZONTAL
+        }
+        
+        val titleText = android.widget.TextView(this).apply {
+            text = titleStr
+            textSize = 22f
+            setTextColor(android.graphics.Color.parseColor("#F8FAFC"))
+            typeface = android.graphics.Typeface.DEFAULT_BOLD
+            gravity = android.view.Gravity.CENTER
+            setPadding(0, 0, 0, 12.toPx)
+        }
+        
+        val messageText = android.widget.TextView(this).apply {
+            text = messageStr
+            textSize = 15f
+            setTextColor(android.graphics.Color.parseColor("#94A3B8"))
+            gravity = android.view.Gravity.CENTER
+            setPadding(0, 0, 0, 24.toPx)
+            setLineSpacing(0f, 1.2f)
+        }
+        
+        // Tombol Aksi (Warna Merah)
+        val actionBtn = android.widget.Button(this).apply {
+            text = actionText
+            setTextColor(android.graphics.Color.WHITE)
+            textSize = 16f
+            typeface = android.graphics.Typeface.DEFAULT_BOLD
+            isAllCaps = false
+            background = android.graphics.drawable.GradientDrawable().apply {
+                cornerRadius = 16f.toPx.toFloat()
+                setColor(android.graphics.Color.parseColor("#E50914"))
+            }
+            layoutParams = android.widget.LinearLayout.LayoutParams(-1, 52.toPx)
+            
+            setOnClickListener {
+                dialog.dismiss()
+                if (actionLink.isNotEmpty()) {
+                    try {
+                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(actionLink))
+                        startActivity(intent)
+                    } catch (e: Exception) { Log.e(TAG, "Gagal membuka link", e) }
+                }
+            }
+        }
+        
+        textContainer.addView(titleText)
+        textContainer.addView(messageText)
+        textContainer.addView(actionBtn)
+        
+        cardContent.addView(imageView)
+        cardContent.addView(gradientView)
+        cardContent.addView(closeBtn)
+        cardContent.addView(textContainer)
+        
+        card.addView(cardContent)
+        rootLayout.addView(card)
+        dialog.setContentView(rootLayout)
+        
+        dialog.show()
     }
 }
