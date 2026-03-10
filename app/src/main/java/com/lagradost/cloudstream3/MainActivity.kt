@@ -203,8 +203,12 @@ import com.lagradost.cloudstream3.plugins.RepositoryManager
 import com.lagradost.cloudstream3.ui.settings.extensions.PluginsViewModel
 import com.lagradost.cloudstream3.ui.settings.extensions.RepositoryData
 import com.lagradost.cloudstream3.PremiumManager
-import com.google.gson.Gson
-import com.google.gson.reflect.TypeToken
+import com.lagradost.cloudstream3.utils.DataStoreHelper.migrateResumeWatching
+import com.fasterxml.jackson.module.kotlin.readValue
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.module.kotlin.kotlinModule
+import com.fasterxml.jackson.databind.DeserializationFeature
+
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
