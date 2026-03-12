@@ -626,6 +626,7 @@ class CS3IPlayer : IPlayer {
         event(PlayerAttachedEvent(null))
         //simpleCache = null
     }
+
     override fun onStop() {
         Log.i(TAG, "onStop")
 
@@ -633,7 +634,7 @@ class CS3IPlayer : IPlayer {
         if (!isAudioOnlyBackground) {
             handleEvent(CSPlayerEvent.Pause, PlayerEventSource.Player)
         }
-        //releasePlayer()
+        releasePlayer() // FIX: Diaktifkan kembali agar player tidak jadi zombie
     }
 
     override fun onPause() {
@@ -660,7 +661,6 @@ class CS3IPlayer : IPlayer {
         exoPlayer?.setPlaybackSpeed(speed)
         playBackSpeed = speed
     }
-
     companion object {
         private const val CRONET_TIMEOUT_MS = 15_000
 
