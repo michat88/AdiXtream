@@ -1584,20 +1584,20 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
         } catch (t: Throwable) { false }
     }
 
-    // --- POPUP UNLOCK ADIXTREAM (NEW PREMIUM DESIGN - DARK NEON) ---
+    // --- POPUP UNLOCK ADIXTREAM (NEW PREMIUM DESIGN - REVISED) ---
     fun showPremiumUnlockDialog() {
         val context = this
         
-        // 1. Background utama (Dark Blue/Purple gradient ala desain)
+        // 1. Background utama (Dark Purple gradient)
         val gradient = android.graphics.drawable.GradientDrawable(
             android.graphics.drawable.GradientDrawable.Orientation.TOP_BOTTOM,
-            intArrayOf(android.graphics.Color.parseColor("#1B143A"), android.graphics.Color.parseColor("#0F1021"))
+            intArrayOf(android.graphics.Color.parseColor("#271D42"), android.graphics.Color.parseColor("#120E1E"))
         )
         gradient.cornerRadius = 24f.toPx.toFloat()
 
         val layout = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(40, 60, 40, 60)
+            setPadding(30, 60, 30, 60) // Padding dikurangi agar konten lebih luas
             background = gradient
             gravity = Gravity.CENTER_HORIZONTAL
         }
@@ -1606,7 +1606,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
             addView(layout)
         }
 
-        // 2. Ikon Mahkota Emas
+        // 2. Ikon Mahkota
         val icon = TextView(context).apply {
             text = "👑"
             textSize = 50f
@@ -1617,7 +1617,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
         // 3. Judul
         val title = TextView(context).apply {
             text = "PREMIUM ACCESS"
-            textSize = 22f
+            textSize = 21f
             setTextColor(android.graphics.Color.WHITE)
             typeface = android.graphics.Typeface.DEFAULT_BOLD
             gravity = Gravity.CENTER
@@ -1627,30 +1627,30 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
         // 4. Subjudul
         val subTitle = TextView(context).apply {
             text = "Fitur ini terkunci. Silakan hubungi admin untuk\nberlangganan."
-            textSize = 14f
+            textSize = 13f
             setTextColor(android.graphics.Color.parseColor("#A0A0B5"))
             gravity = Gravity.CENTER
-            setPadding(0, 0, 0, 40)
+            setPadding(0, 0, 0, 30)
         }
 
-        // 5. Kotak Harga (List outline dengan warna neon)
+        // 5. Kotak Harga (Outline tipis neon)
         val priceBoxBg = android.graphics.drawable.GradientDrawable().apply {
-            setColor(android.graphics.Color.parseColor("#15ffffff")) // Transparan putih sedikit
-            setStroke(3, android.graphics.Color.parseColor("#5A5B8F")) // Garis tepi
-            cornerRadius = 20f.toPx.toFloat()
+            setColor(android.graphics.Color.TRANSPARENT)
+            setStroke(2, android.graphics.Color.parseColor("#6A629B")) // Garis tepi tipis
+            cornerRadius = 24f.toPx.toFloat()
         }
         val priceLayout = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(40, 30, 40, 30)
             background = priceBoxBg
             layoutParams = LinearLayout.LayoutParams(-1, -2).apply {
-                setMargins(20, 0, 20, 40)
+                setMargins(10, 0, 10, 30) 
             }
             
             fun addPrice(dur: String, price: String) {
                 val row = LinearLayout(context).apply {
                     orientation = LinearLayout.HORIZONTAL
-                    setPadding(0, 10, 0, 10)
+                    setPadding(0, 8, 0, 8)
                     weightSum = 2f
                 }
                 val t1 = TextView(context).apply {
@@ -1662,7 +1662,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                 val t2 = TextView(context).apply {
                     text = price
                     textSize = 15f
-                    setTextColor(android.graphics.Color.parseColor("#4CAF50")) // Hijau terang
+                    setTextColor(android.graphics.Color.parseColor("#4CAF50"))
                     typeface = android.graphics.Typeface.DEFAULT_BOLD
                     layoutParams = LinearLayout.LayoutParams(0, -2, 1f)
                     gravity = Gravity.END
@@ -1677,54 +1677,46 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
             addPrice("1 Tahun", "Rp 100.000")
         }
 
-        // 6. Bagian QRIS
+        // 6. Bagian QRIS (TANPA BINGKAI / CARDVIEW)
         val qrisTitle = TextView(context).apply {
             text = "SCAN UNTUK BAYAR"
-            textSize = 12f
-            setTextColor(android.graphics.Color.parseColor("#A0A0B5"))
-            gravity = Gravity.CENTER
-            setPadding(0, 0, 0, 15)
-        }
-
-        val qrisCard = CardView(context).apply {
-            radius = 16f.toPx.toFloat()
-            setCardBackgroundColor(android.graphics.Color.WHITE)
-            layoutParams = LinearLayout.LayoutParams(250.toPx, 250.toPx).apply {
-                gravity = Gravity.CENTER
-            }
-            clipChildren = true
-            clipToPadding = true
-        }
-
-        val qrisImage = ImageView(context).apply {
-            layoutParams = ViewGroup.LayoutParams(-1, -1)
-            scaleType = ImageView.ScaleType.FIT_CENTER
-            // Memuat gambar QRIS
-            loadImage("https://raw.githubusercontent.com/michat88/Zaneta/main/Icons/qris.png") 
-        }
-        qrisCard.addView(qrisImage)
-
-        val qrisFooter = TextView(context).apply {
-            text = "OVO / DANA / GOPAY / SHOPEEPAY / BANK"
             textSize = 11f
             setTextColor(android.graphics.Color.parseColor("#A0A0B5"))
             gravity = Gravity.CENTER
-            setPadding(0, 20, 0, 40)
+            setPadding(0, 0, 0, 10)
+        }
+
+        // Gunakan ImageView Murni Tanpa Frame Putih
+        val qrisImage = ImageView(context).apply {
+            layoutParams = LinearLayout.LayoutParams(-1, -2).apply {
+                setMargins(40, 0, 40, 0)
+            }
+            adjustViewBounds = true // Gambar tidak akan kepotong
+            scaleType = ImageView.ScaleType.FIT_CENTER
+            loadImage("https://raw.githubusercontent.com/michat88/Zaneta/main/Icons/qris.png") 
+        }
+
+        val qrisFooter = TextView(context).apply {
+            text = "OVO / DANA / GOPAY / SHOPEEPAY / BANK"
+            textSize = 10f
+            setTextColor(android.graphics.Color.parseColor("#A0A0B5"))
+            gravity = Gravity.CENTER
+            setPadding(0, 10, 0, 30)
         }
 
         // 7. Kotak Device ID
         val deviceIdVal = PremiumManager.getDeviceId(context)
         val idBoxBg = android.graphics.drawable.GradientDrawable().apply {
-            setColor(android.graphics.Color.parseColor("#252538"))
-            setStroke(2, android.graphics.Color.parseColor("#4B4B6A"))
-            cornerRadius = 20f.toPx.toFloat()
+            setColor(android.graphics.Color.parseColor("#221D36")) 
+            setStroke(2, android.graphics.Color.parseColor("#443D61"))
+            cornerRadius = 24f.toPx.toFloat()
         }
         val idContainer = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(30, 20, 30, 20)
+            setPadding(20, 20, 20, 20)
             background = idBoxBg
             layoutParams = LinearLayout.LayoutParams(-1, -2).apply {
-                setMargins(20, 0, 20, 40)
+                setMargins(10, 0, 10, 30)
             }
             setOnClickListener {
                 val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
@@ -1735,26 +1727,26 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
         }
         val idLabel = TextView(context).apply {
             text = "DEVICE ID ANDA (Tap to copy):"
-            textSize = 12f
+            textSize = 11f
             setTextColor(android.graphics.Color.parseColor("#A0A0B5"))
             gravity = Gravity.CENTER
         }
         
-        // Baris untuk ID dan ikon Copy
         val idValueRow = LinearLayout(context).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER
-            setPadding(0, 10, 0, 0)
+            setPadding(0, 5, 0, 0)
         }
         val idValue = TextView(context).apply {
             text = deviceIdVal
-            textSize = 26f
-            setTextColor(android.graphics.Color.parseColor("#FFD700"))
+            textSize = 24f
+            setTextColor(android.graphics.Color.parseColor("#FFCA28")) 
             typeface = android.graphics.Typeface.DEFAULT_BOLD
-            setPadding(0, 0, 20, 0)
+            setPadding(0, 0, 15, 0)
         }
         val copyIcon = TextView(context).apply {
-            text = "📋" // Menggunakan emoji clipboard sebagai pengganti ikon
+            text = "⎘" // Ikon copy lebih elegan
+            setTextColor(android.graphics.Color.parseColor("#FFCA28"))
             textSize = 20f
         }
         idValueRow.addView(idValue)
@@ -1763,41 +1755,40 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
         idContainer.addView(idLabel)
         idContainer.addView(idValueRow)
 
-        // 8. Input Code (Hanya dengan garis bawah)
+        // 8. Input Code
         val inputCode = EditText(context).apply {
             hint = "Masukkan KODE di sini"
-            setHintTextColor(android.graphics.Color.parseColor("#808080"))
+            setHintTextColor(android.graphics.Color.parseColor("#7A7A95"))
             setTextColor(android.graphics.Color.WHITE)
             gravity = Gravity.CENTER
-            setPadding(20, 20, 20, 20)
+            setPadding(20, 20, 20, 10)
             textSize = 16f
             setSingleLine()
+            background = null // Hilangkan kotak default
             layoutParams = LinearLayout.LayoutParams(-1, -2).apply {
-                setMargins(40, 0, 40, 40)
+                setMargins(30, 0, 30, 0)
             }
-            // Trik membuat garis bawah saja
         }
-        inputCode.background = null 
         val underline = View(context).apply {
             layoutParams = LinearLayout.LayoutParams(-1, 2.toPx).apply {
-                setMargins(60, -40, 60, 40)
+                setMargins(40, 0, 40, 30)
             }
-            setBackgroundColor(android.graphics.Color.parseColor("#5A5B8F"))
+            setBackgroundColor(android.graphics.Color.parseColor("#6A629B"))
         }
 
-        // 9. Tombol Unlock Now (Kuning Kapsul)
+        // 9. Tombol Unlock Now
         val btnUnlockBg = android.graphics.drawable.GradientDrawable().apply {
             setColor(android.graphics.Color.parseColor("#FFCA28"))
-            cornerRadius = 100f.toPx.toFloat() // Membuatnya bulat penuh (pill shape)
+            cornerRadius = 100f.toPx.toFloat() 
         }
         val btnUnlock = Button(context).apply {
             text = "UNLOCK NOW"
-            textSize = 16f
+            textSize = 15f
             background = btnUnlockBg
-            setTextColor(android.graphics.Color.BLACK)
+            setTextColor(android.graphics.Color.parseColor("#120E1E"))
             typeface = android.graphics.Typeface.DEFAULT_BOLD
-            layoutParams = LinearLayout.LayoutParams(-1, 55.toPx).apply {
-                setMargins(20, 0, 20, 20)
+            layoutParams = LinearLayout.LayoutParams(-1, 50.toPx).apply {
+                setMargins(10, 0, 10, 20)
             }
         }
         
@@ -1805,7 +1796,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
         val btnAdminRow = LinearLayout(context).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER
-            setPadding(0, 10, 0, 0)
+            setPadding(0, 5, 0, 0)
             setOnClickListener {
                 try {
                     val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://t.me/michat88"))
@@ -1818,13 +1809,13 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
         val textAdmin = TextView(context).apply {
             text = "TELEGRAM ADMIN "
             setTextColor(android.graphics.Color.parseColor("#00E5FF"))
-            textSize = 14f
+            textSize = 13f
             typeface = android.graphics.Typeface.DEFAULT_BOLD
         }
         val iconAdmin = TextView(context).apply {
-            text = "➤" // Panah gaya Telegram
+            text = "➤" 
             setTextColor(android.graphics.Color.parseColor("#00E5FF"))
-            textSize = 16f
+            textSize = 13f
         }
         btnAdminRow.addView(textAdmin)
         btnAdminRow.addView(iconAdmin)
@@ -1856,13 +1847,13 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
             }
         }
 
-        // Menyusun View ke Layout
+        // Menyusun View
         layout.addView(icon)
         layout.addView(title)
         layout.addView(subTitle)
         layout.addView(priceLayout)
         layout.addView(qrisTitle)
-        layout.addView(qrisCard)
+        layout.addView(qrisImage)
         layout.addView(qrisFooter)
         layout.addView(idContainer)
         layout.addView(inputCode)
@@ -1875,9 +1866,16 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
             .setCancelable(true)
             .create()
         
-        // Memaksa background dialog bawaan menjadi transparan agar rounded border kita terlihat
+        // Memaksa background transparan
         alert.window?.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT))
         
+        // MELEBARKAN DIALOG: Agar tidak menyempit seperti sebelumnya
+        alert.setOnShowListener {
+            val displayMetrics = context.resources.displayMetrics
+            val width = (displayMetrics.widthPixels * 0.90).toInt() // Ambil 90% lebar layar
+            alert.window?.setLayout(width, ViewGroup.LayoutParams.WRAP_CONTENT)
+        }
+
         btnUnlock.tag = alert
         alert.show()
     }
