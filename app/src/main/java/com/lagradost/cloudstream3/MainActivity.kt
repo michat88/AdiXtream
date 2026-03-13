@@ -1584,7 +1584,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
         } catch (t: Throwable) { false }
     }
 
-    // --- POPUP UNLOCK ADIXTREAM (NEW PREMIUM DESIGN - REVISED) ---
+    // --- POPUP UNLOCK ADIXTREAM (NEW PREMIUM DESIGN - FINAL VERSION) ---
     fun showPremiumUnlockDialog() {
         val context = this
         
@@ -1597,7 +1597,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
 
         val layout = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(30, 60, 30, 60) // Padding dikurangi agar konten lebih luas
+            setPadding(30, 60, 30, 60) 
             background = gradient
             gravity = Gravity.CENTER_HORIZONTAL
         }
@@ -1636,7 +1636,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
         // 5. Kotak Harga (Outline tipis neon)
         val priceBoxBg = android.graphics.drawable.GradientDrawable().apply {
             setColor(android.graphics.Color.TRANSPARENT)
-            setStroke(2, android.graphics.Color.parseColor("#6A629B")) // Garis tepi tipis
+            setStroke(2, android.graphics.Color.parseColor("#6A629B")) 
             cornerRadius = 24f.toPx.toFloat()
         }
         val priceLayout = LinearLayout(context).apply {
@@ -1677,7 +1677,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
             addPrice("1 Tahun", "Rp 100.000")
         }
 
-        // 6. Bagian QRIS (TANPA BINGKAI / CARDVIEW)
+        // 6. Bagian QRIS (TANPA BINGKAI)
         val qrisTitle = TextView(context).apply {
             text = "SCAN UNTUK BAYAR"
             textSize = 11f
@@ -1686,12 +1686,11 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
             setPadding(0, 0, 0, 10)
         }
 
-        // Gunakan ImageView Murni Tanpa Frame Putih
         val qrisImage = ImageView(context).apply {
             layoutParams = LinearLayout.LayoutParams(-1, -2).apply {
                 setMargins(40, 0, 40, 0)
             }
-            adjustViewBounds = true // Gambar tidak akan kepotong
+            adjustViewBounds = true 
             scaleType = ImageView.ScaleType.FIT_CENTER
             loadImage("https://raw.githubusercontent.com/michat88/Zaneta/main/Icons/qris.png") 
         }
@@ -1745,7 +1744,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
             setPadding(0, 0, 15, 0)
         }
         val copyIcon = TextView(context).apply {
-            text = "⎘" // Ikon copy lebih elegan
+            text = "⎘" 
             setTextColor(android.graphics.Color.parseColor("#FFCA28"))
             textSize = 20f
         }
@@ -1764,7 +1763,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
             setPadding(20, 20, 20, 10)
             textSize = 16f
             setSingleLine()
-            background = null // Hilangkan kotak default
+            background = null 
             layoutParams = LinearLayout.LayoutParams(-1, -2).apply {
                 setMargins(30, 0, 30, 0)
             }
@@ -1792,7 +1791,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
             }
         }
         
-        // 10. Tombol Telegram Admin
+        // 10. Tombol Telegram Admin (Ikon Telegram Baru dari GitHub)
         val btnAdminRow = LinearLayout(context).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER
@@ -1812,10 +1811,13 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
             textSize = 13f
             typeface = android.graphics.Typeface.DEFAULT_BOLD
         }
-        val iconAdmin = TextView(context).apply {
-            text = "➤" 
-            setTextColor(android.graphics.Color.parseColor("#00E5FF"))
-            textSize = 13f
+        val iconAdmin = ImageView(context).apply {
+            layoutParams = LinearLayout.LayoutParams(18.toPx, 18.toPx).apply {
+                setMargins(10, 0, 0, 0)
+            }
+            scaleType = ImageView.ScaleType.FIT_CENTER
+            // Link RAW GitHub untuk ikon telegram
+            loadImage("https://raw.githubusercontent.com/michat88/AdiXtream/master/asset/telegram.png") 
         }
         btnAdminRow.addView(textAdmin)
         btnAdminRow.addView(iconAdmin)
@@ -1866,13 +1868,12 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
             .setCancelable(true)
             .create()
         
-        // Memaksa background transparan
         alert.window?.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT))
         
-        // MELEBARKAN DIALOG: Agar tidak menyempit seperti sebelumnya
+        // PENGATURAN LEBAR DIALOG (90% LAYAR)
         alert.setOnShowListener {
             val displayMetrics = context.resources.displayMetrics
-            val width = (displayMetrics.widthPixels * 0.90).toInt() // Ambil 90% lebar layar
+            val width = (displayMetrics.widthPixels * 0.90).toInt() 
             alert.window?.setLayout(width, ViewGroup.LayoutParams.WRAP_CONTENT)
         }
 
@@ -1889,15 +1890,12 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
         
         ioSafe {
             try {
-                // 1. Ambil Data JSON dari GitHub
                 val response = app.get(repoUrl).text
                 val jsonArray = org.json.JSONArray(response)
-                
                 val prefs = PreferenceManager.getDefaultSharedPreferences(this@MainActivity)
                 val format = java.text.SimpleDateFormat("yyyy-MM-dd HH:mm", java.util.Locale.US)
                 val now = java.util.Date()
                 
-                // 2. Cari Campaign yang Aktif
                 for (i in 0 until jsonArray.length()) {
                     val item = jsonArray.getJSONObject(i)
                     val isActive = item.optBoolean("isActive", false)
@@ -1906,17 +1904,15 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                     val start = format.parse(item.optString("startDate", "2000-01-01 00:00"))
                     val end = format.parse(item.optString("endDate", "2099-01-01 00:00"))
                     
-                    // 3. Cek apakah hari ini berada di dalam rentang tanggal tayang
                     if (start != null && end != null && now.after(start) && now.before(end)) {
                         val id = item.optString("id")
                         val freq = item.optString("frequency", "always")
                         val lastShown = prefs.getLong("campaign_popup_$id", 0L)
                         val nowMs = System.currentTimeMillis()
                         
-                        // 4. Atur Frekuensi Kemunculan (Selalu / 1x Sehari / 1x Saja)
                         val shouldShow = when (freq) {
                             "always" -> true
-                            "once_per_day" -> (nowMs - lastShown) > 86400000L // 24 Jam
+                            "once_per_day" -> (nowMs - lastShown) > 86400000L 
                             "once_ever" -> lastShown == 0L
                             else -> true
                         }
@@ -1926,7 +1922,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                                 showBeautifulCampaignPopup(item)
                                 prefs.edit().putLong("campaign_popup_$id", nowMs).apply()
                             }
-                            break // Tampilkan 1 popup saja dalam satu waktu
+                            break 
                         }
                     }
                 }
@@ -1943,17 +1939,14 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
         val actionText = item.optString("actionText", "Tutup")
         val actionLink = item.optString("actionLink")
 
-        // Setup Dialog Tanpa Background Bawaan
         val dialog = Dialog(this, android.R.style.Theme_Translucent_NoTitleBar)
-        dialog.window?.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(android.graphics.Color.parseColor("#D905080F"))) // Opasitas 85%
+        dialog.window?.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(android.graphics.Color.parseColor("#D905080F"))) 
         
-        // Root Container
         val rootLayout = android.widget.RelativeLayout(this).apply {
             layoutParams = android.view.ViewGroup.LayoutParams(-1, -1)
             gravity = android.view.Gravity.CENTER
         }
         
-        // CardView Melengkung (Seperti Gambar 2)
         val card = androidx.cardview.widget.CardView(this).apply {
             radius = 24f.toPx.toFloat()
             setCardBackgroundColor(android.graphics.Color.parseColor("#1E293B"))
@@ -1965,7 +1958,6 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
         
         val cardContent = android.widget.RelativeLayout(this)
         
-        // Gambar Base64
         val imageView = android.widget.ImageView(this).apply {
             id = android.view.View.generateViewId()
             layoutParams = android.widget.RelativeLayout.LayoutParams(-1, 220.toPx)
@@ -1981,7 +1973,6 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
             } catch (e: Exception) { imageView.setBackgroundColor(android.graphics.Color.parseColor("#334155")) }
         } else { imageView.setBackgroundColor(android.graphics.Color.parseColor("#334155")) }
         
-        // Efek Fading Linear Gradient (Bawah Gambar)
         val gradientView = android.view.View(this).apply {
             layoutParams = android.widget.RelativeLayout.LayoutParams(-1, 80.toPx).apply { addRule(android.widget.RelativeLayout.ALIGN_BOTTOM, imageView.id) }
             background = android.graphics.drawable.GradientDrawable(
@@ -1990,25 +1981,22 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
             )
         }
         
-        // Tombol Close (X) Kanan Atas
         val closeBtn = android.widget.ImageView(this).apply {
             layoutParams = android.widget.RelativeLayout.LayoutParams(36.toPx, 36.toPx).apply {
                 addRule(android.widget.RelativeLayout.ALIGN_PARENT_TOP)
                 addRule(android.widget.RelativeLayout.ALIGN_PARENT_RIGHT)
                 setMargins(0, 16.toPx, 16.toPx, 0)
             }
-            // Menggunakan ikon bawaan android
             setImageResource(R.drawable.ic_baseline_close_24) 
             setColorFilter(android.graphics.Color.parseColor("#CBD5E1"))
             background = android.graphics.drawable.GradientDrawable().apply {
                 shape = android.graphics.drawable.GradientDrawable.OVAL
-                setColor(android.graphics.Color.parseColor("#66000000")) // Hitam transparan
+                setColor(android.graphics.Color.parseColor("#66000000")) 
             }
             setPadding(8.toPx, 8.toPx, 8.toPx, 8.toPx)
             setOnClickListener { dialog.dismiss() }
         }
         
-        // Kontainer Teks
         val textContainer = android.widget.LinearLayout(this).apply {
             layoutParams = android.widget.RelativeLayout.LayoutParams(-1, -2).apply { addRule(android.widget.RelativeLayout.BELOW, imageView.id) }
             orientation = android.widget.LinearLayout.VERTICAL
@@ -2034,7 +2022,6 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
             setLineSpacing(0f, 1.2f)
         }
         
-        // Tombol Aksi (Warna Merah)
         val actionBtn = android.widget.Button(this).apply {
             text = actionText
             setTextColor(android.graphics.Color.WHITE)
@@ -2057,7 +2044,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                 }
             }
         }
-       
+        
         textContainer.addView(titleText)
         textContainer.addView(messageText)
         textContainer.addView(actionBtn)
