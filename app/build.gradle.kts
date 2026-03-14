@@ -187,12 +187,8 @@ dependencies {
     implementation(libs.work.runtime.ktx)
     implementation(libs.nicehttp)
 
-    implementation(project(":library") {
-        val isDebug = gradle.startParameter.taskRequests.any { task ->
-            task.args.any { arg -> arg.contains("debug", true) }
-        }
-        this.extra.set("isDebug", isDebug)
-    })
+    // [MODIFIKASI: Mengikuti commit 86cca03 untuk memperbaiki bug logging]
+    implementation(project(":library"))
 }
 
 tasks.register<Jar>("androidSourcesJar") {
@@ -226,7 +222,11 @@ tasks.withType<KotlinJvmCompile> {
     compilerOptions {
         jvmTarget.set(javaTarget)
         jvmDefault.set(JvmDefaultMode.ENABLE)
-        optIn.add("com.lagradost.cloudstream3.Prerelease")
+        // [MODIFIKASI: Menambahkan InternalAPI sesuai commit 86cca03]
+        optIn.addAll(
+            "com.lagradost.cloudstream3.InternalAPI",
+            "com.lagradost.cloudstream3.Prerelease"
+        )
         freeCompilerArgs.add("-Xannotation-default-target=param-property")
     }
 }
