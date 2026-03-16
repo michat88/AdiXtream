@@ -17,25 +17,17 @@ import com.lagradost.cloudstream3.R
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.databinding.LogcatBinding
 import com.lagradost.cloudstream3.mvvm.logError
-import com.lagradost.cloudstream3.mvvm.safe
 import com.lagradost.cloudstream3.network.initClient
 import com.lagradost.cloudstream3.plugins.PluginManager
 import com.lagradost.cloudstream3.services.BackupWorkManager
 import com.lagradost.cloudstream3.ui.BasePreferenceFragmentCompat
-import com.lagradost.cloudstream3.ui.settings.Globals.EMULATOR
 import com.lagradost.cloudstream3.ui.settings.SettingsFragment.Companion.getPref
-import com.lagradost.cloudstream3.ui.settings.SettingsFragment.Companion.hideOn
 import com.lagradost.cloudstream3.ui.settings.SettingsFragment.Companion.setPaddingBottom
 import com.lagradost.cloudstream3.ui.settings.SettingsFragment.Companion.setToolBarScrollFlags
 import com.lagradost.cloudstream3.ui.settings.SettingsFragment.Companion.setUpToolbar
-import com.lagradost.cloudstream3.ui.settings.utils.getChooseFolderLauncher
-import com.lagradost.cloudstream3.utils.BackupUtils
-import com.lagradost.cloudstream3.utils.BackupUtils.restorePrompt
 import com.lagradost.cloudstream3.utils.Coroutines.ioSafe
-import com.lagradost.cloudstream3.utils.InAppUpdater.installPreReleaseIfNeeded
 import com.lagradost.cloudstream3.utils.InAppUpdater.runAutoUpdate
 import com.lagradost.cloudstream3.utils.SingleSelectionHelper.showBottomDialog
-import com.lagradost.cloudstream3.utils.SingleSelectionHelper.showDialog
 import com.lagradost.cloudstream3.utils.UIHelper.clipboardHelper
 import com.lagradost.cloudstream3.utils.UIHelper.dismissSafe
 import com.lagradost.cloudstream3.utils.UIHelper.hideKeyboard
@@ -57,85 +49,27 @@ class SettingsUpdates : BasePreferenceFragmentCompat() {
         setToolBarScrollFlags()
     }
 
-    private val pathPicker = getChooseFolderLauncher { uri, path ->
-        val context = context ?: CloudStreamApp.context ?: return@getChooseFolderLauncher
-        (path ?: uri.toString()).let {
-            PreferenceManager.getDefaultSharedPreferences(context).edit {
-                putString(getString(R.string.backup_path_key), uri.toString())
-                putString(getString(R.string.backup_dir_key), it)
-            }
-        }
-    }
-
     @Suppress("DEPRECATION_ERROR")
     override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
         hideKeyboard()
         setPreferencesFromResource(R.xml.settings_updates, rootKey)
         val settingsManager = PreferenceManager.getDefaultSharedPreferences(requireContext())
 
-        getPref(R.string.backup_key)?.setOnPreferenceClickListener {
-            BackupUtils.backup(activity)
-            return@setOnPreferenceClickListener true
+        // ==========================================
+        // SUNTIKAN ADIXTREAM: MATIKAN AUTO BACKUP
+        // ==========================================
+        // Memaksa nilai preferensi menjadi 0 (Mati)
+        settingsManager.edit {
+            putInt(getString(R.string.automatic_backup_key), 0)
         }
-
-        getPref(R.string.automatic_backup_key)?.setOnPreferenceClickListener {
-            val prefNames = resources.getStringArray(R.array.periodic_work_names)
-            val prefValues = resources.getIntArray(R.array.periodic_work_values)
-            val current = settingsManager.getInt(getString(R.string.automatic_backup_key), 0)
-
-            activity?.showDialog(
-                prefNames.toList(),
-                prefValues.indexOf(current),
-                getString(R.string.backup_frequency),
-                true,
-                {}
-            ) { index ->
-                settingsManager.edit {
-                    putInt(getString(R.string.automatic_backup_key), prefValues[index])
-                }
-                BackupWorkManager.enqueuePeriodicWork(
-                    context ?: CloudStreamApp.context,
-                    prefValues[index].toLong()
-                )
-            }
-            return@setOnPreferenceClickListener true
+        // Memberitahu sistem WorkManager untuk menghentikan proses latar belakang
+        (context ?: CloudStreamApp.context)?.let { ctx ->
+            BackupWorkManager.enqueuePeriodicWork(ctx, 0L)
         }
+        // ==========================================
 
         getPref(R.string.redo_setup_key)?.setOnPreferenceClickListener {
             findNavController().navigate(R.id.navigation_setup_language)
-            return@setOnPreferenceClickListener true
-        }
-
-        getPref(R.string.restore_key)?.setOnPreferenceClickListener {
-            activity?.restorePrompt()
-            return@setOnPreferenceClickListener true
-        }
-        getPref(R.string.backup_path_key)?.hideOn(EMULATOR)?.setOnPreferenceClickListener {
-            val dirs = getBackupDirsForDisplay()
-            val currentDir =
-                settingsManager.getString(getString(R.string.backup_dir_key), null)
-                    ?: context?.let { ctx -> BackupUtils.getDefaultBackupDir(ctx)?.filePath() }
-
-            activity?.showBottomDialog(
-                dirs + listOf(getString(R.string.custom)),
-                dirs.indexOf(currentDir),
-                getString(R.string.backup_path_title),
-                true,
-                {}
-            ) {
-                if (it == dirs.size) {
-                    try {
-                        pathPicker.launch(Uri.EMPTY)
-                    } catch (e: Exception) {
-                        logError(e)
-                    }
-                } else {
-                    settingsManager.edit {
-                        putString(getString(R.string.backup_path_key), dirs[it])
-                        putString(getString(R.string.backup_dir_key), dirs[it])
-                    }
-                }
-            }
             return@setOnPreferenceClickListener true
         }
 
@@ -275,14 +209,11 @@ class SettingsUpdates : BasePreferenceFragmentCompat() {
         // 1. Menyembunyikan tombol "Pasang versi pra-rilis"
         getPref(R.string.install_prerelease_key)?.isVisible = false
         
-        // 2. Mencari salah satu item di dalam kategori Backup untuk mendapatkan akses ke Header Kategorinya
-        val backupPref = getPref(R.string.backup_key)
+        // 2. Menyembunyikan Parent/Header Kategori Backup
+        getPref(R.string.backup_key)?.parent?.isVisible = false 
         
-        // Menyembunyikan *Parent* (yaitu Header teks biru "Cadangkan")
-        backupPref?.parent?.isVisible = false 
-        
-        // Menyembunyikan item-item di dalamnya (hanya untuk memastikan tidak ada sisa)
-        backupPref?.isVisible = false
+        // Menyembunyikan item-item di dalamnya secara tuntas
+        getPref(R.string.backup_key)?.isVisible = false
         getPref(R.string.automatic_backup_key)?.isVisible = false
         getPref(R.string.restore_key)?.isVisible = false
         getPref(R.string.backup_path_key)?.isVisible = false
@@ -290,19 +221,5 @@ class SettingsUpdates : BasePreferenceFragmentCompat() {
         // 3. Menyembunyikan tombol Logcat
         getPref(R.string.show_logcat_key)?.isVisible = false
         // ------------------------------------------------
-    }
-
-    private fun getBackupDirsForDisplay(): List<String> {
-        return safe {
-            context?.let { ctx ->
-                val defaultDir = BackupUtils.getDefaultBackupDir(ctx)?.filePath()
-                val first = listOf(defaultDir)
-                (runCatching {
-                    first + BackupUtils.getCurrentBackupDir(ctx).let {
-                                it.first?.filePath() ?: it.second
-                            }
-                }.getOrNull() ?: first).filterNotNull().distinct()
-            }
-        } ?: emptyList()
     }
 }
