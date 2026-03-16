@@ -60,8 +60,8 @@ android {
         minSdk = libs.versions.minSdk.get().toInt()
         targetSdk = libs.versions.targetSdk.get().toInt()
         
-        versionCode = 81
-        versionName = "4.7.4"
+        versionCode = 82
+        versionName = "4.7.5"
 
         // --- PEMBATASAN BAHASA ADIXTREAM ---
         // Hanya memasukkan bahasa Inggris ("en") dan Indonesia ("id" / "in") agar ukuran APK jauh lebih kecil
