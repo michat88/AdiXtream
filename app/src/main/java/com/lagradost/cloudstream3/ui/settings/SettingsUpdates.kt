@@ -201,8 +201,9 @@ class SettingsUpdates : BasePreferenceFragmentCompat() {
             val prefNames = resources.getStringArray(R.array.apk_installer_pref)
             val prefValues = resources.getIntArray(R.array.apk_installer_values)
 
+            // MENGUBAH DEFAULT DI SINI: Angka 0 diubah jadi 1 (Versi lama)
             val currentInstaller =
-                settingsManager.getInt(getString(R.string.apk_installer_key), 0)
+                settingsManager.getInt(getString(R.string.apk_installer_key), 1)
 
             activity?.showBottomDialog(
                 prefNames.toList(),
