@@ -1673,8 +1673,8 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
             }
             
             addPrice("1 Bulan", "Rp 10.000")
-            addPrice("6 Bulan", "Rp 50.000")
-            addPrice("1 Tahun", "Rp 100.000")
+            addPrice("6 Bulan", "Rp 30.000")
+            addPrice("1 Tahun", "Rp 50.000")
         }
 
         // 6. Bagian QRIS (TANPA BINGKAI)
