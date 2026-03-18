@@ -35,6 +35,7 @@
         android:allowBackup="true"
         android:appCategory="video"
         android:banner="@drawable/adixtream_banner"
+        android:logo="@drawable/adixtream_banner"
         android:fullBackupContent="@xml/backup_descriptor"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:icon="@drawable/adixtream_icon"
