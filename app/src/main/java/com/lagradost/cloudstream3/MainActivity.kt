@@ -1578,16 +1578,17 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
 
     override fun onAuthenticationSuccess() { binding?.navHostFragment?.isInvisible = false }
     override fun onAuthenticationError() { finish() }
+    
     suspend fun checkGithubConnectivity(): Boolean {
         return try {
             app.get("https://raw.githubusercontent.com/recloudstream/.github/master/connectivitycheck", timeout = 5).text.trim() == "ok"
         } catch (t: Throwable) { false }
     }
-
-    // --- POPUP UNLOCK ADIXTREAM (NEW PREMIUM DESIGN - FINAL VERSION) ---
+    // --- POPUP UNLOCK ADIXTREAM (NEW PREMIUM DESIGN - TV & MOBILE RESPONSIVE) ---
     fun showPremiumUnlockDialog() {
         val context = this
-        
+        val isTv = isLayout(TV or EMULATOR)
+
         // 1. Background utama (Dark Purple gradient)
         val gradient = android.graphics.drawable.GradientDrawable(
             android.graphics.drawable.GradientDrawable.Orientation.TOP_BOTTOM,
@@ -1595,21 +1596,35 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
         )
         gradient.cornerRadius = 24f.toPx.toFloat()
 
-        val layout = LinearLayout(context).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(30, 60, 30, 60) 
+        // Container Utama (Horizontal untuk TV, Vertikal untuk HP)
+        val mainLayout = LinearLayout(context).apply {
+            orientation = if (isTv) LinearLayout.HORIZONTAL else LinearLayout.VERTICAL
+            setPadding(30, if(isTv) 30 else 60, 30, if(isTv) 30 else 60) 
             background = gradient
+            gravity = Gravity.CENTER
+            weightSum = if (isTv) 2f else 1f
+        }
+
+        // Panel Kiri (Teks & Form) dan Panel Kanan (QR & ID) untuk mode TV
+        val leftPanel = LinearLayout(context).apply {
+            orientation = LinearLayout.VERTICAL
             gravity = Gravity.CENTER_HORIZONTAL
+            if (isTv) layoutParams = LinearLayout.LayoutParams(0, -2, 1f).apply { setMargins(0,0,20,0) }
+        }
+        val rightPanel = LinearLayout(context).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER_HORIZONTAL
+            if (isTv) layoutParams = LinearLayout.LayoutParams(0, -2, 1f).apply { setMargins(20,0,0,0) }
         }
 
         val scroll = ScrollView(context).apply {
-            addView(layout)
+            addView(mainLayout)
         }
 
         // 2. Ikon Mahkota
         val icon = TextView(context).apply {
             text = "👑"
-            textSize = 50f
+            textSize = if (isTv) 40f else 50f
             gravity = Gravity.CENTER
             setPadding(0, 0, 0, 10)
         }
@@ -1617,7 +1632,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
         // 3. Judul
         val title = TextView(context).apply {
             text = "PREMIUM ACCESS"
-            textSize = 21f
+            textSize = if (isTv) 18f else 21f
             setTextColor(android.graphics.Color.WHITE)
             typeface = android.graphics.Typeface.DEFAULT_BOLD
             gravity = Gravity.CENTER
@@ -1626,11 +1641,11 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
         
         // 4. Subjudul
         val subTitle = TextView(context).apply {
-            text = "Fitur ini terkunci. Silakan hubungi admin untuk\nberlangganan."
+            text = "Fitur ini terkunci.\nSilakan hubungi admin untuk\nberlangganan."
             textSize = 13f
             setTextColor(android.graphics.Color.parseColor("#A0A0B5"))
             gravity = Gravity.CENTER
-            setPadding(0, 0, 0, 30)
+            setPadding(0, 0, 0, if(isTv) 15 else 30)
         }
 
         // 5. Kotak Harga (Outline tipis neon)
@@ -1644,7 +1659,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
             setPadding(40, 30, 40, 30)
             background = priceBoxBg
             layoutParams = LinearLayout.LayoutParams(-1, -2).apply {
-                setMargins(10, 0, 10, 30) 
+                setMargins(10, 0, 10, if(isTv) 15 else 30) 
             }
             
             fun addPrice(dur: String, price: String) {
@@ -1677,7 +1692,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
             addPrice("1 Tahun", "Rp 50.000")
         }
 
-        // 6. Bagian QRIS (TANPA BINGKAI)
+        // 6. Bagian QRIS
         val qrisTitle = TextView(context).apply {
             text = "SCAN UNTUK BAYAR"
             textSize = 11f
@@ -1687,7 +1702,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
         }
 
         val qrisImage = ImageView(context).apply {
-            layoutParams = LinearLayout.LayoutParams(-1, -2).apply {
+            layoutParams = LinearLayout.LayoutParams(-1, if(isTv) 180.toPx else -2).apply {
                 setMargins(40, 0, 40, 0)
             }
             adjustViewBounds = true 
@@ -1700,7 +1715,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
             textSize = 10f
             setTextColor(android.graphics.Color.parseColor("#A0A0B5"))
             gravity = Gravity.CENTER
-            setPadding(0, 10, 0, 30)
+            setPadding(0, 10, 0, if(isTv) 15 else 30)
         }
 
         // 7. Kotak Device ID
@@ -1715,8 +1730,9 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
             setPadding(20, 20, 20, 20)
             background = idBoxBg
             layoutParams = LinearLayout.LayoutParams(-1, -2).apply {
-                setMargins(10, 0, 10, 30)
+                setMargins(10, 0, 10, if(isTv) 15 else 30)
             }
+            isFocusable = true // BISA DIFOKUS TV
             setOnClickListener {
                 val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
                 val clip = android.content.ClipData.newPlainText("Device ID", deviceIdVal)
@@ -1738,7 +1754,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
         }
         val idValue = TextView(context).apply {
             text = deviceIdVal
-            textSize = 24f
+            textSize = if(isTv) 20f else 24f
             setTextColor(android.graphics.Color.parseColor("#FFCA28")) 
             typeface = android.graphics.Typeface.DEFAULT_BOLD
             setPadding(0, 0, 15, 0)
@@ -1750,7 +1766,6 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
         }
         idValueRow.addView(idValue)
         idValueRow.addView(copyIcon)
-        
         idContainer.addView(idLabel)
         idContainer.addView(idValueRow)
 
@@ -1767,10 +1782,11 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
             layoutParams = LinearLayout.LayoutParams(-1, -2).apply {
                 setMargins(30, 0, 30, 0)
             }
+            isFocusable = true // BISA DIFOKUS TV
         }
         val underline = View(context).apply {
             layoutParams = LinearLayout.LayoutParams(-1, 2.toPx).apply {
-                setMargins(40, 0, 40, 30)
+                setMargins(40, 0, 40, if(isTv) 15 else 30)
             }
             setBackgroundColor(android.graphics.Color.parseColor("#6A629B"))
         }
@@ -1789,13 +1805,15 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
             layoutParams = LinearLayout.LayoutParams(-1, 50.toPx).apply {
                 setMargins(10, 0, 10, 20)
             }
+            isFocusable = true // BISA DIFOKUS TV
         }
         
-        // 10. Tombol Telegram Admin (Ikon Telegram Baru dari GitHub)
+        // 10. Tombol Telegram Admin
         val btnAdminRow = LinearLayout(context).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER
             setPadding(0, 5, 0, 0)
+            isFocusable = true // BISA DIFOKUS TV
             setOnClickListener {
                 try {
                     val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://t.me/michat88"))
@@ -1816,7 +1834,6 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                 setMargins(10, 0, 0, 0)
             }
             scaleType = ImageView.ScaleType.FIT_CENTER
-            // Link RAW GitHub untuk ikon telegram
             loadImage("https://raw.githubusercontent.com/michat88/AdiXtream/master/asset/telegram.png") 
         }
         btnAdminRow.addView(textAdmin)
@@ -1849,19 +1866,38 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
             }
         }
 
-        // Menyusun View
-        layout.addView(icon)
-        layout.addView(title)
-        layout.addView(subTitle)
-        layout.addView(priceLayout)
-        layout.addView(qrisTitle)
-        layout.addView(qrisImage)
-        layout.addView(qrisFooter)
-        layout.addView(idContainer)
-        layout.addView(inputCode)
-        layout.addView(underline)
-        layout.addView(btnUnlock)
-        layout.addView(btnAdminRow)
+        // Menyusun View berdasarkan Mode Perangkat
+        if (isTv) {
+            leftPanel.addView(icon)
+            leftPanel.addView(title)
+            leftPanel.addView(subTitle)
+            leftPanel.addView(priceLayout)
+            leftPanel.addView(btnAdminRow)
+
+            rightPanel.addView(qrisTitle)
+            rightPanel.addView(qrisImage)
+            rightPanel.addView(qrisFooter)
+            rightPanel.addView(idContainer)
+            rightPanel.addView(inputCode)
+            rightPanel.addView(underline)
+            rightPanel.addView(btnUnlock)
+
+            mainLayout.addView(leftPanel)
+            mainLayout.addView(rightPanel)
+        } else {
+            mainLayout.addView(icon)
+            mainLayout.addView(title)
+            mainLayout.addView(subTitle)
+            mainLayout.addView(priceLayout)
+            mainLayout.addView(qrisTitle)
+            mainLayout.addView(qrisImage)
+            mainLayout.addView(qrisFooter)
+            mainLayout.addView(idContainer)
+            mainLayout.addView(inputCode)
+            mainLayout.addView(underline)
+            mainLayout.addView(btnUnlock)
+            mainLayout.addView(btnAdminRow)
+        }
 
         val alert = AlertDialog.Builder(context, android.R.style.Theme_DeviceDefault_Dialog_NoActionBar)
             .setView(scroll)
