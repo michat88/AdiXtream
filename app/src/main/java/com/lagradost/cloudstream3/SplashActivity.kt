@@ -1,6 +1,9 @@
 package com.lagradost.cloudstream3
 
+import android.app.UiModeManager
+import android.content.Context
 import android.content.Intent
+import android.content.res.Configuration
 import android.net.Uri
 import android.os.Bundle
 import android.view.View
@@ -13,23 +16,31 @@ class SplashActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_splash)
 
-        // Mengambil referensi ke layout utama dan pemutar video berdasarkan ID
         val splashRoot = findViewById<View>(R.id.splashRoot)
         val videoView = findViewById<VideoView>(R.id.videoView)
 
         // --- EFEK FADE-IN UNTUK TRANSISI YANG HALUS ---
-        // 1. Mengatur layar menjadi transparan (hilang) pada detik pertama
         splashRoot.alpha = 0f
-
-        // 2. Memulai animasi memudar masuk ke opasitas penuh
         splashRoot.animate()
-            .alpha(1f) // 1f berarti 100% terlihat
-            .setDuration(1000) // Durasi animasi memudar adalah 1 detik (1000 milidetik)
+            .alpha(1f)
+            .setDuration(1000)
             .start()
-        // ----------------------------------------------
 
-        // Mengatur jalur file video animasi dari folder raw
-        val videoPath = "android.resource://" + packageName + "/" + R.raw.intro_video
+        // --- LOGIKA BARU: MENDETEKSI TV ATAU HP ---
+        // 1. Memanggil layanan sistem Android untuk mengecek mode perangkat
+        val uiModeManager = getSystemService(Context.UI_MODE_SERVICE) as UiModeManager
+        
+        // 2. Memilih file video berdasarkan tipe perangkat
+        val videoResource = if (uiModeManager.currentModeType == Configuration.UI_MODE_TYPE_TELEVISION) {
+            // Jika perangkat terdeteksi sebagai Android TV
+            R.raw.intro_video_tv
+        } else {
+            // Jika perangkat terdeteksi sebagai HP biasa
+            R.raw.intro_video_mobile
+        }
+
+        // 3. Mengatur jalur file video yang sudah dipilih di atas
+        val videoPath = "android.resource://" + packageName + "/" + videoResource
         val uri = Uri.parse(videoPath)
         videoView.setVideoURI(uri)
 
@@ -38,11 +49,11 @@ class SplashActivity : AppCompatActivity() {
 
         // Mendeteksi kapan video selesai diputar
         videoView.setOnCompletionListener {
-            // Berpindah ke halaman utama (AccountSelectActivity) setelah video tamat
+            // Berpindah ke halaman utama tanpa ada tombol skip
             val intent = Intent(this, AccountSelectActivity::class.java)
             startActivity(intent)
             
-            // Menutup halaman Splash ini agar pengguna tidak bisa kembali ke video dengan tombol "Back" HP
+            // Menutup halaman Splash ini
             finish()
         }
     }
