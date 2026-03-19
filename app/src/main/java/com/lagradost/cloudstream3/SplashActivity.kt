@@ -26,17 +26,19 @@ class SplashActivity : AppCompatActivity() {
             .setDuration(1000)
             .start()
 
-        // --- LOGIKA BARU: MENDETEKSI TV ATAU HP ---
+        // --- LOGIKA MENDETEKSI TV ATAU HP ---
         // 1. Memanggil layanan sistem Android untuk mengecek mode perangkat
         val uiModeManager = getSystemService(Context.UI_MODE_SERVICE) as UiModeManager
         
         // 2. Memilih file video berdasarkan tipe perangkat
         val videoResource = if (uiModeManager.currentModeType == Configuration.UI_MODE_TYPE_TELEVISION) {
             // Jika perangkat terdeteksi sebagai Android TV
+            // WAJIB ADA: File bernama intro_video_tv.mp4 di dalam folder res/raw/
             R.raw.intro_video_tv
         } else {
-            // Jika perangkat terdeteksi sebagai HP biasa
-            R.raw.intro_video_mobile
+            // Jika perangkat terdeteksi sebagai HP
+            // Menggunakan file intro_video.mp4 yang lama agar tidak error
+            R.raw.intro_video
         }
 
         // 3. Mengatur jalur file video yang sudah dipilih di atas
@@ -53,7 +55,7 @@ class SplashActivity : AppCompatActivity() {
             val intent = Intent(this, AccountSelectActivity::class.java)
             startActivity(intent)
             
-            // Menutup halaman Splash ini
+            // Menutup halaman Splash ini agar pengguna tidak bisa kembali dengan tombol "Back" HP
             finish()
         }
     }
