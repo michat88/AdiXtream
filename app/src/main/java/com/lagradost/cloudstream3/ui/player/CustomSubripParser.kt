@@ -96,7 +96,8 @@ class CustomSubripParser : SubtitleParser {
             val startTimeUs: Long
             val endTimeUs: Long
         
-            val matcher = SUBRIP_TIMING_LINE.matcher(currentLine!!)
+            // TANDA !! DIHAPUS DI SINI KARENA SUDAH SMART-CAST
+            val matcher = SUBRIP_TIMING_LINE.matcher(currentLine)
             if (matcher.matches()) {
                 startTimeUs = parseTimecode(matcher,  /* groupOffset= */1)
                 endTimeUs = parseTimecode(matcher,  /* groupOffset= */6)
@@ -114,11 +115,11 @@ class CustomSubripParser : SubtitleParser {
                     textBuilder.append("<br>")
                 }
       
-                textBuilder.append(processLine(currentLine!!, tags))
+                // TANDA !! DIHAPUS DI SINI KARENA SUDAH SMART-CAST
+                textBuilder.append(processLine(currentLine, tags))
                 currentLine = parsableByteArray.readLine(charset)
             }
 
-            // MENGGUNAKAN HTMLCOMPAT SEBAGAI PENGGANTI Html.fromHtml YANG DEPRECATED
             val text = androidx.core.text.HtmlCompat.fromHtml(textBuilder.toString(), androidx.core.text.HtmlCompat.FROM_HTML_MODE_LEGACY)
 
             var alignmentTag: String? = null
@@ -263,7 +264,6 @@ class CustomSubripParser : SubtitleParser {
             val hours = matcher.group(groupOffset + 1)
             var timestampMs = if (hours != null) hours.toLong() * 60 * 60 * 1000 else 0
             
-            // MENGGUNAKAN requireNotNull SEBAGAI PENGGANTI Assertions.checkNotNull
             timestampMs +=
                 requireNotNull(matcher.group(groupOffset + 2))
                     .toLong() * 60 * 1000
