@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-
 /*
 * This is a fork of media3 subrip parses as the developers fear a flexible player, and open classes.
 */
@@ -73,14 +72,16 @@ class CustomSubripParser : SubtitleParser {
                 null
         var currentLine: String?
         while ((parsableByteArray.readLine(charset).also { currentLine = it }) != null) {
-            if (currentLine.isEmpty()) {
+            // Trik aman: isNullOrEmpty() bisa menerima null tanpa error
+            if (currentLine.isNullOrEmpty()) {
                 // Skip blank lines.
                 continue
             }
 
             // Parse and check the index line.
             try {
-                currentLine.toInt()
+                // Trik aman: pakai ?. supaya tidak protes
+                currentLine?.toInt()
             } catch (_: NumberFormatException) {
                 Log.w(TAG, "Skipping invalid index: $currentLine")
                 continue
@@ -96,7 +97,8 @@ class CustomSubripParser : SubtitleParser {
             val startTimeUs: Long
             val endTimeUs: Long
         
-            val matcher = SUBRIP_TIMING_LINE.matcher(currentLine)
+            // Trik aman: gunakan Elvis (?: "") kalau currentLine terdeteksi nullable
+            val matcher = SUBRIP_TIMING_LINE.matcher(currentLine ?: "")
             if (matcher.matches()) {
                 startTimeUs = parseTimecode(matcher,  /* groupOffset= */1)
                 endTimeUs = parseTimecode(matcher,  /* groupOffset= */6)
@@ -114,7 +116,7 @@ class CustomSubripParser : SubtitleParser {
                     textBuilder.append("<br>")
                 }
       
-                // PERBAIKAN: Menggunakan elvis operator ?: "" agar aman dari NullPointerException dan Error Type Mismatch
+                // Trik aman: gunakan Elvis operator lagi
                 textBuilder.append(processLine(currentLine ?: "", tags))
                 currentLine = parsableByteArray.readLine(charset)
             }
