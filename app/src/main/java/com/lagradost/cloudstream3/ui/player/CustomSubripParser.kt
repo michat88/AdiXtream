@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -43,7 +43,8 @@ import java.nio.charset.StandardCharsets
 import java.util.regex.Matcher
 import java.util.regex.Pattern
 
-/** A [SubtitleParser] for SubRip.  */
+/** A [SubtitleParser] for SubRip.
+*/
 @UnstableApi
 class CustomSubripParser : SubtitleParser {
     private val textBuilder: StringBuilder = StringBuilder()
@@ -79,7 +80,7 @@ class CustomSubripParser : SubtitleParser {
 
             // Parse and check the index line.
             try {
-                currentLine.toInt()
+                currentLine!!.toInt()
             } catch (_: NumberFormatException) {
                 Log.w(TAG, "Skipping invalid index: $currentLine")
                 continue
@@ -94,7 +95,8 @@ class CustomSubripParser : SubtitleParser {
 
             val startTimeUs: Long
             val endTimeUs: Long
-            val matcher = SUBRIP_TIMING_LINE.matcher(currentLine)
+        
+            val matcher = SUBRIP_TIMING_LINE.matcher(currentLine!!)
             if (matcher.matches()) {
                 startTimeUs = parseTimecode(matcher,  /* groupOffset= */1)
                 endTimeUs = parseTimecode(matcher,  /* groupOffset= */6)
@@ -111,11 +113,13 @@ class CustomSubripParser : SubtitleParser {
                 if (textBuilder.isNotEmpty()) {
                     textBuilder.append("<br>")
                 }
+      
                 textBuilder.append(processLine(currentLine!!, tags))
                 currentLine = parsableByteArray.readLine(charset)
             }
 
-            val text = Html.fromHtml(textBuilder.toString())
+            // MENGGUNAKAN HTMLCOMPAT SEBAGAI PENGGANTI Html.fromHtml YANG DEPRECATED
+            val text = androidx.core.text.HtmlCompat.fromHtml(textBuilder.toString(), androidx.core.text.HtmlCompat.FROM_HTML_MODE_LEGACY)
 
             var alignmentTag: String? = null
             for (i in tags.indices) {
@@ -166,12 +170,11 @@ class CustomSubripParser : SubtitleParser {
      * @return The processed line.
      */
     private fun processLine(line: String, tags: ArrayList<String>): String {
-        var line = line
-        line = line.trim { it <= ' ' }
+        var processedLineStr = line.trim { it <= ' ' }
 
         var removedCharacterCount = 0
-        val processedLine = StringBuilder(line)
-        val matcher = SUBRIP_TAG_PATTERN.matcher(line)
+        val processedLine = StringBuilder(processedLineStr)
+        val matcher = SUBRIP_TAG_PATTERN.matcher(processedLineStr)
         while (matcher.find()) {
             val tag = matcher.group()
             tags.add(tag)
@@ -259,11 +262,14 @@ class CustomSubripParser : SubtitleParser {
         private fun parseTimecode(matcher: Matcher, groupOffset: Int): Long {
             val hours = matcher.group(groupOffset + 1)
             var timestampMs = if (hours != null) hours.toLong() * 60 * 60 * 1000 else 0
+            
+            // MENGGUNAKAN requireNotNull SEBAGAI PENGGANTI Assertions.checkNotNull
             timestampMs +=
-                Assertions.checkNotNull<String?>(matcher.group(groupOffset + 2))
+                requireNotNull(matcher.group(groupOffset + 2))
                     .toLong() * 60 * 1000
-            timestampMs += Assertions.checkNotNull<String?>(matcher.group(groupOffset + 3))
+            timestampMs += requireNotNull(matcher.group(groupOffset + 3))
                 .toLong() * 1000
+                
             val millis = matcher.group(groupOffset + 4)
 
             timestampMs += when (millis?.length) {
