@@ -1211,7 +1211,7 @@ open class ResultFragmentPhone : FullScreenPlayer() {
                 resultSeasonButton.setText(text)
 
                 selectSeason =
-                    text?.asStringNull(resultSeasonButton.context) // SUDAH DIKEMBALIKAN TANDA TANYA-NYA (?)
+                    text?.asStringNull(resultSeasonButton.context)
                 
                 if (resultSeasonButton.isVisible && resultResumeParent.isVisible) {
                     setFocusUpAndDown(resultResumeSeriesButton, resultSeasonButton)
@@ -1232,7 +1232,7 @@ open class ResultFragmentPhone : FullScreenPlayer() {
             resultBinding?.apply {
                 resultEpisodeSelect.setText(range)
 
-                selectEpisodeRange = range?.asStringNull(resultEpisodeSelect.context) // SUDAH DIKEMBALIKAN TANDA TANYA-NYA (?)
+                selectEpisodeRange = range?.asStringNull(resultEpisodeSelect.context)
                 
                 if (resultEpisodeSelect.isVisible && !resultSeasonButton.isVisible && resultResumeParent.isVisible) {
                     setFocusUpAndDown(resultResumeSeriesButton, resultEpisodeSelect)
