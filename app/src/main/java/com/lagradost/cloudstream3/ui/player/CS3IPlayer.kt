@@ -390,15 +390,15 @@ class CS3IPlayer : IPlayer {
             ?: return
     }
 
-    override fun setPreferredAudioTrack(trackLanguage: String?, id: String?, formatIndex: Int?) {
-        preferredAudioTrackLanguage = trackLanguage
-        id?.let { trackId ->
-            val trackFormatIndex = formatIndex ?: 0
-            exoPlayer?.currentTracks?.groups
-                ?.filter { it.type == TRACK_TYPE_AUDIO }
-                ?.find { group ->
-                    group.getFormats().any { (format, _) ->
-                        format.id == trackId
+    override fun setPreferredAudioTrack(trackLanguage: String?, id: String?, trackIndex: Int?) {
+    preferredAudioTrackLanguage = trackLanguage
+    id?.let { trackId ->
+        val trackFormatIndex = trackIndex ?: 0
+        exoPlayer?.currentTracks?.groups
+            ?.filter { it.type == TRACK_TYPE_AUDIO }
+            ?.find { group ->
+                group.getFormats().any { (format, _) ->
+                    format.id == trackId
                     }
                 }
                 ?.let { group ->
