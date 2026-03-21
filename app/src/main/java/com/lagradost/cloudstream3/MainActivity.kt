@@ -1573,7 +1573,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
         DownloadQueueManager.init(this)
 
         // === TAMBAHAN ADIXTREAM: CEK POPUP PROMO ===
-        checkAndShowCampaignPopup()
+        CampaignPopupManager.checkAndShowCampaignPopup(this)
     }
 
     override fun onAuthenticationSuccess() { binding?.navHostFragment?.isInvisible = false }
@@ -1581,9 +1581,10 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
     
     suspend fun checkGithubConnectivity(): Boolean {
         return try {
-             app.get("https://raw.githubusercontent.com/recloudstream/.github/master/connectivitycheck", timeout = 5).text.trim() == "ok"
+            app.get("https://raw.githubusercontent.com/recloudstream/.github/master/connectivitycheck", timeout = 5).text.trim() == "ok"
         } catch (t: Throwable) { false }
     }
+
     // --- POPUP UNLOCK ADIXTREAM (NEW PREMIUM DESIGN - TV & MOBILE RESPONSIVE WITH TV FOCUS) ---
     fun showPremiumUnlockDialog() {
         val context = this
@@ -1632,7 +1633,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
             text = "PREMIUM ACCESS"
             textSize = if (isTv) 18f else 21f
             setTextColor(android.graphics.Color.WHITE)
-             typeface = android.graphics.Typeface.DEFAULT_BOLD
+            typeface = android.graphics.Typeface.DEFAULT_BOLD
             gravity = Gravity.CENTER
             setPadding(0, 0, 0, 10)
         }
@@ -1649,7 +1650,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
         // 5. Kotak Harga
         val priceBoxBg = android.graphics.drawable.GradientDrawable().apply {
             setColor(android.graphics.Color.TRANSPARENT)
-             setStroke(2, android.graphics.Color.parseColor("#6A629B")) 
+            setStroke(2, android.graphics.Color.parseColor("#6A629B")) 
             cornerRadius = 24f.toPx.toFloat()
         }
         val priceLayout = LinearLayout(context).apply {
@@ -1706,7 +1707,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
             text = "OVO / DANA / GOPAY / SHOPEEPAY / BANK"
             textSize = 10f
             setTextColor(android.graphics.Color.parseColor("#A0A0B5"))
-             gravity = Gravity.CENTER
+            gravity = Gravity.CENTER
             setPadding(0, 10, 0, if(isTv) 15 else 30)
         }
 
@@ -1715,7 +1716,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
         val idNormalBg = android.graphics.drawable.GradientDrawable().apply {
             setColor(android.graphics.Color.parseColor("#221D36")) 
             setStroke(2, android.graphics.Color.parseColor("#443D61"))
-             cornerRadius = 24f.toPx.toFloat()
+            cornerRadius = 24f.toPx.toFloat()
         }
         val idFocusedBg = android.graphics.drawable.GradientDrawable().apply {
             setColor(android.graphics.Color.parseColor("#332D56")) 
@@ -1731,7 +1732,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
             orientation = LinearLayout.VERTICAL
             setPadding(20, 20, 20, 20)
             background = idStates // Pasang background yang bisa berubah
-             layoutParams = LinearLayout.LayoutParams(-1, -2).apply { setMargins(10, 0, 10, if(isTv) 15 else 30) }
+            layoutParams = LinearLayout.LayoutParams(-1, -2).apply { setMargins(10, 0, 10, if(isTv) 15 else 30) }
             isFocusable = true 
             isClickable = true
             setOnClickListener {
@@ -1743,7 +1744,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
         }
         val idLabel = TextView(context).apply {
             text = "DEVICE ID ANDA (Tap to copy):"
-             textSize = 11f
+            textSize = 11f
             setTextColor(android.graphics.Color.parseColor("#A0A0B5"))
             gravity = Gravity.CENTER
         }
@@ -1765,7 +1766,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
         val inputNormalBg = android.graphics.drawable.GradientDrawable().apply { setColor(android.graphics.Color.TRANSPARENT) }
         val inputFocusedBg = android.graphics.drawable.GradientDrawable().apply {
             setColor(android.graphics.Color.parseColor("#33FFFFFF")) // Background agak putih saat diketik
-             cornerRadius = 16f.toPx.toFloat()
+            cornerRadius = 16f.toPx.toFloat()
             setStroke(4, android.graphics.Color.parseColor("#FFCA28")) // Garis kuning
         }
         val inputStates = android.graphics.drawable.StateListDrawable().apply {
@@ -1774,7 +1775,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
         }
 
         val inputCode = EditText(context).apply {
-             hint = "Masukkan KODE di sini"
+            hint = "Masukkan KODE di sini"
             setHintTextColor(android.graphics.Color.parseColor("#7A7A95"))
             setTextColor(android.graphics.Color.WHITE)
             gravity = Gravity.CENTER
@@ -1813,7 +1814,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
             background = btnStates // Pasang StateListDrawable ke tombol
             setTextColor(android.graphics.Color.parseColor("#120E1E"))
             typeface = android.graphics.Typeface.DEFAULT_BOLD
-             layoutParams = LinearLayout.LayoutParams(-1, 50.toPx).apply { setMargins(10, 0, 10, 20) }
+            layoutParams = LinearLayout.LayoutParams(-1, 50.toPx).apply { setMargins(10, 0, 10, 20) }
             isFocusable = true
         }
         
@@ -1828,7 +1829,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
         val btnAdminRow = LinearLayout(context).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER
-             setPadding(20, 10, 20, 10)
+            setPadding(20, 10, 20, 10)
             background = telStates // Pasang efek fokus
             isFocusable = true
             isClickable = true
@@ -1888,7 +1889,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
             rightPanel.addView(btnUnlock)
 
             mainLayout.addView(leftPanel)
-             mainLayout.addView(rightPanel)
+            mainLayout.addView(rightPanel)
         } else {
             mainLayout.addView(icon)
             mainLayout.addView(title)
@@ -1920,291 +1921,5 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
 
         btnUnlock.tag = alert
         alert.show()
-    }
-
-    // =========================================================================
-    // ================== FITUR POPUP CAMPAIGN ADIXTREAM =======================
-    // =========================================================================
-
-    private fun checkAndShowCampaignPopup() {
-        val repoUrl = "https://raw.githubusercontent.com/michat88/Zaneta/main/popups.json" 
-        
-        ioSafe {
-            try {
-                val response = app.get(repoUrl).text
-                val jsonArray = org.json.JSONArray(response)
-                val prefs = PreferenceManager.getDefaultSharedPreferences(this@MainActivity)
-                val format = java.text.SimpleDateFormat("yyyy-MM-dd HH:mm", java.util.Locale.US)
-                val now = java.util.Date()
-                val isDeviceTv = isLayout(TV or EMULATOR) // Cek device saat ini
-                
-                for (i in 0 until jsonArray.length()) {
-                    val item = jsonArray.getJSONObject(i)
-                    val isActive = item.optBoolean("isActive", false)
-                    if (!isActive) continue
-
-                    // --- FITUR BARU: FILTER TARGET PLATFORM ---
-                    val target = item.optString("targetPlatform", "all")
-                    if (isDeviceTv && target == "hp") continue // Jika ini TV tapi targetnya HP, skip!
-                    if (!isDeviceTv && target == "tv") continue // Jika ini HP tapi targetnya TV, skip!
-                    // ------------------------------------------
-                    
-                    val start = format.parse(item.optString("startDate", "2000-01-01 00:00"))
-                    val end = format.parse(item.optString("endDate", "2099-01-01 00:00"))
-                    
-                    if (start != null && end != null && now.after(start) && now.before(end)) {
-                        val id = item.optString("id")
-                        val freq = item.optString("frequency", "always")
-                        val lastShown = prefs.getLong("campaign_popup_$id", 0L)
-                        val nowMs = System.currentTimeMillis()
-                        
-                        val shouldShow = when (freq) {
-                            "always" -> true
-                            "once_per_day" -> (nowMs - lastShown) > 86400000L 
-                            "once_ever" -> lastShown == 0L
-                            else -> true
-                        }
-                        
-                        if (shouldShow) {
-                            main {
-                                showBeautifulCampaignPopup(item)
-                                prefs.edit().putLong("campaign_popup_$id", nowMs).apply()
-                            }
-                            break 
-                        }
-                    }
-                }
-            } catch (e: Exception) {
-                Log.e(TAG, "Gagal memuat campaign popup", e)
-            }
-        }
-    }
-
-    private fun showBeautifulCampaignPopup(item: org.json.JSONObject) {
-        val titleStr = item.optString("title")
-        val messageStr = item.optString("message")
-        val actionText = item.optString("actionText", "Tutup")
-        val actionLink = item.optString("actionLink")
-        
-        // --- CUKUP AMBIL 1 GAMBAR (KARENA SUDAH DIKUNCI 4:3) ---
-        val imageUrl = item.optString("imageUrl")
-        val isDeviceTv = isLayout(TV or EMULATOR)
-        // -------------------------------------------------------
-
-        val dialog = Dialog(this, android.R.style.Theme_Translucent_NoTitleBar)
-        dialog.window?.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(android.graphics.Color.parseColor("#D905080F"))) 
-        
-        val rootLayout = android.widget.RelativeLayout(this).apply {
-            layoutParams = android.view.ViewGroup.LayoutParams(-1, -1)
-            gravity = android.view.Gravity.CENTER
-        }
-        
-        // === PERBAIKAN UKURAN TV & LOCK IMAGE 4:3 (ADIXTREAM V3) ===
-        // Di TV kita perkecil dikit lagi dari 45% ke 38% biar skala 4-nya "pas".
-        val tvWidthPercent = 0.38
-        val fullScreenWidth = resources.displayMetrics.widthPixels
-        
-        val popupWidth = if (isDeviceTv) {
-            (fullScreenWidth * tvWidthPercent).toInt() 
-        } else {
-            (fullScreenWidth * 0.85).toInt() // HP tetap 85%
-        }
-
-        // --- LOCK RASIO GAMBAR 4:3 SECARA DINAMIS ---
-        // Tinggi = Lebar * (Tinggi_3 / Lebar_4) -> [4:3]
-        val dynamicImageHeight = (popupWidth * (3.0 / 4.0)).toInt() 
-        // ==========================================================
-
-        val card = androidx.cardview.widget.CardView(this).apply {
-            radius = 24f.toPx.toFloat()
-            setCardBackgroundColor(android.graphics.Color.parseColor("#1E293B"))
-            cardElevation = 20f
-            layoutParams = android.widget.RelativeLayout.LayoutParams(
-                popupWidth, -2 
-            ).apply { addRule(android.widget.RelativeLayout.CENTER_IN_PARENT) }
-        }
-        
-        val cardContent = android.widget.RelativeLayout(this)
-        
-        val imageView = android.widget.ImageView(this).apply {
-            id = android.view.View.generateViewId()
-            // Gunakan tinggi dinamis hasil hitungan 4:3 tadi
-            layoutParams = android.widget.RelativeLayout.LayoutParams(-1, dynamicImageHeight)
-            // scaleType tetep cover, tapi karena container sudah 4:3, ini akan pas!
-            scaleType = android.widget.ImageView.ScaleType.CENTER_CROP 
-        }
-
-        if (imageUrl.startsWith("data:image")) {
-            try {
-                val base64Raw = imageUrl.substringAfter(",")
-                val decodedBytes = android.util.Base64.decode(base64Raw, android.util.Base64.DEFAULT)
-                val bitmap = android.graphics.BitmapFactory.decodeByteArray(decodedBytes, 0, decodedBytes.size)
-                imageView.setImageBitmap(bitmap)
-            } catch (e: Exception) { imageView.setBackgroundColor(android.graphics.Color.parseColor("#334155")) }
-        } else { imageView.setBackgroundColor(android.graphics.Color.parseColor("#334155")) }
-        
-        val gradientView = android.view.View(this).apply {
-            layoutParams = android.widget.RelativeLayout.LayoutParams(-1, 80.toPx).apply { addRule(android.widget.RelativeLayout.ALIGN_BOTTOM, imageView.id) }
-            background = android.graphics.drawable.GradientDrawable(
-                android.graphics.drawable.GradientDrawable.Orientation.TOP_BOTTOM,
-                intArrayOf(android.graphics.Color.TRANSPARENT, android.graphics.Color.parseColor("#1E293B"))
-            )
-        }
-        
-        val closeBtn = android.widget.ImageView(this).apply {
-            layoutParams = android.widget.RelativeLayout.LayoutParams(36.toPx, 36.toPx).apply {
-                addRule(android.widget.RelativeLayout.ALIGN_PARENT_TOP)
-                addRule(android.widget.RelativeLayout.ALIGN_PARENT_RIGHT)
-                setMargins(0, 16.toPx, 16.toPx, 0)
-            }
-            setImageResource(R.drawable.ic_baseline_close_24) 
-            setColorFilter(android.graphics.Color.parseColor("#CBD5E1"))
-            background = android.graphics.drawable.GradientDrawable().apply {
-                shape = android.graphics.drawable.GradientDrawable.OVAL
-                setColor(android.graphics.Color.parseColor("#66000000")) 
-            }
-            setPadding(8.toPx, 8.toPx, 8.toPx, 8.toPx)
-            setOnClickListener { dialog.dismiss() }
-            
-            // SEMBUNYIKAN TOMBOL X DI TV
-            visibility = if (isDeviceTv) android.view.View.GONE else android.view.View.VISIBLE
-        }
-        
-        // --- textContainer UTAMA (SEKARANG JADI STICKY CONTAINER) ---
-        val textContainer = android.widget.LinearLayout(this).apply {
-            layoutParams = android.widget.RelativeLayout.LayoutParams(-1, -2).apply { addRule(android.widget.RelativeLayout.BELOW, imageView.id) }
-            orientation = android.widget.LinearLayout.VERTICAL
-            // Kurangi padding bawah biar tombol nggak terlalu jauh
-            setPadding(24.toPx, 10.toPx, 24.toPx, 16.toPx) 
-            gravity = android.view.Gravity.CENTER_HORIZONTAL
-        }
-        
-        // --- 1. STICKY TITLE (WYSIWYG V3) ---
-        // Judul ditambahkan langsung ke textContainer paling atas (lengket)
-        val titleText = android.widget.TextView(this).apply {
-            text = titleStr
-            textSize = 22f
-            setTextColor(android.graphics.Color.parseColor("#F8FAFC"))
-            typeface = android.graphics.Typeface.DEFAULT_BOLD
-            gravity = android.view.Gravity.CENTER
-            setPadding(0, 0, 0, 12.toPx)
-            // Batasi judul biar nggak makan tempat terlalu banyak
-            maxLines = 2 
-            ellipsize = android.text.TextUtils.TruncateAt.END
-        }
-        textContainer.addView(titleText) // LENGKET ATAS
-        
-        // --- 2. SCROLLING TEXT (WYSIWYG V3 - RESTRUKTURISASI) ---
-        // Kita buat ScrollView programmatically
-        val scrollView = android.widget.ScrollView(this).apply {
-            layoutParams = android.widget.LinearLayout.LayoutParams(-1, -2).apply {
-                // Beri margin atas-bawah biar rapi
-                setMargins(0, 0, 0, 15.toPx) 
-                height = android.view.ViewGroup.LayoutParams.WRAP_CONTENT 
-            }
-        }
-
-        // Bungkus pesan dengan LinearLayout lagi biar ScrollView jalan sempurna
-        val scrollContent = android.widget.LinearLayout(this).apply {
-            orientation = android.widget.LinearLayout.VERTICAL
-            layoutParams = android.widget.FrameLayout.LayoutParams(-1, -2)
-            gravity = android.view.Gravity.CENTER_HORIZONTAL
-        }
-        
-        val messageText = android.widget.TextView(this).apply {
-            text = messageStr
-            textSize = 15f
-            setTextColor(android.graphics.Color.parseColor("#94A3B8"))
-            gravity = android.view.Gravity.CENTER
-            setPadding(0, 0, 0, 0.toPx) 
-            setLineSpacing(0f, 1.2f)
-            
-            // --- KUNCI: BATASI TINGGI PESAN (TV & HP) ---
-            // Kita batasi tingginya biar tombol lengket di bawah nggak turun.
-            val maxTextHeight = if (isDeviceTv) 120.toPx else 180.toPx
-            // Pakai maxHeight di view biar dihitung saat WRAP_CONTENT
-            maxHeight = maxTextHeight
-        }
-        
-        scrollContent.addView(messageText)
-        scrollView.addView(scrollContent)
-        
-        // Tambahkan ScrollView ke textContainer (di tengah, bisa di-scroll)
-        textContainer.addView(scrollView)
-        // ========================================================
-        
-                // --- 3. STICKY BUTTONS (WYSIWYG V3) ---
-        // Kita buat container tombol yang lengket di bawah (setelah ScrollView)
-        val btnContainer = android.widget.LinearLayout(this).apply {
-            layoutParams = android.widget.LinearLayout.LayoutParams(-1, -2).apply {
-                topMargin = 0.toPx // <--- Pindahkan ke sini
-            }
-            orientation = android.widget.LinearLayout.HORIZONTAL
-            weightSum = 2f // Dibagi 2 rata
-        }
-
-
-        val actionBtn = android.widget.Button(this).apply {
-            text = actionText
-            setTextColor(android.graphics.Color.WHITE)
-            textSize = 16f
-            typeface = android.graphics.Typeface.DEFAULT_BOLD
-            isAllCaps = false
-            background = android.graphics.drawable.GradientDrawable().apply {
-                cornerRadius = 16f.toPx.toFloat()
-                setColor(android.graphics.Color.parseColor("#E50914"))
-            }
-            
-            setOnClickListener {
-                dialog.dismiss()
-                if (actionLink.isNotEmpty()) {
-                    try {
-                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(actionLink))
-                        startActivity(intent)
-                    } catch (e: Exception) { Log.e(TAG, "Gagal membuka link", e) }
-                }
-            }
-        }
-
-        if (isDeviceTv) {
-            // Jika TV: Tombol Aksi di kiri (1f), Tombol Tutup di kanan (1f)
-            actionBtn.layoutParams = android.widget.LinearLayout.LayoutParams(0, 48.toPx, 1f).apply { rightMargin = 6.toPx }
-            
-            val closeTvBtn = android.widget.Button(this).apply {
-                text = "Tutup"
-                setTextColor(android.graphics.Color.WHITE)
-                textSize = 15f
-                typeface = android.graphics.Typeface.DEFAULT_BOLD
-                isAllCaps = false
-                background = android.graphics.drawable.GradientDrawable().apply {
-                    cornerRadius = 16f.toPx.toFloat()
-                    setColor(android.graphics.Color.parseColor("#475569")) // Abu-abu elegan
-                }
-                layoutParams = android.widget.LinearLayout.LayoutParams(0, 48.toPx, 1f).apply { leftMargin = 6.toPx }
-                setOnClickListener { dialog.dismiss() }
-            }
-            
-            btnContainer.addView(actionBtn)
-            btnContainer.addView(closeTvBtn)
-            // Tambahkan container tombol ke textContainer paling bawah (LENGKET BAWAH)
-            textContainer.addView(btnContainer) 
-        } else {
-            // Jika HP: Tombol aksi full lebar, tidak ada tombol Tutup tambahan
-            actionBtn.layoutParams = android.widget.LinearLayout.LayoutParams(-1, 52.toPx)
-            // Tambahkan tombol aksi langsung ke textContainer paling bawah (LENGKET BAWAH)
-            textContainer.addView(actionBtn) 
-        }
-        // ========================================================
-        
-        cardContent.addView(imageView)
-        cardContent.addView(gradientView)
-        cardContent.addView(closeBtn)
-        cardContent.addView(textContainer)
-        
-        card.addView(cardContent)
-        rootLayout.addView(card)
-        dialog.setContentView(rootLayout)
-        
-        dialog.show()
     }
 }
