@@ -9,7 +9,6 @@ import android.os.Bundle
 import android.view.View
 import android.widget.VideoView
 import androidx.appcompat.app.AppCompatActivity
-import com.lagradost.cloudstream3.ui.account.AccountSelectActivity
 
 class SplashActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -34,7 +33,7 @@ class SplashActivity : AppCompatActivity() {
             // Memanggil intro_video_tv.mp4
             R.raw.intro_video_tv
         } else {
-            // Memanggil intro_video_mobile.mp4 (Ini yang baru kita perbaiki!)
+            // Memanggil intro_video_mobile.mp4
             R.raw.intro_video_mobile
         }
 
@@ -48,8 +47,19 @@ class SplashActivity : AppCompatActivity() {
 
         // Pindah halaman saat video tamat
         videoView.setOnCompletionListener {
-            val intent = Intent(this, AccountSelectActivity::class.java)
+            // SUNTIKAN PERBAIKAN UNTUK TV: Hentikan dan bersihkan memori layar video
+            videoView.stopPlayback()
+            videoView.suspend()
+            videoView.visibility = View.GONE
+            
+            // LANGSUNG tembak ke MainActivity, lewati AccountSelectActivity
+            val intent = Intent(this, MainActivity::class.java)
             startActivity(intent)
+            
+            // Memberikan transisi memudar agar perpindahan layar lebih halus
+            overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
+            
+            // Tutup Splash secara tuntas
             finish()
         }
     }
