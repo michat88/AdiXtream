@@ -204,7 +204,6 @@ import com.lagradost.cloudstream3.plugins.RepositoryManager
 import com.lagradost.cloudstream3.ui.settings.extensions.PluginsViewModel
 import com.lagradost.cloudstream3.ui.settings.extensions.RepositoryData
 import com.lagradost.cloudstream3.PremiumManager
-import kotlinx.coroutines.Job
 // -----------------------
 
 class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCallback {
@@ -707,10 +706,10 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
         }
     }
 
-    // --- SOLUSI DEBOUNCE: Menyimpan antrean proses agar tidak bentrok ---
-    private var reloadJob: Job? = null
+    // --- SOLUSI DEBOUNCE TERBAIK (ANTI BLANK) ---
+    private var lastReloadTime = 0L
     private val pluginsLock = Mutex()
-    
+
     private fun onAllPluginsLoaded(success: Boolean = false) {
         ioSafe {
             var targetApiToLoad: String? = null
@@ -755,15 +754,19 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
             }
 
             targetApiToLoad?.let { apiName ->
-                mainPluginsLoadedEvent.invoke(loadSinglePlugin(this@MainActivity, apiName))
+                // Cek waktu saat ini
+                val currentTime = System.currentTimeMillis()
                 
-                // --- IMPLEMENTASI DEBOUNCE MENCEGAH COROUTINE DIBATALKAN ---
-                reloadJob?.cancel() // Hapus antrean yang lama jika ada yang baru
-                reloadJob = ioSafe {
-                    kotlinx.coroutines.delay(1000) // Kasih napas 1 detik untuk sistem
+                // Hanya eksekusi jika jarak dari eksekusi terakhir lebih dari 2 detik (2000ms)
+                if (currentTime - lastReloadTime > 2000) {
+                    lastReloadTime = currentTime // Catat waktu eksekusi
+                    Log.d(TAG, "Mengeksekusi reload Home untuk: $apiName")
+                    
+                    mainPluginsLoadedEvent.invoke(loadSinglePlugin(this@MainActivity, apiName))
                     reloadHomeEvent.invoke(true)
+                } else {
+                    Log.d(TAG, "Reload Home dicegah karena tabrakan (Cooldown aktif)")
                 }
-                // -------------------------------------------------------------
             }
         }
     }
@@ -1067,7 +1070,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                     PluginManager.___DO_NOT_CALL_FROM_A_PLUGIN_loadAllLocalPlugins(this@MainActivity, false)
                 }
 
-                // === SOLUSI FINAL: OPTIMASI POLLING COROUTINES & FILTER NSFW ===
+                // === SOLUSI FINAL: OPTIMASI POLLING COROUTINES ===
                 val isAdultEnabled = settingsManager.getBoolean(getString(R.string.enable_nsfw_on_providers_key), false)
 
                 kotlinx.coroutines.withTimeoutOrNull(15_000L) {
@@ -1078,21 +1081,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                     }
                 }
 
-                val availableProviders = APIHolder.allProviders.filter { provider ->
-                    provider.hasMainPage && (isAdultEnabled || !provider.supportedTypes.contains(com.lagradost.cloudstream3.TvType.NSFW))
-                }
-                
-                val currentSelected = DataStoreHelper.currentHomePage
-
-                // Set target API saja, JANGAN panggil reloadHomeEvent di sini untuk mencegah Race Condition
-                if (currentSelected == null || availableProviders.none { it.name == currentSelected }) {
-                    if (availableProviders.isNotEmpty()) {
-                        DataStoreHelper.currentHomePage = availableProviders.first().name
-                        Log.d(TAG, "Auto-select plugin sukses disiapkan: ${availableProviders.first().name}")
-                    }
-                }
-
-                // Pemicu akhir kita serahkan ke event bawaan agar masuk ke dalam Mutex lock dengan aman
+                // JANGAN panggil reloadHomeEvent di sini! Serahkan pemicu akhirnya ke onAllPluginsLoaded
                 afterPluginsLoadedEvent.invoke(true)
                 // =========================================================
             }
