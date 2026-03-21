@@ -1249,7 +1249,7 @@ open class ResultFragmentPhone : FullScreenPlayer() {
                             .mapNotNull { (text, status) ->
                                 Pair(
                                     status.ordinal,
-                                    text?.asStringNull(ctx) ?: return@mapNotNull null
+                                    text.asStringNull(ctx) ?: return@mapNotNull null
                                 )
                             }) {
                         viewModel.changeDubStatus(DubStatus.entries[itemId])
@@ -1263,7 +1263,7 @@ open class ResultFragmentPhone : FullScreenPlayer() {
                 view?.context?.let { ctx ->
                     val names = range
                         .mapNotNull { (text, r) ->
-                            r to (text?.asStringNull(ctx) ?: return@mapNotNull null)
+                            r to (text.asStringNull(ctx) ?: return@mapNotNull null)
                         }
 
                     activity?.showDialog(
@@ -1284,7 +1284,7 @@ open class ResultFragmentPhone : FullScreenPlayer() {
                 view?.context?.let { ctx ->
                     val names = seasonList
                         .mapNotNull { (text, r) ->
-                            r to (text?.asStringNull(ctx) ?: return@mapNotNull null)
+                            r to (text.asStringNull(ctx) ?: return@mapNotNull null)
                         }
 
                     activity?.showDialog(
