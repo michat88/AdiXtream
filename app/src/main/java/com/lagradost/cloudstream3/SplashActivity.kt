@@ -47,13 +47,17 @@ class SplashActivity : AppCompatActivity() {
 
         // Pindah halaman saat video tamat
         videoView.setOnCompletionListener {
-            // SUNTIKAN PERBAIKAN UNTUK TV: Hentikan dan bersihkan memori layar video
+            // Hentikan dan bersihkan memori layar video
             videoView.stopPlayback()
             videoView.suspend()
             videoView.visibility = View.GONE
             
-            // LANGSUNG tembak ke MainActivity, lewati AccountSelectActivity
-            val intent = Intent(this, MainActivity::class.java)
+            // SUNTIKAN BARU: Menyamar sebagai peluncuran aplikasi murni dari sistem
+            val intent = Intent(this, MainActivity::class.java).apply {
+                action = Intent.ACTION_MAIN
+                addCategory(Intent.CATEGORY_LAUNCHER)
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            }
             startActivity(intent)
             
             // Memberikan transisi memudar agar perpindahan layar lebih halus
