@@ -1986,14 +1986,10 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
         val actionText = item.optString("actionText", "Tutup")
         val actionLink = item.optString("actionLink")
         
-        // --- FITUR BARU: PILIH GAMBAR SESUAI DEVICE ---
+        // --- CUKUP AMBIL 1 GAMBAR (KARENA SUDAH DIKUNCI 4:3) ---
+        val imageUrl = item.optString("imageUrl")
         val isDeviceTv = isLayout(TV or EMULATOR)
-        // Ambil gambar TV jika ada, kalau kosong balikan ke gambar default HP
-        val imageUrl = if (isDeviceTv) {
-            item.optString("imageUrlTv", item.optString("imageUrl")) 
-        } else {
-            item.optString("imageUrl")
-        }
+        // -------------------------------------------------------
 
         val dialog = Dialog(this, android.R.style.Theme_Translucent_NoTitleBar)
         dialog.window?.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(android.graphics.Color.parseColor("#D905080F"))) 
@@ -2003,12 +1999,21 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
             gravity = android.view.Gravity.CENTER
         }
         
-        // --- UKURAN POPUP TV DIPERBAIKI (LEBIH LEBAR DIKIT BIAR ENAK DIBACA: 45%) ---
+        // === PERBAIKAN UKURAN TV & LOCK IMAGE 4:3 (ADIXTREAM V3) ===
+        // Di TV kita perkecil dikit lagi dari 45% ke 38% biar skala 4-nya "pas".
+        val tvWidthPercent = 0.38
+        val fullScreenWidth = resources.displayMetrics.widthPixels
+        
         val popupWidth = if (isDeviceTv) {
-            (resources.displayMetrics.widthPixels * 0.45).toInt() 
+            (fullScreenWidth * tvWidthPercent).toInt() 
         } else {
-            (resources.displayMetrics.widthPixels * 0.85).toInt() 
+            (fullScreenWidth * 0.85).toInt() // HP tetap 85%
         }
+
+        // --- LOCK RASIO GAMBAR 4:3 SECARA DINAMIS ---
+        // Tinggi = Lebar * (Tinggi_3 / Lebar_4) -> [4:3]
+        val dynamicImageHeight = (popupWidth * (3.0 / 4.0)).toInt() 
+        // ==========================================================
 
         val card = androidx.cardview.widget.CardView(this).apply {
             radius = 24f.toPx.toFloat()
@@ -2023,8 +2028,9 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
         
         val imageView = android.widget.ImageView(this).apply {
             id = android.view.View.generateViewId()
-            val imgHeight = if (isDeviceTv) 260.toPx else 220.toPx
-            layoutParams = android.widget.RelativeLayout.LayoutParams(-1, imgHeight)
+            // Gunakan tinggi dinamis hasil hitungan 4:3 tadi
+            layoutParams = android.widget.RelativeLayout.LayoutParams(-1, dynamicImageHeight)
+            // scaleType tetep cover, tapi karena container sudah 4:3, ini akan pas!
             scaleType = android.widget.ImageView.ScaleType.CENTER_CROP 
         }
 
@@ -2060,17 +2066,21 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
             setPadding(8.toPx, 8.toPx, 8.toPx, 8.toPx)
             setOnClickListener { dialog.dismiss() }
             
-            // --- FITUR BARU: SEMBUNYIKAN TOMBOL X DI TV ---
+            // SEMBUNYIKAN TOMBOL X DI TV
             visibility = if (isDeviceTv) android.view.View.GONE else android.view.View.VISIBLE
         }
         
+        // --- textContainer UTAMA (SEKARANG JADI STICKY CONTAINER) ---
         val textContainer = android.widget.LinearLayout(this).apply {
             layoutParams = android.widget.RelativeLayout.LayoutParams(-1, -2).apply { addRule(android.widget.RelativeLayout.BELOW, imageView.id) }
             orientation = android.widget.LinearLayout.VERTICAL
-            setPadding(24.toPx, 10.toPx, 24.toPx, 24.toPx)
+            // Kurangi padding bawah biar tombol nggak terlalu jauh
+            setPadding(24.toPx, 10.toPx, 24.toPx, 16.toPx) 
             gravity = android.view.Gravity.CENTER_HORIZONTAL
         }
         
+        // --- 1. STICKY TITLE (WYSIWYG V3) ---
+        // Judul ditambahkan langsung ke textContainer paling atas (lengket)
         val titleText = android.widget.TextView(this).apply {
             text = titleStr
             textSize = 22f
@@ -2078,6 +2088,27 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
             typeface = android.graphics.Typeface.DEFAULT_BOLD
             gravity = android.view.Gravity.CENTER
             setPadding(0, 0, 0, 12.toPx)
+            // Batasi judul biar nggak makan tempat terlalu banyak
+            maxLines = 2 
+            ellipsize = android.text.TextUtils.TruncateAt.END
+        }
+        textContainer.addView(titleText) // LENGKET ATAS
+        
+        // --- 2. SCROLLING TEXT (WYSIWYG V3 - RESTRUKTURISASI) ---
+        // Kita buat ScrollView programmatically
+        val scrollView = android.widget.ScrollView(this).apply {
+            layoutParams = android.widget.LinearLayout.LayoutParams(-1, -2).apply {
+                // Beri margin atas-bawah biar rapi
+                setMargins(0, 0, 0, 15.toPx) 
+                height = android.view.ViewGroup.LayoutParams.WRAP_CONTENT 
+            }
+        }
+
+        // Bungkus pesan dengan LinearLayout lagi biar ScrollView jalan sempurna
+        val scrollContent = android.widget.LinearLayout(this).apply {
+            orientation = android.widget.LinearLayout.VERTICAL
+            layoutParams = android.widget.FrameLayout.LayoutParams(-1, -2)
+            gravity = android.view.Gravity.CENTER_HORIZONTAL
         }
         
         val messageText = android.widget.TextView(this).apply {
@@ -2085,15 +2116,30 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
             textSize = 15f
             setTextColor(android.graphics.Color.parseColor("#94A3B8"))
             gravity = android.view.Gravity.CENTER
-            setPadding(0, 0, 0, 24.toPx)
+            setPadding(0, 0, 0, 0.toPx) 
             setLineSpacing(0f, 1.2f)
+            
+            // --- KUNCI: BATASI TINGGI PESAN (TV & HP) ---
+            // Kita batasi tingginya biar tombol lengket di bawah nggak turun.
+            val maxTextHeight = if (isDeviceTv) 120.toPx else 180.toPx
+            // Pakai maxHeight di view biar dihitung saat WRAP_CONTENT
+            maxHeight = maxTextHeight
         }
         
-        // --- FITUR BARU: LAYOUT TOMBOL AKSI & TUTUP KHUSUS TV ---
+        scrollContent.addView(messageText)
+        scrollView.addView(scrollContent)
+        
+        // Tambahkan ScrollView ke textContainer (di tengah, bisa di-scroll)
+        textContainer.addView(scrollView)
+        // ========================================================
+        
+        // --- 3. STICKY BUTTONS (WYSIWYG V3) ---
+        // Kita buat container tombol yang lengket di bawah (setelah ScrollView)
         val btnContainer = android.widget.LinearLayout(this).apply {
             layoutParams = android.widget.LinearLayout.LayoutParams(-1, -2)
             orientation = android.widget.LinearLayout.HORIZONTAL
             weightSum = 2f // Dibagi 2 rata
+            topMargin = 0.toPx 
         }
 
         val actionBtn = android.widget.Button(this).apply {
@@ -2138,17 +2184,15 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
             
             btnContainer.addView(actionBtn)
             btnContainer.addView(closeTvBtn)
-            textContainer.addView(titleText)
-            textContainer.addView(messageText)
-            textContainer.addView(btnContainer)
+            // Tambahkan container tombol ke textContainer paling bawah (LENGKET BAWAH)
+            textContainer.addView(btnContainer) 
         } else {
             // Jika HP: Tombol aksi full lebar, tidak ada tombol Tutup tambahan
             actionBtn.layoutParams = android.widget.LinearLayout.LayoutParams(-1, 52.toPx)
-            textContainer.addView(titleText)
-            textContainer.addView(messageText)
-            textContainer.addView(actionBtn)
+            // Tambahkan tombol aksi langsung ke textContainer paling bawah (LENGKET BAWAH)
+            textContainer.addView(actionBtn) 
         }
-        // --------------------------------------------------------
+        // ========================================================
         
         cardContent.addView(imageView)
         cardContent.addView(gradientView)
