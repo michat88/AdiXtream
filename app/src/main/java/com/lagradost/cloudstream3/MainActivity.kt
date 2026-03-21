@@ -275,9 +275,9 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                             val isPremium = PremiumManager.isPremium(activity ?: return false)
 
                             if (!isPremium) {
-                                (activity as? MainActivity)?.runOnUiThread {
+                                activity.runOnUiThread {
                                     showToast("Akses Premium Diperlukan", Toast.LENGTH_SHORT)
-                                    (activity as? MainActivity)?.let { PremiumDialogManager.showPremiumUnlockDialog(it) }
+                                    PremiumDialogManager.showPremiumUnlockDialog(activity)
                                 }
                                 return true
                             }
