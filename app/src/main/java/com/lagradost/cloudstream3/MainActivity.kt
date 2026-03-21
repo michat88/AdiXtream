@@ -706,8 +706,8 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
         }
     }
 
-    // --- SOLUSI DEBOUNCE TERBAIK (ANTI BLANK) ---
-    private var lastReloadTime = 0L
+    // --- SOLUSI DEBOUNCE TERBAIK (ANTI BLANK & THREAD SAFE) ---
+    private var reloadJob: kotlinx.coroutines.Job? = null
     private val pluginsLock = Mutex()
 
     private fun onAllPluginsLoaded(success: Boolean = false) {
@@ -746,7 +746,6 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                         } else {
                             targetApiToLoad = currentSelected
                         }
-
                     } catch (e: Exception) {
                         logError(e)
                     }
@@ -754,18 +753,20 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
             }
 
             targetApiToLoad?.let { apiName ->
-                // Cek waktu saat ini
-                val currentTime = System.currentTimeMillis()
-                
-                // Hanya eksekusi jika jarak dari eksekusi terakhir lebih dari 2 detik (2000ms)
-                if (currentTime - lastReloadTime > 2000) {
-                    lastReloadTime = currentTime // Catat waktu eksekusi
-                    Log.d(TAG, "Mengeksekusi reload Home untuk: $apiName")
+                // KITA PINDAH KE MAIN THREAD AGAR UI TIDAK CRASH/BLANK
+                main {
+                    // Batalkan antrean yang lama agar tidak dobel nge-refresh
+                    reloadJob?.cancel()
                     
-                    mainPluginsLoadedEvent.invoke(loadSinglePlugin(this@MainActivity, apiName))
-                    reloadHomeEvent.invoke(true)
-                } else {
-                    Log.d(TAG, "Reload Home dicegah karena tabrakan (Cooldown aktif)")
+                    // Jadwalkan muat ulang Home dengan jeda 1.5 detik
+                    reloadJob = kotlinx.coroutines.launch(kotlinx.coroutines.Dispatchers.Main) {
+                        Log.d(TAG, "Menunggu sistem stabil untuk memuat: $apiName")
+                        kotlinx.coroutines.delay(1500) // Waktu bernapas untuk UI dan sistem HTTP
+                        
+                        Log.d(TAG, "Mengeksekusi reload Home SEKARANG")
+                        mainPluginsLoadedEvent.invoke(loadSinglePlugin(this@MainActivity, apiName))
+                        reloadHomeEvent.invoke(true)
+                    }
                 }
             }
         }
@@ -1044,14 +1045,13 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                 } catch (e: Exception) { logError(e) }
             }
 
-            // Gunakan delay dari coroutine, bukan Thread.sleep
             kotlinx.coroutines.delay(1000)
 
             if (lastError == null && !PluginManager.checkSafeModeFile()) {
                 if (isRepoChanged) {
                     try {
                         Log.d(TAG, "Mengunduh plugin dari Repo Baru...")
-                        // Download berjalan di background
+                        // Download berjalan di background (JANGAN DI-AWAIT)
                         PluginsViewModel.downloadAll(this@MainActivity, targetRepoUrl, null)
                         PluginManager.___DO_NOT_CALL_FROM_A_PLUGIN_loadAllOnlinePlugins(this@MainActivity)
                         PluginManager.___DO_NOT_CALL_FROM_A_PLUGIN_loadAllLocalPlugins(this@MainActivity, false)
@@ -1081,7 +1081,8 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                     }
                 }
 
-                // JANGAN panggil reloadHomeEvent di sini! Serahkan pemicu akhirnya ke onAllPluginsLoaded
+                // Serahkan Pemicu Sepenuhnya Kepada onAllPluginsLoaded 
+                // KITA SUDAH HAPUS INVOKE GANDA DI SINI!
                 afterPluginsLoadedEvent.invoke(true)
                 // =========================================================
             }
