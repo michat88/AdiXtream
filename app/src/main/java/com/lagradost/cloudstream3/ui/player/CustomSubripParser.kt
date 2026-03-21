@@ -73,14 +73,14 @@ class CustomSubripParser : SubtitleParser {
                 null
         var currentLine: String?
         while ((parsableByteArray.readLine(charset).also { currentLine = it }) != null) {
-            if (currentLine!!.isEmpty()) {
+            if (currentLine.isEmpty()) {
                 // Skip blank lines.
                 continue
             }
 
             // Parse and check the index line.
             try {
-                currentLine!!.toInt()
+                currentLine.toInt()
             } catch (_: NumberFormatException) {
                 Log.w(TAG, "Skipping invalid index: $currentLine")
                 continue
@@ -96,7 +96,6 @@ class CustomSubripParser : SubtitleParser {
             val startTimeUs: Long
             val endTimeUs: Long
         
-            // TANDA !! DIHAPUS DI SINI KARENA SUDAH SMART-CAST
             val matcher = SUBRIP_TIMING_LINE.matcher(currentLine)
             if (matcher.matches()) {
                 startTimeUs = parseTimecode(matcher,  /* groupOffset= */1)
@@ -115,8 +114,8 @@ class CustomSubripParser : SubtitleParser {
                     textBuilder.append("<br>")
                 }
       
-                // TANDA !! DIHAPUS DI SINI KARENA SUDAH SMART-CAST
-                textBuilder.append(processLine(currentLine, tags))
+                // PERBAIKAN: Menggunakan elvis operator ?: "" agar aman dari NullPointerException dan Error Type Mismatch
+                textBuilder.append(processLine(currentLine ?: "", tags))
                 currentLine = parsableByteArray.readLine(charset)
             }
 
