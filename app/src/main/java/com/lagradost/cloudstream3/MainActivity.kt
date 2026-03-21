@@ -204,6 +204,7 @@ import com.lagradost.cloudstream3.plugins.RepositoryManager
 import com.lagradost.cloudstream3.ui.settings.extensions.PluginsViewModel
 import com.lagradost.cloudstream3.ui.settings.extensions.RepositoryData
 import com.lagradost.cloudstream3.PremiumManager
+import kotlinx.coroutines.Job
 // -----------------------
 
 class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCallback {
@@ -706,7 +707,10 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
         }
     }
 
+    // --- SOLUSI DEBOUNCE: Menyimpan antrean proses agar tidak bentrok ---
+    private var reloadJob: Job? = null
     private val pluginsLock = Mutex()
+    
     private fun onAllPluginsLoaded(success: Boolean = false) {
         ioSafe {
             var targetApiToLoad: String? = null
@@ -741,9 +745,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                                 DataStoreHelper.currentHomePage = targetApiToLoad
                             }
                         } else {
-                            // --- SUNTIKAN ADIXTREAM PENAWAR BLANK SCREEN ---
                             targetApiToLoad = currentSelected
-                            // -----------------------------------------------
                         }
 
                     } catch (e: Exception) {
@@ -754,7 +756,14 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
 
             targetApiToLoad?.let { apiName ->
                 mainPluginsLoadedEvent.invoke(loadSinglePlugin(this@MainActivity, apiName))
-                reloadHomeEvent.invoke(true)
+                
+                // --- IMPLEMENTASI DEBOUNCE MENCEGAH COROUTINE DIBATALKAN ---
+                reloadJob?.cancel() // Hapus antrean yang lama jika ada yang baru
+                reloadJob = ioSafe {
+                    kotlinx.coroutines.delay(1000) // Kasih napas 1 detik untuk sistem
+                    reloadHomeEvent.invoke(true)
+                }
+                // -------------------------------------------------------------
             }
         }
     }
