@@ -1582,7 +1582,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
     
     suspend fun checkGithubConnectivity(): Boolean {
         return try {
-            app.get("https://raw.githubusercontent.com/recloudstream/.github/master/connectivitycheck", timeout = 5).text.trim() == "ok"
+             app.get("https://raw.githubusercontent.com/recloudstream/.github/master/connectivitycheck", timeout = 5).text.trim() == "ok"
         } catch (t: Throwable) { false }
     }
 
@@ -1634,7 +1634,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
             text = "PREMIUM ACCESS"
             textSize = if (isTv) 18f else 21f
             setTextColor(android.graphics.Color.WHITE)
-            typeface = android.graphics.Typeface.DEFAULT_BOLD
+             typeface = android.graphics.Typeface.DEFAULT_BOLD
             gravity = Gravity.CENTER
             setPadding(0, 0, 0, 10)
         }
@@ -1651,7 +1651,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
         // 5. Kotak Harga
         val priceBoxBg = android.graphics.drawable.GradientDrawable().apply {
             setColor(android.graphics.Color.TRANSPARENT)
-            setStroke(2, android.graphics.Color.parseColor("#6A629B")) 
+             setStroke(2, android.graphics.Color.parseColor("#6A629B")) 
             cornerRadius = 24f.toPx.toFloat()
         }
         val priceLayout = LinearLayout(context).apply {
@@ -1684,6 +1684,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                 row.addView(t2)
                 addView(row)
             }
+            
             addPrice("1 Bulan", "Rp 10.000")
             addPrice("6 Bulan", "Rp 30.000")
             addPrice("1 Tahun", "Rp 50.000")
@@ -1707,7 +1708,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
             text = "OVO / DANA / GOPAY / SHOPEEPAY / BANK"
             textSize = 10f
             setTextColor(android.graphics.Color.parseColor("#A0A0B5"))
-            gravity = Gravity.CENTER
+             gravity = Gravity.CENTER
             setPadding(0, 10, 0, if(isTv) 15 else 30)
         }
 
@@ -1716,7 +1717,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
         val idNormalBg = android.graphics.drawable.GradientDrawable().apply {
             setColor(android.graphics.Color.parseColor("#221D36")) 
             setStroke(2, android.graphics.Color.parseColor("#443D61"))
-            cornerRadius = 24f.toPx.toFloat()
+             cornerRadius = 24f.toPx.toFloat()
         }
         val idFocusedBg = android.graphics.drawable.GradientDrawable().apply {
             setColor(android.graphics.Color.parseColor("#332D56")) 
@@ -1732,7 +1733,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
             orientation = LinearLayout.VERTICAL
             setPadding(20, 20, 20, 20)
             background = idStates // Pasang background yang bisa berubah
-            layoutParams = LinearLayout.LayoutParams(-1, -2).apply { setMargins(10, 0, 10, if(isTv) 15 else 30) }
+             layoutParams = LinearLayout.LayoutParams(-1, -2).apply { setMargins(10, 0, 10, if(isTv) 15 else 30) }
             isFocusable = true 
             isClickable = true
             setOnClickListener {
@@ -1744,7 +1745,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
         }
         val idLabel = TextView(context).apply {
             text = "DEVICE ID ANDA (Tap to copy):"
-            textSize = 11f
+             textSize = 11f
             setTextColor(android.graphics.Color.parseColor("#A0A0B5"))
             gravity = Gravity.CENTER
         }
@@ -1766,7 +1767,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
         val inputNormalBg = android.graphics.drawable.GradientDrawable().apply { setColor(android.graphics.Color.TRANSPARENT) }
         val inputFocusedBg = android.graphics.drawable.GradientDrawable().apply {
             setColor(android.graphics.Color.parseColor("#33FFFFFF")) // Background agak putih saat diketik
-            cornerRadius = 16f.toPx.toFloat()
+             cornerRadius = 16f.toPx.toFloat()
             setStroke(4, android.graphics.Color.parseColor("#FFCA28")) // Garis kuning
         }
         val inputStates = android.graphics.drawable.StateListDrawable().apply {
@@ -1775,7 +1776,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
         }
 
         val inputCode = EditText(context).apply {
-            hint = "Masukkan KODE di sini"
+             hint = "Masukkan KODE di sini"
             setHintTextColor(android.graphics.Color.parseColor("#7A7A95"))
             setTextColor(android.graphics.Color.WHITE)
             gravity = Gravity.CENTER
@@ -1814,7 +1815,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
             background = btnStates // Pasang StateListDrawable ke tombol
             setTextColor(android.graphics.Color.parseColor("#120E1E"))
             typeface = android.graphics.Typeface.DEFAULT_BOLD
-            layoutParams = LinearLayout.LayoutParams(-1, 50.toPx).apply { setMargins(10, 0, 10, 20) }
+             layoutParams = LinearLayout.LayoutParams(-1, 50.toPx).apply { setMargins(10, 0, 10, 20) }
             isFocusable = true
         }
         
@@ -1829,7 +1830,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
         val btnAdminRow = LinearLayout(context).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER
-            setPadding(20, 10, 20, 10)
+             setPadding(20, 10, 20, 10)
             background = telStates // Pasang efek fokus
             isFocusable = true
             isClickable = true
@@ -1889,7 +1890,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
             rightPanel.addView(btnUnlock)
 
             mainLayout.addView(leftPanel)
-            mainLayout.addView(rightPanel)
+             mainLayout.addView(rightPanel)
         } else {
             mainLayout.addView(icon)
             mainLayout.addView(title)
@@ -2000,12 +2001,23 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
         
         val cardContent = android.widget.RelativeLayout(this)
         
+        // --- PERBAIKAN MULAI DI SINI ---
         val imageView = android.widget.ImageView(this).apply {
             id = android.view.View.generateViewId()
-            layoutParams = android.widget.RelativeLayout.LayoutParams(-1, 220.toPx)
-            scaleType = android.widget.ImageView.ScaleType.CENTER_CROP
+            
+            // Sesuaikan tinggi untuk TV agar terlihat proporsional
+            val imgHeight = if (isLayout(TV or EMULATOR)) 350.toPx else 220.toPx
+            layoutParams = android.widget.RelativeLayout.LayoutParams(-1, imgHeight)
+            
+            // Perbaikan scaleType supaya kepala tidak terpotong di TV
+            scaleType = if (isLayout(TV or EMULATOR)) {
+                android.widget.ImageView.ScaleType.FIT_CENTER // Mengubah scaleType untuk TV agar tampil utuh
+            } else {
+                android.widget.ImageView.ScaleType.CENTER_CROP // Tetap penuhi area di Smartphone
+            }
         }
-        
+        // --- PERBAIKAN BERAKHIR DI SINI ---
+
         if (imageUrl.startsWith("data:image")) {
             try {
                 val base64Raw = imageUrl.substringAfter(",")
@@ -2047,7 +2059,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
         }
         
         val titleText = android.widget.TextView(this).apply {
-            text = titleStr
+             text = titleStr
             textSize = 22f
             setTextColor(android.graphics.Color.parseColor("#F8FAFC"))
             typeface = android.graphics.Typeface.DEFAULT_BOLD
