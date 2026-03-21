@@ -706,10 +706,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
         }
     }
 
-    // --- SOLUSI DEBOUNCE TERBAIK (ANTI BLANK & THREAD SAFE) ---
-    private var reloadJob: kotlinx.coroutines.Job? = null
     private val pluginsLock = Mutex()
-
     private fun onAllPluginsLoaded(success: Boolean = false) {
         ioSafe {
             var targetApiToLoad: String? = null
@@ -744,8 +741,11 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                                 DataStoreHelper.currentHomePage = targetApiToLoad
                             }
                         } else {
+                            // --- SUNTIKAN ADIXTREAM PENAWAR BLANK SCREEN ---
                             targetApiToLoad = currentSelected
+                            // -----------------------------------------------
                         }
+
                     } catch (e: Exception) {
                         logError(e)
                     }
@@ -753,21 +753,8 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
             }
 
             targetApiToLoad?.let { apiName ->
-                // KITA PINDAH KE MAIN THREAD AGAR UI TIDAK CRASH/BLANK
-                main {
-                    // Batalkan antrean yang lama agar tidak dobel nge-refresh
-                    reloadJob?.cancel()
-                    
-                    // Jadwalkan muat ulang Home dengan jeda 1.5 detik
-                    reloadJob = kotlinx.coroutines.launch(kotlinx.coroutines.Dispatchers.Main) {
-                        Log.d(TAG, "Menunggu sistem stabil untuk memuat: $apiName")
-                        kotlinx.coroutines.delay(1500) // Waktu bernapas untuk UI dan sistem HTTP
-                        
-                        Log.d(TAG, "Mengeksekusi reload Home SEKARANG")
-                        mainPluginsLoadedEvent.invoke(loadSinglePlugin(this@MainActivity, apiName))
-                        reloadHomeEvent.invoke(true)
-                    }
-                }
+                mainPluginsLoadedEvent.invoke(loadSinglePlugin(this@MainActivity, apiName))
+                reloadHomeEvent.invoke(true)
             }
         }
     }
@@ -1045,13 +1032,14 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                 } catch (e: Exception) { logError(e) }
             }
 
+            // Gunakan delay dari coroutine, bukan Thread.sleep
             kotlinx.coroutines.delay(1000)
 
             if (lastError == null && !PluginManager.checkSafeModeFile()) {
                 if (isRepoChanged) {
                     try {
                         Log.d(TAG, "Mengunduh plugin dari Repo Baru...")
-                        // Download berjalan di background (JANGAN DI-AWAIT)
+                        // Download berjalan di background
                         PluginsViewModel.downloadAll(this@MainActivity, targetRepoUrl, null)
                         PluginManager.___DO_NOT_CALL_FROM_A_PLUGIN_loadAllOnlinePlugins(this@MainActivity)
                         PluginManager.___DO_NOT_CALL_FROM_A_PLUGIN_loadAllLocalPlugins(this@MainActivity, false)
@@ -1070,7 +1058,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                     PluginManager.___DO_NOT_CALL_FROM_A_PLUGIN_loadAllLocalPlugins(this@MainActivity, false)
                 }
 
-                // === SOLUSI FINAL: OPTIMASI POLLING COROUTINES ===
+                // === SOLUSI FINAL: OPTIMASI POLLING COROUTINES & FILTER NSFW ===
                 val isAdultEnabled = settingsManager.getBoolean(getString(R.string.enable_nsfw_on_providers_key), false)
 
                 kotlinx.coroutines.withTimeoutOrNull(15_000L) {
@@ -1081,8 +1069,21 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                     }
                 }
 
-                // Serahkan Pemicu Sepenuhnya Kepada onAllPluginsLoaded 
-                // KITA SUDAH HAPUS INVOKE GANDA DI SINI!
+                val availableProviders = APIHolder.allProviders.filter { provider ->
+                    provider.hasMainPage && (isAdultEnabled || !provider.supportedTypes.contains(com.lagradost.cloudstream3.TvType.NSFW))
+                }
+                
+                val currentSelected = DataStoreHelper.currentHomePage
+
+                // Set target API saja, JANGAN panggil reloadHomeEvent di sini untuk mencegah Race Condition
+                if (currentSelected == null || availableProviders.none { it.name == currentSelected }) {
+                    if (availableProviders.isNotEmpty()) {
+                        DataStoreHelper.currentHomePage = availableProviders.first().name
+                        Log.d(TAG, "Auto-select plugin sukses disiapkan: ${availableProviders.first().name}")
+                    }
+                }
+
+                // Pemicu akhir kita serahkan ke event bawaan agar masuk ke dalam Mutex lock dengan aman
                 afterPluginsLoadedEvent.invoke(true)
                 // =========================================================
             }
