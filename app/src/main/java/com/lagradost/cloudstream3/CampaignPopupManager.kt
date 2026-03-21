@@ -8,6 +8,7 @@ import android.graphics.Color
 import android.graphics.Typeface
 import android.graphics.drawable.ColorDrawable
 import android.graphics.drawable.GradientDrawable
+import android.graphics.drawable.StateListDrawable
 import android.net.Uri
 import android.text.TextUtils
 import android.util.Base64
@@ -44,7 +45,6 @@ object CampaignPopupManager {
         
         ioSafe {
             try {
-                // app.get sudah tersedia dari com.lagradost.cloudstream3.app
                 val response = app.get(repoUrl).text
                 val jsonArray = JSONArray(response)
                 val prefs = PreferenceManager.getDefaultSharedPreferences(activity)
@@ -193,11 +193,17 @@ object CampaignPopupManager {
         }
         textContainer.addView(titleText) 
         
+        // --- PERBAIKAN SCROLLVIEW: Batasi tinggi ScrollView, BUKAN teksnya ---
+        val maxScrollHeight = if (isDeviceTv) 110.toPx else 160.toPx
         val scrollView = ScrollView(activity).apply {
-            layoutParams = LinearLayout.LayoutParams(-1, -2).apply {
+            // Memberikan tinggi tetap pada area scroll agar tombol lengket di bawah
+            layoutParams = LinearLayout.LayoutParams(-1, maxScrollHeight).apply {
                 setMargins(0, 0, 0, 15.toPx) 
-                height = ViewGroup.LayoutParams.WRAP_CONTENT 
             }
+            // Supaya remote TV bisa fokus ke teks dan nge-scroll
+            isFocusable = true
+            isFocusableInTouchMode = true
+            isScrollbarFadingEnabled = false
         }
 
         val scrollContent = LinearLayout(activity).apply {
@@ -213,8 +219,7 @@ object CampaignPopupManager {
             gravity = Gravity.CENTER
             setPadding(0, 0, 0, 0.toPx) 
             setLineSpacing(0f, 1.2f)
-            val maxTextHeight = if (isDeviceTv) 120.toPx else 180.toPx
-            maxHeight = maxTextHeight
+            // Hapus maxHeight di sini! Biarkan teks memanjang ke bawah sesuai isinya.
         }
         
         scrollContent.addView(messageText)
@@ -229,16 +234,33 @@ object CampaignPopupManager {
             weightSum = 2f 
         }
 
+        // --- PERBAIKAN TOMBOL TV: Menambahkan efek Focus (Sorotan) ---
         val actionBtn = Button(activity).apply {
             text = actionText
             setTextColor(Color.WHITE)
             textSize = 16f
             typeface = Typeface.DEFAULT_BOLD
             isAllCaps = false
-            background = GradientDrawable().apply {
+            
+            // State Normal (Merah)
+            val normalBg = GradientDrawable().apply {
                 cornerRadius = 16f.toPx.toFloat()
                 setColor(Color.parseColor("#E50914"))
             }
+            // State Fokus TV (Merah dengan garis putih)
+            val focusedBg = GradientDrawable().apply {
+                cornerRadius = 16f.toPx.toFloat()
+                setColor(Color.parseColor("#FF3B30")) // Merah lebih terang
+                setStroke(4.toPx, Color.WHITE) // Garis tepi putih agar terlihat di TV
+            }
+            
+            background = StateListDrawable().apply {
+                addState(intArrayOf(android.R.attr.state_focused), focusedBg)
+                addState(intArrayOf(android.R.attr.state_pressed), focusedBg)
+                addState(intArrayOf(), normalBg)
+            }
+            
+            isFocusable = true // Penting untuk remote TV
             
             setOnClickListener {
                 dialog.dismiss()
@@ -253,17 +275,34 @@ object CampaignPopupManager {
 
         if (isDeviceTv) {
             actionBtn.layoutParams = LinearLayout.LayoutParams(0, 48.toPx, 1f).apply { rightMargin = 6.toPx }
+            
             val closeTvBtn = Button(activity).apply {
                 text = "Tutup"
                 setTextColor(Color.WHITE)
                 textSize = 15f
                 typeface = Typeface.DEFAULT_BOLD
                 isAllCaps = false
-                background = GradientDrawable().apply {
+
+                // State Normal (Abu-abu)
+                val normalBg = GradientDrawable().apply {
                     cornerRadius = 16f.toPx.toFloat()
                     setColor(Color.parseColor("#475569")) 
                 }
+                // State Fokus TV (Abu-abu lebih terang dengan garis putih)
+                val focusedBg = GradientDrawable().apply {
+                    cornerRadius = 16f.toPx.toFloat()
+                    setColor(Color.parseColor("#64748B"))
+                    setStroke(4.toPx, Color.WHITE) // Garis tepi putih agar terlihat di TV
+                }
+
+                background = StateListDrawable().apply {
+                    addState(intArrayOf(android.R.attr.state_focused), focusedBg)
+                    addState(intArrayOf(android.R.attr.state_pressed), focusedBg)
+                    addState(intArrayOf(), normalBg)
+                }
+
                 layoutParams = LinearLayout.LayoutParams(0, 48.toPx, 1f).apply { leftMargin = 6.toPx }
+                isFocusable = true // Penting untuk remote TV
                 setOnClickListener { dialog.dismiss() }
             }
             
