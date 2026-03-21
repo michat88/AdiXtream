@@ -27,14 +27,12 @@ object PremiumDialogManager {
     fun showPremiumUnlockDialog(activity: Activity) {
         val isTv = isLayout(TV or EMULATOR)
 
-        // 1. Background utama (Dark Purple gradient)
         val gradient = android.graphics.drawable.GradientDrawable(
             android.graphics.drawable.GradientDrawable.Orientation.TOP_BOTTOM,
             intArrayOf(android.graphics.Color.parseColor("#271D42"), android.graphics.Color.parseColor("#120E1E"))
         )
-        gradient.cornerRadius = 24f.toPx.toFloat()
+        gradient.cornerRadius = 24f.toPx
 
-        // Container Utama
         val mainLayout = LinearLayout(activity).apply {
             orientation = if (isTv) LinearLayout.HORIZONTAL else LinearLayout.VERTICAL
             setPadding(30, if(isTv) 30 else 60, 30, if(isTv) 30 else 60) 
@@ -43,7 +41,6 @@ object PremiumDialogManager {
             weightSum = if (isTv) 2f else 1f
         }
 
-        // Panel Kiri & Kanan (TV Mode)
         val leftPanel = LinearLayout(activity).apply {
             orientation = LinearLayout.VERTICAL
             gravity = Gravity.CENTER_HORIZONTAL
@@ -57,7 +54,6 @@ object PremiumDialogManager {
 
         val scroll = ScrollView(activity).apply { addView(mainLayout) }
 
-        // 2. Ikon Mahkota
         val icon = TextView(activity).apply {
             text = "👑"
             textSize = if (isTv) 40f else 50f
@@ -65,7 +61,6 @@ object PremiumDialogManager {
             setPadding(0, 0, 0, 10)
         }
 
-        // 3. Judul
         val title = TextView(activity).apply {
             text = "PREMIUM ACCESS"
             textSize = if (isTv) 18f else 21f
@@ -75,7 +70,6 @@ object PremiumDialogManager {
             setPadding(0, 0, 0, 10)
         }
         
-        // 4. Subjudul
         val subTitle = TextView(activity).apply {
             text = "Fitur ini terkunci.\nSilakan hubungi admin untuk\nberlangganan."
             textSize = 13f
@@ -84,11 +78,10 @@ object PremiumDialogManager {
             setPadding(0, 0, 0, if(isTv) 15 else 30)
         }
 
-        // 5. Kotak Harga
         val priceBoxBg = android.graphics.drawable.GradientDrawable().apply {
             setColor(android.graphics.Color.TRANSPARENT)
             setStroke(2, android.graphics.Color.parseColor("#6A629B")) 
-            cornerRadius = 24f.toPx.toFloat()
+            cornerRadius = 24f.toPx
         }
         val priceLayout = LinearLayout(activity).apply {
             orientation = LinearLayout.VERTICAL
@@ -126,7 +119,6 @@ object PremiumDialogManager {
             addPrice("1 Tahun", "Rp 50.000")
         }
 
-        // 6. Bagian QRIS
         val qrisTitle = TextView(activity).apply {
             text = "SCAN UNTUK BAYAR"
             textSize = 11f
@@ -148,17 +140,16 @@ object PremiumDialogManager {
             setPadding(0, 10, 0, if(isTv) 15 else 30)
         }
 
-        // 7. Kotak Device ID (DENGAN EFEK FOKUS)
         val deviceIdVal = PremiumManager.getDeviceId(activity)
         val idNormalBg = android.graphics.drawable.GradientDrawable().apply {
             setColor(android.graphics.Color.parseColor("#221D36")) 
             setStroke(2, android.graphics.Color.parseColor("#443D61"))
-            cornerRadius = 24f.toPx.toFloat()
+            cornerRadius = 24f.toPx
         }
         val idFocusedBg = android.graphics.drawable.GradientDrawable().apply {
             setColor(android.graphics.Color.parseColor("#332D56")) 
-            setStroke(4, android.graphics.Color.WHITE) // Garis putih tebal saat disorot remote
-            cornerRadius = 24f.toPx.toFloat()
+            setStroke(4, android.graphics.Color.WHITE) 
+            cornerRadius = 24f.toPx
         }
         val idStates = android.graphics.drawable.StateListDrawable().apply {
             addState(intArrayOf(android.R.attr.state_focused), idFocusedBg)
@@ -168,7 +159,7 @@ object PremiumDialogManager {
         val idContainer = LinearLayout(activity).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(20, 20, 20, 20)
-            background = idStates // Pasang background yang bisa berubah
+            background = idStates 
             layoutParams = LinearLayout.LayoutParams(-1, -2).apply { setMargins(10, 0, 10, if(isTv) 15 else 30) }
             isFocusable = true 
             isClickable = true
@@ -199,12 +190,11 @@ object PremiumDialogManager {
         idContainer.addView(idLabel)
         idContainer.addView(idValueRow)
 
-        // 8. Input Code (DENGAN EFEK FOKUS)
         val inputNormalBg = android.graphics.drawable.GradientDrawable().apply { setColor(android.graphics.Color.TRANSPARENT) }
         val inputFocusedBg = android.graphics.drawable.GradientDrawable().apply {
-            setColor(android.graphics.Color.parseColor("#33FFFFFF")) // Background agak putih saat diketik
-            cornerRadius = 16f.toPx.toFloat()
-            setStroke(4, android.graphics.Color.parseColor("#FFCA28")) // Garis kuning
+            setColor(android.graphics.Color.parseColor("#33FFFFFF")) 
+            cornerRadius = 16f.toPx
+            setStroke(4, android.graphics.Color.parseColor("#FFCA28")) 
         }
         val inputStates = android.graphics.drawable.StateListDrawable().apply {
             addState(intArrayOf(android.R.attr.state_focused), inputFocusedBg)
@@ -219,7 +209,7 @@ object PremiumDialogManager {
             setPadding(20, 20, 20, 10)
             textSize = 16f
             setSingleLine()
-            background = inputStates // Pasang background fokus
+            background = inputStates 
             layoutParams = LinearLayout.LayoutParams(-1, -2).apply { setMargins(30, 0, 30, 0) }
             isFocusable = true
             isFocusableInTouchMode = true
@@ -229,15 +219,14 @@ object PremiumDialogManager {
             setBackgroundColor(android.graphics.Color.parseColor("#6A629B"))
         }
 
-        // 9. Tombol Unlock Now (DENGAN EFEK FOKUS YANG JELAS)
         val btnNormalBg = android.graphics.drawable.GradientDrawable().apply {
             setColor(android.graphics.Color.parseColor("#FFCA28"))
-            cornerRadius = 100f.toPx.toFloat() 
+            cornerRadius = 100f.toPx 
         }
         val btnFocusedBg = android.graphics.drawable.GradientDrawable().apply {
-            setColor(android.graphics.Color.parseColor("#FFE066")) // Kuning lebih terang
-            setStroke(6, android.graphics.Color.WHITE) // Garis luar PUTIH TEBAL biar kelihatan jelas
-            cornerRadius = 100f.toPx.toFloat() 
+            setColor(android.graphics.Color.parseColor("#FFE066")) 
+            setStroke(6, android.graphics.Color.WHITE) 
+            cornerRadius = 100f.toPx 
         }
         val btnStates = android.graphics.drawable.StateListDrawable().apply {
             addState(intArrayOf(android.R.attr.state_focused), btnFocusedBg)
@@ -248,16 +237,15 @@ object PremiumDialogManager {
         val btnUnlock = Button(activity).apply {
             text = "UNLOCK NOW"
             textSize = 15f
-            background = btnStates // Pasang StateListDrawable ke tombol
+            background = btnStates 
             setTextColor(android.graphics.Color.parseColor("#120E1E"))
             typeface = android.graphics.Typeface.DEFAULT_BOLD
             layoutParams = LinearLayout.LayoutParams(-1, 50.toPx).apply { setMargins(10, 0, 10, 20) }
             isFocusable = true
         }
         
-        // 10. Tombol Telegram Admin (DENGAN EFEK FOKUS)
-        val telNormalBg = android.graphics.drawable.GradientDrawable().apply { setColor(android.graphics.Color.TRANSPARENT); cornerRadius = 16f.toPx.toFloat() }
-        val telFocusedBg = android.graphics.drawable.GradientDrawable().apply { setColor(android.graphics.Color.parseColor("#33FFFFFF")); cornerRadius = 16f.toPx.toFloat() }
+        val telNormalBg = android.graphics.drawable.GradientDrawable().apply { setColor(android.graphics.Color.TRANSPARENT); cornerRadius = 16f.toPx }
+        val telFocusedBg = android.graphics.drawable.GradientDrawable().apply { setColor(android.graphics.Color.parseColor("#33FFFFFF")); cornerRadius = 16f.toPx }
         val telStates = android.graphics.drawable.StateListDrawable().apply {
             addState(intArrayOf(android.R.attr.state_focused), telFocusedBg)
             addState(intArrayOf(), telNormalBg)
@@ -267,7 +255,7 @@ object PremiumDialogManager {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER
             setPadding(20, 10, 20, 10)
-            background = telStates // Pasang efek fokus
+            background = telStates 
             isFocusable = true
             isClickable = true
             setOnClickListener {
@@ -282,7 +270,6 @@ object PremiumDialogManager {
         btnAdminRow.addView(textAdmin)
         btnAdminRow.addView(iconAdmin)
 
-        // Logika Klik Unlock
         btnUnlock.setOnClickListener {
             val code = inputCode.text.toString().trim().uppercase()
             val isSuccess = PremiumManager.activatePremiumWithCode(activity, code, deviceIdVal)
@@ -309,7 +296,6 @@ object PremiumDialogManager {
             }
         }
 
-        // Menyusun View berdasarkan Mode Perangkat
         if (isTv) {
             leftPanel.addView(icon)
             leftPanel.addView(title)
@@ -349,7 +335,6 @@ object PremiumDialogManager {
         
         alert.window?.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT))
         
-        // PENGATURAN LEBAR DIALOG (90% LAYAR)
         alert.setOnShowListener {
             val displayMetrics = activity.resources.displayMetrics
             val width = (displayMetrics.widthPixels * 0.90).toInt() 
