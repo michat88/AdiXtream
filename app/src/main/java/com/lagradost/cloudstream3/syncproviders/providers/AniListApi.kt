@@ -163,7 +163,7 @@ class AniListApi : SyncAPI() {
                 SyncAPI.SyncSearchResult(
                     name = recMedia?.title?.userPreferred ?: return@mapNotNull null,
                     this.name,
-                    recMedia.id?.toString() ?: return@mapNotNull null,
+                    recMedia.id.toString(),
                     getUrlFromId(recMedia.id),
                     recMedia.coverImage?.extraLarge ?: recMedia.coverImage?.large
                     ?: recMedia.coverImage?.medium
