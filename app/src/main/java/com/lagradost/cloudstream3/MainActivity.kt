@@ -262,7 +262,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                     if (str.startsWith(APP_STRING_SHARE) || str.startsWith("adixtreamshare")) {
                         try {
                             val rawData = if (str.contains("?data=")) {
-                                str.substringAfter("?data=")
+                               str.substringAfter("?data=")
                             } else {
                                 str.substringAfter("://")
                             }
@@ -1061,9 +1061,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                 // === SOLUSI FINAL: OPTIMASI POLLING COROUTINES & FILTER NSFW ===
                 val isAdultEnabled = settingsManager.getBoolean(getString(R.string.enable_nsfw_on_providers_key), false)
 
-                // Gunakan withTimeoutOrNull untuk membatasi waktu tunggu maksimal 15 detik (15000 ms)
                 kotlinx.coroutines.withTimeoutOrNull(15_000L) {
-                    // Cek terus setiap 500ms sampai ada setidaknya 1 provider valid
                     while (APIHolder.allProviders.none { provider -> 
                         provider.hasMainPage && (isAdultEnabled || !provider.supportedTypes.contains(com.lagradost.cloudstream3.TvType.NSFW)) 
                     }) {
@@ -1071,29 +1069,22 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                     }
                 }
 
-                // Ambil daftar provider yang sudah terfilter dengan aman
                 val availableProviders = APIHolder.allProviders.filter { provider ->
                     provider.hasMainPage && (isAdultEnabled || !provider.supportedTypes.contains(com.lagradost.cloudstream3.TvType.NSFW))
                 }
                 
                 val currentSelected = DataStoreHelper.currentHomePage
 
-                // Jika daftar plugin sudah muncul, otomatis pilih urutan pertama
+                // Set target API saja, JANGAN panggil reloadHomeEvent di sini untuk mencegah Race Condition
                 if (currentSelected == null || availableProviders.none { it.name == currentSelected }) {
                     if (availableProviders.isNotEmpty()) {
-                        val targetApiToLoad = availableProviders.first().name
-                        DataStoreHelper.currentHomePage = targetApiToLoad
-                        Log.d(TAG, "Auto-select plugin sukses dieksekusi: $targetApiToLoad")
-                        mainPluginsLoadedEvent.invoke(loadSinglePlugin(this@MainActivity, targetApiToLoad))
-                        reloadHomeEvent.invoke(true)
-                    } else {
-                        mainPluginsLoadedEvent.invoke(false)
+                        DataStoreHelper.currentHomePage = availableProviders.first().name
+                        Log.d(TAG, "Auto-select plugin sukses disiapkan: ${availableProviders.first().name}")
                     }
-                } else {
-                    // Eksekusi jika tidak ada perubahan repo
-                    mainPluginsLoadedEvent.invoke(loadSinglePlugin(this@MainActivity, currentSelected))
-                    reloadHomeEvent.invoke(true)
                 }
+
+                // Pemicu akhir kita serahkan ke event bawaan agar masuk ke dalam Mutex lock dengan aman
+                afterPluginsLoadedEvent.invoke(true)
                 // =========================================================
             }
         }
