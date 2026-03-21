@@ -2133,14 +2133,16 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
         textContainer.addView(scrollView)
         // ========================================================
         
-        // --- 3. STICKY BUTTONS (WYSIWYG V3) ---
+                // --- 3. STICKY BUTTONS (WYSIWYG V3) ---
         // Kita buat container tombol yang lengket di bawah (setelah ScrollView)
         val btnContainer = android.widget.LinearLayout(this).apply {
-            layoutParams = android.widget.LinearLayout.LayoutParams(-1, -2)
+            layoutParams = android.widget.LinearLayout.LayoutParams(-1, -2).apply {
+                topMargin = 0.toPx // <--- Pindahkan ke sini
+            }
             orientation = android.widget.LinearLayout.HORIZONTAL
             weightSum = 2f // Dibagi 2 rata
-            topMargin = 0.toPx 
         }
+
 
         val actionBtn = android.widget.Button(this).apply {
             text = actionText
