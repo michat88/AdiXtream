@@ -52,7 +52,7 @@ class SplashActivity : AppCompatActivity() {
             videoView.suspend()
             videoView.visibility = View.GONE
             
-            // SUNTIKAN BARU: Menyamar sebagai peluncuran aplikasi murni dari sistem
+            // Menyamar sebagai peluncuran aplikasi murni dari sistem agar data film tidak dibatalkan
             val intent = Intent(this, MainActivity::class.java).apply {
                 action = Intent.ACTION_MAIN
                 addCategory(Intent.CATEGORY_LAUNCHER)
@@ -60,8 +60,8 @@ class SplashActivity : AppCompatActivity() {
             }
             startActivity(intent)
             
-            // Memberikan transisi memudar agar perpindahan layar lebih halus
-            overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
+            // PERBAIKAN TERBARU: Menghilangkan efek memudar ke hitam (0) agar transisi lebih cepat
+            overridePendingTransition(android.R.anim.fade_in, 0)
             
             // Tutup Splash secara tuntas
             finish()
