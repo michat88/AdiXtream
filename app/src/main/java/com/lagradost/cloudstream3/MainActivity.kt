@@ -765,7 +765,6 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
         syncViewModel = ViewModelProvider(this)[SyncViewModel::class.java]
         return super.onCreateView(name, context, attrs)
     }
-
     private fun hidePreviewPopupDialog() {
         bottomPreviewPopup.dismissSafe(this)
         bottomPreviewPopup = null
@@ -1585,7 +1584,6 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
              app.get("https://raw.githubusercontent.com/recloudstream/.github/master/connectivitycheck", timeout = 5).text.trim() == "ok"
         } catch (t: Throwable) { false }
     }
-
     // --- POPUP UNLOCK ADIXTREAM (NEW PREMIUM DESIGN - TV & MOBILE RESPONSIVE WITH TV FOCUS) ---
     fun showPremiumUnlockDialog() {
         val context = this
@@ -1938,11 +1936,18 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                 val prefs = PreferenceManager.getDefaultSharedPreferences(this@MainActivity)
                 val format = java.text.SimpleDateFormat("yyyy-MM-dd HH:mm", java.util.Locale.US)
                 val now = java.util.Date()
+                val isDeviceTv = isLayout(TV or EMULATOR) // Cek device saat ini
                 
                 for (i in 0 until jsonArray.length()) {
                     val item = jsonArray.getJSONObject(i)
                     val isActive = item.optBoolean("isActive", false)
                     if (!isActive) continue
+
+                    // --- FITUR BARU: FILTER TARGET PLATFORM ---
+                    val target = item.optString("targetPlatform", "all")
+                    if (isDeviceTv && target == "hp") continue // Jika ini TV tapi targetnya HP, skip!
+                    if (!isDeviceTv && target == "tv") continue // Jika ini HP tapi targetnya TV, skip!
+                    // ------------------------------------------
                     
                     val start = format.parse(item.optString("startDate", "2000-01-01 00:00"))
                     val end = format.parse(item.optString("endDate", "2099-01-01 00:00"))
@@ -1978,9 +1983,17 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
     private fun showBeautifulCampaignPopup(item: org.json.JSONObject) {
         val titleStr = item.optString("title")
         val messageStr = item.optString("message")
-        val imageUrl = item.optString("imageUrl")
         val actionText = item.optString("actionText", "Tutup")
         val actionLink = item.optString("actionLink")
+        
+        // --- FITUR BARU: PILIH GAMBAR SESUAI DEVICE ---
+        val isDeviceTv = isLayout(TV or EMULATOR)
+        // Ambil gambar TV jika ada, kalau kosong balikan ke gambar default HP
+        val imageUrl = if (isDeviceTv) {
+            item.optString("imageUrlTv", item.optString("imageUrl")) 
+        } else {
+            item.optString("imageUrl")
+        }
 
         val dialog = Dialog(this, android.R.style.Theme_Translucent_NoTitleBar)
         dialog.window?.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(android.graphics.Color.parseColor("#D905080F"))) 
@@ -1990,33 +2003,30 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
             gravity = android.view.Gravity.CENTER
         }
         
+        // --- UKURAN POPUP TV DIPERBAIKI (LEBIH LEBAR DIKIT BIAR ENAK DIBACA: 45%) ---
+        val popupWidth = if (isDeviceTv) {
+            (resources.displayMetrics.widthPixels * 0.45).toInt() 
+        } else {
+            (resources.displayMetrics.widthPixels * 0.85).toInt() 
+        }
+
         val card = androidx.cardview.widget.CardView(this).apply {
             radius = 24f.toPx.toFloat()
             setCardBackgroundColor(android.graphics.Color.parseColor("#1E293B"))
             cardElevation = 20f
             layoutParams = android.widget.RelativeLayout.LayoutParams(
-                (resources.displayMetrics.widthPixels * 0.85).toInt(), -2
+                popupWidth, -2 
             ).apply { addRule(android.widget.RelativeLayout.CENTER_IN_PARENT) }
         }
         
         val cardContent = android.widget.RelativeLayout(this)
         
-        // --- PERBAIKAN MULAI DI SINI ---
         val imageView = android.widget.ImageView(this).apply {
             id = android.view.View.generateViewId()
-            
-            // Sesuaikan tinggi untuk TV agar terlihat proporsional
-            val imgHeight = if (isLayout(TV or EMULATOR)) 350.toPx else 220.toPx
+            val imgHeight = if (isDeviceTv) 260.toPx else 220.toPx
             layoutParams = android.widget.RelativeLayout.LayoutParams(-1, imgHeight)
-            
-            // Perbaikan scaleType supaya kepala tidak terpotong di TV
-            scaleType = if (isLayout(TV or EMULATOR)) {
-                android.widget.ImageView.ScaleType.FIT_CENTER // Mengubah scaleType untuk TV agar tampil utuh
-            } else {
-                android.widget.ImageView.ScaleType.CENTER_CROP // Tetap penuhi area di Smartphone
-            }
+            scaleType = android.widget.ImageView.ScaleType.CENTER_CROP 
         }
-        // --- PERBAIKAN BERAKHIR DI SINI ---
 
         if (imageUrl.startsWith("data:image")) {
             try {
@@ -2049,6 +2059,9 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
             }
             setPadding(8.toPx, 8.toPx, 8.toPx, 8.toPx)
             setOnClickListener { dialog.dismiss() }
+            
+            // --- FITUR BARU: SEMBUNYIKAN TOMBOL X DI TV ---
+            visibility = if (isDeviceTv) android.view.View.GONE else android.view.View.VISIBLE
         }
         
         val textContainer = android.widget.LinearLayout(this).apply {
@@ -2059,7 +2072,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
         }
         
         val titleText = android.widget.TextView(this).apply {
-             text = titleStr
+            text = titleStr
             textSize = 22f
             setTextColor(android.graphics.Color.parseColor("#F8FAFC"))
             typeface = android.graphics.Typeface.DEFAULT_BOLD
@@ -2076,6 +2089,13 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
             setLineSpacing(0f, 1.2f)
         }
         
+        // --- FITUR BARU: LAYOUT TOMBOL AKSI & TUTUP KHUSUS TV ---
+        val btnContainer = android.widget.LinearLayout(this).apply {
+            layoutParams = android.widget.LinearLayout.LayoutParams(-1, -2)
+            orientation = android.widget.LinearLayout.HORIZONTAL
+            weightSum = 2f // Dibagi 2 rata
+        }
+
         val actionBtn = android.widget.Button(this).apply {
             text = actionText
             setTextColor(android.graphics.Color.WHITE)
@@ -2086,7 +2106,6 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                 cornerRadius = 16f.toPx.toFloat()
                 setColor(android.graphics.Color.parseColor("#E50914"))
             }
-            layoutParams = android.widget.LinearLayout.LayoutParams(-1, 52.toPx)
             
             setOnClickListener {
                 dialog.dismiss()
@@ -2098,10 +2117,38 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                 }
             }
         }
-        
-        textContainer.addView(titleText)
-        textContainer.addView(messageText)
-        textContainer.addView(actionBtn)
+
+        if (isDeviceTv) {
+            // Jika TV: Tombol Aksi di kiri (1f), Tombol Tutup di kanan (1f)
+            actionBtn.layoutParams = android.widget.LinearLayout.LayoutParams(0, 48.toPx, 1f).apply { rightMargin = 6.toPx }
+            
+            val closeTvBtn = android.widget.Button(this).apply {
+                text = "Tutup"
+                setTextColor(android.graphics.Color.WHITE)
+                textSize = 15f
+                typeface = android.graphics.Typeface.DEFAULT_BOLD
+                isAllCaps = false
+                background = android.graphics.drawable.GradientDrawable().apply {
+                    cornerRadius = 16f.toPx.toFloat()
+                    setColor(android.graphics.Color.parseColor("#475569")) // Abu-abu elegan
+                }
+                layoutParams = android.widget.LinearLayout.LayoutParams(0, 48.toPx, 1f).apply { leftMargin = 6.toPx }
+                setOnClickListener { dialog.dismiss() }
+            }
+            
+            btnContainer.addView(actionBtn)
+            btnContainer.addView(closeTvBtn)
+            textContainer.addView(titleText)
+            textContainer.addView(messageText)
+            textContainer.addView(btnContainer)
+        } else {
+            // Jika HP: Tombol aksi full lebar, tidak ada tombol Tutup tambahan
+            actionBtn.layoutParams = android.widget.LinearLayout.LayoutParams(-1, 52.toPx)
+            textContainer.addView(titleText)
+            textContainer.addView(messageText)
+            textContainer.addView(actionBtn)
+        }
+        // --------------------------------------------------------
         
         cardContent.addView(imageView)
         cardContent.addView(gradientView)
