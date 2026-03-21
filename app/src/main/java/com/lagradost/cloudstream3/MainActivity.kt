@@ -740,6 +740,10 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                                 targetApiToLoad = availableProviders.first().name
                                 DataStoreHelper.currentHomePage = targetApiToLoad
                             }
+                        } else {
+                            // --- SUNTIKAN ADIXTREAM PENAWAR BLANK SCREEN ---
+                            targetApiToLoad = currentSelected
+                            // -----------------------------------------------
                         }
 
                     } catch (e: Exception) {
@@ -1684,6 +1688,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                 row.addView(t2)
                 addView(row)
             }
+            
             addPrice("1 Bulan", "Rp 10.000")
             addPrice("6 Bulan", "Rp 30.000")
             addPrice("1 Tahun", "Rp 50.000")
