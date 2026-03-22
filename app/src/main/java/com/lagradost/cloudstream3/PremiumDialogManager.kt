@@ -227,6 +227,9 @@ object PremiumDialogManager {
             
             isFocusable = true 
             isFocusableInTouchMode = true
+            
+            // Tambahkan ini agar kolom input juga membesar & timbul saat disorot remote TV!
+            applyModernButtonEffects(this, isTv, scaleOnTv = 1.02f)
         }
 
         // ==========================================
@@ -246,14 +249,16 @@ object PremiumDialogManager {
             setTextColor(android.graphics.Color.WHITE)
             typeface = android.graphics.Typeface.DEFAULT_BOLD
             layoutParams = LinearLayout.LayoutParams(-1, 55.toPx).apply { 
-                // ADIXTREAM MOD: Set horizontal margin 30.toPx (untuk memastikan simetri jika parentnya berbeda di TV)
+                // ADIXTREAM MOD: Set horizontal margin 30.toPx
                 setMargins(30.toPx, 0, 30.toPx, 20) 
             }
             
             applyModernButtonEffects(this, isTv, scaleOnTv = 1.05f)
         }
         
-        // Tombol HUBUNGI ADMIN
+        // ==========================================
+        // ADIXTREAM MOD: Tombol Telegram 
+        // ==========================================
         val telBackground = android.graphics.drawable.GradientDrawable().apply { 
             setColor(android.graphics.Color.TRANSPARENT); 
             cornerRadius = 16f.toPx 
@@ -268,11 +273,18 @@ object PremiumDialogManager {
             
             applyModernButtonEffects(this, isTv, scaleOnTv = 1.05f)
             
+            // PENANGANAN KHUSUS TV UNTUK TELEGRAM
             setOnClickListener {
-                try {
-                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://t.me/michat88"))
-                    activity.startActivity(intent)
-                } catch (e: Exception) { Toast.makeText(activity, "Telegram tidak ditemukan", Toast.LENGTH_SHORT).show() }
+                if (isTv) {
+                    Toast.makeText(activity, "Gunakan HP Anda untuk menghubungi Admin via Telegram: @michat88", Toast.LENGTH_LONG).show()
+                } else {
+                    try {
+                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://t.me/michat88"))
+                        activity.startActivity(intent)
+                    } catch (e: Exception) { 
+                        Toast.makeText(activity, "Telegram tidak ditemukan", Toast.LENGTH_SHORT).show() 
+                    }
+                }
             }
         }
         
@@ -346,14 +358,12 @@ object PremiumDialogManager {
         // ==========================================
         // ADIXTREAM MOD: KUNCI LATAR BELAKANG DI TV
         // ==========================================
-        
         if (isTv) {
             // Khusus TV: Pasang mainLayout polos langsung sebagai tampilan dialog.
             // Tidak ada ScrollView, tidak ada efek 'scroll' visual sama sekali.
             alert.setView(mainLayout)
         } else {
             // Khusus HP: Pasang mainLayout ke dalam ScrollView.
-            // Mantra Anti-Potong juga dipasang di sini agar HP tetap mulus.
             val scroll = ScrollView(activity).apply { 
                 clipChildren = false
                 clipToPadding = false
@@ -362,7 +372,6 @@ object PremiumDialogManager {
             alert.setView(scroll)
         }
 
-        // ... tag tag tag tag
         alert.setOnShowListener {
             val displayMetrics = activity.resources.displayMetrics
             val width = (displayMetrics.widthPixels * 0.90).toInt() 
@@ -414,7 +423,7 @@ object PremiumDialogManager {
                     view.animate().scaleX(0.96f).scaleY(0.96f).setDuration(100).start()
                 }
                 android.view.MotionEvent.ACTION_UP, android.view.MotionEvent.ACTION_CANCEL -> {
-                    // Kembali membesar (1.05x) jika di TV dan masih disorot, atau (1.0x) jika normal
+                    // Kembali membesar jika di TV dan masih disorot, atau (1.0x) jika normal
                     val targetScale = if (isTv && view.hasFocus()) scaleOnTv else 1f
                     view.animate().scaleX(targetScale).scaleY(targetScale).setDuration(100).start()
                 }
