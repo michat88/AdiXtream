@@ -43,8 +43,8 @@ object PremiumDialogManager {
                 return if (isTv) false else super.requestRectangleOnScreen(rect, immediate)
             }
             
-            // Memblokir paksa request scroll dari anak-anak layout (tombol, input, dll) saat kena fokus D-Pad
-            override fun requestChildRectangleOnScreen(child: View?, rectangle: android.graphics.Rect?, immediate: Boolean): Boolean {
+            // PERBAIKAN ERROR: child menggunakan View (tanpa tanda ?), rectangle menggunakan Rect?
+            override fun requestChildRectangleOnScreen(child: View, rectangle: android.graphics.Rect?, immediate: Boolean): Boolean {
                 return if (isTv) false else super.requestChildRectangleOnScreen(child, rectangle, immediate)
             }
         }.apply {
