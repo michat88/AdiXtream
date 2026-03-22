@@ -256,8 +256,9 @@ class SettingsGeneral : BasePreferenceFragmentCompat() {
             val prefNames = resources.getStringArray(R.array.dns_pref)
             val prefValues = resources.getIntArray(R.array.dns_pref_values)
 
+            // PERBAIKAN: Mengubah nilai default dari 0 menjadi 1 (Google DNS)
             val currentDns =
-                settingsManager.getInt(getString(R.string.dns_pref), 0)
+                settingsManager.getInt(getString(R.string.dns_pref), 1)
 
             activity?.showBottomDialog(
                 prefNames.toList(),
