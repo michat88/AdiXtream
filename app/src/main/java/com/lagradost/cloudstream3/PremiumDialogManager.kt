@@ -27,13 +27,13 @@ object PremiumDialogManager {
     fun showPremiumUnlockDialog(activity: Activity) {
         val isTv = isLayout(TV or EMULATOR)
 
+        // Tema Gelap khas Netflix
         val gradient = android.graphics.drawable.GradientDrawable(
             android.graphics.drawable.GradientDrawable.Orientation.TOP_BOTTOM,
-            intArrayOf(android.graphics.Color.parseColor("#271D42"), android.graphics.Color.parseColor("#120E1E"))
+            intArrayOf(android.graphics.Color.parseColor("#141414"), android.graphics.Color.parseColor("#000000"))
         )
-        gradient.cornerRadius = 24f.toPx
+        gradient.cornerRadius = 16f.toPx
 
-        // ADIXTREAM MOD: Tambahkan clipChildren = false agar tombol yang membesar tidak terpotong
         val mainLayout = LinearLayout(activity).apply {
             orientation = if (isTv) LinearLayout.HORIZONTAL else LinearLayout.VERTICAL
             setPadding(30, if(isTv) 30 else 60, 30, if(isTv) 30 else 60) 
@@ -65,8 +65,9 @@ object PremiumDialogManager {
             addView(mainLayout) 
         }
 
+        // Netflix sering menggunakan desain minimalis, ikon disesuaikan atau tetap
         val icon = TextView(activity).apply {
-            text = "👑"
+            text = "🍿" // Ganti ikon mahkota ke popcorn agar lebih sinematik (opsional, bisa dikembalikan ke 👑)
             textSize = if (isTv) 40f else 50f
             gravity = Gravity.CENTER
             setPadding(0, 0, 0, 10)
@@ -74,7 +75,7 @@ object PremiumDialogManager {
 
         val title = TextView(activity).apply {
             text = "PREMIUM ACCESS"
-            textSize = if (isTv) 18f else 21f
+            textSize = if (isTv) 20f else 24f
             setTextColor(android.graphics.Color.WHITE)
             typeface = android.graphics.Typeface.DEFAULT_BOLD
             gravity = Gravity.CENTER
@@ -83,16 +84,16 @@ object PremiumDialogManager {
         
         val subTitle = TextView(activity).apply {
             text = "Fitur ini terkunci.\nSilakan hubungi admin untuk\nberlangganan."
-            textSize = 13f
-            setTextColor(android.graphics.Color.parseColor("#A0A0B5"))
+            textSize = 14f
+            setTextColor(android.graphics.Color.parseColor("#B3B3B3")) // Abu-abu Netflix
             gravity = Gravity.CENTER
             setPadding(0, 0, 0, if(isTv) 15 else 30)
         }
 
+        // Kotak Harga bergaya Netflix
         val priceBoxBg = android.graphics.drawable.GradientDrawable().apply {
-            setColor(android.graphics.Color.TRANSPARENT)
-            setStroke(2, android.graphics.Color.parseColor("#6A629B")) 
-            cornerRadius = 24f.toPx
+            setColor(android.graphics.Color.parseColor("#222222")) // Dark grey solid
+            cornerRadius = 8f.toPx
         }
         val priceLayout = LinearLayout(activity).apply {
             orientation = LinearLayout.VERTICAL
@@ -115,7 +116,7 @@ object PremiumDialogManager {
                 val t2 = TextView(activity).apply {
                     text = price
                     textSize = 15f
-                    setTextColor(android.graphics.Color.parseColor("#4CAF50"))
+                    setTextColor(android.graphics.Color.parseColor("#E50914")) // Merah Netflix
                     typeface = android.graphics.Typeface.DEFAULT_BOLD
                     layoutParams = LinearLayout.LayoutParams(0, -2, 1f)
                     gravity = Gravity.END
@@ -132,8 +133,8 @@ object PremiumDialogManager {
 
         val qrisTitle = TextView(activity).apply {
             text = "SCAN UNTUK BAYAR"
-            textSize = 11f
-            setTextColor(android.graphics.Color.parseColor("#A0A0B5"))
+            textSize = 12f
+            setTextColor(android.graphics.Color.parseColor("#B3B3B3"))
             gravity = Gravity.CENTER
             setPadding(0, 0, 0, 10)
         }
@@ -145,8 +146,8 @@ object PremiumDialogManager {
         }
         val qrisFooter = TextView(activity).apply {
             text = "OVO / DANA / GOPAY / SHOPEEPAY / BANK"
-            textSize = 10f
-            setTextColor(android.graphics.Color.parseColor("#A0A0B5"))
+            textSize = 11f
+            setTextColor(android.graphics.Color.parseColor("#B3B3B3"))
             gravity = Gravity.CENTER
             setPadding(0, 10, 0, if(isTv) 15 else 30)
         }
@@ -157,9 +158,8 @@ object PremiumDialogManager {
         val deviceIdVal = PremiumManager.getDeviceId(activity)
         
         val idBackground = android.graphics.drawable.GradientDrawable().apply {
-            setColor(android.graphics.Color.parseColor("#221D36")) 
-            setStroke(2, android.graphics.Color.parseColor("#443D61"))
-            cornerRadius = 24f.toPx
+            setColor(android.graphics.Color.parseColor("#222222")) 
+            cornerRadius = 8f.toPx
         }
         
         val idContainer = LinearLayout(activity).apply {
@@ -170,7 +170,6 @@ object PremiumDialogManager {
             isFocusable = true 
             isClickable = true
             
-            // Animasi untuk TV/HP
             applyModernButtonEffects(this, isTv, scaleOnTv = 1.05f)
             
             setOnClickListener {
@@ -182,74 +181,73 @@ object PremiumDialogManager {
         }
         val idLabel = TextView(activity).apply {
             text = "DEVICE ID ANDA (Tap to copy):"
-            textSize = 11f
-            setTextColor(android.graphics.Color.parseColor("#A0A0B5"))
+            textSize = 12f
+            setTextColor(android.graphics.Color.parseColor("#B3B3B3"))
             gravity = Gravity.CENTER
         }
         val idValueRow = LinearLayout(activity).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER; setPadding(0, 5, 0, 0) }
         val idValue = TextView(activity).apply {
             text = deviceIdVal
             textSize = if(isTv) 20f else 24f
-            setTextColor(android.graphics.Color.parseColor("#FFCA28")) 
+            setTextColor(android.graphics.Color.WHITE) 
             typeface = android.graphics.Typeface.DEFAULT_BOLD
             setPadding(0, 0, 15, 0)
         }
-        val copyIcon = TextView(activity).apply { text = "⎘"; setTextColor(android.graphics.Color.parseColor("#FFCA28")); textSize = 20f }
+        val copyIcon = TextView(activity).apply { text = "⎘"; setTextColor(android.graphics.Color.parseColor("#E50914")); textSize = 20f }
         idValueRow.addView(idValue)
         idValueRow.addView(copyIcon)
         idContainer.addView(idLabel)
         idContainer.addView(idValueRow)
 
         // ==========================================
-        // ADIXTREAM MOD: Input Kode Transparan Polos
+        // ADIXTREAM MOD: Input Kode Ala Netflix
         // ==========================================
+        val inputBg = android.graphics.drawable.GradientDrawable().apply {
+            setColor(android.graphics.Color.parseColor("#333333")) // Background input abu-abu solid
+            cornerRadius = 4f.toPx
+        }
+        
         val inputCode = EditText(activity).apply {
             hint = "Masukkan KODE di sini"
-            setHintTextColor(android.graphics.Color.parseColor("#7A7A95"))
+            setHintTextColor(android.graphics.Color.parseColor("#8C8C8C"))
             setTextColor(android.graphics.Color.WHITE)
             gravity = Gravity.CENTER
-            setPadding(20, 20, 20, 10)
+            setPadding(20, 30, 20, 30)
             textSize = 16f
             setSingleLine()
             
-            setBackgroundColor(android.graphics.Color.TRANSPARENT)
+            background = inputBg
             
-            layoutParams = LinearLayout.LayoutParams(-1, -2).apply { setMargins(30, 0, 30, 0) }
+            layoutParams = LinearLayout.LayoutParams(-1, -2).apply { setMargins(30, 0, 30, if(isTv) 15 else 30) }
             isFocusable = true 
             isFocusableInTouchMode = true
         }
-        
-        val underline = View(activity).apply {
-            layoutParams = LinearLayout.LayoutParams(-1, 2.toPx).apply { setMargins(40, 0, 40, if(isTv) 15 else 30) }
-            setBackgroundColor(android.graphics.Color.parseColor("#6A629B"))
-        }
 
         // ==========================================
-        // ADIXTREAM MOD: Tombol Unlock Polos + Efek Animasi
+        // ADIXTREAM MOD: Tombol Unlock Merah Netflix
         // ==========================================
         val btnBackground = android.graphics.drawable.GradientDrawable().apply {
-            setColor(android.graphics.Color.parseColor("#FFCA28"))
-            cornerRadius = 100f.toPx 
+            setColor(android.graphics.Color.parseColor("#E50914"))
+            cornerRadius = 4f.toPx 
         }
 
         val btnUnlock = Button(activity).apply {
             text = "UNLOCK NOW"
-            textSize = 15f
+            textSize = 16f
             
             background = btnBackground 
             
-            setTextColor(android.graphics.Color.parseColor("#120E1E"))
+            setTextColor(android.graphics.Color.WHITE)
             typeface = android.graphics.Typeface.DEFAULT_BOLD
-            layoutParams = LinearLayout.LayoutParams(-1, 50.toPx).apply { 
+            layoutParams = LinearLayout.LayoutParams(-1, 55.toPx).apply { 
                 setMargins(20.toPx, 0, 20.toPx, 20) 
             }
             
-            // Animasi untuk TV/HP
             applyModernButtonEffects(this, isTv, scaleOnTv = 1.05f)
         }
         
         // ==========================================
-        // ADIXTREAM MOD: Tombol Telegram Polos + Efek Animasi
+        // ADIXTREAM MOD: Tombol Telegram 
         // ==========================================
         val telBackground = android.graphics.drawable.GradientDrawable().apply { 
             setColor(android.graphics.Color.TRANSPARENT); 
@@ -263,7 +261,6 @@ object PremiumDialogManager {
             
             background = telBackground 
             
-            // Animasi untuk TV/HP
             applyModernButtonEffects(this, isTv, scaleOnTv = 1.05f)
             
             setOnClickListener {
@@ -274,7 +271,7 @@ object PremiumDialogManager {
             }
         }
         
-        val textAdmin = TextView(activity).apply { text = "TELEGRAM ADMIN "; setTextColor(android.graphics.Color.parseColor("#00E5FF")); textSize = 13f; typeface = android.graphics.Typeface.DEFAULT_BOLD }
+        val textAdmin = TextView(activity).apply { text = "HUBUNGI ADMIN "; setTextColor(android.graphics.Color.WHITE); textSize = 13f; typeface = android.graphics.Typeface.DEFAULT_BOLD }
         val iconAdmin = ImageView(activity).apply { layoutParams = LinearLayout.LayoutParams(18.toPx, 18.toPx).apply { setMargins(10, 0, 0, 0) }; scaleType = ImageView.ScaleType.FIT_CENTER; loadImage("https://raw.githubusercontent.com/michat88/AdiXtream/master/asset/telegram.png") }
         btnAdminRow.addView(textAdmin)
         btnAdminRow.addView(iconAdmin)
@@ -305,6 +302,7 @@ object PremiumDialogManager {
             }
         }
 
+        // Menyusun View
         if (isTv) {
             leftPanel.addView(icon)
             leftPanel.addView(title)
@@ -317,7 +315,7 @@ object PremiumDialogManager {
             rightPanel.addView(qrisFooter)
             rightPanel.addView(idContainer)
             rightPanel.addView(inputCode)
-            rightPanel.addView(underline)
+            // Catatan: underline dihapus dan diganti form solid
             rightPanel.addView(btnUnlock)
 
             mainLayout.addView(leftPanel)
@@ -332,7 +330,7 @@ object PremiumDialogManager {
             mainLayout.addView(qrisFooter)
             mainLayout.addView(idContainer)
             mainLayout.addView(inputCode)
-            mainLayout.addView(underline)
+            // Catatan: underline dihapus
             mainLayout.addView(btnUnlock)
             mainLayout.addView(btnAdminRow)
         }
@@ -354,9 +352,6 @@ object PremiumDialogManager {
         alert.show()
     }
 
-    /**
-     * ADIXTREAM MOD: Fungsi Pembantu untuk Animasi Tombol Modern
-     */
     private fun applyModernButtonEffects(button: View, isTv: Boolean, scaleOnTv: Float = 1.05f) {
         button.isFocusable = true
         button.isClickable = true
@@ -364,7 +359,6 @@ object PremiumDialogManager {
         if (isTv) {
             button.setOnFocusChangeListener { view, hasFocus ->
                 if (hasFocus) {
-                    // Tombol membesar dan naik saat disorot remote TV
                     view.animate()
                         .scaleX(scaleOnTv)
                         .scaleY(scaleOnTv)
@@ -372,7 +366,6 @@ object PremiumDialogManager {
                         .setDuration(150)
                         .start()
                 } else {
-                    // Kembali ke ukuran normal dan datar saat fokus hilang
                     view.animate()
                         .scaleX(1f)
                         .scaleY(1f)
@@ -382,24 +375,20 @@ object PremiumDialogManager {
                 }
             }
         } else {
-            // Bayangan dasar untuk layar HP touchscreen agar terasa premium
             button.translationZ = 4f
         }
 
-        // Efek mengecil saat ditekan (baik dari remote "OK" maupun sentuhan jari di HP)
         button.setOnTouchListener { view, event ->
             when (event.action) {
                 android.view.MotionEvent.ACTION_DOWN -> {
-                    // Mengecil 4% saat ditekan (Efek Tekan)
                     view.animate().scaleX(0.96f).scaleY(0.96f).setDuration(100).start()
                 }
                 android.view.MotionEvent.ACTION_UP, android.view.MotionEvent.ACTION_CANCEL -> {
-                    // Kembali membesar jika di TV dan masih disorot, atau (1.0x) jika normal
                     val targetScale = if (isTv && view.hasFocus()) scaleOnTv else 1f
                     view.animate().scaleX(targetScale).scaleY(targetScale).setDuration(100).start()
                 }
             }
-            false // PENTING: Kembalikan false agar fungsi onClickListener utama tetap bekerja!
+            false 
         }
     }
 }
