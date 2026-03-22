@@ -88,7 +88,7 @@ object PremiumDialogManager {
             setPadding(40, 30, 40, 30)
             background = priceBoxBg
             layoutParams = LinearLayout.LayoutParams(-1, -2).apply { setMargins(10, 0, 10, if(isTv) 15 else 30) }
-            
+             
             fun addPrice(dur: String, price: String) {
                 val row = LinearLayout(activity).apply {
                     orientation = LinearLayout.HORIZONTAL
@@ -140,26 +140,20 @@ object PremiumDialogManager {
             setPadding(0, 10, 0, if(isTv) 15 else 30)
         }
 
+        // ==========================================
+        // ADIXTREAM MOD: Kotak Device ID Polos
+        // ==========================================
         val deviceIdVal = PremiumManager.getDeviceId(activity)
         val idNormalBg = android.graphics.drawable.GradientDrawable().apply {
             setColor(android.graphics.Color.parseColor("#221D36")) 
             setStroke(2, android.graphics.Color.parseColor("#443D61"))
             cornerRadius = 24f.toPx
         }
-        val idFocusedBg = android.graphics.drawable.GradientDrawable().apply {
-            setColor(android.graphics.Color.parseColor("#332D56")) 
-            setStroke(4, android.graphics.Color.WHITE) 
-            cornerRadius = 24f.toPx
-        }
-        val idStates = android.graphics.drawable.StateListDrawable().apply {
-            addState(intArrayOf(android.R.attr.state_focused), idFocusedBg)
-            addState(intArrayOf(), idNormalBg)
-        }
         
         val idContainer = LinearLayout(activity).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(20, 20, 20, 20)
-            background = idStates 
+            background = idNormalBg 
             layoutParams = LinearLayout.LayoutParams(-1, -2).apply { setMargins(10, 0, 10, if(isTv) 15 else 30) }
             isFocusable = true 
             isClickable = true
@@ -190,17 +184,9 @@ object PremiumDialogManager {
         idContainer.addView(idLabel)
         idContainer.addView(idValueRow)
 
-        val inputNormalBg = android.graphics.drawable.GradientDrawable().apply { setColor(android.graphics.Color.TRANSPARENT) }
-        val inputFocusedBg = android.graphics.drawable.GradientDrawable().apply {
-            setColor(android.graphics.Color.parseColor("#33FFFFFF")) 
-            cornerRadius = 16f.toPx
-            setStroke(4, android.graphics.Color.parseColor("#FFCA28")) 
-        }
-        val inputStates = android.graphics.drawable.StateListDrawable().apply {
-            addState(intArrayOf(android.R.attr.state_focused), inputFocusedBg)
-            addState(intArrayOf(), inputNormalBg)
-        }
-
+        // ==========================================
+        // ADIXTREAM MOD: Input Kode Transparan Polos
+        // ==========================================
         val inputCode = EditText(activity).apply {
             hint = "Masukkan KODE di sini"
             setHintTextColor(android.graphics.Color.parseColor("#7A7A95"))
@@ -209,7 +195,7 @@ object PremiumDialogManager {
             setPadding(20, 20, 20, 10)
             textSize = 16f
             setSingleLine()
-            background = inputStates 
+            setBackgroundColor(android.graphics.Color.TRANSPARENT)
             layoutParams = LinearLayout.LayoutParams(-1, -2).apply { setMargins(30, 0, 30, 0) }
             isFocusable = true
             isFocusableInTouchMode = true
@@ -219,6 +205,7 @@ object PremiumDialogManager {
             setBackgroundColor(android.graphics.Color.parseColor("#6A629B"))
         }
 
+        // Warna untuk tombol Unlock
         val btnNormalBg = android.graphics.drawable.GradientDrawable().apply {
             setColor(android.graphics.Color.parseColor("#FFCA28"))
             cornerRadius = 100f.toPx 
@@ -244,6 +231,10 @@ object PremiumDialogManager {
             isFocusable = true
         }
         
+        // ADIXTREAM MOD: Pasang efek modern ke tombol UNLOCK
+        applyModernButtonEffects(btnUnlock, isTv)
+        
+        // Warna untuk tombol Telegram
         val telNormalBg = android.graphics.drawable.GradientDrawable().apply { setColor(android.graphics.Color.TRANSPARENT); cornerRadius = 16f.toPx }
         val telFocusedBg = android.graphics.drawable.GradientDrawable().apply { setColor(android.graphics.Color.parseColor("#33FFFFFF")); cornerRadius = 16f.toPx }
         val telStates = android.graphics.drawable.StateListDrawable().apply {
@@ -265,6 +256,10 @@ object PremiumDialogManager {
                 } catch (e: Exception) { Toast.makeText(activity, "Telegram tidak ditemukan", Toast.LENGTH_SHORT).show() }
             }
         }
+        
+        // ADIXTREAM MOD: Pasang efek modern ke tombol TELEGRAM
+        applyModernButtonEffects(btnAdminRow, isTv)
+        
         val textAdmin = TextView(activity).apply { text = "TELEGRAM ADMIN "; setTextColor(android.graphics.Color.parseColor("#00E5FF")); textSize = 13f; typeface = android.graphics.Typeface.DEFAULT_BOLD }
         val iconAdmin = ImageView(activity).apply { layoutParams = LinearLayout.LayoutParams(18.toPx, 18.toPx).apply { setMargins(10, 0, 0, 0) }; scaleType = ImageView.ScaleType.FIT_CENTER; loadImage("https://raw.githubusercontent.com/michat88/AdiXtream/master/asset/telegram.png") }
         btnAdminRow.addView(textAdmin)
@@ -343,5 +338,37 @@ object PremiumDialogManager {
 
         btnUnlock.tag = alert
         alert.show()
+    }
+
+    /**
+     * ADIXTREAM MOD: Fungsi Pembantu untuk Animasi Tombol Modern
+     */
+    private fun applyModernButtonEffects(button: View, isTv: Boolean) {
+        if (isTv) {
+            button.setOnFocusChangeListener { view, hasFocus ->
+                if (hasFocus) {
+                    // Tombol sedikit naik saat disorot remote TV
+                    view.animate().translationZ(8f).setDuration(150).start()
+                } else {
+                    view.animate().translationZ(0f).setDuration(150).start()
+                }
+            }
+        } else {
+            // Sedikit bayangan default untuk layar sentuh HP
+            button.translationZ = 2f
+        }
+
+        // Efek mengecil saat ditekan (baik dari remote OK maupun sentuhan jari di HP)
+        button.setOnTouchListener { view, event ->
+            when (event.action) {
+                android.view.MotionEvent.ACTION_DOWN -> {
+                    view.animate().scaleX(0.96f).scaleY(0.96f).setDuration(100).start()
+                }
+                android.view.MotionEvent.ACTION_UP, android.view.MotionEvent.ACTION_CANCEL -> {
+                    view.animate().scaleX(1f).scaleY(1f).setDuration(100).start()
+                }
+            }
+            false // Kembalikan false agar fungsi onClickListener utama tetap bekerja!
+        }
     }
 }
