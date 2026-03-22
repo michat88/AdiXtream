@@ -186,7 +186,9 @@ object InAppUpdater {
     private suspend fun Activity.downloadUpdate(url: String): Boolean {
         try {
             Log.d(LOG_TAG, "Downloading update: $url")
-            val appUpdateName = "CloudStream"
+            
+            // --- PERBAIKAN ADIXTREAM: Mengubah nama file cache ---
+            val appUpdateName = "AdiXtream" 
             val appUpdateSuffix = "apk"
 
             // Delete all old updates
@@ -194,7 +196,8 @@ object InAppUpdater {
                 it.name.startsWith(appUpdateName) && it.extension == appUpdateSuffix
             }?.forEach { deleteFileOnExit(it) }
 
-            val downloadedFile = File.createTempFile(appUpdateName, ".$appUpdateSuffix")
+            // --- PERBAIKAN ADIXTREAM: Memastikan file disimpan di cacheDir ---
+            val downloadedFile = File.createTempFile(appUpdateName, ".$appUpdateSuffix", this.cacheDir)
             val sink: BufferedSink = downloadedFile.sink().buffer()
 
             updateLock.withLock {
@@ -219,7 +222,9 @@ object InAppUpdater {
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
             putExtra(Intent.EXTRA_NOT_UNKNOWN_SOURCE, true)
-            data = contentUri
+            
+            // --- PERBAIKAN ADIXTREAM: Menambahkan setDataAndType dengan MIME type APK ---
+            setDataAndType(contentUri, "application/vnd.android.package-archive")
         }
         context.startActivity(installIntent)
     }
@@ -238,7 +243,6 @@ object InAppUpdater {
             showToast(R.string.prerelease_install_failed)
         }
     }
-
 
     /**
      * @param checkAutoUpdate if the update check was launched automatically
