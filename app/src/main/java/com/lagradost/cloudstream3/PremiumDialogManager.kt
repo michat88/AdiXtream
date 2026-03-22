@@ -159,7 +159,8 @@ object PremiumDialogManager {
             isFocusable = true 
             isClickable = true
             
-            applyModernButtonEffects(this, isTv)
+            // Terapkan efek scale dengan faktor yang lebih kecil agar tidak terpotong
+            applyModernButtonEffects(this, isTv, scaleOnTv = 1.02f)
             
             setOnClickListener {
                 val clipboard = activity.getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
@@ -214,6 +215,7 @@ object PremiumDialogManager {
 
         // ==========================================
         // ADIXTREAM MOD: Tombol Unlock Polos + Efek Animasi
+        // REVISI: Tambah padding horizontal agar tombol membesar tidak terpotong.
         // ==========================================
         val btnBackground = android.graphics.drawable.GradientDrawable().apply {
             setColor(android.graphics.Color.parseColor("#FFCA28"))
@@ -226,15 +228,23 @@ object PremiumDialogManager {
             
             background = btnBackground 
             
+            // REVISI: Tambah padding horizontal
+            setPadding(30.toPx, 0, 30.toPx, 0)
+            
             setTextColor(android.graphics.Color.parseColor("#120E1E"))
             typeface = android.graphics.Typeface.DEFAULT_BOLD
-            layoutParams = LinearLayout.LayoutParams(-1, 50.toPx).apply { setMargins(10, 0, 10, 20) }
+            layoutParams = LinearLayout.LayoutParams(-1, 50.toPx).apply { 
+                // REVISI: Atur margin agar ada ruang saat membesar
+                setMargins(20.toPx, 0, 20.toPx, 20) 
+            }
             
-            applyModernButtonEffects(this, isTv)
+            // Terapkan efek scale dengan faktor yang lebih kecil agar tidak terpotong
+            applyModernButtonEffects(this, isTv, scaleOnTv = 1.03f)
         }
         
         // ==========================================
         // ADIXTREAM MOD: Tombol Telegram Polos + Efek Animasi
+        // REVISI: Tambah padding horizontal agar tombol membesar tidak terpotong.
         // ==========================================
         val telBackground = android.graphics.drawable.GradientDrawable().apply { 
             setColor(android.graphics.Color.TRANSPARENT); 
@@ -248,7 +258,11 @@ object PremiumDialogManager {
             
             background = telBackground 
             
-            applyModernButtonEffects(this, isTv)
+            // REVISI: Tambah padding horizontal
+            setPadding(30.toPx, 10, 30.toPx, 10)
+            
+            // Terapkan efek scale dengan faktor yang lebih kecil agar tidak terpotong
+            applyModernButtonEffects(this, isTv, scaleOnTv = 1.03f)
             
             setOnClickListener {
                 try {
@@ -341,19 +355,20 @@ object PremiumDialogManager {
     /**
      * ADIXTREAM MOD: Fungsi Pembantu untuk Animasi Tombol Modern
      * Menangani efek "Membesar/Timbul" (fokus TV) dan "Tekan" (press TV/HP).
+     * REVISI: Tambah parameter 'scaleOnTv' agar persentase membesar bisa disesuaikan.
      */
-    private fun applyModernButtonEffects(button: View, isTv: Boolean) {
+    private fun applyModernButtonEffects(button: View, isTv: Boolean, scaleOnTv: Float = 1.03f) {
         button.isFocusable = true
         button.isClickable = true
 
         if (isTv) {
             button.setOnFocusChangeListener { view, hasFocus ->
                 if (hasFocus) {
-                    // Tombol membesar 5% dan naik saat disorot remote TV
+                    // Tombol membesar sesuai faktor 'scaleOnTv' dan naik saat disorot remote TV
                     view.animate()
-                        .scaleX(1.05f)
-                        .scaleY(1.05f)
-                        .translationZ(10f)
+                        .scaleX(scaleOnTv)
+                        .scaleY(scaleOnTv)
+                        .translationZ(10f) // Bayangan timbul agar terlihat melayang
                         .setDuration(150)
                         .start()
                 } else {
@@ -367,7 +382,7 @@ object PremiumDialogManager {
                 }
             }
         } else {
-            // Bayangan dasar untuk layar HP touchscreen
+            // Bayangan dasar untuk layar HP touchscreen agar terasa premium
             button.translationZ = 4f
         }
 
@@ -375,16 +390,16 @@ object PremiumDialogManager {
         button.setOnTouchListener { view, event ->
             when (event.action) {
                 android.view.MotionEvent.ACTION_DOWN -> {
-                    // Mengecil 4% saat ditekan
+                    // Mengecil 4% saat ditekan (Efek Tekan)
                     view.animate().scaleX(0.96f).scaleY(0.96f).setDuration(100).start()
                 }
                 android.view.MotionEvent.ACTION_UP, android.view.MotionEvent.ACTION_CANCEL -> {
-                    // Kembali membesar (1.05x) jika di TV dan masih disorot, atau (1.0x) jika normal
-                    val targetScale = if (isTv && view.hasFocus()) 1.05f else 1f
+                    // Kembali membesar jika di TV dan masih disorot, atau (1.0x) jika normal
+                    val targetScale = if (isTv && view.hasFocus()) scaleOnTv else 1f
                     view.animate().scaleX(targetScale).scaleY(targetScale).setDuration(100).start()
                 }
             }
-            false // PENTING: Kembalikan false agar onClick listener utama tetap bekerja!
+            false // PENTING: Kembalikan false agar fungsi onClickListener utama tetap bekerja!
         }
     }
 }
