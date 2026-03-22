@@ -219,7 +219,7 @@ class SettingsUpdates : BasePreferenceFragmentCompat() {
         getPref(R.string.backup_path_key)?.isVisible = false
     
         // 3. Menampilkan tombol Logcat (Diubah menjadi true)
-        getPref(R.string.show_logcat_key)?.isVisible = true
+        getPref(R.string.show_logcat_key)?.isVisible = false
         // ------------------------------------------------
     }
 }
