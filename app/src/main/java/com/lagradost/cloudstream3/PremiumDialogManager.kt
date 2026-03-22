@@ -37,11 +37,15 @@ object PremiumDialogManager {
         // ==========================================
         // ADIXTREAM MOD: MANTRA PEMBEKU LAYAR TV
         // ==========================================
-        // Menggunakan object : LinearLayout untuk mencekik paksa permintaan geser/scroll dari Android TV.
         val mainLayout = object : LinearLayout(activity) {
+            // Memblokir paksa request scroll dari layout utama
             override fun requestRectangleOnScreen(rect: android.graphics.Rect?, immediate: Boolean): Boolean {
-                // Jika di TV, kembalikan 'false' (TOLAK semua pergerakan layar!). Jika HP, biarkan normal.
                 return if (isTv) false else super.requestRectangleOnScreen(rect, immediate)
+            }
+            
+            // Memblokir paksa request scroll dari anak-anak layout (tombol, input, dll) saat kena fokus D-Pad
+            override fun requestChildRectangleOnScreen(child: View?, rectangle: android.graphics.Rect?, immediate: Boolean): Boolean {
+                return if (isTv) false else super.requestChildRectangleOnScreen(child, rectangle, immediate)
             }
         }.apply {
             orientation = if (isTv) LinearLayout.HORIZONTAL else LinearLayout.VERTICAL
@@ -351,29 +355,31 @@ object PremiumDialogManager {
             mainLayout.addView(btnAdminRow)
         }
 
-        // Membuat Alert Dialog
-        val alert = AlertDialog.Builder(activity, android.R.style.Theme_DeviceDefault_Dialog_NoActionBar).create()
-        alert.window?.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT))
+        // Membuat Dialog murni (tanpa embel-embel ScrollView bawaan AlertDialog)
+        val dialog = Dialog(activity, android.R.style.Theme_DeviceDefault_Dialog_NoActionBar)
+        dialog.window?.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT))
         
         if (isTv) {
-            alert.setView(mainLayout)
+            dialog.setContentView(mainLayout)
         } else {
             val scroll = ScrollView(activity).apply { 
                 clipChildren = false
                 clipToPadding = false
                 addView(mainLayout) 
             }
-            alert.setView(scroll)
+            dialog.setContentView(scroll)
         }
 
-        alert.setOnShowListener {
+        dialog.setOnShowListener {
             val displayMetrics = activity.resources.displayMetrics
             val width = (displayMetrics.widthPixels * 0.90).toInt() 
-            alert.window?.setLayout(width, ViewGroup.LayoutParams.WRAP_CONTENT)
+            // Untuk TV, paksa juga height-nya agar tidak melebihi layar yang memicu scroll OS
+            val height = if (isTv) (displayMetrics.heightPixels * 0.90).toInt() else ViewGroup.LayoutParams.WRAP_CONTENT
+            dialog.window?.setLayout(width, height)
         }
 
-        btnUnlock.tag = alert
-        alert.show()
+        btnUnlock.tag = dialog
+        dialog.show()
     }
 
     /**
