@@ -23,7 +23,10 @@ fun buildDefaultClient(context: Context): OkHttpClient {
     safe { Security.insertProviderAt(Conscrypt.newProvider(), 1) }
     
     val settingsManager = PreferenceManager.getDefaultSharedPreferences(context)
-    val dns = settingsManager.getInt(context.getString(R.string.dns_pref), 0)
+    
+    // PERBAIKAN: Ubah nilai default 0 menjadi 1 (Google DNS)
+    val dns = settingsManager.getInt(context.getString(R.string.dns_pref), 1)
+    
     val baseClient = OkHttpClient.Builder()
         .followRedirects(true)
         .followSslRedirects(true)
