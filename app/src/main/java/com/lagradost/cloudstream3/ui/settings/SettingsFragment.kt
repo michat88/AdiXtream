@@ -235,9 +235,10 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
                 builder.setTitle("Tentang AdiXtream")
                 builder.setMessage("AdiXtream dikembangkan oleh michat88.\n\nAplikasi ini berbasis pada proyek open-source CloudStream.\n\nTerima kasih kepada Developer CloudStream (Lagradost & Tim) atas kode sumber yang luar biasa ini.")
 
-                builder.setNeutralButton("Kode Sumber") { _, _ ->
+                // PERBAIKAN NAMA TOMBOL: Menjadi "Kunjungi Website"
+                builder.setNeutralButton("Kunjungi Website") { _, _ ->
                     try {
-                        val browserIntent = Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/michat88/AdiXtream"))
+                        val browserIntent = Intent(Intent.ACTION_VIEW, Uri.parse("https://michat88.github.io/adixtream-web/"))
                         startActivity(browserIntent)
                     } catch (e: Exception) {
                         e.printStackTrace()
@@ -251,20 +252,23 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
                 val dialog: AlertDialog = builder.create()
                 dialog.show()
 
-                val sourceCodeButton: Button? = dialog.getButton(AlertDialog.BUTTON_NEUTRAL)
-                sourceCodeButton?.let { button ->
-                    val fullText = "Kode Sumber"
+                // Penyesuaian Efek Warna Merah Putih
+                val webButton: Button? = dialog.getButton(AlertDialog.BUTTON_NEUTRAL)
+                webButton?.let { button ->
+                    val fullText = "Kunjungi Website"
                     val spannable = SpannableString(fullText)
 
+                    // Mewarnai "Kunjungi" (Indeks 0-8) menjadi Merah
                     spannable.setSpan(
                         ForegroundColorSpan(Color.parseColor("#FF0000")),
-                        0, 4,
+                        0, 8,
                         Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
                     )
 
+                    // Mewarnai sisanya (" Website") (Indeks 8-akhir) menjadi Putih
                     spannable.setSpan(
                         ForegroundColorSpan(Color.WHITE),
-                        5, fullText.length,
+                        8, fullText.length,
                         Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
                     )
 
