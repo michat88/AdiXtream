@@ -34,6 +34,7 @@ object PremiumDialogManager {
         )
         gradient.cornerRadius = 16f.toPx
 
+        // ADIXTREAM MOD: Mantra Anti-Potong Pinggiran
         val mainLayout = LinearLayout(activity).apply {
             orientation = if (isTv) LinearLayout.HORIZONTAL else LinearLayout.VERTICAL
             setPadding(30, if(isTv) 30 else 60, 30, if(isTv) 30 else 60) 
@@ -59,15 +60,9 @@ object PremiumDialogManager {
             if (isTv) layoutParams = LinearLayout.LayoutParams(0, -2, 1f).apply { setMargins(20,0,0,0) }
         }
 
-        val scroll = ScrollView(activity).apply { 
-            clipChildren = false
-            clipToPadding = false
-            addView(mainLayout) 
-        }
-
-        // Netflix sering menggunakan desain minimalis, ikon disesuaikan atau tetap
+        // Ikon dan Teks
         val icon = TextView(activity).apply {
-            text = "🍿" // Ganti ikon mahkota ke popcorn agar lebih sinematik (opsional, bisa dikembalikan ke 👑)
+            text = "🍿" // Popcorn
             textSize = if (isTv) 40f else 50f
             gravity = Gravity.CENTER
             setPadding(0, 0, 0, 10)
@@ -85,12 +80,12 @@ object PremiumDialogManager {
         val subTitle = TextView(activity).apply {
             text = "Fitur ini terkunci.\nSilakan hubungi admin untuk\nberlangganan."
             textSize = 14f
-            setTextColor(android.graphics.Color.parseColor("#B3B3B3")) // Abu-abu Netflix
+            setTextColor(android.graphics.Color.parseColor("#B3B3B3")) // Abu Netflix
             gravity = Gravity.CENTER
             setPadding(0, 0, 0, if(isTv) 15 else 30)
         }
 
-        // Kotak Harga bergaya Netflix
+        // Kotak Harga Netflix
         val priceBoxBg = android.graphics.drawable.GradientDrawable().apply {
             setColor(android.graphics.Color.parseColor("#222222")) // Dark grey solid
             cornerRadius = 8f.toPx
@@ -131,6 +126,7 @@ object PremiumDialogManager {
             addPrice("1 Tahun", "Rp 50.000")
         }
 
+        // SCAN UNTUK BAYAR
         val qrisTitle = TextView(activity).apply {
             text = "SCAN UNTUK BAYAR"
             textSize = 12f
@@ -166,10 +162,16 @@ object PremiumDialogManager {
             orientation = LinearLayout.VERTICAL
             setPadding(20, 20, 20, 20)
             background = idBackground
-            layoutParams = LinearLayout.LayoutParams(-1, -2).apply { setMargins(10, 0, 10, if(isTv) 15 else 30) }
+            
+            // ADIXTREAM MOD: Set horizontal margin 30.toPx agar simetris dengan tombol Unlock
+            layoutParams = LinearLayout.LayoutParams(-1, -2).apply { 
+                setMargins(30.toPx, 0, 30.toPx, if(isTv) 15 else 30) 
+            }
+            
             isFocusable = true 
             isClickable = true
             
+            // Animasi untuk TV/HP
             applyModernButtonEffects(this, isTv, scaleOnTv = 1.05f)
             
             setOnClickListener {
@@ -218,7 +220,11 @@ object PremiumDialogManager {
             
             background = inputBg
             
-            layoutParams = LinearLayout.LayoutParams(-1, -2).apply { setMargins(30, 0, 30, if(isTv) 15 else 30) }
+            // ADIXTREAM MOD: Set horizontal margin 30.toPx agar simetris dengan tombol Unlock
+            layoutParams = LinearLayout.LayoutParams(-1, -2).apply { 
+                setMargins(30.toPx, 0, 30.toPx, if(isTv) 15 else 30) 
+            }
+            
             isFocusable = true 
             isFocusableInTouchMode = true
         }
@@ -240,15 +246,14 @@ object PremiumDialogManager {
             setTextColor(android.graphics.Color.WHITE)
             typeface = android.graphics.Typeface.DEFAULT_BOLD
             layoutParams = LinearLayout.LayoutParams(-1, 55.toPx).apply { 
-                setMargins(20.toPx, 0, 20.toPx, 20) 
+                // ADIXTREAM MOD: Set horizontal margin 30.toPx (untuk memastikan simetri jika parentnya berbeda di TV)
+                setMargins(30.toPx, 0, 30.toPx, 20) 
             }
             
             applyModernButtonEffects(this, isTv, scaleOnTv = 1.05f)
         }
         
-        // ==========================================
-        // ADIXTREAM MOD: Tombol Telegram 
-        // ==========================================
+        // Tombol HUBUNGI ADMIN
         val telBackground = android.graphics.drawable.GradientDrawable().apply { 
             setColor(android.graphics.Color.TRANSPARENT); 
             cornerRadius = 16f.toPx 
@@ -276,6 +281,7 @@ object PremiumDialogManager {
         btnAdminRow.addView(textAdmin)
         btnAdminRow.addView(iconAdmin)
 
+        // Logika Klik Unlock
         btnUnlock.setOnClickListener {
             val code = inputCode.text.toString().trim().uppercase()
             val isSuccess = PremiumManager.activatePremiumWithCode(activity, code, deviceIdVal)
@@ -302,7 +308,7 @@ object PremiumDialogManager {
             }
         }
 
-        // Menyusun View
+        // Menyusun View ke Panels
         if (isTv) {
             leftPanel.addView(icon)
             leftPanel.addView(title)
@@ -315,7 +321,6 @@ object PremiumDialogManager {
             rightPanel.addView(qrisFooter)
             rightPanel.addView(idContainer)
             rightPanel.addView(inputCode)
-            // Catatan: underline dihapus dan diganti form solid
             rightPanel.addView(btnUnlock)
 
             mainLayout.addView(leftPanel)
@@ -330,18 +335,34 @@ object PremiumDialogManager {
             mainLayout.addView(qrisFooter)
             mainLayout.addView(idContainer)
             mainLayout.addView(inputCode)
-            // Catatan: underline dihapus
             mainLayout.addView(btnUnlock)
             mainLayout.addView(btnAdminRow)
         }
 
-        val alert = AlertDialog.Builder(activity, android.R.style.Theme_DeviceDefault_Dialog_NoActionBar)
-            .setView(scroll)
-            .setCancelable(true)
-            .create()
-        
+        // Membuat Alert Dialog
+        val alert = AlertDialog.Builder(activity, android.R.style.Theme_DeviceDefault_Dialog_NoActionBar).create()
         alert.window?.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT))
         
+        // ==========================================
+        // ADIXTREAM MOD: KUNCI LATAR BELAKANG DI TV
+        // ==========================================
+        
+        if (isTv) {
+            // Khusus TV: Pasang mainLayout polos langsung sebagai tampilan dialog.
+            // Tidak ada ScrollView, tidak ada efek 'scroll' visual sama sekali.
+            alert.setView(mainLayout)
+        } else {
+            // Khusus HP: Pasang mainLayout ke dalam ScrollView.
+            // Mantra Anti-Potong juga dipasang di sini agar HP tetap mulus.
+            val scroll = ScrollView(activity).apply { 
+                clipChildren = false
+                clipToPadding = false
+                addView(mainLayout) 
+            }
+            alert.setView(scroll)
+        }
+
+        // ... tag tag tag tag
         alert.setOnShowListener {
             val displayMetrics = activity.resources.displayMetrics
             val width = (displayMetrics.widthPixels * 0.90).toInt() 
@@ -352,6 +373,10 @@ object PremiumDialogManager {
         alert.show()
     }
 
+    /**
+     * ADIXTREAM MOD: Fungsi Pembantu untuk Animasi Tombol Modern
+     * Menangani efek "Membesar/Timbul" (fokus TV) dan "Tekan" (press TV/HP).
+     */
     private fun applyModernButtonEffects(button: View, isTv: Boolean, scaleOnTv: Float = 1.05f) {
         button.isFocusable = true
         button.isClickable = true
@@ -359,6 +384,7 @@ object PremiumDialogManager {
         if (isTv) {
             button.setOnFocusChangeListener { view, hasFocus ->
                 if (hasFocus) {
+                    // Tombol membesar dan naik saat disorot remote TV
                     view.animate()
                         .scaleX(scaleOnTv)
                         .scaleY(scaleOnTv)
@@ -366,6 +392,7 @@ object PremiumDialogManager {
                         .setDuration(150)
                         .start()
                 } else {
+                    // Kembali datar saat fokus hilang
                     view.animate()
                         .scaleX(1f)
                         .scaleY(1f)
@@ -375,15 +402,19 @@ object PremiumDialogManager {
                 }
             }
         } else {
+            // Bayangan dasar untuk layar HP touchscreen
             button.translationZ = 4f
         }
 
+        // Efek mengecil saat ditekan
         button.setOnTouchListener { view, event ->
             when (event.action) {
                 android.view.MotionEvent.ACTION_DOWN -> {
+                    // Mengecil 4% saat ditekan
                     view.animate().scaleX(0.96f).scaleY(0.96f).setDuration(100).start()
                 }
                 android.view.MotionEvent.ACTION_UP, android.view.MotionEvent.ACTION_CANCEL -> {
+                    // Kembali membesar (1.05x) jika di TV dan masih disorot, atau (1.0x) jika normal
                     val targetScale = if (isTv && view.hasFocus()) scaleOnTv else 1f
                     view.animate().scaleX(targetScale).scaleY(targetScale).setDuration(100).start()
                 }
