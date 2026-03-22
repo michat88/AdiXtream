@@ -141,10 +141,12 @@ object PremiumDialogManager {
         }
 
         // ==========================================
-        // ADIXTREAM MOD: Kotak Device ID Polos
+        // ADIXTREAM MOD: Kotak Device ID Polos Tanpa Bayangan Jelek
         // ==========================================
         val deviceIdVal = PremiumManager.getDeviceId(activity)
-        val idNormalBg = android.graphics.drawable.GradientDrawable().apply {
+        
+        // Warna latar belakang ID container (Satu warna polos untuk semua status)
+        val idBackground = android.graphics.drawable.GradientDrawable().apply {
             setColor(android.graphics.Color.parseColor("#221D36")) 
             setStroke(2, android.graphics.Color.parseColor("#443D61"))
             cornerRadius = 24f.toPx
@@ -153,10 +155,16 @@ object PremiumDialogManager {
         val idContainer = LinearLayout(activity).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(20, 20, 20, 20)
-            background = idNormalBg 
+            
+            background = idBackground // Gunakan background polos
+            
             layoutParams = LinearLayout.LayoutParams(-1, -2).apply { setMargins(10, 0, 10, if(isTv) 15 else 30) }
-            isFocusable = true 
+            isFocusable = true // Tetap true agar remote TV bisa memindah fokus
             isClickable = true
+            
+            // Animasi Timbul (Focus TV) & Tekan (Press TV/HP)
+            applyModernButtonEffects(this, isTv)
+            
             setOnClickListener {
                 val clipboard = activity.getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
                 val clip = android.content.ClipData.newPlainText("Device ID", deviceIdVal)
@@ -185,7 +193,7 @@ object PremiumDialogManager {
         idContainer.addView(idValueRow)
 
         // ==========================================
-        // ADIXTREAM MOD: Input Kode Transparan Polos
+        // ADIXTREAM MOD: Input Kode Transparan Polos Tanpa Bayangan Jelek
         // ==========================================
         val inputCode = EditText(activity).apply {
             hint = "Masukkan KODE di sini"
@@ -195,60 +203,70 @@ object PremiumDialogManager {
             setPadding(20, 20, 20, 10)
             textSize = 16f
             setSingleLine()
+            
+            // Set background transparan polos, tidak pakai state list jelek
             setBackgroundColor(android.graphics.Color.TRANSPARENT)
+            
             layoutParams = LinearLayout.LayoutParams(-1, -2).apply { setMargins(30, 0, 30, 0) }
-            isFocusable = true
+            isFocusable = true // Tetap true agar remote TV bisa fokus dan memunculkan keyboard
             isFocusableInTouchMode = true
         }
+        
         val underline = View(activity).apply {
             layoutParams = LinearLayout.LayoutParams(-1, 2.toPx).apply { setMargins(40, 0, 40, if(isTv) 15 else 30) }
             setBackgroundColor(android.graphics.Color.parseColor("#6A629B"))
         }
 
-        // Warna untuk tombol Unlock
-        val btnNormalBg = android.graphics.drawable.GradientDrawable().apply {
-            setColor(android.graphics.Color.parseColor("#FFCA28"))
+        // ==========================================
+        // ADIXTREAM MOD: Tampilan Tombol Modern Tanpa Garis Putih Jelek
+        // Hapus drawable state list (fokus/tekan) agar polos dan hanya pakai animasi.
+        // ==========================================
+        
+        // Warna Latar Belakang Tombol (Satu warna polos untuk semua status)
+        val btnBackground = android.graphics.drawable.GradientDrawable().apply {
+            setColor(android.graphics.Color.parseColor("#FFCA28")) // Warna Kuning AdiXtream
             cornerRadius = 100f.toPx 
-        }
-        val btnFocusedBg = android.graphics.drawable.GradientDrawable().apply {
-            setColor(android.graphics.Color.parseColor("#FFE066")) 
-            setStroke(6, android.graphics.Color.WHITE) 
-            cornerRadius = 100f.toPx 
-        }
-        val btnStates = android.graphics.drawable.StateListDrawable().apply {
-            addState(intArrayOf(android.R.attr.state_focused), btnFocusedBg)
-            addState(intArrayOf(android.R.attr.state_pressed), btnFocusedBg)
-            addState(intArrayOf(), btnNormalBg)
         }
 
         val btnUnlock = Button(activity).apply {
             text = "UNLOCK NOW"
             textSize = 15f
-            background = btnStates 
+            
+            background = btnBackground // Gunakan background polos
+            
             setTextColor(android.graphics.Color.parseColor("#120E1E"))
             typeface = android.graphics.Typeface.DEFAULT_BOLD
             layoutParams = LinearLayout.LayoutParams(-1, 50.toPx).apply { setMargins(10, 0, 10, 20) }
             isFocusable = true
+            
+            // Animasi Timbul (Focus TV) & Tekan (Press TV/HP) - USER SUKA INI
+            applyModernButtonEffects(this, isTv)
         }
         
-        // ADIXTREAM MOD: Pasang efek modern ke tombol UNLOCK
-        applyModernButtonEffects(btnUnlock, isTv)
+        // ==========================================
+        // ADIXTREAM MOD: Tampilan Tombol Telegram Modern Tanpa Bayangan Jelek
+        // Hapus drawable state list (fokus/tekan) agar polos dan hanya pakai animasi.
+        // ==========================================
         
-        // Warna untuk tombol Telegram
-        val telNormalBg = android.graphics.drawable.GradientDrawable().apply { setColor(android.graphics.Color.TRANSPARENT); cornerRadius = 16f.toPx }
-        val telFocusedBg = android.graphics.drawable.GradientDrawable().apply { setColor(android.graphics.Color.parseColor("#33FFFFFF")); cornerRadius = 16f.toPx }
-        val telStates = android.graphics.drawable.StateListDrawable().apply {
-            addState(intArrayOf(android.R.attr.state_focused), telFocusedBg)
-            addState(intArrayOf(), telNormalBg)
+        // Warna Latar Belakang Tombol Telegram (Selalu transparan polos)
+        val telBackground = android.graphics.drawable.GradientDrawable().apply { 
+            setColor(android.graphics.Color.TRANSPARENT); 
+            cornerRadius = 16f.toPx 
         }
 
         val btnAdminRow = LinearLayout(activity).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER
             setPadding(20, 10, 20, 10)
-            background = telStates 
+            
+            background = telBackground // Gunakan background polos
+            
             isFocusable = true
             isClickable = true
+            
+            // Animasi Timbul (Focus TV) & Tekan (Press TV/HP) - USER SUKA INI
+            applyModernButtonEffects(this, isTv)
+            
             setOnClickListener {
                 try {
                     val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://t.me/michat88"))
@@ -256,9 +274,6 @@ object PremiumDialogManager {
                 } catch (e: Exception) { Toast.makeText(activity, "Telegram tidak ditemukan", Toast.LENGTH_SHORT).show() }
             }
         }
-        
-        // ADIXTREAM MOD: Pasang efek modern ke tombol TELEGRAM
-        applyModernButtonEffects(btnAdminRow, isTv)
         
         val textAdmin = TextView(activity).apply { text = "TELEGRAM ADMIN "; setTextColor(android.graphics.Color.parseColor("#00E5FF")); textSize = 13f; typeface = android.graphics.Typeface.DEFAULT_BOLD }
         val iconAdmin = ImageView(activity).apply { layoutParams = LinearLayout.LayoutParams(18.toPx, 18.toPx).apply { setMargins(10, 0, 0, 0) }; scaleType = ImageView.ScaleType.FIT_CENTER; loadImage("https://raw.githubusercontent.com/michat88/AdiXtream/master/asset/telegram.png") }
@@ -342,33 +357,37 @@ object PremiumDialogManager {
 
     /**
      * ADIXTREAM MOD: Fungsi Pembantu untuk Animasi Tombol Modern
+     * Menangani efek "Timbul" (fokus TV) dan "Tekan" (press TV/HP).
      */
     private fun applyModernButtonEffects(button: View, isTv: Boolean) {
         if (isTv) {
             button.setOnFocusChangeListener { view, hasFocus ->
                 if (hasFocus) {
-                    // Tombol sedikit naik saat disorot remote TV
-                    view.animate().translationZ(8f).setDuration(150).start()
+                    // Tombol naik 8px saat disorot remote TV (Efek Timbul)
+                    view.animate().translationZ(8f.toPx).setDuration(150).start()
                 } else {
+                    // Tombol kembali datar saat fokus hilang
                     view.animate().translationZ(0f).setDuration(150).start()
                 }
             }
         } else {
-            // Sedikit bayangan default untuk layar sentuh HP
-            button.translationZ = 2f
+            // Bayangan dasar untuk layar HP touchscreen agar terlihat premium
+            button.translationZ = 2f.toPx
         }
 
-        // Efek mengecil saat ditekan (baik dari remote OK maupun sentuhan jari di HP)
+        // Efek mengecil saat ditekan (baik dari remote "OK" maupun sentuhan jari di HP)
         button.setOnTouchListener { view, event ->
             when (event.action) {
                 android.view.MotionEvent.ACTION_DOWN -> {
+                    // Mengecil 4% saat ditekan (Efek Tekan)
                     view.animate().scaleX(0.96f).scaleY(0.96f).setDuration(100).start()
                 }
                 android.view.MotionEvent.ACTION_UP, android.view.MotionEvent.ACTION_CANCEL -> {
+                    // Kembali ke ukuran normal saat dilepas
                     view.animate().scaleX(1f).scaleY(1f).setDuration(100).start()
                 }
             }
-            false // Kembalikan false agar fungsi onClickListener utama tetap bekerja!
+            false // PENTING: Kembalikan false agar fungsi onClickListener utama tetap bekerja!
         }
     }
 }
