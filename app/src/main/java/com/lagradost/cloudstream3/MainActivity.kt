@@ -1110,7 +1110,11 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
             if (appVer != lastAppAutoBackup) {
                 setKey("VERSION_NAME", BuildConfig.VERSION_NAME)
                 if (lastAppAutoBackup.isNotEmpty()) {
-                    safe { backup(this) }
+                    // ==========================================
+                    // ADIXTREAM MOD: Mematikan auto-backup diam-diam saat update aplikasi.
+                    // Baris di bawah ini dijadikan komentar agar mudah dikembalikan.
+                    // safe { backup(this) }
+                    // ==========================================
                     safe { PluginManager.deleteAllOatFiles(this) }
                 }
             }
