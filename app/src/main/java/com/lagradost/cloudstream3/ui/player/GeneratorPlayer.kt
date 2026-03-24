@@ -1,5 +1,6 @@
 package com.lagradost.cloudstream3.ui.player
 
+import com.lagradost.cloudstream3.ui.setRecycledViewPool
 import android.animation.ValueAnimator
 import android.annotation.SuppressLint
 import android.app.Dialog
