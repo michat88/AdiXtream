@@ -37,6 +37,12 @@ android {
         unitTests.isReturnDefaultValues = true
     }
 
+    // [TAMBAHAN OPTIMASI 1]: Menghapus metadata library bawaan Google agar ukuran APK/AAB lebih bersih
+    dependenciesInfo {
+        includeInApk = false
+        includeInBundle = false
+    }
+
     viewBinding {
         enable = true
     }
@@ -131,6 +137,13 @@ android {
     buildFeatures {
         buildConfig = true
         resValues = true
+    }
+
+    // [TAMBAHAN OPTIMASI 2]: Mengaktifkan kompresi lama untuk file JNI (.so) agar ukuran APK jauh lebih kecil
+    packaging {
+        jniLibs {
+            useLegacyPackaging = true
+        }
     }
 
     namespace = "com.lagradost.cloudstream3"
