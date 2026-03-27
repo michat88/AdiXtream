@@ -141,7 +141,6 @@ object InAppUpdater {
     }
 
     suspend fun Activity.runAutoUpdate(checkAutoUpdate: Boolean = true, installPrerelease: Boolean = false): Boolean {
-        // --- PERBAIKAN BUG: Cegah popup ganda jika sedang mendownload di latar belakang ---
         if (PackageInstallerService.isDownloading) {
             Log.d(LOG_TAG, "Update dibatalkan karena unduhan sedang berjalan di latar belakang.")
             return false
@@ -172,9 +171,9 @@ object InAppUpdater {
                             settingsManager.edit { putInt(getString(R.string.apk_installer_key), 1) }
                         }
 
-                        // --- PERBAIKAN: Default ke Versi Lama (1) dan Lempar semua tugas ke Service ---
                         val currentInstaller = settingsManager.getInt(getString(R.string.apk_installer_key), 1)
-                        val intent = PackageInstallerService.getIntent(this@runAutoUpdate, update.updateURL!!, currentInstaller)
+                        // --- PERBAIKAN WARNING 3: Menghapus tanda !! di update.updateURL ---
+                        val intent = PackageInstallerService.getIntent(this@runAutoUpdate, update.updateURL, currentInstaller)
                         ContextCompat.startForegroundService(this@runAutoUpdate, intent)
                     }
 
