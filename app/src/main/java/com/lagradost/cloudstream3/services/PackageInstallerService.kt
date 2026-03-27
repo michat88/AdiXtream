@@ -80,7 +80,7 @@ class PackageInstallerService : Service() {
                 updateNotificationProgress(0f, ApkInstaller.InstallProgressStatus.Downloading)
 
                 val response = app.get(url)
-                val body = response.body ?: return false
+                val body = response.body 
                 val totalSize = body.contentLength()
                 val inputStream = body.byteStream()
 
@@ -188,13 +188,14 @@ class PackageInstallerService : Service() {
                     )
                 }
                 
-                // --- PERBAIKAN: Mengganti teks saat unduhan selesai ---
                 if (clickIntent != null) {
                     setContentTitle("Unduhan Selesai") 
                     setContentText("Aplikasi berhasil didownload dan siap dipasang.") 
                     setContentIntent(clickIntent)
                     setAutoCancel(true) 
                     setOngoing(false)   
+                    // --- PERBAIKAN: Menghapus bar progres ---
+                    setProgress(0, 0, false)
                 }
             }
 
@@ -217,6 +218,7 @@ class PackageInstallerService : Service() {
             if (SDK_INT >= 24) {
                 stopForeground(STOP_FOREGROUND_DETACH)
             } else {
+                @Suppress("DEPRECATION")
                 stopForeground(false)
             }
             
