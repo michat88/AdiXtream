@@ -1,13 +1,17 @@
 package com.lagradost.cloudstream3.utils
 
 import android.app.Activity
+import android.app.NotificationChannel
+import android.app.NotificationManager
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager.NameNotFoundException
 import android.net.Uri
+import android.os.Build
 import android.util.Log
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
+import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import androidx.core.content.edit
@@ -26,17 +30,14 @@ import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import com.lagradost.cloudstream3.utils.Coroutines.ioSafe
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import okio.BufferedSink
-import okio.buffer
-import okio.sink
 import java.io.BufferedReader
 import java.io.File
+import java.io.FileOutputStream
 import java.io.IOException
 import java.io.InputStreamReader
 
 object InAppUpdater {
     // --- PENYESUAIAN ADIXTREAM ---
-    // Mengarahkan update ke repo michat88/AdiXtream
     private const val GITHUB_USER_NAME = "michat88"
     private const val GITHUB_REPO = "AdiXtream"
     // -----------------------------
@@ -183,26 +184,78 @@ object InAppUpdater {
 
     private val updateLock = Mutex()
 
+    // --- PERBAIKAN: Fungsi Unduhan dengan Progress Notifikasi ---
     private suspend fun Activity.downloadUpdate(url: String): Boolean {
         try {
             Log.d(LOG_TAG, "Downloading update: $url")
             
-            // --- PERBAIKAN ADIXTREAM: Mengubah nama file cache ---
             val appUpdateName = "AdiXtream" 
             val appUpdateSuffix = "apk"
 
-            // Delete all old updates
+            // Hapus file update lama
             this.cacheDir.listFiles()?.filter {
                 it.name.startsWith(appUpdateName) && it.extension == appUpdateSuffix
             }?.forEach { deleteFileOnExit(it) }
 
-            // --- PERBAIKAN ADIXTREAM: Memastikan file disimpan di cacheDir ---
             val downloadedFile = File.createTempFile(appUpdateName, ".$appUpdateSuffix", this.cacheDir)
-            val sink: BufferedSink = downloadedFile.sink().buffer()
+
+            // Persiapan Notifikasi
+            val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            val channelId = "updater_channel_legacy"
+            
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                val channel = NotificationChannel(channelId, "Pembaruan Aplikasi", NotificationManager.IMPORTANCE_LOW)
+                notificationManager.createNotificationChannel(channel)
+            }
+
+            val notificationId = 101 // ID unik
+            val builder = NotificationCompat.Builder(this, channelId)
+                .setSmallIcon(android.R.drawable.stat_sys_download)
+                .setContentTitle("AdiXtream Update")
+                .setContentText("Mengunduh pembaruan...")
+                .setPriority(NotificationCompat.PRIORITY_LOW)
+                .setOngoing(true) // Menahan notifikasi agar tidak bisa di-swipe saat proses
+                .setOnlyAlertOnce(true)
+
+            notificationManager.notify(notificationId, builder.build())
 
             updateLock.withLock {
-                sink.writeAll(app.get(url).body.source())
-                sink.close()
+                val response = app.get(url)
+                val body = response.body ?: return false
+                val totalBytes = body.contentLength()
+                val inputStream = body.byteStream()
+                val outputStream = FileOutputStream(downloadedFile)
+                
+                val data = ByteArray(8192)
+                var count: Int
+                var bytesCopied = 0L
+                var lastUpdateTime = System.currentTimeMillis()
+
+                // Baca sedikit demi sedikit dan perbarui progres notifikasi
+                while (inputStream.read(data).also { count = it } != -1) {
+                    outputStream.write(data, 0, count)
+                    bytesCopied += count
+
+                    val now = System.currentTimeMillis()
+                    if (now - lastUpdateTime > 500) { // Update tiap 500ms agar HP tidak berat
+                        val progress = if (totalBytes > 0) ((bytesCopied * 100) / totalBytes).toInt() else 0
+                        builder.setProgress(100, progress, totalBytes <= 0L)
+                        notificationManager.notify(notificationId, builder.build())
+                        lastUpdateTime = now
+                    }
+                }
+                
+                outputStream.flush()
+                outputStream.close()
+                inputStream.close()
+
+                // Unduhan Selesai
+                builder.setContentText("Unduhan selesai")
+                    .setProgress(0, 0, false)
+                    .setOngoing(false) // Notifikasi kini bisa di-swipe hapus
+                    .setSmallIcon(android.R.drawable.stat_sys_download_done)
+                notificationManager.notify(notificationId, builder.build())
+
                 openApk(this, Uri.fromFile(downloadedFile))
             }
 
@@ -221,9 +274,8 @@ object InAppUpdater {
         val installIntent = Intent(Intent.ACTION_VIEW).apply {
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK) // PERBAIKAN: Mencegah error gagal buka di latar belakang
             putExtra(Intent.EXTRA_NOT_UNKNOWN_SOURCE, true)
-            
-            // --- PERBAIKAN ADIXTREAM: Menambahkan setDataAndType dengan MIME type APK ---
             setDataAndType(contentUri, "application/vnd.android.package-archive")
         }
         context.startActivity(installIntent)
@@ -313,6 +365,7 @@ object InAppUpdater {
                             }
                         }
 
+                        // --- PERBAIKAN ADIXTREAM: DEFAULT KE VERSI LAMA (1) ---
                         val currentInstaller = settingsManager.getInt(
                             getString(R.string.apk_installer_key), 1
                         )
