@@ -12,6 +12,7 @@ import android.util.Log
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.core.app.NotificationCompat
+import androidx.core.app.PendingIntentCompat
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import androidx.core.content.edit
@@ -19,6 +20,7 @@ import androidx.preference.PreferenceManager
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.BuildConfig
 import com.lagradost.cloudstream3.CommonActivity.showToast
+import com.lagradost.cloudstream3.MainActivity
 import com.lagradost.cloudstream3.MainActivity.Companion.deleteFileOnExit
 import com.lagradost.cloudstream3.R
 import com.lagradost.cloudstream3.app
@@ -28,6 +30,7 @@ import com.lagradost.cloudstream3.services.PackageInstallerService
 import com.lagradost.cloudstream3.utils.AppContextUtils.setDefaultFocus
 import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import com.lagradost.cloudstream3.utils.Coroutines.ioSafe
+import com.lagradost.cloudstream3.utils.UIHelper.colorFromAttribute
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import java.io.BufferedReader
@@ -184,7 +187,7 @@ object InAppUpdater {
 
     private val updateLock = Mutex()
 
-    // --- PERBAIKAN: Fungsi Unduhan dengan Progress Notifikasi ---
+    // --- PERBAIKAN: Fungsi Unduhan dengan Progress Notifikasi Pangkat Tinggi ---
     private suspend fun Activity.downloadUpdate(url: String): Boolean {
         try {
             Log.d(LOG_TAG, "Downloading update: $url")
@@ -199,23 +202,35 @@ object InAppUpdater {
 
             val downloadedFile = File.createTempFile(appUpdateName, ".$appUpdateSuffix", this.cacheDir)
 
-            // Persiapan Notifikasi
+            // --- PERSIAPAN NOTIFIKASI VERSI LAMA ---
             val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-            val channelId = "updater_channel_legacy"
+            
+            // 1. UBAH ID CHANNEL: Tambahkan "_v2" agar sistem mereset jalurnya
+            val channelId = "updater_channel_legacy_v2" 
             
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                val channel = NotificationChannel(channelId, "Pembaruan Aplikasi", NotificationManager.IMPORTANCE_LOW)
+                // 2. NAIKKAN LEVEL: Ubah IMPORTANCE_LOW menjadi IMPORTANCE_DEFAULT
+                val channel = NotificationChannel(channelId, "Pembaruan Aplikasi", NotificationManager.IMPORTANCE_DEFAULT)
                 notificationManager.createNotificationChannel(channel)
             }
 
-            val notificationId = 101 // ID unik
+            val intent = Intent(this, MainActivity::class.java)
+            val pendingIntent = PendingIntentCompat.getActivity(this, 0, intent, 0, false)
+
+            val notificationId = 101
             val builder = NotificationCompat.Builder(this, channelId)
-                .setSmallIcon(android.R.drawable.stat_sys_download)
+                .setAutoCancel(false)
+                .setColorized(true)
+                .setOnlyAlertOnce(true)
+                // 3. NAIKKAN PRIORITAS: Ubah PRIORITY_LOW menjadi PRIORITY_DEFAULT
+                .setPriority(NotificationCompat.PRIORITY_DEFAULT) 
+                .setColor(this.colorFromAttribute(R.attr.colorPrimary))
                 .setContentTitle("AdiXtream Update")
                 .setContentText("Mengunduh pembaruan...")
-                .setPriority(NotificationCompat.PRIORITY_LOW)
-                .setOngoing(true) // Menahan notifikasi agar tidak bisa di-swipe saat proses
-                .setOnlyAlertOnce(true)
+                .setContentIntent(pendingIntent)
+                // 4. TETAP PAKAI IKON BAWAAN ANDROID (AGAR BEDA DENGAN VERSI BARU)
+                .setSmallIcon(android.R.drawable.stat_sys_download) 
+                .setOngoing(true)
 
             notificationManager.notify(notificationId, builder.build())
 
@@ -237,7 +252,7 @@ object InAppUpdater {
                     bytesCopied += count
 
                     val now = System.currentTimeMillis()
-                    if (now - lastUpdateTime > 500) { // Update tiap 500ms agar HP tidak berat
+                    if (now - lastUpdateTime > 500) { 
                         val progress = if (totalBytes > 0) ((bytesCopied * 100) / totalBytes).toInt() else 0
                         builder.setProgress(100, progress, totalBytes <= 0L)
                         notificationManager.notify(notificationId, builder.build())
@@ -249,10 +264,11 @@ object InAppUpdater {
                 outputStream.close()
                 inputStream.close()
 
-                // Unduhan Selesai
-                builder.setContentText("Unduhan selesai")
+                // --- UNDUHAN SELESAI ---
+                builder.setContentText("Unduhan selesai, memulai instalasi...")
                     .setProgress(0, 0, false)
-                    .setOngoing(false) // Notifikasi kini bisa di-swipe hapus
+                    .setOngoing(false) // Kini bisa di-swipe
+                    .setAutoCancel(true) // Hilang otomatis saat diklik
                     .setSmallIcon(android.R.drawable.stat_sys_download_done)
                 notificationManager.notify(notificationId, builder.build())
 
@@ -274,7 +290,7 @@ object InAppUpdater {
         val installIntent = Intent(Intent.ACTION_VIEW).apply {
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK) // PERBAIKAN: Mencegah error gagal buka di latar belakang
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK) // Mencegah error gagal buka di latar belakang
             putExtra(Intent.EXTRA_NOT_UNKNOWN_SOURCE, true)
             setDataAndType(contentUri, "application/vnd.android.package-archive")
         }
