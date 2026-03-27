@@ -52,7 +52,7 @@ class PackageInstallerService : Service() {
             UPDATE_CHANNEL_DESCRIPTION
         )
         if (SDK_INT >= 29)
-        startForeground(UPDATE_NOTIFICATION_ID, baseNotification.build(), FOREGROUND_SERVICE_TYPE_DATA_SYNC)
+            startForeground(UPDATE_NOTIFICATION_ID, baseNotification.build(), FOREGROUND_SERVICE_TYPE_DATA_SYNC)
         else startForeground(UPDATE_NOTIFICATION_ID, baseNotification.build())
     }
 
@@ -64,7 +64,8 @@ class PackageInstallerService : Service() {
 
             // Delete all old updates
             ioSafe {
-                val appUpdateName = "CloudStream"
+                // --- PERBAIKAN ADIXTREAM: Ubah nama file cache ---
+                val appUpdateName = "AdiXtream"
                 val appUpdateSuffix = "apk"
 
                 this@PackageInstallerService.cacheDir.listFiles()?.filter {
