@@ -1,6 +1,7 @@
 package com.lagradost.cloudstream3.services
 
 import android.app.NotificationManager
+import android.app.PendingIntent
 import android.app.Service
 import android.content.Context
 import android.content.Intent
@@ -18,7 +19,6 @@ import com.lagradost.cloudstream3.MainActivity.Companion.deleteFileOnExit
 import com.lagradost.cloudstream3.R
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.mvvm.logError
-import com.lagradost.cloudstream3.mvvm.safe
 import com.lagradost.cloudstream3.utils.ApkInstaller
 import com.lagradost.cloudstream3.utils.AppContextUtils.createNotificationChannel
 import com.lagradost.cloudstream3.utils.Coroutines.ioSafe
@@ -56,7 +56,6 @@ class PackageInstallerService : Service() {
             UPDATE_CHANNEL_NAME,
             UPDATE_CHANNEL_DESCRIPTION
         )
-        // Ikon sementara saat service baru bangun
         val notif = baseNotification.setSmallIcon(R.drawable.rdload).build()
         if (SDK_INT >= 29)
             startForeground(UPDATE_NOTIFICATION_ID, notif, FOREGROUND_SERVICE_TYPE_DATA_SYNC)
@@ -99,7 +98,7 @@ class PackageInstallerService : Service() {
                         currentSize += count
 
                         val now = System.currentTimeMillis()
-                        if (now - lastUpdateTime > 500) { // Update notif tiap 500ms
+                        if (now - lastUpdateTime > 500) { 
                             if (totalSize > 0) {
                                 val percentage = currentSize.toFloat() / totalSize.toFloat()
                                 updateNotificationProgress(percentage, ApkInstaller.InstallProgressStatus.Downloading)
@@ -111,8 +110,23 @@ class PackageInstallerService : Service() {
                     outputStream.close()
                     inputStream.close()
 
-                    updateNotificationProgress(1f, ApkInstaller.InstallProgressStatus.Installing)
-                    openApk(this@PackageInstallerService, Uri.fromFile(downloadedFile))
+                    // --- SOLUSI BUG BACKGROUND: Buat Intent Instalasi ---
+                    val installIntent = getInstallIntent(this@PackageInstallerService, downloadedFile)
+                    
+                    // Jadikan intent ini sebagai aksi saat notifikasi diklik
+                    val pendingIntent = PendingIntentCompat.getActivity(
+                        this@PackageInstallerService, 1, installIntent, PendingIntent.FLAG_UPDATE_CURRENT, false
+                    )
+
+                    // Update notifikasi agar bisa diklik pengguna
+                    updateNotificationProgress(1f, ApkInstaller.InstallProgressStatus.Installing, pendingIntent)
+
+                    // Coba panggil langsung (Ini akan berhasil jika aplikasi masih terbuka di layar)
+                    try {
+                        startActivity(installIntent)
+                    } catch (e: Exception) {
+                        logError(e)
+                    }
 
                 } else {
                     // --- MESIN VERSI BARU (0) ---
@@ -136,24 +150,25 @@ class PackageInstallerService : Service() {
         }
     }
 
-    private fun openApk(context: Context, uri: Uri) = safe {
-        val path = uri.path ?: return@safe
+    // Fungsi khusus untuk menyusun perintah buka APK
+    private fun getInstallIntent(context: Context, file: File): Intent {
         val contentUri = FileProvider.getUriForFile(
-            context, BuildConfig.APPLICATION_ID + ".provider", File(path)
+            context, BuildConfig.APPLICATION_ID + ".provider", file
         )
-        val installIntent = Intent(Intent.ACTION_VIEW).apply {
+        return Intent(Intent.ACTION_VIEW).apply {
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK) // Wajib dipanggil dari Service
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK) 
             putExtra(Intent.EXTRA_NOT_UNKNOWN_SOURCE, true)
             setDataAndType(contentUri, "application/vnd.android.package-archive")
         }
-        context.startActivity(installIntent)
     }
 
+    // Fungsi update notifikasi dimodifikasi agar bisa menerima aksi klik khusus (clickIntent)
     private fun updateNotificationProgress(
         percentage: Float,
-        state: ApkInstaller.InstallProgressStatus
+        state: ApkInstaller.InstallProgressStatus,
+        clickIntent: PendingIntent? = null
     ) {
         val text = when (state) {
             ApkInstaller.InstallProgressStatus.Installing -> R.string.update_notification_installing
@@ -161,16 +176,15 @@ class PackageInstallerService : Service() {
             ApkInstaller.InstallProgressStatus.Failed -> R.string.update_notification_failed
         }
 
-        // Membedakan ikon notifikasi berdasarkan mode
         val iconRes = if (state == ApkInstaller.InstallProgressStatus.Failed) {
             R.drawable.rderror
         } else if (currentMode == 1) {
-            android.R.drawable.stat_sys_download // Ikon bawaan Android untuk Versi Lama
+            android.R.drawable.stat_sys_download 
         } else {
-            R.drawable.rdload // Ikon custom untuk Versi Baru
+            R.drawable.rdload 
         }
 
-        val newNotification = baseNotification
+        val notificationBuilder = baseNotification
             .setContentTitle(getString(text))
             .setSmallIcon(iconRes)
             .apply {
@@ -182,22 +196,30 @@ class PackageInstallerService : Service() {
                         state != ApkInstaller.InstallProgressStatus.Downloading
                     )
                 }
+                
+                // Jika ada aksi klik (seperti saat unduhan selesai), tempelkan ke notifikasi
+                if (clickIntent != null) {
+                    setContentIntent(clickIntent)
+                    setAutoCancel(true) // Notifikasi otomatis hilang saat diklik
+                    setOngoing(false)   // Izinkan notifikasi di-swipe jika pengguna batal menginstal
+                }
             }
-            .build()
 
         val notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
         val id = if (state == ApkInstaller.InstallProgressStatus.Failed) UPDATE_NOTIFICATION_ID + 1 else UPDATE_NOTIFICATION_ID
-        notificationManager.notify(id, newNotification)
+        notificationManager.notify(id, notificationBuilder.build())
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         val url = intent?.getStringExtra(EXTRA_URL) ?: return START_NOT_STICKY
-        currentMode = intent.getIntExtra(EXTRA_MODE, 0) // Tangkap mode yang dikirim
+        currentMode = intent.getIntExtra(EXTRA_MODE, 0) 
         
         ioSafe {
             downloadUpdate(url, currentMode)
+            
+            // Tunggu 10 detik agar pengguna punya waktu mengklik notifikasi
             delay(10_000)
-            this@PackageInstallerService.stopSelf() // Notifikasi otomatis mati di sini
+            this@PackageInstallerService.stopSelf() 
         }
         return START_NOT_STICKY
     }
@@ -227,7 +249,7 @@ class PackageInstallerService : Service() {
         fun getIntent(context: Context, url: String, mode: Int): Intent {
             return Intent(context, PackageInstallerService::class.java)
                 .putExtra(EXTRA_URL, url)
-                .putExtra(EXTRA_MODE, mode) // Kirim mode ke Service
+                .putExtra(EXTRA_MODE, mode) 
         }
     }
 }
