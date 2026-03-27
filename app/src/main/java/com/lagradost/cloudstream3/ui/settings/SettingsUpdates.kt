@@ -17,6 +17,7 @@ import com.lagradost.cloudstream3.R
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.databinding.LogcatBinding
 import com.lagradost.cloudstream3.mvvm.logError
+import com.lagradost.cloudstream3.mvvm.safe
 import com.lagradost.cloudstream3.network.initClient
 import com.lagradost.cloudstream3.plugins.PluginManager
 import com.lagradost.cloudstream3.services.BackupWorkManager
@@ -56,12 +57,18 @@ class SettingsUpdates : BasePreferenceFragmentCompat() {
         val settingsManager = PreferenceManager.getDefaultSharedPreferences(requireContext())
 
         // ==========================================
-        // SUNTIKAN ADIXTREAM: MATIKAN AUTO BACKUP
+        // SUNTIKAN ADIXTREAM: MATIKAN AUTO BACKUP & SET INSTALLER LAMA
         // ==========================================
-        // Memaksa nilai preferensi menjadi 0 (Mati)
         settingsManager.edit {
+            // Memaksa nilai preferensi menjadi 0 (Mati)
             putInt(getString(R.string.automatic_backup_key), 0)
+            
+            // Memaksa default installer ke Versi Lama (1) jika memori masih kosong
+            if (!settingsManager.contains(getString(R.string.apk_installer_key))) {
+                putInt(getString(R.string.apk_installer_key), 1)
+            }
         }
+        
         // Memberitahu sistem WorkManager untuk menghentikan proses latar belakang
         (context ?: CloudStreamApp.context)?.let { ctx ->
             BackupWorkManager.enqueuePeriodicWork(ctx, 0L)
