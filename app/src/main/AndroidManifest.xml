@@ -74,7 +74,7 @@
             android:resizeableActivity="true"
             android:screenOrientation="userLandscape"
             android:supportsPictureInPicture="true"
-            android:taskAffinity="com.lagradost.cloudstream3.downloadedplayer"
+            android:taskAffinity="com.adixtream.app.downloadedplayer" 
             android:launchMode="singleTask"
             tools:ignore="DiscouragedApi">
             <intent-filter>
@@ -189,6 +189,12 @@
 
         <service
             android:name=".services.VideoDownloadService"
+            android:enabled="true"
+            android:foregroundServiceType="dataSync"
+            android:exported="false" />
+
+        <service
+            android:name=".services.DownloadQueueService"
             android:enabled="true"
             android:foregroundServiceType="dataSync"
             android:exported="false" />
