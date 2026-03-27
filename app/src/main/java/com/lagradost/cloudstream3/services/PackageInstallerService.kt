@@ -188,8 +188,10 @@ class PackageInstallerService : Service() {
                     )
                 }
                 
+                // --- PERBAIKAN: Mengganti teks saat unduhan selesai ---
                 if (clickIntent != null) {
-                    setContentText("Ketuk untuk memasang") // Tambahan panduan untuk pengguna
+                    setContentTitle("Unduhan Selesai") 
+                    setContentText("Aplikasi berhasil didownload dan siap dipasang.") 
                     setContentIntent(clickIntent)
                     setAutoCancel(true) 
                     setOngoing(false)   
@@ -205,15 +207,13 @@ class PackageInstallerService : Service() {
         val url = intent?.getStringExtra(EXTRA_URL) ?: return START_NOT_STICKY
         currentMode = intent.getIntExtra(EXTRA_MODE, 0) 
         
-        // --- PERBAIKAN: Tandai kalau sedang mendownload ---
         isDownloading = true 
         
         ioSafe {
             downloadUpdate(url, currentMode)
             
-            isDownloading = false // Unduhan selesai
+            isDownloading = false 
 
-            // --- PERBAIKAN: Lepas ikatan notifikasi sebelum Service mati ---
             if (SDK_INT >= 24) {
                 stopForeground(STOP_FOREGROUND_DETACH)
             } else {
@@ -243,7 +243,6 @@ class PackageInstallerService : Service() {
         private const val EXTRA_URL = "EXTRA_URL"
         private const val EXTRA_MODE = "EXTRA_MODE"
 
-        // --- TAMBAHAN: Variabel global untuk dibaca oleh InAppUpdater ---
         var isDownloading: Boolean = false 
 
         const val UPDATE_CHANNEL_ID = "cloudstream3.updates"
