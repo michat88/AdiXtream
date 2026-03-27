@@ -17,7 +17,6 @@ import com.lagradost.cloudstream3.R
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.databinding.LogcatBinding
 import com.lagradost.cloudstream3.mvvm.logError
-import com.lagradost.cloudstream3.mvvm.safe
 import com.lagradost.cloudstream3.network.initClient
 import com.lagradost.cloudstream3.plugins.PluginManager
 import com.lagradost.cloudstream3.services.BackupWorkManager
@@ -57,18 +56,12 @@ class SettingsUpdates : BasePreferenceFragmentCompat() {
         val settingsManager = PreferenceManager.getDefaultSharedPreferences(requireContext())
 
         // ==========================================
-        // SUNTIKAN ADIXTREAM: MATIKAN AUTO BACKUP & SET INSTALLER LAMA
+        // SUNTIKAN ADIXTREAM: MATIKAN AUTO BACKUP
         // ==========================================
+        // Memaksa nilai preferensi menjadi 0 (Mati)
         settingsManager.edit {
-            // Memaksa nilai preferensi menjadi 0 (Mati)
             putInt(getString(R.string.automatic_backup_key), 0)
-            
-            // Memaksa default installer ke Versi Lama (1) jika memori masih kosong
-            if (!settingsManager.contains(getString(R.string.apk_installer_key))) {
-                putInt(getString(R.string.apk_installer_key), 1)
-            }
         }
-        
         // Memberitahu sistem WorkManager untuk menghentikan proses latar belakang
         (context ?: CloudStreamApp.context)?.let { ctx ->
             BackupWorkManager.enqueuePeriodicWork(ctx, 0L)
@@ -226,7 +219,7 @@ class SettingsUpdates : BasePreferenceFragmentCompat() {
         getPref(R.string.backup_path_key)?.isVisible = false
     
         // 3. Menampilkan tombol Logcat (Diubah menjadi true)
-        getPref(R.string.show_logcat_key)?.isVisible = false
+        getPref(R.string.show_logcat_key)?.isVisible = true
         // ------------------------------------------------
     }
 }
