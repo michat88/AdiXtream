@@ -5,16 +5,20 @@ import android.app.Service
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
+import android.net.Uri
 import android.os.Build.VERSION.SDK_INT
 import android.os.IBinder
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.app.PendingIntentCompat
+import androidx.core.content.FileProvider
+import com.lagradost.cloudstream3.BuildConfig
 import com.lagradost.cloudstream3.MainActivity
 import com.lagradost.cloudstream3.MainActivity.Companion.deleteFileOnExit
 import com.lagradost.cloudstream3.R
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.mvvm.logError
+import com.lagradost.cloudstream3.mvvm.safe
 import com.lagradost.cloudstream3.utils.ApkInstaller
 import com.lagradost.cloudstream3.utils.AppContextUtils.createNotificationChannel
 import com.lagradost.cloudstream3.utils.Coroutines.ioSafe
@@ -22,10 +26,13 @@ import com.lagradost.cloudstream3.utils.UIHelper.colorFromAttribute
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import java.io.File
+import java.io.FileOutputStream
 import kotlin.math.roundToInt
 
 class PackageInstallerService : Service() {
     private var installer: ApkInstaller? = null
+    private var currentMode: Int = 0 // 0 = Baru, 1 = Lama
 
     private val baseNotification by lazy {
         val intent = Intent(this, MainActivity::class.java)
@@ -37,12 +44,10 @@ class PackageInstallerService : Service() {
             .setColorized(true)
             .setOnlyAlertOnce(true)
             .setSilent(true)
-            // If low priority then the notification might not show :(
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
             .setColor(this.colorFromAttribute(R.attr.colorPrimary))
             .setContentTitle(getString(R.string.update_notification_downloading))
             .setContentIntent(pendingIntent)
-            .setSmallIcon(R.drawable.rdload)
     }
 
     override fun onCreate() {
@@ -51,54 +56,76 @@ class PackageInstallerService : Service() {
             UPDATE_CHANNEL_NAME,
             UPDATE_CHANNEL_DESCRIPTION
         )
+        // Ikon sementara saat service baru bangun
+        val notif = baseNotification.setSmallIcon(R.drawable.rdload).build()
         if (SDK_INT >= 29)
-            startForeground(UPDATE_NOTIFICATION_ID, baseNotification.build(), FOREGROUND_SERVICE_TYPE_DATA_SYNC)
-        else startForeground(UPDATE_NOTIFICATION_ID, baseNotification.build())
+            startForeground(UPDATE_NOTIFICATION_ID, notif, FOREGROUND_SERVICE_TYPE_DATA_SYNC)
+        else startForeground(UPDATE_NOTIFICATION_ID, notif)
     }
 
     private val updateLock = Mutex()
 
-    private suspend fun downloadUpdate(url: String): Boolean {
+    private suspend fun downloadUpdate(url: String, mode: Int): Boolean {
         try {
-            Log.d("PackageInstallerService", "Downloading update: $url")
+            Log.d("PackageInstallerService", "Downloading update: $url (Mode: $mode)")
 
-            // Delete all old updates
             ioSafe {
-                // --- PERBAIKAN ADIXTREAM: Ubah nama file cache ---
                 val appUpdateName = "AdiXtream"
                 val appUpdateSuffix = "apk"
-
                 this@PackageInstallerService.cacheDir.listFiles()?.filter {
                     it.name.startsWith(appUpdateName) && it.extension == appUpdateSuffix
-                }?.forEach {
-                    deleteFileOnExit(it)
-                }
+                }?.forEach { deleteFileOnExit(it) }
             }
 
             updateLock.withLock {
-                updateNotificationProgress(
-                    0f,
-                    ApkInstaller.InstallProgressStatus.Downloading
-                )
+                updateNotificationProgress(0f, ApkInstaller.InstallProgressStatus.Downloading)
 
-                val body = app.get(url).body
-                val inputStream = body.byteStream()
-                installer = ApkInstaller(this)
+                val response = app.get(url)
+                val body = response.body ?: return false
                 val totalSize = body.contentLength()
-                var currentSize = 0
+                val inputStream = body.byteStream()
 
-                installer?.installApk(this, inputStream, totalSize, {
-                    currentSize += it
-                    // Prevent div 0
-                    if (totalSize == 0L) return@installApk
+                if (mode == 1) {
+                    // --- MESIN VERSI LAMA ---
+                    val downloadedFile = File.createTempFile("AdiXtream", ".apk", this@PackageInstallerService.cacheDir)
+                    val outputStream = FileOutputStream(downloadedFile)
+                    val data = ByteArray(8192)
+                    var count: Int
+                    var currentSize = 0L
+                    var lastUpdateTime = System.currentTimeMillis()
 
-                    val percentage = currentSize / totalSize.toFloat()
-                    updateNotificationProgress(
-                        percentage,
-                        ApkInstaller.InstallProgressStatus.Downloading
-                    )
-                }) { status ->
-                    updateNotificationProgress(0f, status)
+                    while (inputStream.read(data).also { count = it } != -1) {
+                        outputStream.write(data, 0, count)
+                        currentSize += count
+
+                        val now = System.currentTimeMillis()
+                        if (now - lastUpdateTime > 500) { // Update notif tiap 500ms
+                            if (totalSize > 0) {
+                                val percentage = currentSize.toFloat() / totalSize.toFloat()
+                                updateNotificationProgress(percentage, ApkInstaller.InstallProgressStatus.Downloading)
+                            }
+                            lastUpdateTime = now
+                        }
+                    }
+                    outputStream.flush()
+                    outputStream.close()
+                    inputStream.close()
+
+                    updateNotificationProgress(1f, ApkInstaller.InstallProgressStatus.Installing)
+                    openApk(this@PackageInstallerService, Uri.fromFile(downloadedFile))
+
+                } else {
+                    // --- MESIN VERSI BARU (0) ---
+                    installer = ApkInstaller(this@PackageInstallerService)
+                    var currentSize = 0
+                    installer?.installApk(this@PackageInstallerService, inputStream, totalSize, {
+                        currentSize += it
+                        if (totalSize == 0L) return@installApk
+                        val percentage = currentSize / totalSize.toFloat()
+                        updateNotificationProgress(percentage, ApkInstaller.InstallProgressStatus.Downloading)
+                    }) { status ->
+                        updateNotificationProgress(0f, status)
+                    }
                 }
             }
             return true
@@ -109,22 +136,45 @@ class PackageInstallerService : Service() {
         }
     }
 
+    private fun openApk(context: Context, uri: Uri) = safe {
+        val path = uri.path ?: return@safe
+        val contentUri = FileProvider.getUriForFile(
+            context, BuildConfig.APPLICATION_ID + ".provider", File(path)
+        )
+        val installIntent = Intent(Intent.ACTION_VIEW).apply {
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK) // Wajib dipanggil dari Service
+            putExtra(Intent.EXTRA_NOT_UNKNOWN_SOURCE, true)
+            setDataAndType(contentUri, "application/vnd.android.package-archive")
+        }
+        context.startActivity(installIntent)
+    }
+
     private fun updateNotificationProgress(
         percentage: Float,
         state: ApkInstaller.InstallProgressStatus
     ) {
-//        Log.d(LOG_TAG, "Downloading app update progress $percentage | $state")
         val text = when (state) {
             ApkInstaller.InstallProgressStatus.Installing -> R.string.update_notification_installing
             ApkInstaller.InstallProgressStatus.Preparing, ApkInstaller.InstallProgressStatus.Downloading -> R.string.update_notification_downloading
             ApkInstaller.InstallProgressStatus.Failed -> R.string.update_notification_failed
         }
 
+        // Membedakan ikon notifikasi berdasarkan mode
+        val iconRes = if (state == ApkInstaller.InstallProgressStatus.Failed) {
+            R.drawable.rderror
+        } else if (currentMode == 1) {
+            android.R.drawable.stat_sys_download // Ikon bawaan Android untuk Versi Lama
+        } else {
+            R.drawable.rdload // Ikon custom untuk Versi Baru
+        }
+
         val newNotification = baseNotification
             .setContentTitle(getString(text))
+            .setSmallIcon(iconRes)
             .apply {
                 if (state == ApkInstaller.InstallProgressStatus.Failed) {
-                    setSmallIcon(R.drawable.rderror)
                     setAutoCancel(true)
                 } else {
                     setProgress(
@@ -135,24 +185,19 @@ class PackageInstallerService : Service() {
             }
             .build()
 
-        val notificationManager =
-            getSystemService(NOTIFICATION_SERVICE) as NotificationManager
-
-        // Persistent notification on failure
-        val id =
-            if (state == ApkInstaller.InstallProgressStatus.Failed) UPDATE_NOTIFICATION_ID + 1 else UPDATE_NOTIFICATION_ID
+        val notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
+        val id = if (state == ApkInstaller.InstallProgressStatus.Failed) UPDATE_NOTIFICATION_ID + 1 else UPDATE_NOTIFICATION_ID
         notificationManager.notify(id, newNotification)
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         val url = intent?.getStringExtra(EXTRA_URL) ?: return START_NOT_STICKY
+        currentMode = intent.getIntExtra(EXTRA_MODE, 0) // Tangkap mode yang dikirim
+        
         ioSafe {
-            downloadUpdate(url)
-            // Close the service after the update is done
-            // If no sleep then the install prompt may not appear and the notification
-            // will disappear instantly
+            downloadUpdate(url, currentMode)
             delay(10_000)
-            this@PackageInstallerService.stopSelf()
+            this@PackageInstallerService.stopSelf() // Notifikasi otomatis mati di sini
         }
         return START_NOT_STICKY
     }
@@ -168,23 +213,21 @@ class PackageInstallerService : Service() {
 
     override fun onTimeout(reason: Int) {
         stopSelf()
-        Log.e("PackageInstallerService", "Service stopped due to timeout: $reason")
     }
 
     companion object {
         private const val EXTRA_URL = "EXTRA_URL"
+        private const val EXTRA_MODE = "EXTRA_MODE"
 
         const val UPDATE_CHANNEL_ID = "cloudstream3.updates"
         const val UPDATE_CHANNEL_NAME = "App Updates"
         const val UPDATE_CHANNEL_DESCRIPTION = "App updates notification channel"
-        const val UPDATE_NOTIFICATION_ID = -68454136 // Random unique
+        const val UPDATE_NOTIFICATION_ID = -68454136
 
-        fun getIntent(
-            context: Context,
-            url: String,
-        ): Intent {
+        fun getIntent(context: Context, url: String, mode: Int): Intent {
             return Intent(context, PackageInstallerService::class.java)
                 .putExtra(EXTRA_URL, url)
+                .putExtra(EXTRA_MODE, mode) // Kirim mode ke Service
         }
     }
 }
