@@ -19,11 +19,11 @@ import com.lagradost.cloudstream3.MainActivity.Companion.deleteFileOnExit
 import com.lagradost.cloudstream3.R
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.mvvm.logError
+import com.lagradost.cloudstream3.mvvm.safe
 import com.lagradost.cloudstream3.utils.ApkInstaller
 import com.lagradost.cloudstream3.utils.AppContextUtils.createNotificationChannel
 import com.lagradost.cloudstream3.utils.Coroutines.ioSafe
 import com.lagradost.cloudstream3.utils.UIHelper.colorFromAttribute
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import java.io.File
@@ -32,7 +32,7 @@ import kotlin.math.roundToInt
 
 class PackageInstallerService : Service() {
     private var installer: ApkInstaller? = null
-    private var currentMode: Int = 0 // 0 = Baru, 1 = Lama
+    private var currentMode: Int = 0 
 
     private val baseNotification by lazy {
         val intent = Intent(this, MainActivity::class.java)
@@ -85,7 +85,6 @@ class PackageInstallerService : Service() {
                 val inputStream = body.byteStream()
 
                 if (mode == 1) {
-                    // --- MESIN VERSI LAMA ---
                     val downloadedFile = File.createTempFile("AdiXtream", ".apk", this@PackageInstallerService.cacheDir)
                     val outputStream = FileOutputStream(downloadedFile)
                     val data = ByteArray(8192)
@@ -110,18 +109,13 @@ class PackageInstallerService : Service() {
                     outputStream.close()
                     inputStream.close()
 
-                    // --- SOLUSI BUG BACKGROUND: Buat Intent Instalasi ---
                     val installIntent = getInstallIntent(this@PackageInstallerService, downloadedFile)
-                    
-                    // Jadikan intent ini sebagai aksi saat notifikasi diklik
                     val pendingIntent = PendingIntentCompat.getActivity(
                         this@PackageInstallerService, 1, installIntent, PendingIntent.FLAG_UPDATE_CURRENT, false
                     )
 
-                    // Update notifikasi agar bisa diklik pengguna
                     updateNotificationProgress(1f, ApkInstaller.InstallProgressStatus.Installing, pendingIntent)
 
-                    // Coba panggil langsung (Ini akan berhasil jika aplikasi masih terbuka di layar)
                     try {
                         startActivity(installIntent)
                     } catch (e: Exception) {
@@ -129,7 +123,6 @@ class PackageInstallerService : Service() {
                     }
 
                 } else {
-                    // --- MESIN VERSI BARU (0) ---
                     installer = ApkInstaller(this@PackageInstallerService)
                     var currentSize = 0
                     installer?.installApk(this@PackageInstallerService, inputStream, totalSize, {
@@ -150,7 +143,6 @@ class PackageInstallerService : Service() {
         }
     }
 
-    // Fungsi khusus untuk menyusun perintah buka APK
     private fun getInstallIntent(context: Context, file: File): Intent {
         val contentUri = FileProvider.getUriForFile(
             context, BuildConfig.APPLICATION_ID + ".provider", file
@@ -164,7 +156,6 @@ class PackageInstallerService : Service() {
         }
     }
 
-    // Fungsi update notifikasi dimodifikasi agar bisa menerima aksi klik khusus (clickIntent)
     private fun updateNotificationProgress(
         percentage: Float,
         state: ApkInstaller.InstallProgressStatus,
@@ -197,11 +188,11 @@ class PackageInstallerService : Service() {
                     )
                 }
                 
-                // Jika ada aksi klik (seperti saat unduhan selesai), tempelkan ke notifikasi
                 if (clickIntent != null) {
+                    setContentText("Ketuk untuk memasang") // Tambahan panduan untuk pengguna
                     setContentIntent(clickIntent)
-                    setAutoCancel(true) // Notifikasi otomatis hilang saat diklik
-                    setOngoing(false)   // Izinkan notifikasi di-swipe jika pengguna batal menginstal
+                    setAutoCancel(true) 
+                    setOngoing(false)   
                 }
             }
 
@@ -214,11 +205,21 @@ class PackageInstallerService : Service() {
         val url = intent?.getStringExtra(EXTRA_URL) ?: return START_NOT_STICKY
         currentMode = intent.getIntExtra(EXTRA_MODE, 0) 
         
+        // --- PERBAIKAN: Tandai kalau sedang mendownload ---
+        isDownloading = true 
+        
         ioSafe {
             downloadUpdate(url, currentMode)
             
-            // Tunggu 10 detik agar pengguna punya waktu mengklik notifikasi
-            delay(10_000)
+            isDownloading = false // Unduhan selesai
+
+            // --- PERBAIKAN: Lepas ikatan notifikasi sebelum Service mati ---
+            if (SDK_INT >= 24) {
+                stopForeground(STOP_FOREGROUND_DETACH)
+            } else {
+                stopForeground(false)
+            }
+            
             this@PackageInstallerService.stopSelf() 
         }
         return START_NOT_STICKY
@@ -227,6 +228,7 @@ class PackageInstallerService : Service() {
     override fun onDestroy() {
         installer?.unregisterInstallActionReceiver()
         installer = null
+        isDownloading = false
         this.stopSelf()
         super.onDestroy()
     }
@@ -240,6 +242,9 @@ class PackageInstallerService : Service() {
     companion object {
         private const val EXTRA_URL = "EXTRA_URL"
         private const val EXTRA_MODE = "EXTRA_MODE"
+
+        // --- TAMBAHAN: Variabel global untuk dibaca oleh InAppUpdater ---
+        var isDownloading: Boolean = false 
 
         const val UPDATE_CHANNEL_ID = "cloudstream3.updates"
         const val UPDATE_CHANNEL_NAME = "App Updates"
