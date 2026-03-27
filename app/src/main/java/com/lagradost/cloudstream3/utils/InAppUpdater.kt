@@ -1,41 +1,24 @@
 package com.lagradost.cloudstream3.utils
 
 import android.app.Activity
-import android.app.NotificationChannel
-import android.app.NotificationManager
-import android.content.Context
-import android.content.Intent
 import android.content.pm.PackageManager.NameNotFoundException
-import android.net.Uri
-import android.os.Build
 import android.util.Log
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
-import androidx.core.app.NotificationCompat
-import androidx.core.app.PendingIntentCompat
 import androidx.core.content.ContextCompat
-import androidx.core.content.FileProvider
 import androidx.core.content.edit
 import androidx.preference.PreferenceManager
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.BuildConfig
 import com.lagradost.cloudstream3.CommonActivity.showToast
-import com.lagradost.cloudstream3.MainActivity
-import com.lagradost.cloudstream3.MainActivity.Companion.deleteFileOnExit
 import com.lagradost.cloudstream3.R
 import com.lagradost.cloudstream3.app
-import com.lagradost.cloudstream3.mvvm.logError
 import com.lagradost.cloudstream3.mvvm.safe
 import com.lagradost.cloudstream3.services.PackageInstallerService
 import com.lagradost.cloudstream3.utils.AppContextUtils.setDefaultFocus
 import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import com.lagradost.cloudstream3.utils.Coroutines.ioSafe
-import com.lagradost.cloudstream3.utils.UIHelper.colorFromAttribute
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
 import java.io.BufferedReader
-import java.io.File
-import java.io.FileOutputStream
 import java.io.IOException
 import java.io.InputStreamReader
 
@@ -43,29 +26,28 @@ object InAppUpdater {
     // --- PENYESUAIAN ADIXTREAM ---
     private const val GITHUB_USER_NAME = "michat88"
     private const val GITHUB_REPO = "AdiXtream"
-    // -----------------------------
 
     private const val PRERELEASE_PACKAGE_NAME = "com.lagradost.cloudstream3.prerelease"
     private const val LOG_TAG = "InAppUpdater"
 
     private data class GithubAsset(
         @JsonProperty("name") val name: String,
-        @JsonProperty("size") val size: Int, // Size in bytes
+        @JsonProperty("size") val size: Int,
         @JsonProperty("browser_download_url") val browserDownloadUrl: String,
-        @JsonProperty("content_type") val contentType: String, // application/vnd.android.package-archive
+        @JsonProperty("content_type") val contentType: String,
     )
 
     private data class GithubRelease(
-        @JsonProperty("tag_name") val tagName: String, // Version code
-        @JsonProperty("body") val body: String, // Description
+        @JsonProperty("tag_name") val tagName: String,
+        @JsonProperty("body") val body: String,
         @JsonProperty("assets") val assets: List<GithubAsset>,
-        @JsonProperty("target_commitish") val targetCommitish: String, // Branch
+        @JsonProperty("target_commitish") val targetCommitish: String,
         @JsonProperty("prerelease") val prerelease: Boolean,
         @JsonProperty("node_id") val nodeId: String,
     )
 
     private data class GithubObject(
-        @JsonProperty("sha") val sha: String, // SHA-256 hash
+        @JsonProperty("sha") val sha: String,
         @JsonProperty("type") val type: String,
         @JsonProperty("url") val url: String,
     )
@@ -85,7 +67,6 @@ object InAppUpdater {
     private suspend fun Activity.getAppUpdate(installPrerelease: Boolean): Update {
         return try {
             when {
-                // No updates on debug version
                 BuildConfig.DEBUG -> Update(false, null, null, null, null)
                 BuildConfig.FLAVOR == "prerelease" || installPrerelease -> getPreReleaseUpdate()
                 else -> getReleaseUpdate()
@@ -99,19 +80,13 @@ object InAppUpdater {
     private suspend fun Activity.getReleaseUpdate(): Update {
         val url = "https://api.github.com/repos/$GITHUB_USER_NAME/$GITHUB_REPO/releases"
         val headers = mapOf("Accept" to "application/vnd.github.v3+json")
-        val response = parseJson<List<GithubRelease>>(
-            app.get(url, headers = headers).text
-        )
+        val response = parseJson<List<GithubRelease>>(app.get(url, headers = headers).text)
 
         val versionRegex = Regex("""(.*?((\d+)\.(\d+)\.(\d+))\.apk)""")
         val versionRegexLocal = Regex("""(.*?((\d+)\.(\d+)\.(\d+)).*)""")
-        val foundList = response.filter { rel ->
-            !rel.prerelease
-        }.sortedWith(compareBy { release ->
+        val foundList = response.filter { !it.prerelease }.sortedWith(compareBy { release ->
             release.assets.firstOrNull { it.contentType == "application/vnd.android.package-archive" }?.name?.let { it1 ->
-                versionRegex.find(
-                    it1
-                )?.groupValues?.let {
+                versionRegex.find(it1)?.groupValues?.let {
                     it[3].toInt() * 100_000_000 + it[4].toInt() * 10_000 + it[5].toInt()
                 }
             }
@@ -119,182 +94,35 @@ object InAppUpdater {
 
         val found = foundList.lastOrNull()
         val foundAsset = found?.assets?.getOrNull(0)
-        val foundVersion = foundAsset?.name?.let { versionRegex.find(it) }
+        val foundVersion = foundAsset?.name?.let { versionRegex.find(it) } ?: return Update(false, null, null, null, null)
 
-        if (foundVersion == null) {
-            return Update(false, null, null, null, null)
-        }
-
-        val currentVersion = packageName?.let {
-            packageManager.getPackageInfo(it, 0)
-        }
-
-        val shouldUpdate = if (foundAsset.browserDownloadUrl.isBlank()) {
-            false
-        } else {
+        val currentVersion = packageName?.let { packageManager.getPackageInfo(it, 0) }
+        val shouldUpdate = if (foundAsset.browserDownloadUrl.isBlank()) false else {
             currentVersion?.versionName?.let { versionName ->
                 versionRegexLocal.find(versionName)?.groupValues?.let {
                     it[3].toInt() * 100_000_000 + it[4].toInt() * 10_000 + it[5].toInt()
                 }
-            }?.compareTo(
-                foundVersion.groupValues.let {
-                    it[3].toInt() * 100_000_000 + it[4].toInt() * 10_000 + it[5].toInt()
-                })!! < 0
+            }?.compareTo(foundVersion.groupValues.let {
+                it[3].toInt() * 100_000_000 + it[4].toInt() * 10_000 + it[5].toInt()
+            })!! < 0
         }
 
-        return Update(
-            shouldUpdate,
-            foundAsset.browserDownloadUrl,
-            foundVersion.groupValues[2],
-            found.body,
-            found.nodeId
-        )
+        return Update(shouldUpdate, foundAsset.browserDownloadUrl, foundVersion.groupValues[2], found.body, found.nodeId)
     }
 
     private suspend fun Activity.getPreReleaseUpdate(): Update {
-        val tagUrl =
-            "https://api.github.com/repos/$GITHUB_USER_NAME/$GITHUB_REPO/git/ref/tags/pre-release"
+        val tagUrl = "https://api.github.com/repos/$GITHUB_USER_NAME/$GITHUB_REPO/git/ref/tags/pre-release"
         val releaseUrl = "https://api.github.com/repos/$GITHUB_USER_NAME/$GITHUB_REPO/releases"
         val headers = mapOf("Accept" to "application/vnd.github.v3+json")
-        val response = parseJson<List<GithubRelease>>(
-            app.get(releaseUrl, headers = headers).text
-        )
+        val response = parseJson<List<GithubRelease>>(app.get(releaseUrl, headers = headers).text)
 
-        val found = response.lastOrNull { rel ->
-            rel.prerelease || rel.tagName == "pre-release"
-        }
-
-        val foundAsset = found?.assets?.filter { it ->
-            it.contentType == "application/vnd.android.package-archive"
-        }?.getOrNull(0)
-
-        if (foundAsset == null) {
-            return Update(false, null, null, null, null)
-        }
+        val found = response.lastOrNull { it.prerelease || it.tagName == "pre-release" }
+        val foundAsset = found?.assets?.firstOrNull { it.contentType == "application/vnd.android.package-archive" } ?: return Update(false, null, null, null, null)
 
         val tagResponse = parseJson<GithubTag>(app.get(tagUrl, headers = headers).text)
         val updateCommitHash = tagResponse.githubObject.sha.trim().take(7)
-        Log.d(LOG_TAG, "Fetched GitHub tag: $updateCommitHash")
 
-        return Update(
-            getString(R.string.commit_hash) != updateCommitHash,
-            foundAsset.browserDownloadUrl,
-            updateCommitHash,
-            found.body,
-            found.nodeId
-        )
-    }
-
-    private val updateLock = Mutex()
-
-    // --- PERBAIKAN: Fungsi Unduhan dengan Progress Notifikasi Pangkat Tinggi ---
-    private suspend fun Activity.downloadUpdate(url: String): Boolean {
-        try {
-            Log.d(LOG_TAG, "Downloading update: $url")
-            
-            val appUpdateName = "AdiXtream" 
-            val appUpdateSuffix = "apk"
-
-            // Hapus file update lama
-            this.cacheDir.listFiles()?.filter {
-                it.name.startsWith(appUpdateName) && it.extension == appUpdateSuffix
-            }?.forEach { deleteFileOnExit(it) }
-
-            val downloadedFile = File.createTempFile(appUpdateName, ".$appUpdateSuffix", this.cacheDir)
-
-            // --- PERSIAPAN NOTIFIKASI VERSI LAMA ---
-            val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-            
-            // 1. UBAH ID CHANNEL: Tambahkan "_v2" agar sistem mereset jalurnya
-            val channelId = "updater_channel_legacy_v2" 
-            
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                // 2. NAIKKAN LEVEL: Ubah IMPORTANCE_LOW menjadi IMPORTANCE_DEFAULT
-                val channel = NotificationChannel(channelId, "Pembaruan Aplikasi", NotificationManager.IMPORTANCE_DEFAULT)
-                notificationManager.createNotificationChannel(channel)
-            }
-
-            val intent = Intent(this, MainActivity::class.java)
-            val pendingIntent = PendingIntentCompat.getActivity(this, 0, intent, 0, false)
-
-            val notificationId = 101
-            val builder = NotificationCompat.Builder(this, channelId)
-                .setAutoCancel(false)
-                .setColorized(true)
-                .setOnlyAlertOnce(true)
-                // 3. NAIKKAN PRIORITAS: Ubah PRIORITY_LOW menjadi PRIORITY_DEFAULT
-                .setPriority(NotificationCompat.PRIORITY_DEFAULT) 
-                .setColor(this.colorFromAttribute(R.attr.colorPrimary))
-                .setContentTitle("AdiXtream Update")
-                .setContentText("Mengunduh pembaruan...")
-                .setContentIntent(pendingIntent)
-                // 4. TETAP PAKAI IKON BAWAAN ANDROID (AGAR BEDA DENGAN VERSI BARU)
-                .setSmallIcon(android.R.drawable.stat_sys_download) 
-                .setOngoing(true)
-
-            notificationManager.notify(notificationId, builder.build())
-
-            updateLock.withLock {
-                val response = app.get(url)
-                val body = response.body ?: return false
-                val totalBytes = body.contentLength()
-                val inputStream = body.byteStream()
-                val outputStream = FileOutputStream(downloadedFile)
-                
-                val data = ByteArray(8192)
-                var count: Int
-                var bytesCopied = 0L
-                var lastUpdateTime = System.currentTimeMillis()
-
-                // Baca sedikit demi sedikit dan perbarui progres notifikasi
-                while (inputStream.read(data).also { count = it } != -1) {
-                    outputStream.write(data, 0, count)
-                    bytesCopied += count
-
-                    val now = System.currentTimeMillis()
-                    if (now - lastUpdateTime > 500) { 
-                        val progress = if (totalBytes > 0) ((bytesCopied * 100) / totalBytes).toInt() else 0
-                        builder.setProgress(100, progress, totalBytes <= 0L)
-                        notificationManager.notify(notificationId, builder.build())
-                        lastUpdateTime = now
-                    }
-                }
-                
-                outputStream.flush()
-                outputStream.close()
-                inputStream.close()
-
-                // --- UNDUHAN SELESAI ---
-                builder.setContentText("Unduhan selesai, memulai instalasi...")
-                    .setProgress(0, 0, false)
-                    .setOngoing(false) // Kini bisa di-swipe
-                    .setAutoCancel(true) // Hilang otomatis saat diklik
-                    .setSmallIcon(android.R.drawable.stat_sys_download_done)
-                notificationManager.notify(notificationId, builder.build())
-
-                openApk(this, Uri.fromFile(downloadedFile))
-            }
-
-            return true
-        } catch (e: Exception) {
-            logError(e)
-            return false
-        }
-    }
-
-    private fun openApk(context: Context, uri: Uri) = safe {
-        val path = uri.path ?: return@safe
-        val contentUri = FileProvider.getUriForFile(
-            context, BuildConfig.APPLICATION_ID + ".provider", File(path)
-        )
-        val installIntent = Intent(Intent.ACTION_VIEW).apply {
-            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-            addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK) // Mencegah error gagal buka di latar belakang
-            putExtra(Intent.EXTRA_NOT_UNKNOWN_SOURCE, true)
-            setDataAndType(contentUri, "application/vnd.android.package-archive")
-        }
-        context.startActivity(installIntent)
+        return Update(getString(R.string.commit_hash) != updateCommitHash, foundAsset.browserDownloadUrl, updateCommitHash, found.body, found.nodeId)
     }
 
     fun Activity.installPreReleaseIfNeeded() = ioSafe {
@@ -312,114 +140,42 @@ object InAppUpdater {
         }
     }
 
-    /**
-     * @param checkAutoUpdate if the update check was launched automatically
-     * @param installPrerelease if we want to install the pre-release version
-     */
-    suspend fun Activity.runAutoUpdate(
-        checkAutoUpdate: Boolean = true, installPrerelease: Boolean = false
-    ): Boolean {
+    suspend fun Activity.runAutoUpdate(checkAutoUpdate: Boolean = true, installPrerelease: Boolean = false): Boolean {
         val settingsManager = PreferenceManager.getDefaultSharedPreferences(this)
-        val autoUpdateEnabled =
-            settingsManager.getBoolean(getString(R.string.auto_update_key), true)
-        if (checkAutoUpdate && !autoUpdateEnabled) {
-            return false
-        }
+        if (checkAutoUpdate && !settingsManager.getBoolean(getString(R.string.auto_update_key), true)) return false
 
         val update = getAppUpdate(installPrerelease)
-        if (!update.shouldUpdate || update.updateURL == null) {
-            return false
-        }
-
-        // Check if update should be skipped
-        val updateNodeId = settingsManager.getString(
-            getString(R.string.skip_update_key), ""
-        )
-
-        // Skips the update if its an automatic update and the update is skipped
-        // This allows updating manually
-        if (update.updateNodeId.equals(updateNodeId) && checkAutoUpdate) {
-            return false
-        }
+        if (!update.shouldUpdate || update.updateURL == null) return false
+        if (update.updateNodeId == settingsManager.getString(getString(R.string.skip_update_key), "") && checkAutoUpdate) return false
 
         runOnUiThread {
             safe {
-                val currentVersion = packageName?.let {
-                    packageManager.getPackageInfo(it, 0)
-                }
-
+                val currentVersion = packageName?.let { packageManager.getPackageInfo(it, 0) }
                 val builder = AlertDialog.Builder(this, R.style.AlertDialogCustom)
-                builder.setTitle(
-                    getString(R.string.new_update_format).format(
-                        currentVersion?.versionName, update.updateVersion
-                    )
-                )
-
-                val logRegex = Regex("\\[(.*?)]\\((.*?)\\)")
-                val sanitizedChangelog = update.changelog?.replace(logRegex) { matchResult ->
-                    matchResult.groupValues[1]
-                } // Sanitized because it looks cluttered
-
+                builder.setTitle(getString(R.string.new_update_format).format(currentVersion?.versionName, update.updateVersion))
+                
+                val sanitizedChangelog = update.changelog?.replace(Regex("\\[(.*?)]\\((.*?)\\)")) { it.groupValues[1] }
                 builder.setMessage(sanitizedChangelog)
+                
                 builder.apply {
                     setPositiveButton(R.string.update) { _, _ ->
-                        // Forcefully start any delayed installations
                         if (ApkInstaller.delayedInstaller?.startInstallation() == true) return@setPositiveButton
-
                         showToast(R.string.download_started, Toast.LENGTH_LONG)
 
-                        // Check if the setting hasn't been changed
-                        if (settingsManager.getInt(
-                                getString(R.string.apk_installer_key), -1
-                            ) == -1
-                        ) {
-                            // Set to legacy installer if using MIUI
-                            if (isMiUi()) {
-                                settingsManager.edit {
-                                    putInt(getString(R.string.apk_installer_key), 1)
-                                }
-                            }
+                        if (settingsManager.getInt(getString(R.string.apk_installer_key), -1) == -1 && isMiUi()) {
+                            settingsManager.edit { putInt(getString(R.string.apk_installer_key), 1) }
                         }
 
-                        // --- PERBAIKAN ADIXTREAM: DEFAULT KE VERSI LAMA (1) ---
-                        val currentInstaller = settingsManager.getInt(
-                            getString(R.string.apk_installer_key), 1
-                        )
-
-                        when (currentInstaller) {
-                            // New method
-                            0 -> {
-                                val intent = PackageInstallerService.Companion.getIntent(
-                                    this@runAutoUpdate, update.updateURL
-                                )
-                                ContextCompat.startForegroundService(
-                                    this@runAutoUpdate, intent
-                                )
-                            }
-                            // Legacy
-                            1 -> {
-                                ioSafe {
-                                    if (!downloadUpdate(update.updateURL)) {
-                                        runOnUiThread {
-                                            showToast(
-                                                R.string.download_failed, Toast.LENGTH_LONG
-                                            )
-                                        }
-                                    }
-                                }
-                            }
-                        }
+                        // --- PERBAIKAN: Lempar semua tugas ke Service ---
+                        val currentInstaller = settingsManager.getInt(getString(R.string.apk_installer_key), 1)
+                        val intent = PackageInstallerService.getIntent(this@runAutoUpdate, update.updateURL, currentInstaller)
+                        ContextCompat.startForegroundService(this@runAutoUpdate, intent)
                     }
 
                     setNegativeButton(R.string.cancel) { _, _ -> }
-
                     if (checkAutoUpdate) {
                         setNeutralButton(R.string.skip_update) { _, _ ->
-                            settingsManager.edit {
-                                putString(
-                                    getString(R.string.skip_update_key), update.updateNodeId ?: ""
-                                )
-                            }
+                            settingsManager.edit { putString(getString(R.string.skip_update_key), update.updateNodeId ?: "") }
                         }
                     }
                 }
@@ -430,13 +186,8 @@ object InAppUpdater {
     }
 
     private fun isMiUi(): Boolean = !getSystemProperty("ro.miui.ui.version.name").isNullOrEmpty()
-
     private fun getSystemProperty(propName: String): String? = try {
         val p = Runtime.getRuntime().exec("getprop $propName")
-        BufferedReader(InputStreamReader(p.inputStream), 1024).use {
-            it.readLine()
-        }
-    } catch (_: IOException) {
-        null
-    }
+        BufferedReader(InputStreamReader(p.inputStream), 1024).use { it.readLine() }
+    } catch (_: IOException) { null }
 }
