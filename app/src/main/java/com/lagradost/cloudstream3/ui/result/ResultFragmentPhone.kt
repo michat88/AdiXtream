@@ -468,7 +468,7 @@ open class ResultFragmentPhone : FullScreenPlayer() {
                     }
 
                     val name = (viewModel.page.value as? Resource.Success)?.value?.title
-                        ?: com.lagradost.cloudstream3.utils.txt(R.string.no_data)
+                            ?: com.lagradost.cloudstream3.utils.txt(R.string.no_data)
                             .asStringNull(context) ?: ""
                     showToast(
                         com.lagradost.cloudstream3.utils.txt(message, name),
@@ -1099,6 +1099,12 @@ open class ResultFragmentPhone : FullScreenPlayer() {
             }
             binding?.resultOverlappingPanels?.setStartPanelLockState(if (closed) OverlappingPanelsLayout.LockState.CLOSE else OverlappingPanelsLayout.LockState.UNLOCKED)
         }
+        
+        // MENDENGARKAN DATA REKOMENDASI AGAR MUNCUL DI LAYAR
+        observe(viewModel.recommendations) { recommendations ->
+            setRecommendations(recommendations, null)
+        }
+
         context?.let { ctx ->
             val arrayAdapter = ArrayAdapter<String>(ctx, R.layout.sort_bottom_single_choice)
             val items = listOf(
@@ -1233,7 +1239,7 @@ open class ResultFragmentPhone : FullScreenPlayer() {
                 resultEpisodeSelect.setText(range)
 
                 selectEpisodeRange = range?.asStringNull(resultEpisodeSelect.context)
-                
+                 
                 if (resultEpisodeSelect.isVisible && !resultSeasonButton.isVisible && resultResumeParent.isVisible) {
                     setFocusUpAndDown(resultResumeSeriesButton, resultEpisodeSelect)
                 }
