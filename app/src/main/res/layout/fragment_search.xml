@@ -87,11 +87,7 @@
                             android:progressTint="@color/white">
 
                         </androidx.core.widget.ContentLoadingProgressBar>
-                        <!--app:queryHint="@string/search_hint"
-                        android:background="@color/grayBackground" @color/itemBackground
-                                    app:searchHintIcon="@drawable/search_white"
-                                    -->
-                    </androidx.appcompat.widget.SearchView>
+                        </androidx.appcompat.widget.SearchView>
                 </FrameLayout>
 
                 <ImageView
@@ -121,8 +117,8 @@
     <com.lagradost.cloudstream3.ui.AutofitRecyclerView
         android:id="@+id/search_autofit_results"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-
+        android:layout_height="0dp"
+        android:layout_weight="1"
         android:background="?attr/primaryBlackBackground"
         android:clipToPadding="false"
         android:descendantFocusability="afterDescendants"
@@ -138,8 +134,8 @@
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/search_master_recycler"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-
+        android:layout_height="0dp"
+        android:layout_weight="1"
         android:background="?attr/primaryBlackBackground"
         android:descendantFocusability="afterDescendants"
 
@@ -151,7 +147,8 @@
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/search_history_recycler"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
         android:background="?attr/primaryBlackBackground"
         android:descendantFocusability="afterDescendants"
         android:nextFocusLeft="@id/nav_rail_view"
@@ -160,7 +157,6 @@
         tools:listitem="@layout/search_history_item" />
     </LinearLayout>
 
-    <!-- Suggestions overlay - appears on top of content -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/search_suggestions_recycler"
         android:layout_width="match_parent"
