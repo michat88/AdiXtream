@@ -137,6 +137,7 @@
     <string name="advanced_search">Pencarian Lanjutan</string>
     <string name="advanced_search_des">Memberikan hasil pencarian yang dipisahkan berdasarkan penyedia</string>
     <string name="show_fillers_settings">Tampilkan episode filler untuk anime</string>
+    <string name="show_player_metadata_overlay">Tampilkan Info Film di Pemutar</string>
     <string name="updates_settings">Tampilkan pembaruan aplikasi</string>
     <string name="updates_settings_des">Secara otomatis mencari pembaruan baru setelah aplikasi dibuka.</string>
     <string name="github">Github</string>
