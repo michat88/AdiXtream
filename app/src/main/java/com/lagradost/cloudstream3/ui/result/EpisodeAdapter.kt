@@ -1,5 +1,6 @@
 package com.lagradost.cloudstream3.ui.result
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.view.LayoutInflater
 import android.view.ViewGroup
@@ -7,6 +8,8 @@ import androidx.core.view.isGone
 import androidx.core.view.isVisible
 import androidx.core.view.setPadding
 import androidx.preference.PreferenceManager
+import androidx.recyclerview.widget.DiffUtil
+import androidx.recyclerview.widget.RecyclerView
 import coil3.dispose
 import com.lagradost.cloudstream3.APIHolder.unixTimeMS
 import com.lagradost.cloudstream3.CommonActivity
@@ -21,7 +24,6 @@ import com.lagradost.cloudstream3.ui.ViewHolderState
 import com.lagradost.cloudstream3.ui.download.DOWNLOAD_ACTION_DOWNLOAD
 import com.lagradost.cloudstream3.ui.download.DOWNLOAD_ACTION_LONG_CLICK
 import com.lagradost.cloudstream3.ui.download.DownloadClickEvent
-import com.lagradost.cloudstream3.ui.newSharedPool
 import com.lagradost.cloudstream3.ui.settings.Globals.EMULATOR
 import com.lagradost.cloudstream3.ui.settings.Globals.PHONE
 import com.lagradost.cloudstream3.ui.settings.Globals.TV
@@ -91,10 +93,11 @@ class EpisodeAdapter(
         }
 
         val sharedPool =
-            newSharedPool {
-                setMaxRecycledViews(HAS_POSTER or CONTENT, 10)
-                setMaxRecycledViews(HAS_NO_POSTER or CONTENT, 10)
-            }
+            RecyclerView.RecycledViewPool()
+                .apply {
+                    this.setMaxRecycledViews(HAS_POSTER or CONTENT, 10)
+                    this.setMaxRecycledViews(HAS_NO_POSTER or CONTENT, 10)
+                }
     }
 
     override fun onClearView(holder: ViewHolderState<Any>) {
