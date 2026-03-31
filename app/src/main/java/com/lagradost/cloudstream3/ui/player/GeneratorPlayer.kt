@@ -91,7 +91,6 @@ import com.lagradost.cloudstream3.ui.result.ResultFragment.bindLogo
 import com.lagradost.cloudstream3.ui.result.ResultViewModel2
 import com.lagradost.cloudstream3.ui.result.SyncViewModel
 import com.lagradost.cloudstream3.ui.result.setLinearListLayout
-import com.lagradost.cloudstream3.ui.setRecycledViewPool
 import com.lagradost.cloudstream3.ui.settings.Globals.EMULATOR
 import com.lagradost.cloudstream3.ui.settings.Globals.PHONE
 import com.lagradost.cloudstream3.ui.settings.Globals.TV
@@ -162,6 +161,7 @@ class GeneratorPlayer : FullScreenPlayer() {
 
     private lateinit var viewModel: PlayerGeneratorViewModel //by activityViewModels()
     private lateinit var sync: SyncViewModel
+  
     private var currentLinks: Set<Pair<ExtractorLink?, ExtractorUri?>> = setOf()
     private var currentSubs: Set<SubtitleData> = setOf()
 
@@ -186,9 +186,10 @@ class GeneratorPlayer : FullScreenPlayer() {
 
     private fun setSubtitles(subtitle: SubtitleData?, userInitiated: Boolean): Boolean {
         // If subtitle is changed and user initiated -> Save the language
+ 
         if (subtitle != currentSelectedSubtitles && userInitiated) {
             val subtitleLanguageTagIETF = if (subtitle == null) {
-                "" // -> No Subtitles
+                "" // -> No Subtitles
             } else {
                 subtitle.getIETF_tag()
             }
@@ -263,6 +264,7 @@ class GeneratorPlayer : FullScreenPlayer() {
     ): PendingIntent {
         val intent: Intent = Intent(action).setPackage(context.packageName)
         intent.putExtra(EXTRA_INSTANCE_ID, instanceId)
+       
         val pendingFlags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         } else PendingIntent.FLAG_UPDATE_CURRENT
@@ -338,6 +340,7 @@ class GeneratorPlayer : FullScreenPlayer() {
 
                             else -> null
                         }
+  
                         // if we have a poster url try with it first
                         if (url != null) {
                             val urlBitmap = context.getImageBitmapFromUrl(url)
@@ -474,6 +477,7 @@ class GeneratorPlayer : FullScreenPlayer() {
                     android.text.format.Formatter.formatShortFileSize(context, event.totalBytes)
                 )
             )
+ 
             val downloadSpeed =
                 android.text.format.Formatter.formatShortFileSize(context, event.downloadSpeed)
             playerBinding?.downloadedProgressSpeedText?.text =
@@ -507,6 +511,7 @@ class GeneratorPlayer : FullScreenPlayer() {
         uiReset()
         currentSelectedLink = link
         currentMeta = viewModel.getMeta()
+       
         nextMeta = viewModel.getNextMeta()
         allMeta = viewModel.getAllMeta()?.filterIsInstance<ResultEpisode>()?.map { episode ->
             // Refresh all the episodes watch duration
@@ -514,7 +519,8 @@ class GeneratorPlayer : FullScreenPlayer() {
                 episode.copy(position = data.position, duration = data.duration)
             } ?: episode
         }
-        //  setEpisodes(viewModel.getAllMeta() ?: emptyList())
+        
+        // setEpisodes(viewModel.getAllMeta() ?: emptyList())
         isActive = true
         setPlayerDimen(null)
         setTitle()
@@ -582,6 +588,7 @@ class GeneratorPlayer : FullScreenPlayer() {
                 meta.name = newMeta.headerName
             }
         }
+       
         return meta
     }
 
@@ -1229,9 +1236,9 @@ class GeneratorPlayer : FullScreenPlayer() {
                 subtitleList.setOnItemClickListener { _, _, which, _ ->
                     if (which > subtitlesGrouped.size) {
                         // Since android TV is funky the setOnItemClickListener will be triggered
-                        // instead of setOnClickListener when selecting. To override this we programmatically
+                        // instead of setOnClickListener when selecting.
+                        // To override this we programmatically
                         // click the view when selecting an item outside the list.
-
                         // Cheeky way of getting the view at that position to click it
                         // to avoid keeping track of the various footers.
                         // getChildAt() gives null :(
@@ -1831,7 +1838,7 @@ class GeneratorPlayer : FullScreenPlayer() {
                     ctx.getString(
                         R.string.episode_short
                     )
-                }${episode}\""
+                 }${episode}\""
                 else "") + if (subName.isNullOrBlank() || subName == headerName) "" else " - $subName"
             } else {
                 ""
@@ -2078,7 +2085,9 @@ class GeneratorPlayer : FullScreenPlayer() {
     override fun showEpisodesOverlay() {
         try {
             playerBinding?.apply {
-                playerEpisodeList.setRecycledViewPool(EpisodeAdapter.sharedPool)
+                // DIHAPUS/DIKONTENTAR: Agar tidak menyebabkan error Unresolved reference
+                // playerEpisodeList.setRecycledViewPool(EpisodeAdapter.sharedPool)
+                
                 playerEpisodeList.adapter = EpisodeAdapter(
                     false,
                     { episodeClick ->
@@ -2266,8 +2275,7 @@ class GeneratorPlayer : FullScreenPlayer() {
                 langFilterList.forEach { lang ->
                     Log.i("subfilter", "Lang: $lang")
                     setOfSub += set.filter {
-                        it.originalName.contains(lang, ignoreCase = true) ||
-                                it.origin != SubtitleOrigin.URL
+                        it.originalName.contains(lang, ignoreCase = true) || it.origin != SubtitleOrigin.URL
                     }
                 }
                 currentSubs = setOfSub
