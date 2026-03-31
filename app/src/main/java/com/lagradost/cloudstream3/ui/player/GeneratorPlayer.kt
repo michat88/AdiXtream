@@ -187,7 +187,7 @@ class GeneratorPlayer : FullScreenPlayer() {
         // If subtitle is changed and user initiated -> Save the language
         if (subtitle != currentSelectedSubtitles && userInitiated) {
             val subtitleLanguageTagIETF = if (subtitle == null) {
-                "" // -> No Subtitles
+                "" // -> No Subtitles
             } else {
                 subtitle.getIETF_tag()
             }
@@ -285,15 +285,15 @@ class GeneratorPlayer : FullScreenPlayer() {
                 override fun getCurrentContentTitle(player: Player): CharSequence {
                     return when (val meta = currentMeta) {
                         is ResultEpisode -> {
-                            meta.headerName ?: viewModel.getLoadResponse()?.name ?: "Unknown"
+                            meta.headerName
                         }
 
                         is ExtractorUri -> {
                             meta.headerName ?: meta.name
                         }
 
-                        else -> viewModel.getLoadResponse()?.name ?: "Unknown"
-                    }
+                        else -> null
+                    } ?: "Unknown"
                 }
 
                 override fun createCurrentContentIntent(player: Player): PendingIntent? {
@@ -570,8 +570,7 @@ class GeneratorPlayer : FullScreenPlayer() {
                     meta.episode = newMeta.episode
                     meta.season = newMeta.season
                 }
-                // [MODIFIKASI ADIXTREAM]: Fallback ke nama seri/film jika headerName null
-                meta.name = newMeta.headerName ?: viewModel.getLoadResponse()?.name
+                meta.name = newMeta.headerName
             }
 
             is ExtractorUri -> {
@@ -579,8 +578,7 @@ class GeneratorPlayer : FullScreenPlayer() {
                     meta.episode = newMeta.episode
                     meta.season = newMeta.season
                 }
-                // [MODIFIKASI ADIXTREAM]: Fallback ke nama seri/film jika headerName null
-                meta.name = newMeta.headerName ?: viewModel.getLoadResponse()?.name
+                meta.name = newMeta.headerName
             }
         }
         return meta
@@ -1232,6 +1230,7 @@ class GeneratorPlayer : FullScreenPlayer() {
                         // Since android TV is funky the setOnItemClickListener will be triggered
                         // instead of setOnClickListener when selecting. To override this we programmatically
                         // click the view when selecting an item outside the list.
+
                         // Cheeky way of getting the view at that position to click it
                         // to avoid keeping track of the various footers.
                         // getChildAt() gives null :(
@@ -1433,8 +1432,8 @@ class GeneratorPlayer : FullScreenPlayer() {
                 }
 
                 var audioIndexStart = currentAudioTracks.indexOfFirst { track ->
-                    track.id == tracks.currentAudioTrack?.id &&
-                            track.formatIndex == tracks.currentAudioTrack?.formatIndex
+                    track.id == tracks.currentAudioTrack?.id && 
+                    track.formatIndex == tracks.currentAudioTrack?.formatIndex
                 }.coerceAtLeast(0)
 
                 val audioArrayAdapter = ArrayAdapter<String>(ctx, R.layout.sort_bottom_single_choice)
@@ -1495,7 +1494,7 @@ class GeneratorPlayer : FullScreenPlayer() {
                 binding.applyBtt.setOnClickListener {
                     val currentTrack = currentAudioTracks.getOrNull(audioIndexStart)
                     player.setPreferredAudioTrack(
-                        currentTrack?.language,
+                        currentTrack?.language, 
                         currentTrack?.id,
                         currentTrack?.formatIndex,
                     )
@@ -1731,7 +1730,7 @@ class GeneratorPlayer : FullScreenPlayer() {
 
         return sortSubs(subtitles).firstOrNull { it.matchesLanguageCode(langCode) }
     }
-
+    
     private fun autoSelectFromSettings(): Boolean {
         // auto select subtitle based on settings
         val langCode = preferredAutoSelectSubtitles
@@ -1789,10 +1788,9 @@ class GeneratorPlayer : FullScreenPlayer() {
 
     private fun getHeaderName(): String? {
         return when (val meta = currentMeta) {
-            // [MODIFIKASI ADIXTREAM]: Fallback ke nama seri/film jika headerName null
-            is ResultEpisode -> meta.headerName ?: viewModel.getLoadResponse()?.name
-            is ExtractorUri -> meta.headerName ?: viewModel.getLoadResponse()?.name
-            else -> viewModel.getLoadResponse()?.name
+            is ResultEpisode -> meta.headerName
+            is ExtractorUri -> meta.headerName
+            else -> null
         }
     }
 
@@ -1805,8 +1803,7 @@ class GeneratorPlayer : FullScreenPlayer() {
 
         when (val meta = currentMeta) {
             is ResultEpisode -> {
-                // [MODIFIKASI ADIXTREAM]: Fallback ke nama seri/film jika headerName null
-                headerName = meta.headerName ?: viewModel.getLoadResponse()?.name
+                headerName = meta.headerName
                 subName = meta.name
                 episode = meta.episode
                 season = meta.season
@@ -1814,8 +1811,7 @@ class GeneratorPlayer : FullScreenPlayer() {
             }
 
             is ExtractorUri -> {
-                // [MODIFIKASI ADIXTREAM]: Fallback ke nama seri/film jika headerName null
-                headerName = meta.headerName ?: viewModel.getLoadResponse()?.name
+                headerName = meta.headerName
                 subName = meta.name
                 episode = meta.episode
                 season = meta.season
