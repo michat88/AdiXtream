@@ -191,15 +191,3 @@ class MaxRecyclerView(ctx: Context, attrs: AttributeSet) : RecyclerView(ctx, att
         super.onChildAttachedToWindow(child)
     }
 }
-
-// ==========================================
-// TAMBAHAN FUNGSI EXTENSION UNTUK ADIXTREAM
-// ==========================================
-
-inline fun newSharedPool(block: RecyclerView.RecycledViewPool.() -> Unit): RecyclerView.RecycledViewPool {
-    return RecyclerView.RecycledViewPool().apply(block)
-}
-
-fun RecyclerView.setRecycledViewPool(pool: RecyclerView.RecycledViewPool) {
-    this.recycledViewPool = pool
-}
