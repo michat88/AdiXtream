@@ -7,78 +7,6 @@
     android:orientation="vertical"
     tools:orientation="vertical">
 
-    <FrameLayout
-        android:id="@+id/player_metadata_scrim"
-        android:layout_width="640dp"
-        android:layout_height="match_parent"
-        android:background="@drawable/bg_player_metadata_scrim_netflix"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintBottom_toBottomOf="parent">
-
-        <LinearLayout
-            android:id="@+id/player_metadata_overlay"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:layout_gravity="center_vertical"
-            android:paddingStart="64dp"
-            android:paddingEnd="32dp"
-            android:paddingBottom="32dp">
-
-            <!-- TITLE / LOGO -->
-            <FrameLayout
-                android:layout_width="match_parent"
-                android:layout_height="88dp">
-
-                <ImageView
-                    android:id="@+id/player_movie_logo"
-                    android:layout_width="wrap_content"
-                    android:layout_height="match_parent"
-                    android:adjustViewBounds="true"
-                    android:scaleType="fitStart"
-                    android:visibility="gone"
-                    tools:visibility="visible"/>
-
-                <TextView
-                    android:id="@+id/player_movie_title"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="center_vertical"
-                    android:textColor="@android:color/white"
-                    android:textSize="30sp"
-                    android:textStyle="bold"
-                    android:maxLines="2"
-                    android:ellipsize="end"
-                    tools:text="Zootopia 2"/>
-            </FrameLayout>
-
-            <!-- GENRES / YEAR / RATING -->
-            <TextView
-                android:id="@+id/player_movie_meta"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
-                android:textColor="#B3FFFFFF"
-                android:textSize="14sp"
-                android:maxLines="2"
-                tools:text="Animation • Action • Adventure • 2025 • ⭐ 7.6"/>
-
-            <!-- SYNOPSIS -->
-            <TextView
-                android:id="@+id/player_movie_overview"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="20dp"
-                android:textColor="#E6FFFFFF"
-                android:textSize="16sp"
-                android:lineSpacingExtra="8dp"
-                android:maxLines="5"
-                tools:text="Brave rabbit cop Judy Hopps and her friend, the fox Nick Wilde, team up again to crack a new case."/>
-
-        </LinearLayout>
-    </FrameLayout>
-
     <ImageView
         android:visibility="gone"
         android:id="@+id/video_outline"
@@ -87,52 +15,85 @@
         android:layout_height="match_parent">
     </ImageView>
 
-
-    <!--
-        <LinearLayout android:layout_width="match_parent"
-                      android:layout_height="wrap_content"
-                      android:gravity="end"
-                      android:id="@+id/video_lock_holder"
-        >
-
-            <FrameLayout
-                    android:layout_margin="5dp"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    tools:ignore="UselessParent">
-                <ImageView
-                        android:layout_width="30dp"
-                        android:layout_height="30dp"
-                        android:layout_margin="20dp"
-                        android:id="@+id/video_locked_img"
-                        android:layout_gravity="end|center_vertical"
-                        android:src="@drawable/video_locked">
-                </ImageView>
-                <ImageView
-                        android:id="@+id/video_lock"
-                        android:layout_width="70dp"
-                        android:layout_height="70dp"
-                        android:layout_gravity="end|center_vertical"
-                        android:focusable="true"
-                        android:clickable="true"
-                        android:background="@drawable/video_tap_button_always_white">
-                </ImageView>
-
-            </FrameLayout>
-
-    </LinearLayout>
--->
     <FrameLayout
         android:id="@+id/piphide"
         android:layout_width="match_parent"
         android:layout_height="match_parent">
-
 
         <View
             android:id="@+id/shadow_overlay"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:background="@color/black_overlay" />
+
+        <FrameLayout
+            android:id="@+id/player_metadata_scrim"
+            android:layout_width="350dp"
+            android:layout_height="match_parent"
+            android:background="@drawable/bg_player_metadata_scrim_netflix"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent">
+
+            <LinearLayout
+                android:id="@+id/player_metadata_overlay"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:layout_gravity="center_vertical"
+                android:paddingStart="32dp"
+                android:paddingEnd="16dp"
+                android:paddingBottom="16dp">
+
+                <FrameLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content">
+
+                    <ImageView
+                        android:id="@+id/player_movie_logo"
+                        android:layout_width="wrap_content"
+                        android:layout_height="40dp"
+                        android:adjustViewBounds="true"
+                        android:scaleType="fitStart"
+                        android:visibility="gone"
+                        tools:visibility="visible"/>
+
+                    <TextView
+                        android:id="@+id/player_movie_title"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="center_vertical"
+                        android:textColor="@android:color/white"
+                        android:textSize="22sp"
+                        android:textStyle="bold"
+                        android:maxLines="2"
+                        android:ellipsize="end"
+                        tools:text="Zootopia 2"/>
+                </FrameLayout>
+
+                <TextView
+                    android:id="@+id/player_movie_meta"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:textColor="#B3FFFFFF"
+                    android:textSize="12sp"
+                    android:maxLines="2"
+                    tools:text="Animation • Action • Adventure • 2025 • ⭐ 7.6"/>
+
+                <TextView
+                    android:id="@+id/player_movie_overview"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:textColor="#E6FFFFFF"
+                    android:textSize="14sp"
+                    android:lineSpacingExtra="4dp"
+                    android:maxLines="4"
+                    tools:text="Brave rabbit cop Judy Hopps and her friend, the fox Nick Wilde, team up again to crack a new case."/>
+
+            </LinearLayout>
+        </FrameLayout>
 
         <RelativeLayout
             android:layout_width="match_parent"
@@ -166,8 +127,6 @@
                 android:text="@string/filler" />
         </FrameLayout>
 
-
-        <!-- atm this is useless, however it might be used for PIP one day? -->
         <ImageView
             android:id="@+id/player_fullscreen"
             android:layout_width="30dp"
@@ -195,12 +154,10 @@
             android:importantForAccessibility="no"
             android:visibility="gone" />
 
-
         <androidx.constraintlayout.widget.ConstraintLayout
             android:id="@+id/player_video_holder"
             android:layout_width="match_parent"
             android:layout_height="match_parent">
-
 
             <FrameLayout
                 android:id="@+id/player_top_holder"
@@ -227,7 +184,6 @@
                         android:textColor="@color/white"
                         tools:text="1920x1080" />
 
-
                     <TextView
                         android:id="@+id/player_video_info"
                         android:layout_width="match_parent"
@@ -242,7 +198,9 @@
                         android:id="@+id/player_video_title_holder"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
+                        android:visibility="gone"
                         android:gravity="center">
+                        
                         <TextView
                             android:maxLines="2"
                             android:id="@+id/player_video_title"
@@ -253,6 +211,7 @@
                             android:textStyle="bold"
                             android:visibility="visible"
                             tools:text="Hello world " />
+                        
                         <ImageView
                             android:id="@+id/offline_pin"
                             android:layout_width="16dp"
@@ -264,20 +223,6 @@
                             android:layout_gravity="center"/>
                     </LinearLayout>
                 </LinearLayout>
-
-                <!-- Removed as it has no use anymore-->
-                <!--<androidx.mediarouter.app.MediaRouteButton
-                        android:id="@+id/player_media_route_button"
-                        android:layout_width="70dp"
-                        android:layout_height="70dp"
-                        android:layout_gravity="end"
-                        android:layout_margin="5dp"
-                        android:mediaRouteTypes="user"
-                        android:visibility="visible"
-                        app:layout_constraintRight_toRightOf="parent"
-                        app:layout_constraintTop_toTopOf="parent" />-->
-
-
 
                 <LinearLayout
                     android:id="@+id/player_go_back_holder"
@@ -388,20 +333,16 @@
 
                 </LinearLayout>
 
-
             </FrameLayout>
 
-            <!--use for thinner app:trackThickness="3dp" com.google.android.material.progressindicator.CircularProgressIndicator-->
             <ProgressBar
                 android:id="@+id/player_buffering"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"
-
                 android:clickable="false"
                 android:focusable="false"
                 android:focusableInTouchMode="false"
-
                 android:indeterminate="true"
                 android:visibility="gone"
                 app:layout_constraintBottom_toBottomOf="parent"
@@ -409,10 +350,6 @@
                 app:layout_constraintRight_toRightOf="parent"
                 app:layout_constraintTop_toTopOf="parent"
                 tools:visibility="visible" />
-
-
-
-            <!-- This nested layout is necessary because of buffering and clicking-->
 
             <androidx.constraintlayout.widget.ConstraintLayout
                 android:id="@+id/player_center_menu"
@@ -443,11 +380,9 @@
                         android:layout_width="200dp"
                         android:layout_height="40dp"
                         android:layout_gravity="center"
-
                         android:gravity="center"
                         android:textColor="@color/white"
                         android:textSize="19sp"
-
                         android:textStyle="bold"
                         tools:text="10" />
 
@@ -456,7 +391,6 @@
                         android:layout_width="70dp"
                         android:layout_height="70dp"
                         android:layout_gravity="center"
-
                         android:background="@drawable/video_tap_button_skip"
                         android:nextFocusLeft="@id/player_rew"
                         android:nextFocusUp="@id/player_go_back"
@@ -486,12 +420,9 @@
                         android:layout_gravity="center"
                         android:background="@drawable/video_tap_button"
                         android:nextFocusLeft="@id/player_rew"
-
                         android:nextFocusRight="@id/player_ffwd"
-
                         android:nextFocusUp="@id/player_go_back"
                         android:nextFocusDown="@id/player_lock"
-
                         android:src="@drawable/netflix_pause"
                         app:tint="@color/white"
                         tools:ignore="ContentDescription" />
@@ -524,7 +455,6 @@
                         android:layout_width="70dp"
                         android:layout_height="70dp"
                         android:layout_gravity="center"
-
                         android:background="@drawable/video_tap_button_skip"
                         android:nextFocusRight="@id/player_rew"
                         android:nextFocusUp="@id/player_go_back"
@@ -616,7 +546,6 @@
                 </LinearLayout>
             </androidx.constraintlayout.widget.ConstraintLayout>
 
-
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/skip_chapter_button"
                 style="@style/NiceButton"
@@ -656,14 +585,12 @@
                     app:tint="?attr/colorPrimaryDark"
                     tools:ignore="ContentDescription" />
 
-
                 <ImageButton
                     android:id="@id/exo_repeat_toggle"
                     style="@style/ExoMediaButton"
                     android:tintMode="src_in"
                     app:tint="?attr/colorPrimaryDark"
                     tools:ignore="ContentDescription" />
-
 
                 <ImageButton
                     android:id="@id/exo_next"
@@ -769,7 +696,6 @@
                         app:layout_constraintEnd_toStartOf="@id/exo_duration"
                         app:layout_constraintStart_toEndOf="@+id/exo_position"
                         app:played_color="?attr/colorPrimary"
-
                         app:scrubber_color="?attr/colorPrimary"
                         app:scrubber_dragged_size="26dp"
                         app:scrubber_enabled_size="24dp"
@@ -780,7 +706,6 @@
                         android:layout_width="wrap_content"
                         android:layout_height="30dp"
                         android:layout_gravity="center|center_vertical"
-
                         android:layout_marginEnd="20dp"
                         android:includeFontPadding="false"
                         android:minWidth="50dp"
@@ -798,7 +723,6 @@
                         android:layout_width="wrap_content"
                         android:layout_height="30dp"
                         android:layout_gravity="center|center_vertical"
-
                         android:layout_marginEnd="20dp"
                         android:includeFontPadding="false"
                         android:minWidth="50dp"
@@ -835,7 +759,6 @@
                             android:nextFocusRight="@id/player_resize_btt"
                             android:text="@string/video_lock"
                             app:icon="@drawable/video_locked"
-
                             app:iconSize="30dp" />
 
                         <LinearLayout
@@ -848,7 +771,6 @@
                                 android:id="@+id/player_rotate_btt"
                                 style="@style/VideoButton"
                                 android:nextFocusLeft="@id/player_lock"
-
                                 android:nextFocusRight="@id/player_resize_btt"
                                 android:text="@string/rotate_video"
                                 app:icon="@drawable/screen_rotation" />
@@ -857,7 +779,6 @@
                                 android:id="@+id/player_resize_btt"
                                 style="@style/VideoButton"
                                 android:nextFocusLeft="@id/player_rotate_btt"
-
                                 android:nextFocusRight="@id/player_speed_btt"
                                 android:text="@string/video_aspect_ratio_resize"
                                 app:icon="@drawable/ic_baseline_aspect_ratio_24" />
@@ -866,7 +787,6 @@
                                 android:id="@+id/player_speed_btt"
                                 style="@style/VideoButton"
                                 android:nextFocusLeft="@id/player_resize_btt"
-
                                 android:nextFocusRight="@id/player_subtitle_offset_btt"
                                 app:icon="@drawable/ic_baseline_speed_24"
                                 tools:text="Speed" />
@@ -877,7 +797,6 @@
                                 android:nextFocusLeft="@id/player_speed_btt"
                                 android:nextFocusRight="@id/player_sources_btt"
                                 android:text="@string/subtitle_offset"
-
                                 android:visibility="gone"
                                 app:icon="@drawable/ic_outline_subtitles_24"
                                 tools:visibility="visible" />
@@ -886,18 +805,15 @@
                                 android:id="@+id/player_sources_btt"
                                 style="@style/VideoButton"
                                 android:layout_height="40dp"
-
                                 android:nextFocusLeft="@id/player_subtitle_offset_btt"
                                 android:nextFocusRight="@id/player_tracks_btt"
                                 android:text="@string/video_source"
                                 app:icon="@drawable/ic_baseline_playlist_play_24" />
 
-
                             <com.google.android.material.button.MaterialButton
                                 android:id="@+id/player_tracks_btt"
                                 style="@style/VideoButton"
                                 android:layout_height="40dp"
-
                                 android:nextFocusLeft="@id/player_sources_btt"
                                 android:nextFocusRight="@id/player_skip_op"
                                 android:text="@string/tracks"
@@ -907,7 +823,6 @@
                                 android:id="@+id/player_skip_op"
                                 style="@style/VideoButton"
                                 android:nextFocusLeft="@id/player_sources_btt"
-
                                 android:nextFocusRight="@id/player_skip_episode"
                                 android:text="@string/video_skip_op"
                                 app:icon="@drawable/ic_baseline_fast_forward_24" />
@@ -946,7 +861,6 @@
                 tools:alpha="1"
                 tools:visibility="visible">
 
-                <!-- VERY hacky layout -->
                 <ImageView
                     android:id="@+id/player_progressbar_left_icon"
                     android:layout_width="wrap_content"
@@ -1049,9 +963,6 @@
                     android:progressTintMode="src_in" />
             </RelativeLayout>
         </LinearLayout>
-
-
-
 
     </FrameLayout>
 
