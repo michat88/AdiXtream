@@ -23,6 +23,7 @@ import android.widget.LinearLayout
 import android.widget.RelativeLayout
 import android.widget.ScrollView
 import android.widget.TextView
+import android.widget.VideoView
 import androidx.cardview.widget.CardView
 import androidx.preference.PreferenceManager
 import com.lagradost.cloudstream3.ui.settings.Globals.EMULATOR
@@ -98,15 +99,22 @@ object CampaignPopupManager {
         val actionText = item.optString("actionText", "Tutup")
         val actionLink = item.optString("actionLink")
         val imageUrl = item.optString("imageUrl")
+        
+        // --- DATA TRAILER BARU ---
+        val hasTrailer = item.optBoolean("hasTrailer", false)
+        val trailerUrl = item.optString("trailerUrl", "")
+        // -------------------------
+
         val isDeviceTv = isLayout(TV or EMULATOR)
 
         val scrollAreaId = View.generateViewId()
         val actionBtnId = View.generateViewId()
         val closeTvBtnId = View.generateViewId()
+        val mediaContainerId = View.generateViewId() // ID baru untuk container media
 
         val dialog = Dialog(activity, android.R.style.Theme_Translucent_NoTitleBar)
         dialog.window?.setBackgroundDrawable(ColorDrawable(Color.parseColor("#D905080F"))) 
-        
+       
         val rootLayout = RelativeLayout(activity).apply {
             layoutParams = ViewGroup.LayoutParams(-1, -1)
             gravity = Gravity.CENTER
@@ -134,9 +142,24 @@ object CampaignPopupManager {
         
         val cardContent = RelativeLayout(activity)
         
-        val imageView = ImageView(activity).apply {
-            id = View.generateViewId()
+        // ==========================================
+        // 1. CONTAINER MEDIA (GABUNGAN POSTER & VIDEO)
+        // ==========================================
+        val mediaContainer = FrameLayout(activity).apply {
+            id = mediaContainerId
             layoutParams = RelativeLayout.LayoutParams(-1, dynamicImageHeight)
+            setBackgroundColor(Color.parseColor("#334155"))
+        }
+
+        // 2. VIDEO VIEW (DI LAPISAN BAWAH)
+        val videoView = VideoView(activity).apply {
+            layoutParams = FrameLayout.LayoutParams(-1, -1, Gravity.CENTER)
+            visibility = View.GONE // Disembunyikan dulu sampai waktunya
+        }
+
+        // 3. IMAGE VIEW / POSTER (DI LAPISAN ATAS)
+        val imageView = ImageView(activity).apply {
+            layoutParams = FrameLayout.LayoutParams(-1, -1)
             scaleType = ImageView.ScaleType.CENTER_CROP 
         }
 
@@ -148,10 +171,16 @@ object CampaignPopupManager {
                 imageView.setImageBitmap(bitmap)
             } catch (e: Exception) { imageView.setBackgroundColor(Color.parseColor("#334155")) }
         } else { imageView.setBackgroundColor(Color.parseColor("#334155")) }
+
+        // Susun ke dalam container
+        mediaContainer.addView(videoView)
+        mediaContainer.addView(imageView)
+        cardContent.addView(mediaContainer)
         
+        // 4. GRADIENT VIEW (Nempel ke Media Container)
         val gradientView = View(activity).apply {
             layoutParams = RelativeLayout.LayoutParams(-1, 80.toPx).apply { 
-                addRule(RelativeLayout.ALIGN_BOTTOM, imageView.id) 
+                addRule(RelativeLayout.ALIGN_BOTTOM, mediaContainerId) 
             }
             background = GradientDrawable(
                 GradientDrawable.Orientation.TOP_BOTTOM,
@@ -176,9 +205,10 @@ object CampaignPopupManager {
             visibility = if (isDeviceTv) View.GONE else View.VISIBLE
         }
         
+        // 5. TEXT CONTAINER (Berada di bawah Media Container)
         val textContainer = LinearLayout(activity).apply {
             layoutParams = RelativeLayout.LayoutParams(-1, -2).apply { 
-                addRule(RelativeLayout.BELOW, imageView.id) 
+                addRule(RelativeLayout.BELOW, mediaContainerId) 
             }
             orientation = LinearLayout.VERTICAL
             setPadding(24.toPx, 10.toPx, 24.toPx, 16.toPx) 
@@ -336,7 +366,6 @@ object CampaignPopupManager {
             textContainer.addView(actionBtn) 
         }
         
-        cardContent.addView(imageView)
         cardContent.addView(gradientView)
         cardContent.addView(closeBtn)
         cardContent.addView(textContainer)
@@ -344,6 +373,38 @@ object CampaignPopupManager {
         card.addView(cardContent)
         rootLayout.addView(card)
         dialog.setContentView(rootLayout)
+
+        // ==========================================
+        // 6. LOGIKA TRAILER ALA NETFLIX (DELAY 3 DETIK)
+        // ==========================================
+        if (hasTrailer && trailerUrl.isNotEmpty()) {
+            try {
+                videoView.setVideoURI(Uri.parse(trailerUrl))
+                videoView.setOnPreparedListener { mp ->
+                    mp.isLooping = true // Ulangi video jika habis
+                    mp.setVolume(1f, 1f) // SUARA FULL
+                }
+
+                main {
+                    kotlinx.coroutines.delay(3000) // Tunggu 3 detik
+                    if (dialog.isShowing) {
+                        videoView.visibility = View.VISIBLE
+                        videoView.start()
+                        // Animasikan poster memudar (fade out)
+                        imageView.animate().alpha(0f).setDuration(800).start()
+                    }
+                }
+            } catch (e: Exception) { 
+                Log.e(TAG, "Gagal memuat trailer", e) 
+            }
+        }
+
+        // Matikan video kalau popup ditutup biar gak jalan di background
+        dialog.setOnDismissListener {
+            if (hasTrailer) {
+                try { videoView.stopPlayback() } catch (e: Exception) {}
+            }
+        }
         
         dialog.show()
     }
