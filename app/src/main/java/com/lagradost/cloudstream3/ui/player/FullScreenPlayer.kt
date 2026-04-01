@@ -1,4 +1,4 @@
-package com.lagradost.cloudstream3.ui.playe
+package com.lagradost.cloudstream3.ui.player
 
 import android.animation.ObjectAnimator
 import android.animation.ValueAnimator
