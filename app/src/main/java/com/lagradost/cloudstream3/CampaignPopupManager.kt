@@ -375,14 +375,25 @@ object CampaignPopupManager {
         dialog.setContentView(rootLayout)
 
         // ==========================================
-        // 6. LOGIKA TRAILER ALA NETFLIX (DELAY 3 DETIK)
+        // 6. LOGIKA TRAILER ALA NETFLIX & PEREDAM ERROR
         // ==========================================
         if (hasTrailer && trailerUrl.isNotEmpty()) {
             try {
                 videoView.setVideoURI(Uri.parse(trailerUrl))
+                
                 videoView.setOnPreparedListener { mp ->
                     mp.isLooping = true // Ulangi video jika habis
                     mp.setVolume(1f, 1f) // SUARA FULL
+                }
+
+                // --- PENCEGAH ERROR DI TV / KONEKSI JELEK ---
+                videoView.setOnErrorListener { _, _, _ ->
+                    main {
+                        videoView.visibility = View.GONE
+                        imageView.animate().cancel() // Batalkan animasi fade out kalau lagi jalan
+                        imageView.alpha = 1f // Tampilkan poster lagi dengan jelas
+                    }
+                    true // Return true: Cegah dialog error bawaan OS muncul
                 }
 
                 main {
