@@ -382,16 +382,25 @@ object CampaignPopupManager {
                 videoView.setVideoURI(Uri.parse(trailerUrl))
                 
                 videoView.setOnPreparedListener { mp ->
-                    mp.isLooping = true // Ulangi video jika habis
+                    mp.isLooping = false // --- DIUBAH: Putar 1x saja ---
                     mp.setVolume(1f, 1f) // SUARA FULL
+                }
+
+                // --- EVENT KETIKA VIDEO SELESAI DIPUTAR ---
+                videoView.setOnCompletionListener {
+                    main {
+                        videoView.visibility = View.GONE
+                        imageView.animate().cancel() 
+                        imageView.alpha = 1f // Tampilkan poster lagi
+                    }
                 }
 
                 // --- PENCEGAH ERROR DI TV / KONEKSI JELEK ---
                 videoView.setOnErrorListener { _, _, _ ->
                     main {
                         videoView.visibility = View.GONE
-                        imageView.animate().cancel() // Batalkan animasi fade out kalau lagi jalan
-                        imageView.alpha = 1f // Tampilkan poster lagi dengan jelas
+                        imageView.animate().cancel() 
+                        imageView.alpha = 1f 
                     }
                     true // Return true: Cegah dialog error bawaan OS muncul
                 }
