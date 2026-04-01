@@ -1,4 +1,4 @@
-package com.lagradost.cloudstream3.ui.player
+package com.lagradost.cloudstream3.ui.playe
 
 import android.animation.ValueAnimator
 import android.annotation.SuppressLint
