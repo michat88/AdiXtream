@@ -118,14 +118,12 @@ const val TAG = "CS3ExoPlayer"
 const val PREFERRED_AUDIO_LANGUAGE_KEY = "preferred_audio_language"
 
 /** toleranceBeforeUs – The maximum time that the actual position seeked to may precede the
- * requested seek position, in microseconds.
- * Must be non-negative. */
+ * requested seek position, in microseconds. Must be non-negative. */
 const val toleranceBeforeUs = 300_000L
 
 /**
  * toleranceAfterUs – The maximum time that the actual position seeked to may exceed the requested
- * seek position, in microseconds.
- * Must be non-negative.
+ * seek position, in microseconds. Must be non-negative.
  */
 const val toleranceAfterUs = 300_000L
 
@@ -308,11 +306,9 @@ class CS3IPlayer : IPlayer {
         releasePlayer()
 
         if (link != null) {
-            // [MODIFIKASI KETIGA]: Matikan paksa preview untuk koneksi online agar tidak berebut bandwidth
-            val safePreview = false
-
+            // only video support atm
             (imageGenerator as? PreviewGenerator)?.let { gen ->
-                if (safePreview) {
+                if (preview) {
                     gen.load(link, sameEpisode)
                 } else {
                     gen.clear(sameEpisode)
@@ -390,15 +386,15 @@ class CS3IPlayer : IPlayer {
             ?: return
     }
 
-    override fun setPreferredAudioTrack(trackLanguage: String?, id: String?, trackIndex: Int?) {
-    preferredAudioTrackLanguage = trackLanguage
-    id?.let { trackId ->
-        val trackFormatIndex = trackIndex ?: 0
-        exoPlayer?.currentTracks?.groups
-            ?.filter { it.type == TRACK_TYPE_AUDIO }
-            ?.find { group ->
-                group.getFormats().any { (format, _) ->
-                    format.id == trackId
+    override fun setPreferredAudioTrack(trackLanguage: String?, id: String?, formatIndex: Int?) {
+        preferredAudioTrackLanguage = trackLanguage
+        id?.let { trackId ->
+            val trackFormatIndex = formatIndex ?: 0
+            exoPlayer?.currentTracks?.groups
+                ?.filter { it.type == TRACK_TYPE_AUDIO }
+                ?.find { group ->
+                    group.getFormats().any { (format, _) ->
+                        format.id == trackId
                     }
                 }
                 ?.let { group ->
@@ -634,7 +630,7 @@ class CS3IPlayer : IPlayer {
         if (!isAudioOnlyBackground) {
             handleEvent(CSPlayerEvent.Pause, PlayerEventSource.Player)
         }
-        releasePlayer() // FIX: Diaktifkan kembali agar player tidak jadi zombie
+        //releasePlayer()
     }
 
     override fun onPause() {
@@ -661,6 +657,7 @@ class CS3IPlayer : IPlayer {
         exoPlayer?.setPlaybackSpeed(speed)
         playBackSpeed = speed
     }
+
     companion object {
         private const val CRONET_TIMEOUT_MS = 15_000
 
@@ -773,7 +770,7 @@ class CS3IPlayer : IPlayer {
                 CronetEngine.Builder(context)
                     .enableBrotli(true)
                     .enableHttp2(true)
-                    .enableQuic(false) // [MODIFIKASI KESATU]: QUIC dimatikan
+                    .enableQuic(true)
                     .setStoragePath(cacheDirectory.absolutePath)
                     .setLibraryLoader(null)
                     .enableHttpCache(CronetEngine.Builder.HTTP_CACHE_DISK, diskCacheSize)
@@ -1212,16 +1209,15 @@ class CS3IPlayer : IPlayer {
                             30000,
                             true
                         )
-                        // [MODIFIKASI KEDUA]: Mengubah parameter buffering untuk inisialisasi yang lebih cepat
                         .setBufferDurationsMs(
-                            25000, 
+                            DefaultLoadControl.DEFAULT_MIN_BUFFER_MS,
                             if (videoBufferMs <= 0) {
-                                DefaultLoadControl.DEFAULT_MAX_BUFFER_MS 
+                                DefaultLoadControl.DEFAULT_MAX_BUFFER_MS
                             } else {
                                 videoBufferMs.toInt()
                             },
-                            1500, 
-                            2000  
+                            DefaultLoadControl.DEFAULT_BUFFER_FOR_PLAYBACK_MS,
+                            DefaultLoadControl.DEFAULT_BUFFER_FOR_PLAYBACK_AFTER_REBUFFER_MS
                         ).build()
                 )
 
@@ -1352,6 +1348,7 @@ class CS3IPlayer : IPlayer {
             this.addAnalyticsListener(tracksAnalyticsListener)
         }
     }
+
     private fun loadExo(
         context: Context,
         mediaSlices: List<MediaItemSlice>,
@@ -1419,7 +1416,8 @@ class CS3IPlayer : IPlayer {
                             tracks.groups.filter { it.type == TRACK_TYPE_TEXT }.getFormats()
                                 .mapNotNull { (format, _) ->
                                     // Filter out non subs, already used subs and subs without languages
-                                    if (format.id == null || format.language == null ||
+                                    if (format.id == null ||
+                                        format.language == null ||
                                         format.language?.startsWith("-") == true
                                     ) return@mapNotNull null
 
@@ -1620,7 +1618,7 @@ class CS3IPlayer : IPlayer {
                     }
                         .setLooper(Looper.getMainLooper())
                         .setPosition(contentDuration * percentage / 100)
-//   .setPayload(customPayloadData)
+                        //   .setPayload(customPayloadData)
                         .setDeleteAfterDelivery(false)
                         .send()
                 }
@@ -1870,7 +1868,6 @@ class CS3IPlayer : IPlayer {
                 )
             }
 
-            // [MODIFIKASI KEEMPAT (GABUNGAN)]: Penanganan posisi video Live (DASH/HLS) dari versi Cloudstream asli
             // For DASH or HLS single streams (non-playlist), prefer the player's default
             // live position instead of starting at 0. Use TIME_UNSET to let ExoPlayer pick
             // the live/default position when no explicit start position was provided.
