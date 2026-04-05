@@ -103,6 +103,15 @@ object PremiumManager {
                 putLong(PREF_EXPIRY_DATE, expiryTime) 
                 apply()
             }
+
+            // === ADIXTREAM SECURITY: TUTUP CELAH HAPUS DATA ===
+            // Reset timer dan paksa cek database Firebase detik ini juga!
+            // Jika user Banned coba hapus data & login ulang menggunakan kode lama yang masih aktif, 
+            // dia akan langsung terdeteksi Banned dari server dan ditendang keluar lagi.
+            lastCheckTime = 0L
+            checkAndSyncWithServer(context, deviceId)
+            // ==================================================
+
             return true
 
         } catch (e: Exception) {
@@ -167,7 +176,7 @@ object PremiumManager {
                         val wasPremium = prefs.getBoolean(PREF_IS_PREMIUM, false)
                         
                         if (wasPremium) {
-                            deactivatePremium(context) // Matikan lisensi
+                            deactivatePremium(context) // Matikan lisensi lokal
                             
                             // Tendang user keluar dan restart aplikasi secara paksa
                             Handler(Looper.getMainLooper()).post {
