@@ -1013,6 +1013,21 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
 
             if (!hasTargetRepo || hasInvalidRepos) {
                 Log.d(TAG, "Status Repo tidak sinkron. Melakukan penyesuaian otomatis...")
+
+                // === ADIXTREAM SECURITY: SAPU BERSIH PLUGIN LAMA ===
+                // Jika repo berubah (misal dari Premium kembali ke Free karena Banned),
+                // kita WAJIB menghapus file fisik plugin premium yang sudah terlanjur didownload.
+                try {
+                    APIHolder.allProviders.clear() // Kosongkan memori sementara
+                    val pluginDir1 = java.io.File(this@MainActivity.filesDir, "plugins")
+                    val pluginDir2 = java.io.File(this@MainActivity.filesDir, "Plugins")
+                    if (pluginDir1.exists()) pluginDir1.deleteRecursively() // Hapus file fisik
+                    if (pluginDir2.exists()) pluginDir2.deleteRecursively()
+                } catch (e: Exception) { 
+                    logError(e) 
+                }
+                // ===================================================
+
                 currentRepos.forEach { repo ->
                     RepositoryManager.removeRepository(this@MainActivity, repo)
                 }
