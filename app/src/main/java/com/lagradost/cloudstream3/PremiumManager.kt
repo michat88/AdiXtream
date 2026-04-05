@@ -7,115 +7,91 @@ import android.os.Looper
 import android.provider.Settings
 import android.widget.Toast
 import androidx.preference.PreferenceManager
-import java.security.MessageDigest
+import org.json.JSONObject
+import java.net.HttpURLConnection
+import java.net.URL
 import java.text.SimpleDateFormat
-import java.util.Calendar
 import java.util.Date
 import java.util.Locale
-import java.util.concurrent.TimeUnit
 import kotlin.math.abs
-
-// Import untuk Coroutine (Background Task) & Koneksi HTTP
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import java.net.HttpURLConnection
-import java.net.URL
-
-// Import wajib agar bisa membaca URL terenkripsi dari RepoProtector
 import com.lagradost.cloudstream3.utils.RepoProtector
 
 object PremiumManager {
     private const val PREF_IS_PREMIUM = "is_premium_user"
     private const val PREF_EXPIRY_DATE = "premium_expiry_date"
-    
-    // Kunci Rahasia untuk hashing (SALT). Pastikan ini sama dengan yang ada di Generator Admin.
-    private const val SALT = "ADIXTREAM_SECRET_KEY_2026_SECURE" 
-    
-    // TAHUN PATOKAN (Epoch). Jangan diubah setelah aplikasi rilis ke user.
-    private const val EPOCH_YEAR = 2025 
-
-    // Timer untuk membatasi request ke Firebase agar tidak spam (Debounce)
     private var lastCheckTime = 0L
 
-    // --- REPOSITORY URLS ---
     val PREMIUM_REPO_URL = RepoProtector.decode(RepoProtector.PREMIUM_REPO_ENCODED)
     val FREE_REPO_URL = RepoProtector.decode(RepoProtector.FREE_REPO_ENCODED)
-    // -----------------------
 
     fun getDeviceId(context: Context): String {
         val androidId = Settings.Secure.getString(context.contentResolver, Settings.Secure.ANDROID_ID)
         return abs(androidId.hashCode()).toString().take(8)
     }
 
-    fun generateUnlockCode(deviceId: String, daysValid: Int): String {
-        val calendar = Calendar.getInstance()
-        calendar.add(Calendar.DAY_OF_YEAR, daysValid)
-        val targetDate = calendar.time
-
-        val epochCal = Calendar.getInstance()
-        epochCal.set(EPOCH_YEAR, Calendar.JANUARY, 1, 0, 0, 0)
-        
-        val diffMillis = targetDate.time - epochCal.timeInMillis
-        val daysFromEpoch = TimeUnit.MILLISECONDS.toDays(diffMillis).toInt()
-
-        val dateHex = "%03X".format(daysFromEpoch)
-
-        val signatureInput = "$deviceId$dateHex$SALT"
-        val signatureHash = MessageDigest.getInstance("MD5").digest(signatureInput.toByteArray())
-        val signatureHex = signatureHash.joinToString("") { "%02x".format(it) }
-            .substring(0, 3).uppercase()
-
-        return "$dateHex$signatureHex"
-    }
-
-    fun activatePremiumWithCode(context: Context, code: String, deviceId: String): Boolean {
-        if (code.length != 6) return false
-
-        val inputCode = code.uppercase()
-        val datePartHex = inputCode.substring(0, 3) 
-        val sigPartHex = inputCode.substring(3, 6)  
-
-        val checkInput = "$deviceId$datePartHex$SALT"
-        val checkHashBytes = MessageDigest.getInstance("MD5").digest(checkInput.toByteArray())
-        val expectedSig = checkHashBytes.joinToString("") { "%02x".format(it) }
-            .substring(0, 3).uppercase()
-
-        if (sigPartHex != expectedSig) {
-            return false 
+    /**
+     * VERIFIKASI KODE ONLINE KE FIREBASE
+     * Fungsi ini sekarang bekerja secara Asynchronous (Background).
+     */
+    fun activatePremiumWithCode(context: Context, code: String, deviceId: String, onResult: (Boolean, String) -> Unit) {
+        if (code.length != 6) {
+            onResult(false, "Format kode harus 6 karakter")
+            return
         }
 
-        try {
-            val daysFromEpoch = datePartHex.toInt(16) 
-            val expiryCal = Calendar.getInstance()
-            expiryCal.set(EPOCH_YEAR, Calendar.JANUARY, 1, 0, 0, 0)
-            expiryCal.add(Calendar.DAY_OF_YEAR, daysFromEpoch)
-            
-            val expiryTime = expiryCal.timeInMillis
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                val urlString = "https://adixtream-premium-default-rtdb.asia-southeast1.firebasedatabase.app/users/$deviceId.json"
+                val url = URL(urlString)
+                val connection = url.openConnection() as HttpURLConnection
+                connection.requestMethod = "GET"
+                connection.connectTimeout = 5000 
+                connection.readTimeout = 5000
 
-            if (System.currentTimeMillis() > expiryTime) {
-                return false 
+                if (connection.responseCode == HttpURLConnection.HTTP_OK) {
+                    val response = connection.inputStream.bufferedReader().use { it.readText() }
+                    
+                    if (response != "null") {
+                        val jsonResponse = JSONObject(response)
+                        val dbStatus = jsonResponse.optString("status", "")
+                        val dbCode = jsonResponse.optString("code", "")
+                        val dbExpired = jsonResponse.optLong("expired_at", 0L)
+
+                        if (dbStatus == "banned") {
+                            Handler(Looper.getMainLooper()).post { onResult(false, "Device ini telah di-banned oleh Admin!") }
+                            return@launch
+                        }
+
+                        // Cek apakah kode cocok dengan database online
+                        if (dbCode == code.uppercase()) {
+                            if (System.currentTimeMillis() < dbExpired) {
+                                // BERHASIL! Simpan data lokal
+                                val prefs = PreferenceManager.getDefaultSharedPreferences(context)
+                                prefs.edit().apply {
+                                    putBoolean(PREF_IS_PREMIUM, true)
+                                    putLong(PREF_EXPIRY_DATE, dbExpired) 
+                                    apply()
+                                }
+                                lastCheckTime = System.currentTimeMillis()
+                                Handler(Looper.getMainLooper()).post { onResult(true, "Aktivasi Berhasil") }
+                            } else {
+                                Handler(Looper.getMainLooper()).post { onResult(false, "Masa aktif kode ini sudah kadaluarsa!") }
+                            }
+                        } else {
+                            Handler(Looper.getMainLooper()).post { onResult(false, "Kode salah / tidak valid untuk Device ini!") }
+                        }
+                    } else {
+                         Handler(Looper.getMainLooper()).post { onResult(false, "Device belum terdaftar di Server. Hubungi Admin.") }
+                    }
+                } else {
+                    Handler(Looper.getMainLooper()).post { onResult(false, "Gagal menghubungi Server (Error ${connection.responseCode})") }
+                }
+            } catch (e: Exception) {
+                Handler(Looper.getMainLooper()).post { onResult(false, "Koneksi Internet Error / Timeout") }
             }
-
-            val prefs = PreferenceManager.getDefaultSharedPreferences(context)
-            prefs.edit().apply {
-                putBoolean(PREF_IS_PREMIUM, true)
-                putLong(PREF_EXPIRY_DATE, expiryTime) 
-                apply()
-            }
-
-            // === ADIXTREAM SECURITY: TUTUP CELAH HAPUS DATA ===
-            // Reset timer dan paksa cek database Firebase detik ini juga!
-            // Jika user Banned coba hapus data & login ulang menggunakan kode lama yang masih aktif, 
-            // dia akan langsung terdeteksi Banned dari server dan ditendang keluar lagi.
-            lastCheckTime = 0L
-            checkAndSyncWithServer(context, deviceId)
-            // ==================================================
-
-            return true
-
-        } catch (e: Exception) {
-            return false
         }
     }
 
@@ -168,26 +144,32 @@ object PremiumManager {
                     val response = connection.inputStream.bufferedReader().use { it.readText() }
                     
                     if (response == "null") {
-                        registerUserToServer(deviceId)
-                    } else if (response.contains("\"status\":\"banned\"") || response.contains("\"status\": \"banned\"")) {
-                        
-                        // === ADIXTREAM SECURITY: AUTO-KICK SYSTEM ===
+                        registerUserToServer(context, deviceId)
+                    } else {
+                        val jsonResponse = JSONObject(response)
+                        val dbStatus = jsonResponse.optString("status", "")
+                        val dbExpired = jsonResponse.optLong("expired_at", 0L)
+
                         val prefs = PreferenceManager.getDefaultSharedPreferences(context)
                         val wasPremium = prefs.getBoolean(PREF_IS_PREMIUM, false)
                         
-                        if (wasPremium) {
-                            deactivatePremium(context) // Matikan lisensi lokal
-                            
-                            // Tendang user keluar dan restart aplikasi secara paksa
-                            Handler(Looper.getMainLooper()).post {
-                                Toast.makeText(context, "⛔ AKSES PREMIUM DICABUT OLEH ADMIN!", Toast.LENGTH_LONG).show()
-                                val intent = context.packageManager.getLaunchIntentForPackage(context.packageName)
-                                val mainIntent = Intent.makeRestartActivityTask(intent?.component)
-                                context.startActivity(mainIntent)
-                                Runtime.getRuntime().exit(0)
+                        // AUTO-KICK SYSTEM JIKA DI-BANNED ATAU MASA AKTIF SERVER HABIS
+                        if (dbStatus == "banned" || (dbExpired > 0L && System.currentTimeMillis() > dbExpired)) {
+                            if (wasPremium) {
+                                deactivatePremium(context) 
+                                
+                                Handler(Looper.getMainLooper()).post {
+                                    Toast.makeText(context, "⛔ AKSES PREMIUM BERAKHIR / DICABUT ADMIN!", Toast.LENGTH_LONG).show()
+                                    val intent = context.packageManager.getLaunchIntentForPackage(context.packageName)
+                                    val mainIntent = Intent.makeRestartActivityTask(intent?.component)
+                                    context.startActivity(mainIntent)
+                                    Runtime.getRuntime().exit(0)
+                                }
                             }
+                        } else if (dbStatus == "aktif" && dbExpired > 0L) {
+                            // Sinkronkan masa aktif lokal dengan server diam-diam
+                            prefs.edit().putLong(PREF_EXPIRY_DATE, dbExpired).apply()
                         }
-                        // ============================================
                     }
                 }
             } catch (e: Exception) {
@@ -195,8 +177,11 @@ object PremiumManager {
         }
     }
 
-    private fun registerUserToServer(deviceId: String) {
+    private fun registerUserToServer(context: Context, deviceId: String) {
         try {
+            val prefs = PreferenceManager.getDefaultSharedPreferences(context)
+            val localExpiry = prefs.getLong(PREF_EXPIRY_DATE, 0L)
+
             val urlString = "https://adixtream-premium-default-rtdb.asia-southeast1.firebasedatabase.app/users/$deviceId.json"
             val url = URL(urlString)
             val connection = url.openConnection() as HttpURLConnection
@@ -204,9 +189,14 @@ object PremiumManager {
             connection.setRequestProperty("Content-Type", "application/json")
             connection.doOutput = true
             
-            val jsonInputString = "{\"status\": \"aktif\", \"last_update\": \"Auto-Sync from Android App\"}"
+            val jsonPayload = JSONObject().apply {
+                put("status", "aktif")
+                put("expired_at", localExpiry)
+                put("last_update", "Auto-Sync from Android App")
+            }.toString()
+            
             connection.outputStream.use { os ->
-                val input = jsonInputString.toByteArray(Charsets.UTF_8)
+                val input = jsonPayload.toByteArray(Charsets.UTF_8)
                 os.write(input, 0, input.size)
             }
             connection.responseCode 
