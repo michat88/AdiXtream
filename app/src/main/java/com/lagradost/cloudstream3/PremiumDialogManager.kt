@@ -43,7 +43,7 @@ object PremiumDialogManager {
                 return if (isTv) false else super.requestRectangleOnScreen(rect, immediate)
             }
             
-            // PERBAIKAN ERROR: child menggunakan View (tanpa tanda ?), rectangle menggunakan Rect?
+            // PERBAIKAN ERROR: child menggunakan View, rectangle menggunakan Rect?
             override fun requestChildRectangleOnScreen(child: View, rectangle: android.graphics.Rect?, immediate: Boolean): Boolean {
                 return if (isTv) false else super.requestChildRectangleOnScreen(child, rectangle, immediate)
             }
@@ -107,7 +107,7 @@ object PremiumDialogManager {
             setPadding(40, 30, 40, 30)
             background = priceBoxBg
             layoutParams = LinearLayout.LayoutParams(-1, -2).apply { setMargins(10, 0, 10, if(isTv) 15 else 30) }
-             
+            
             fun addPrice(dur: String, price: String) {
                 val row = LinearLayout(activity).apply {
                     orientation = LinearLayout.HORIZONTAL
@@ -264,8 +264,7 @@ object PremiumDialogManager {
         
         // Tombol Telegram 
         val telBackground = android.graphics.drawable.GradientDrawable().apply { 
-            setColor(android.graphics.Color.TRANSPARENT); 
-            cornerRadius = 16f.toPx 
+            setColor(android.graphics.Color.TRANSPARENT); cornerRadius = 16f.toPx 
         }
 
         val btnAdminRow = LinearLayout(activity).apply {
@@ -297,30 +296,43 @@ object PremiumDialogManager {
         btnAdminRow.addView(textAdmin)
         btnAdminRow.addView(iconAdmin)
 
-        // Logika Klik Unlock
+        // Logika Klik Unlock (ONLINE SYSTEM)
         btnUnlock.setOnClickListener {
             val code = inputCode.text.toString().trim().uppercase()
-            val isSuccess = PremiumManager.activatePremiumWithCode(activity, code, deviceIdVal)
+            if (code.isEmpty()) {
+                Toast.makeText(activity, "Masukkan kode terlebih dahulu!", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
             
-            if (isSuccess) {
-                (btnUnlock.tag as? Dialog)?.dismiss()
-                val expiryDate = PremiumManager.getExpiryDateString(activity)
+            // Ubah teks tombol jadi proses loading
+            btnUnlock.text = "MEMVERIFIKASI..."
+            btnUnlock.isEnabled = false
+
+            PremiumManager.activatePremiumWithCode(activity, code, deviceIdVal) { isSuccess, message ->
+                // Kembalikan tombol seperti semula setelah server menjawab
+                btnUnlock.isEnabled = true
+                btnUnlock.text = "UNLOCK NOW"
                 
-                AlertDialog.Builder(activity)
-                    .setTitle("✅ PREMIUM DIAKTIFKAN")
-                    .setMessage("Terima kasih telah berlangganan!\n\n📅 Masa Aktif: $expiryDate\n\nAplikasi akan direstart...")
-                    .setCancelable(false)
-                    .setPositiveButton("OK") { _, _ ->
-                        val packageManager = activity.packageManager
-                        val intent = packageManager.getLaunchIntentForPackage(activity.packageName)
-                        val componentName = intent?.component
-                        val mainIntent = Intent.makeRestartActivityTask(componentName)
-                        activity.startActivity(mainIntent)
-                        Runtime.getRuntime().exit(0)
-                    }
-                    .show()
-            } else {
-                Toast.makeText(activity, "⛔ Kode Salah / Sudah Expired!", Toast.LENGTH_SHORT).show()
+                if (isSuccess) {
+                    (btnUnlock.tag as? Dialog)?.dismiss()
+                    val expiryDate = PremiumManager.getExpiryDateString(activity)
+                    
+                    AlertDialog.Builder(activity)
+                        .setTitle("✅ PREMIUM DIAKTIFKAN")
+                        .setMessage("Terima kasih telah berlangganan!\n\n📅 Masa Aktif: $expiryDate\n\nAplikasi akan direstart...")
+                        .setCancelable(false)
+                        .setPositiveButton("OK") { _, _ ->
+                            val packageManager = activity.packageManager
+                            val intent = packageManager.getLaunchIntentForPackage(activity.packageName)
+                            val componentName = intent?.component
+                            val mainIntent = Intent.makeRestartActivityTask(componentName)
+                            activity.startActivity(mainIntent)
+                            Runtime.getRuntime().exit(0)
+                        }
+                        .show()
+                } else {
+                    Toast.makeText(activity, "⛔ $message", Toast.LENGTH_LONG).show()
+                }
             }
         }
 
