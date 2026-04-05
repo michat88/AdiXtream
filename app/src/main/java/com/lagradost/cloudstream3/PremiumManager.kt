@@ -11,6 +11,13 @@ import java.util.Locale
 import java.util.concurrent.TimeUnit
 import kotlin.math.abs
 
+// Import untuk Coroutine (Background Task) & Koneksi HTTP
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import java.net.HttpURLConnection
+import java.net.URL
+
 // Import wajib agar bisa membaca URL terenkripsi dari RepoProtector
 import com.lagradost.cloudstream3.utils.RepoProtector
 
@@ -23,6 +30,9 @@ object PremiumManager {
     
     // TAHUN PATOKAN (Epoch). Jangan diubah setelah aplikasi rilis ke user.
     private const val EPOCH_YEAR = 2025 
+
+    // Timer untuk membatasi request ke Firebase agar tidak spam (Debounce)
+    private var lastCheckTime = 0L
 
     // --- REPOSITORY URLS ---
     // Mengambil URL yang sudah didecode dari RepoProtector agar tidak terbaca plain text
@@ -127,7 +137,7 @@ object PremiumManager {
 
     /**
      * Cek Status Premium
-     * Mengembalikan true jika user premium DAN belum expired.
+     * Mengembalikan true jika user premium DAN belum expired DAN tidak di-Banned.
      */
     fun isPremium(context: Context): Boolean {
         val prefs = PreferenceManager.getDefaultSharedPreferences(context)
@@ -135,11 +145,19 @@ object PremiumManager {
         val expiryDate = prefs.getLong(PREF_EXPIRY_DATE, 0)
         
         if (isPremium) {
-            // Cek apakah hari ini sudah melewati tanggal expiry
+            // 1. CEK LOKAL: Apakah hari ini sudah melewati tanggal expiry?
             if (System.currentTimeMillis() > expiryDate) {
                 deactivatePremium(context) // Otomatis matikan premium jika lewat tanggal
                 return false
             }
+
+            // 2. CEK ONLINE SERVER (Sistem Blacklist & Auto-Registration)
+            // Hanya mengecek setiap 5 menit agar tidak membebani server/kuota user
+            if (System.currentTimeMillis() - lastCheckTime > 5 * 60 * 1000) {
+                lastCheckTime = System.currentTimeMillis()
+                checkAndSyncWithServer(context, getDeviceId(context))
+            }
+
             return true
         }
         return false
@@ -164,5 +182,61 @@ object PremiumManager {
         val prefs = PreferenceManager.getDefaultSharedPreferences(context)
         val date = prefs.getLong(PREF_EXPIRY_DATE, 0)
         return if (date == 0L) "Non-Premium" else SimpleDateFormat("dd MMM yyyy", Locale.getDefault()).format(Date(date))
+    }
+
+    // =======================================================
+    // MODIFIKASI ADIXTREAM: FUNGSI KONEKSI DATABASE FIREBASE
+    // =======================================================
+    
+    private fun checkAndSyncWithServer(context: Context, deviceId: String) {
+        // Dijalankan di background thread agar tidak membuat aplikasi lag/hang
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                // Pastikan URL Firebase ini benar!
+                val urlString = "https://adixtream-premium-default-rtdb.asia-southeast1.firebasedatabase.app/users/$deviceId.json"
+                val url = URL(urlString)
+                val connection = url.openConnection() as HttpURLConnection
+                connection.requestMethod = "GET"
+                connection.connectTimeout = 5000 // Maksimal nunggu 5 detik
+                connection.readTimeout = 5000
+
+                if (connection.responseCode == HttpURLConnection.HTTP_OK) {
+                    val response = connection.inputStream.bufferedReader().use { it.readText() }
+                    
+                    if (response == "null") {
+                        // KASUS 1: User belum ada di Database. Lakukan AUTO-REGISTRATION!
+                        registerUserToServer(deviceId)
+                    } else if (response.contains("\"status\":\"banned\"") || response.contains("\"status\": \"banned\"")) {
+                        // KASUS 2: User terdeteksi BANNED di Database Admin!
+                        // Langsung hancurkan data premium lokalnya secara permanen
+                        deactivatePremium(context)
+                    }
+                    // Jika status "aktif", biarkan saja berjalan normal.
+                }
+            } catch (e: Exception) {
+                // Jika error jaringan (misal user offline / mode pesawat), abaikan pengecekan (Premium tetap jalan sementara)
+            }
+        }
+    }
+
+    private fun registerUserToServer(deviceId: String) {
+        try {
+            val urlString = "https://adixtream-premium-default-rtdb.asia-southeast1.firebasedatabase.app/users/$deviceId.json"
+            val url = URL(urlString)
+            val connection = url.openConnection() as HttpURLConnection
+            connection.requestMethod = "PATCH" // Buat/Update data baru
+            connection.setRequestProperty("Content-Type", "application/json")
+            connection.doOutput = true
+            
+            // Tulis status aktif ke Firebase
+            val jsonInputString = "{\"status\": \"aktif\", \"last_update\": \"Auto-Sync from Android App\"}"
+            connection.outputStream.use { os ->
+                val input = jsonInputString.toByteArray(Charsets.UTF_8)
+                os.write(input, 0, input.size)
+            }
+            connection.responseCode // Jalankan eksekusi
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
     }
 }
