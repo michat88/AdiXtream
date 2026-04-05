@@ -153,13 +153,24 @@ object PremiumManager {
                         val prefs = PreferenceManager.getDefaultSharedPreferences(context)
                         val wasPremium = prefs.getBoolean(PREF_IS_PREMIUM, false)
                         
-                        // AUTO-KICK SYSTEM JIKA DI-BANNED ATAU MASA AKTIF SERVER HABIS
-                        if (dbStatus == "banned" || (dbExpired > 0L && System.currentTimeMillis() > dbExpired)) {
+                        // KITA PISAHKAN LOGIKA BANNED DAN EXPIRED
+                        val isBanned = dbStatus == "banned"
+                        val isExpired = dbStatus == "aktif" && dbExpired > 0L && System.currentTimeMillis() > dbExpired
+                        
+                        // AUTO-KICK SYSTEM 
+                        if (isBanned || isExpired) {
                             if (wasPremium) {
-                                deactivatePremium(context) 
+                                deactivatePremium(context) // Matikan lisensi lokal
                                 
                                 Handler(Looper.getMainLooper()).post {
-                                    Toast.makeText(context, "⛔ AKSES PREMIUM BERAKHIR / DICABUT ADMIN!", Toast.LENGTH_LONG).show()
+                                    // Pesan dibedakan berdasarkan statusnya
+                                    val pesan = if (isBanned) {
+                                        "⛔ AKSES PREMIUM DICABUT OLEH ADMIN!"
+                                    } else {
+                                        "⚠️ Masa Aktif Premium Habis. Yuk perpanjang lagi!"
+                                    }
+                                    
+                                    Toast.makeText(context, pesan, Toast.LENGTH_LONG).show()
                                     val intent = context.packageManager.getLaunchIntentForPackage(context.packageName)
                                     val mainIntent = Intent.makeRestartActivityTask(intent?.component)
                                     context.startActivity(mainIntent)
