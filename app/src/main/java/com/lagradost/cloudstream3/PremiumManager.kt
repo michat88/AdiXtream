@@ -20,56 +20,23 @@ import kotlinx.coroutines.launch
 import com.lagradost.cloudstream3.utils.RepoProtector
 
 object PremiumManager {
-    private const val PREF_IS_PREMIUM   = "is_premium_user"
-    private const val PREF_EXPIRY_DATE  = "premium_expiry_date"
-
-    // FIX BUG 3: Semua URL Firebase dipusatkan di satu konstanta.
-    // Kalau URL berubah, cukup ganti di SINI saja.
-    private const val FIREBASE_BASE_URL =
-        "https://adixtream-premium-default-rtdb.asia-southeast1.firebasedatabase.app/users"
-
-    // Interval sync background: 5 menit
-    private const val SYNC_INTERVAL_MS = 5 * 60 * 1000L
-
+    private const val PREF_IS_PREMIUM = "is_premium_user"
+    private const val PREF_EXPIRY_DATE = "premium_expiry_date"
     private var lastCheckTime = 0L
 
     val PREMIUM_REPO_URL = RepoProtector.decode(RepoProtector.PREMIUM_REPO_ENCODED)
-    val FREE_REPO_URL    = RepoProtector.decode(RepoProtector.FREE_REPO_ENCODED)
+    val FREE_REPO_URL = RepoProtector.decode(RepoProtector.FREE_REPO_ENCODED)
 
-    // =========================================================================
-    // Device ID — dikembalikan ke format asli (8 digit angka)
-    // agar kompatibel dengan data user yang sudah ada di Firebase.
-    // Format baru (DV prefix) dibatalkan karena breaking change.
-    // =========================================================================
     fun getDeviceId(context: Context): String {
-        val androidId = Settings.Secure.getString(
-            context.contentResolver,
-            Settings.Secure.ANDROID_ID
-        ) ?: "UNKNOWN"
+        val androidId = Settings.Secure.getString(context.contentResolver, Settings.Secure.ANDROID_ID)
         return abs(androidId.hashCode()).toString().take(8)
     }
 
-    // =========================================================================
-    // Fungsi helper: Buat URL per-device
-    // =========================================================================
-    private fun deviceUrl(deviceId: String) = "$FIREBASE_BASE_URL/${deviceId.trim().uppercase()}.json"
-
-    // =========================================================================
-    // Helper: Normalisasi status dari Firebase agar tidak case-sensitive
-    // FIX BUG 4: Admin yang salah ketik "Aktif" (kapital) tetap dikenali
-    // =========================================================================
-    private fun String.normalizeStatus() = this.trim().lowercase()
-
-    // =========================================================================
-    // VERIFIKASI KODE ONLINE KE FIREBASE
-    // Bekerja secara Asynchronous (Background) — tidak memblokir UI.
-    // =========================================================================
-    fun activatePremiumWithCode(
-        context:  Context,
-        code:     String,
-        deviceId: String,
-        onResult: (Boolean, String) -> Unit
-    ) {
+    /**
+     * VERIFIKASI KODE ONLINE KE FIREBASE
+     * Fungsi ini sekarang bekerja secara Asynchronous (Background).
+     */
+    fun activatePremiumWithCode(context: Context, code: String, deviceId: String, onResult: (Boolean, String) -> Unit) {
         if (code.length != 6) {
             onResult(false, "Format kode harus 6 karakter")
             return
@@ -77,208 +44,175 @@ object PremiumManager {
 
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                val connection = openGetConnection(deviceUrl(deviceId))
+                val urlString = "https://adixtream-premium-default-rtdb.asia-southeast1.firebasedatabase.app/users/$deviceId.json"
+                val url = URL(urlString)
+                val connection = url.openConnection() as HttpURLConnection
+                connection.requestMethod = "GET"
+                connection.connectTimeout = 5000 
+                connection.readTimeout = 5000
 
                 if (connection.responseCode == HttpURLConnection.HTTP_OK) {
                     val response = connection.inputStream.bufferedReader().use { it.readText() }
+                    
+                    if (response != "null") {
+                        val jsonResponse = JSONObject(response)
+                        val dbStatus = jsonResponse.optString("status", "")
+                        val dbCode = jsonResponse.optString("code", "")
+                        val dbExpired = jsonResponse.optLong("expired_at", 0L)
 
-                    if (response.trim() == "null") {
-                        // Device belum terdaftar sama sekali di Firebase
-                        // FIX BUG 1: Kita TIDAK auto-register di sini.
-                        // User yang belum terdaftar berarti belum bayar.
-                        postMain { onResult(false, "Device belum terdaftar di Server. Hubungi Admin.") }
-                        return@launch
-                    }
+                        if (dbStatus == "banned") {
+                            Handler(Looper.getMainLooper()).post { onResult(false, "Device ini telah di-banned oleh Admin!") }
+                            return@launch
+                        }
 
-                    val json      = JSONObject(response)
-                    val dbStatus  = json.optString("status", "").normalizeStatus()
-                    val dbCode    = json.optString("code", "")
-                    val dbExpired = json.optLong("expired_at", 0L)
-
-                    when {
-                        dbStatus == "banned" -> {
-                            postMain { onResult(false, "Device ini telah di-banned oleh Admin!") }
-                        }
-                        dbCode.trim().uppercase() != code.trim().uppercase() -> {
-                            postMain { onResult(false, "Kode salah / tidak valid untuk Device ini!") }
-                        }
-                        System.currentTimeMillis() >= dbExpired -> {
-                            postMain { onResult(false, "Masa aktif kode ini sudah kadaluarsa!") }
-                        }
-                        else -> {
-                            // Semua valid → simpan lokal
-                            val prefs = PreferenceManager.getDefaultSharedPreferences(context)
-                            prefs.edit().apply {
-                                putBoolean(PREF_IS_PREMIUM, true)
-                                putLong(PREF_EXPIRY_DATE, dbExpired)
-                                apply()
+                        // Cek apakah kode cocok dengan database online
+                        if (dbCode == code.uppercase()) {
+                            if (System.currentTimeMillis() < dbExpired) {
+                                // BERHASIL! Simpan data lokal
+                                val prefs = PreferenceManager.getDefaultSharedPreferences(context)
+                                prefs.edit().apply {
+                                    putBoolean(PREF_IS_PREMIUM, true)
+                                    putLong(PREF_EXPIRY_DATE, dbExpired) 
+                                    apply()
+                                }
+                                lastCheckTime = System.currentTimeMillis()
+                                Handler(Looper.getMainLooper()).post { onResult(true, "Aktivasi Berhasil") }
+                            } else {
+                                Handler(Looper.getMainLooper()).post { onResult(false, "Masa aktif kode ini sudah kadaluarsa!") }
                             }
-                            lastCheckTime = System.currentTimeMillis()
-                            postMain { onResult(true, "Aktivasi Berhasil") }
+                        } else {
+                            Handler(Looper.getMainLooper()).post { onResult(false, "Kode salah / tidak valid untuk Device ini!") }
                         }
+                    } else {
+                         Handler(Looper.getMainLooper()).post { onResult(false, "Device belum terdaftar di Server. Hubungi Admin.") }
                     }
                 } else {
-                    postMain { onResult(false, "Gagal menghubungi Server (Error ${connection.responseCode})") }
+                    Handler(Looper.getMainLooper()).post { onResult(false, "Gagal menghubungi Server (Error ${connection.responseCode})") }
                 }
             } catch (e: Exception) {
-                postMain { onResult(false, "Koneksi Internet Error / Timeout") }
+                Handler(Looper.getMainLooper()).post { onResult(false, "Koneksi Internet Error / Timeout") }
             }
         }
     }
 
-    // =========================================================================
-    // CEK STATUS PREMIUM — Optimistic UI (disengaja, tidak blocking)
-    //
-    // Return langsung berdasarkan data lokal, lalu sync ke server
-    // di background setiap 5 menit. Auto-kick bekerja 1-5 detik kemudian.
-    // Ini trade-off UX yang disengaja agar tidak freeze saat pindah menu.
-    // =========================================================================
     fun isPremium(context: Context): Boolean {
-        val prefs      = PreferenceManager.getDefaultSharedPreferences(context)
-        val isPremium  = prefs.getBoolean(PREF_IS_PREMIUM, false)
-        val expiryDate = prefs.getLong(PREF_EXPIRY_DATE, 0L)
+        val prefs = PreferenceManager.getDefaultSharedPreferences(context)
+        val isPremium = prefs.getBoolean(PREF_IS_PREMIUM, false)
+        val expiryDate = prefs.getLong(PREF_EXPIRY_DATE, 0)
+        
+        if (isPremium) {
+            if (System.currentTimeMillis() > expiryDate) {
+                deactivatePremium(context) 
+                return false
+            }
 
-        if (!isPremium) return false
-
-        // Cek expiry lokal dulu (tidak butuh network)
-        if (System.currentTimeMillis() > expiryDate) {
-            deactivatePremium(context)
-            return false
+            if (System.currentTimeMillis() - lastCheckTime > 5 * 60 * 1000) {
+                lastCheckTime = System.currentTimeMillis()
+                checkAndSyncWithServer(context, getDeviceId(context))
+            }
+            return true
         }
-
-        // Background sync setiap SYNC_INTERVAL_MS
-        if (System.currentTimeMillis() - lastCheckTime > SYNC_INTERVAL_MS) {
-            lastCheckTime = System.currentTimeMillis()
-            checkAndSyncWithServer(context, getDeviceId(context))
-        }
-
-        return true
+        return false
     }
 
-    // =========================================================================
-    // DEAKTIVASI PREMIUM LOKAL
-    // =========================================================================
     fun deactivatePremium(context: Context) {
-        PreferenceManager.getDefaultSharedPreferences(context).edit().apply {
+        val prefs = PreferenceManager.getDefaultSharedPreferences(context)
+        prefs.edit().apply {
             putBoolean(PREF_IS_PREMIUM, false)
-            putLong(PREF_EXPIRY_DATE, 0L)
+            putLong(PREF_EXPIRY_DATE, 0)
             apply()
         }
     }
-
-    // =========================================================================
-    // AMBIL TANGGAL EXPIRY SEBAGAI STRING
-    // =========================================================================
+    
     fun getExpiryDateString(context: Context): String {
-        val date = PreferenceManager.getDefaultSharedPreferences(context)
-            .getLong(PREF_EXPIRY_DATE, 0L)
-        return if (date == 0L) "Non-Premium"
-        else SimpleDateFormat("dd MMM yyyy", Locale.getDefault()).format(Date(date))
+        val prefs = PreferenceManager.getDefaultSharedPreferences(context)
+        val date = prefs.getLong(PREF_EXPIRY_DATE, 0)
+        return if (date == 0L) "Non-Premium" else SimpleDateFormat("dd MMM yyyy", Locale.getDefault()).format(Date(date))
     }
-
-    // =========================================================================
-    // SYNC BACKGROUND KE SERVER
-    //
-    // FIX BUG 1: Fungsi registerUserToServer() DIHAPUS total.
-    //   Sebelumnya, kalau user belum ada di Firebase, app otomatis mendaftarkan
-    //   mereka dengan status "aktif" dan expired_at dari lokal (yang bisa = 0).
-    //   Ini salah — user yang belum terdaftar berarti belum bayar.
-    //   Sekarang: kalau Firebase return "null", kita cukup deactivate lokal.
-    //
-    // FIX BUG 4: Status dinormalisasi lowercase sebelum dibandingkan,
-    //   sehingga "Aktif", "AKTIF", "aktif" semua dikenali dengan benar.
-    // =========================================================================
+    
     private fun checkAndSyncWithServer(context: Context, deviceId: String) {
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                val connection = openGetConnection(deviceUrl(deviceId))
+                val urlString = "https://adixtream-premium-default-rtdb.asia-southeast1.firebasedatabase.app/users/$deviceId.json"
+                val url = URL(urlString)
+                val connection = url.openConnection() as HttpURLConnection
+                connection.requestMethod = "GET"
+                connection.connectTimeout = 5000 
+                connection.readTimeout = 5000
 
-                if (connection.responseCode != HttpURLConnection.HTTP_OK) return@launch
+                if (connection.responseCode == HttpURLConnection.HTTP_OK) {
+                    val response = connection.inputStream.bufferedReader().use { it.readText() }
+                    
+                    if (response == "null") {
+                        registerUserToServer(context, deviceId)
+                    } else {
+                        val jsonResponse = JSONObject(response)
+                        val dbStatus = jsonResponse.optString("status", "")
+                        val dbExpired = jsonResponse.optLong("expired_at", 0L)
 
-                val response = connection.inputStream.bufferedReader().use { it.readText() }
-
-                if (response.trim() == "null") {
-                    // FIX BUG 1: User tidak ditemukan di server → cabut akses lokal
-                    // (bukan auto-register seperti sebelumnya)
-                    val wasPremium = PreferenceManager.getDefaultSharedPreferences(context)
-                        .getBoolean(PREF_IS_PREMIUM, false)
-                    if (wasPremium) {
-                        deactivatePremium(context)
-                        postMain {
-                            Toast.makeText(
-                                context,
-                                "⛔ Data tidak ditemukan di Server. Akses dicabut.",
-                                Toast.LENGTH_LONG
-                            ).show()
-                            restartApp(context)
-                        }
-                    }
-                    return@launch
-                }
-
-                val json      = JSONObject(response)
-                // FIX BUG 4: normalizeStatus() → trim + lowercase
-                val dbStatus  = json.optString("status", "").normalizeStatus()
-                val dbExpired = json.optLong("expired_at", 0L)
-
-                val prefs      = PreferenceManager.getDefaultSharedPreferences(context)
-                val wasPremium = prefs.getBoolean(PREF_IS_PREMIUM, false)
-
-                val isBanned  = dbStatus == "banned"
-                val isExpired = dbStatus == "aktif" && dbExpired > 0L &&
-                        System.currentTimeMillis() > dbExpired
-
-                when {
-                    isBanned || isExpired -> {
-                        if (wasPremium) {
-                            deactivatePremium(context)
-                            postMain {
-                                val pesan = if (isBanned)
-                                    "⛔ AKSES PREMIUM DICABUT OLEH ADMIN!"
-                                else
-                                    "⚠️ Masa Aktif Premium Habis. Yuk perpanjang lagi!"
-                                Toast.makeText(context, pesan, Toast.LENGTH_LONG).show()
-                                restartApp(context)
+                        val prefs = PreferenceManager.getDefaultSharedPreferences(context)
+                        val wasPremium = prefs.getBoolean(PREF_IS_PREMIUM, false)
+                        
+                        // KITA PISAHKAN LOGIKA BANNED DAN EXPIRED
+                        val isBanned = dbStatus == "banned"
+                        val isExpired = dbStatus == "aktif" && dbExpired > 0L && System.currentTimeMillis() > dbExpired
+                        
+                        // AUTO-KICK SYSTEM 
+                        if (isBanned || isExpired) {
+                            if (wasPremium) {
+                                deactivatePremium(context) // Matikan lisensi lokal
+                                
+                                Handler(Looper.getMainLooper()).post {
+                                    // Pesan dibedakan berdasarkan statusnya
+                                    val pesan = if (isBanned) {
+                                        "⛔ AKSES PREMIUM DICABUT OLEH ADMIN!"
+                                    } else {
+                                        "⚠️ Masa Aktif Premium Habis. Yuk perpanjang lagi!"
+                                    }
+                                    
+                                    Toast.makeText(context, pesan, Toast.LENGTH_LONG).show()
+                                    val intent = context.packageManager.getLaunchIntentForPackage(context.packageName)
+                                    val mainIntent = Intent.makeRestartActivityTask(intent?.component)
+                                    context.startActivity(mainIntent)
+                                    Runtime.getRuntime().exit(0)
+                                }
                             }
+                        } else if (dbStatus == "aktif" && dbExpired > 0L) {
+                            // Sinkronkan masa aktif lokal dengan server diam-diam
+                            prefs.edit().putLong(PREF_EXPIRY_DATE, dbExpired).apply()
                         }
                     }
-                    dbStatus == "aktif" && dbExpired > 0L -> {
-                        // Sinkronkan masa aktif lokal dengan server secara diam-diam
-                        prefs.edit().putLong(PREF_EXPIRY_DATE, dbExpired).apply()
-                    }
-                    // Status lain yang tidak dikenali: abaikan saja (tidak restart, tidak crash)
                 }
-            } catch (_: Exception) {
-                // Gagal koneksi saat sync background → abaikan, coba lagi nanti
+            } catch (e: Exception) {
             }
         }
     }
 
-    // =========================================================================
-    // HELPER: Buka HTTP GET Connection
-    // =========================================================================
-    private fun openGetConnection(urlString: String): HttpURLConnection {
-        val connection = URL(urlString).openConnection() as HttpURLConnection
-        connection.requestMethod  = "GET"
-        connection.connectTimeout = 5000
-        connection.readTimeout    = 5000
-        return connection
-    }
+    private fun registerUserToServer(context: Context, deviceId: String) {
+        try {
+            val prefs = PreferenceManager.getDefaultSharedPreferences(context)
+            val localExpiry = prefs.getLong(PREF_EXPIRY_DATE, 0L)
 
-    // =========================================================================
-    // HELPER: Post ke Main Thread
-    // =========================================================================
-    private fun postMain(block: () -> Unit) {
-        Handler(Looper.getMainLooper()).post(block)
-    }
-
-    // =========================================================================
-    // HELPER: Restart Aplikasi
-    // =========================================================================
-    private fun restartApp(context: Context) {
-        val intent     = context.packageManager.getLaunchIntentForPackage(context.packageName)
-        val mainIntent = Intent.makeRestartActivityTask(intent?.component)
-        context.startActivity(mainIntent)
-        Runtime.getRuntime().exit(0)
+            val urlString = "https://adixtream-premium-default-rtdb.asia-southeast1.firebasedatabase.app/users/$deviceId.json"
+            val url = URL(urlString)
+            val connection = url.openConnection() as HttpURLConnection
+            connection.requestMethod = "PATCH" 
+            connection.setRequestProperty("Content-Type", "application/json")
+            connection.doOutput = true
+            
+            val jsonPayload = JSONObject().apply {
+                put("status", "aktif")
+                put("expired_at", localExpiry)
+                put("last_update", "Auto-Sync from Android App")
+            }.toString()
+            
+            connection.outputStream.use { os ->
+                val input = jsonPayload.toByteArray(Charsets.UTF_8)
+                os.write(input, 0, input.size)
+            }
+            connection.responseCode 
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
     }
 }
