@@ -37,27 +37,16 @@ object PremiumManager {
     val FREE_REPO_URL    = RepoProtector.decode(RepoProtector.FREE_REPO_ENCODED)
 
     // =========================================================================
-    // FIX BUG 2: Device ID lebih robust
-    //
-    // Perubahan:
-    // - Ditambahkan prefix "DV" agar ID tidak murni angka (lebih unik & readable)
-    // - Menggunakan Long.toHex() dari hash untuk memperluas ruang ID
-    //   sehingga mengurangi kemungkinan collision antar device
-    // - Uppercase konsisten agar selalu cocok dengan key Firebase
+    // Device ID — dikembalikan ke format asli (8 digit angka)
+    // agar kompatibel dengan data user yang sudah ada di Firebase.
+    // Format baru (DV prefix) dibatalkan karena breaking change.
     // =========================================================================
     fun getDeviceId(context: Context): String {
         val androidId = Settings.Secure.getString(
             context.contentResolver,
             Settings.Secure.ANDROID_ID
         ) ?: "UNKNOWN"
-        // Gunakan hashCode 64-bit (toLong) → hex → 16 karakter → ambil 8 terakhir
-        // Prefix "DV" membuatnya selalu 10 karakter dan tidak bisa collision dengan ID lama
-        val hash = androidId.hashCode().toLong()
-            .and(0xFFFFFFFFL) // ambil 32-bit positif
-            .toString(16)     // convert ke hex
-            .uppercase()
-            .padStart(8, '0') // pastikan 8 karakter
-        return "DV$hash"
+        return abs(androidId.hashCode()).toString().take(8)
     }
 
     // =========================================================================
