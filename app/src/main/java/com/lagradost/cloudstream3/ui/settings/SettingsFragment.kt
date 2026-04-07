@@ -229,13 +229,11 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
             // --------------------------------------------------------
 
             // --- 2. MODIFIKASI ADIXTREAM: LOGIKA TOMBOL TENTANG (MERAH PUTIH) ---
-            // Menggunakan appVersionInfo sebagai tombol "About"
             appVersionInfo.setOnClickListener {
                 val builder = AlertDialog.Builder(requireContext(), R.style.AlertDialogCustom)
                 builder.setTitle("Tentang AdiXtream")
                 builder.setMessage("AdiXtream dikembangkan oleh michat88.\n\nAplikasi ini berbasis pada proyek open-source CloudStream.\n\nTerima kasih kepada Developer CloudStream (Lagradost & Tim) atas kode sumber yang luar biasa ini.")
 
-                // PERBAIKAN NAMA TOMBOL: Menjadi "Kunjungi Website"
                 builder.setNeutralButton("Kunjungi Website") { _, _ ->
                     try {
                         val browserIntent = Intent(Intent.ACTION_VIEW, Uri.parse("https://michat88.github.io/adixtream-web/"))
@@ -252,20 +250,17 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
                 val dialog: AlertDialog = builder.create()
                 dialog.show()
 
-                // Penyesuaian Efek Warna Merah Putih
                 val webButton: Button? = dialog.getButton(AlertDialog.BUTTON_NEUTRAL)
                 webButton?.let { button ->
                     val fullText = "Kunjungi Website"
                     val spannable = SpannableString(fullText)
 
-                    // Mewarnai "Kunjungi" (Indeks 0-8) menjadi Merah
                     spannable.setSpan(
                         ForegroundColorSpan(Color.parseColor("#FF0000")),
                         0, 8,
                         Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
                     )
 
-                    // Mewarnai sisanya (" Website") (Indeks 8-akhir) menjadi Putih
                     spannable.setSpan(
                         ForegroundColorSpan(Color.WHITE),
                         8, fullText.length,
@@ -277,7 +272,6 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
             }
             // --------------------------------------------------
 
-            // --- 3. DAFTAR MENU LAINNYA ---
             listOf(
                 settingsGeneral to R.id.action_navigation_global_to_navigation_settings_general,
                 settingsPlayer to R.id.action_navigation_global_to_navigation_settings_player,
@@ -287,9 +281,7 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
                 settingsUpdates to R.id.action_navigation_global_to_navigation_settings_updates,
             ).forEach { (view, navigationId) ->
                 view.apply {
-                    setOnClickListener {
-                        navigate(navigationId)
-                    }
+                    setOnClickListener { navigate(navigationId) }
                     if (isLayout(TV)) {
                         isFocusable = true
                         isFocusableInTouchMode = true
@@ -297,24 +289,28 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
                 }
             }
 
-            // Default focus on TV
             if (isLayout(TV)) {
                 settingsGeneral.requestFocus()
             }
         }
 
-        // --- MENGGABUNGKAN VERSI & STATUS PREMIUM ADIXTREAM ---
+        // ==========================================================
+        // --- 3. LOGIKA VERSI & STATUS LANGGANAN (DIPERBAIKI) ---
+        // ==========================================================
+        
+        // Kembalikan ke kode aslinya, jangan diubah agar tidak berantakan
         val appVersion = BuildConfig.APP_VERSION
         val commitInfo = getString(R.string.commit_hash)
-        
-        // Format tanggal build aplikasi
         val buildTimestamp = SimpleDateFormat.getDateTimeInstance(
             DateFormat.LONG, DateFormat.LONG, Locale.getDefault()
         ).apply { 
             timeZone = TimeZone.getTimeZone("UTC")
         }.format(Date(BuildConfig.BUILD_DATE)).replace("UTC", "")
+
+        binding.appVersion.text = appVersion
+        binding.buildDate.text = buildTimestamp
         
-        // Ambil status langganan dari PremiumManager
+        // Ambil Status Premium
         val context = context
         val premiumStatus = if (context != null) {
             val dateStr = PremiumManager.getExpiryDateString(context)
@@ -322,14 +318,42 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
         } else {
             "Gagal Memuat"
         }
-        
-        // Gabungkan appVersion bawaan dengan baris baru untuk status
-        val combinedVersionText = "$appVersion \nStatus Langganan: $premiumStatus"
-        
-        binding.appVersion.text = combinedVersionText
-        binding.buildDate.text = buildTimestamp
-        
-        // Jika pengguna menekan lama, teks yang di-copy tetap lengkap
+
+        // BUAT BARIS BARU (TEXTVIEW) SECARA OTOMATIS DI BAWAH BARIS VERSI
+        context?.let { ctx ->
+            val parentLayout = binding.appVersionInfo.parent as? android.view.ViewGroup
+            parentLayout?.let { parent ->
+                val tagStatus = "status_langganan_tag"
+                var statusView = parent.findViewWithTag<android.widget.TextView>(tagStatus)
+                
+                // Jika belum ada teks statusnya, kita buat baru
+                if (statusView == null) {
+                    statusView = android.widget.TextView(ctx).apply {
+                        tag = tagStatus
+                        gravity = android.view.Gravity.CENTER // Posisikan di tengah
+                        textSize = 12f // Ukuran font proporsional
+                        setTextColor(android.graphics.Color.parseColor("#94a3b8")) // Warna abu-abu yang pas dengan tema
+                        
+                        val params = android.widget.LinearLayout.LayoutParams(
+                            android.view.ViewGroup.LayoutParams.MATCH_PARENT,
+                            android.view.ViewGroup.LayoutParams.WRAP_CONTENT
+                        ).apply {
+                            topMargin = 4.toPx
+                            bottomMargin = 24.toPx
+                        }
+                        layoutParams = params
+                    }
+                    // Sisipkan persis di bawah container "appVersionInfo"
+                    val index = parent.indexOfChild(binding.appVersionInfo)
+                    parent.addView(statusView, index + 1)
+                }
+                
+                // Setel teksnya
+                statusView.text = "Status Langganan: $premiumStatus"
+            }
+        }
+
+        // Fitur Copy (Salin) saat ditekan tahan tetap mencakup status langganan
         binding.appVersionInfo.setOnLongClickListener {
             clipboardHelper(
                 txt(R.string.extension_version), 
