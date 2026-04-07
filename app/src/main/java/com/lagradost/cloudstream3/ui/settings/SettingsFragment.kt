@@ -303,18 +303,38 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
             }
         }
 
-        // Menggunakan APP_VERSION milik AdiXtream (sesuai build.gradle)
+        // --- MENGGABUNGKAN VERSI & STATUS PREMIUM ADIXTREAM ---
         val appVersion = BuildConfig.APP_VERSION
         val commitInfo = getString(R.string.commit_hash)
-        val buildTimestamp = SimpleDateFormat.getDateTimeInstance(DateFormat.LONG, DateFormat.LONG,
-            Locale.getDefault()
-        ).apply { timeZone = TimeZone.getTimeZone("UTC")
+        
+        // Format tanggal build aplikasi
+        val buildTimestamp = SimpleDateFormat.getDateTimeInstance(
+            DateFormat.LONG, DateFormat.LONG, Locale.getDefault()
+        ).apply { 
+            timeZone = TimeZone.getTimeZone("UTC")
         }.format(Date(BuildConfig.BUILD_DATE)).replace("UTC", "")
-
-        binding.appVersion.text = appVersion
+        
+        // Ambil status langganan dari PremiumManager
+        val context = context
+        val premiumStatus = if (context != null) {
+            val dateStr = PremiumManager.getExpiryDateString(context)
+            if (dateStr == "Non-Premium") "Gratis" else "Aktif s/d $dateStr"
+        } else {
+            "Gagal Memuat"
+        }
+        
+        // Gabungkan appVersion bawaan dengan baris baru untuk status
+        val combinedVersionText = "$appVersion \nStatus Langganan: $premiumStatus"
+        
+        binding.appVersion.text = combinedVersionText
         binding.buildDate.text = buildTimestamp
+        
+        // Jika pengguna menekan lama, teks yang di-copy tetap lengkap
         binding.appVersionInfo.setOnLongClickListener {
-            clipboardHelper(txt(R.string.extension_version), "$appVersion $commitInfo $buildTimestamp")
+            clipboardHelper(
+                txt(R.string.extension_version), 
+                "$appVersion $commitInfo $buildTimestamp\nStatus Langganan: $premiumStatus"
+            )
             true
         }
     }
