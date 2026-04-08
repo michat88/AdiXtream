@@ -36,7 +36,7 @@ object PremiumManager {
     }
 
     // ==========================================================
-    // FUNGSI 1: KHUSUS KODE VIP PERSONAL (Dipanggil Menu Ekstensi)
+    // FUNGSI 1: KHUSUS KODE VIP PERSONAL
     // ==========================================================
     fun activatePremiumWithCode(context: Context, code: String, deviceId: String, onResult: (Boolean, String) -> Unit) {
         val inputCode = code.trim().uppercase()
@@ -70,12 +70,15 @@ object PremiumManager {
 
                         if (dbCode == inputCode) {
                             if (System.currentTimeMillis() < dbExpired) {
+                                
+                                // === FIX BUG: GUNAKAN COMMIT BUKAN APPLY ===
                                 val prefs = PreferenceManager.getDefaultSharedPreferences(context)
-                                prefs.edit().apply {
-                                    putBoolean(PREF_IS_PREMIUM, true)
-                                    putLong(PREF_EXPIRY_DATE, dbExpired) 
-                                    apply()
-                                }
+                                prefs.edit()
+                                    .putBoolean(PREF_IS_PREMIUM, true)
+                                    .putLong(PREF_EXPIRY_DATE, dbExpired)
+                                    .commit() 
+                                // ===========================================
+                                
                                 lastCheckTime = System.currentTimeMillis()
                                 Handler(Looper.getMainLooper()).post { onResult(true, "Aktivasi Kode VIP Berhasil") }
                             } else {
@@ -97,7 +100,7 @@ object PremiumManager {
     }
 
     // ==========================================================
-    // FUNGSI 2: KHUSUS KODE PROMO (Dipanggil Tombol Settings Baru)
+    // FUNGSI 2: KHUSUS KODE PROMO
     // ==========================================================
     fun activatePromoWithCode(context: Context, code: String, deviceId: String, onResult: (Boolean, String) -> Unit) {
         val inputCode = code.trim().uppercase()
@@ -124,19 +127,16 @@ object PremiumManager {
                         val days = jsonPromo.optInt("days", 0)
                         val validUntil = jsonPromo.optLong("valid_until", 0L)
                         
-                        // Cek Batas Waktu Klaim
                         if (validUntil > 0L && System.currentTimeMillis() > validUntil) {
                             Handler(Looper.getMainLooper()).post { onResult(false, "Maaf, batas waktu klaim kode promo ini sudah habis!") }
                             return@launch
                         }
 
-                        // Cek Kuota
                         if (usedCount >= maxQuota) {
                             Handler(Looper.getMainLooper()).post { onResult(false, "Maaf, Kuota kode promo ini sudah habis!") }
                             return@launch
                         }
 
-                        // Cek apakah user ini sudah pernah pakai promo yang sama (Anti Tuyul)
                         val checkUserPromoUrl = URL("${FIREBASE_BASE_URL}users/$deviceId/redeemed_promos/$inputCode.json")
                         val checkUserPromoConn = checkUserPromoUrl.openConnection() as HttpURLConnection
                         checkUserPromoConn.requestMethod = "GET"
@@ -147,7 +147,6 @@ object PremiumManager {
                             return@launch
                         }
 
-                        // Proses Klaim Promo Berhasil!
                         val userUrl = URL("${FIREBASE_BASE_URL}users/$deviceId.json")
                         val userConn = userUrl.openConnection() as HttpURLConnection
                         userConn.requestMethod = "GET"
@@ -166,7 +165,6 @@ object PremiumManager {
 
                         val newExpiredTimestamp = baseTimestamp + (days * 24L * 60L * 60L * 1000L)
 
-                        // Update Promo Laci
                         val updatePromoUrl = URL("${FIREBASE_BASE_URL}promo_codes/$inputCode.json")
                         val updatePromoConn = updatePromoUrl.openConnection() as HttpURLConnection
                         updatePromoConn.requestMethod = "PATCH"
@@ -176,7 +174,6 @@ object PremiumManager {
                         updatePromoConn.outputStream.use { it.write(promoPatch.toByteArray(Charsets.UTF_8)) }
                         updatePromoConn.responseCode 
 
-                        // Update User Laci
                         val updateUserUrl = URL("${FIREBASE_BASE_URL}users/$deviceId.json")
                         val updateUserConn = updateUserUrl.openConnection() as HttpURLConnection
                         updateUserConn.requestMethod = "PATCH"
@@ -190,7 +187,6 @@ object PremiumManager {
                         updateUserConn.outputStream.use { it.write(userPatch.toByteArray(Charsets.UTF_8)) }
                         updateUserConn.responseCode 
 
-                        // Tandai Promo
                         val markPromoUrl = URL("${FIREBASE_BASE_URL}users/$deviceId/redeemed_promos.json")
                         val markPromoConn = markPromoUrl.openConnection() as HttpURLConnection
                         markPromoConn.requestMethod = "PATCH"
@@ -200,12 +196,14 @@ object PremiumManager {
                         markPromoConn.outputStream.use { it.write(markPatch.toByteArray(Charsets.UTF_8)) }
                         markPromoConn.responseCode
 
+                        // === FIX BUG: GUNAKAN COMMIT BUKAN APPLY ===
                         val prefs = PreferenceManager.getDefaultSharedPreferences(context)
-                        prefs.edit().apply {
-                            putBoolean(PREF_IS_PREMIUM, true)
-                            putLong(PREF_EXPIRY_DATE, newExpiredTimestamp) 
-                            apply()
-                        }
+                        prefs.edit()
+                            .putBoolean(PREF_IS_PREMIUM, true)
+                            .putLong(PREF_EXPIRY_DATE, newExpiredTimestamp)
+                            .commit() 
+                        // ===========================================
+
                         lastCheckTime = System.currentTimeMillis()
                         Handler(Looper.getMainLooper()).post { onResult(true, "Selamat! Promo $days Hari Berhasil Diklaim.") }
                     } else {
@@ -242,11 +240,10 @@ object PremiumManager {
 
     fun deactivatePremium(context: Context) {
         val prefs = PreferenceManager.getDefaultSharedPreferences(context)
-        prefs.edit().apply {
-            putBoolean(PREF_IS_PREMIUM, false)
-            putLong(PREF_EXPIRY_DATE, 0)
-            apply()
-        }
+        prefs.edit()
+            .putBoolean(PREF_IS_PREMIUM, false)
+            .putLong(PREF_EXPIRY_DATE, 0)
+            .commit() // Diubah juga agar aman
     }
     
     fun getExpiryDateString(context: Context): String {
