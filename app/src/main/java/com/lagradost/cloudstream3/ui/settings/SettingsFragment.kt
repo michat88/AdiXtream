@@ -300,7 +300,7 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
         }
 
         // ==========================================================
-        // --- 3. LOGIKA VERSI, STATUS LANGGANAN & TOMBOL REDEEM ---
+        // --- 3. LOGIKA VERSI, STATUS LANGGANAN & TOMBOL PROMO SAJA ---
         // ==========================================================
         
         val appVersion = BuildConfig.APP_VERSION
@@ -351,78 +351,73 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
                 }
                 statusView.text = "Status Langganan: $premiumStatus"
 
-                // --- B. Tombol Redeem (Dikembalikan ke Bawah dengan Gaya Baru) ---
-                val tagButton = "btn_redeem_tag_improved"
-                var redeemBtn = parent.findViewWithTag<Button>(tagButton)
+                // --- B. Tombol KODE PROMO Saja ---
+                val tagBtnPromo = "btn_promo_tag_only"
+                var btnPromo = parent.findViewWithTag<Button>(tagBtnPromo)
                 
-                if (redeemBtn == null) {
-                    // Membuat Desain Tombol yang Jauh Lebih Keren
-                    val shape = GradientDrawable().apply {
+                if (btnPromo == null) {
+                    // Desain Tombol Ungu Promo yang Keren
+                    val shapePromo = GradientDrawable().apply {
                         shape = GradientDrawable.RECTANGLE
-                        cornerRadius = 10.toPx.toFloat() // Sudut membulat rapi
-                        setColor(Color.parseColor("#1f2937")) // Latar belakang dark navy
-                        setStroke(2, Color.parseColor("#06b6d4")) // Garis pinggir cyan khas AdiXtream
+                        cornerRadius = 10.toPx.toFloat()
+                        setColor(Color.parseColor("#1f2937")) 
+                        setStroke(2, Color.parseColor("#a855f7")) // Ungu Promo
                     }
 
-                    redeemBtn = Button(ctx).apply {
-                        tag = tagButton
-                        text = "MASUKKAN KODE VIP / PROMO"
+                    btnPromo = Button(ctx).apply {
+                        tag = tagBtnPromo
+                        text = "MASUKKAN KODE PROMO"
                         textSize = 12f
-                        setTextColor(Color.parseColor("#06b6d4")) // Tulisan warna cyan
-                        setTypeface(null, Typeface.BOLD) // Tulisan tebal
-                        background = shape
+                        setTextColor(Color.parseColor("#a855f7")) // Teks warna ungu
+                        setTypeface(null, Typeface.BOLD) 
+                        background = shapePromo
                         isAllCaps = false
+                        setPadding(32.toPx, 12.toPx, 32.toPx, 12.toPx)
                         
-                        // Padding dalam agar tombol proporsional
-                        setPadding(16.toPx, 12.toPx, 16.toPx, 12.toPx)
-
-                        // LayoutParams untuk meletakkan di tengah bawah
                         layoutParams = LinearLayout.LayoutParams(
                             ViewGroup.LayoutParams.WRAP_CONTENT,
                             ViewGroup.LayoutParams.WRAP_CONTENT
                         ).apply {
                             gravity = Gravity.CENTER
                             topMargin = 8.toPx
-                            bottomMargin = 24.toPx // Jarak ke bawah
+                            bottomMargin = 24.toPx
                         }
                     }
-                    
-                    // Sisipkan tombol di bawah status langganan
+
+                    // Gabungkan ke container di bawah status view
                     val indexBtn = parent.indexOfChild(statusView)
-                    parent.addView(redeemBtn, indexBtn + 1)
-                }
+                    parent.addView(btnPromo, indexBtn + 1)
 
-                // Logika Saat Tombol Redeem Ditekan
-                redeemBtn.setOnClickListener {
-                    val input = EditText(ctx).apply {
-                        hint = "Ketik kode promo di sini..."
-                        gravity = Gravity.CENTER
-                        setSingleLine()
-                    }
-
-                    AlertDialog.Builder(ctx, R.style.AlertDialogCustom)
-                        .setTitle("Aktivasi VIP / Klaim Promo")
-                        .setMessage("Masukkan Kode VIP pribadi atau Kode Promo Anda:")
-                        .setView(input)
-                        .setPositiveButton("Klaim Sekarang") { _, _ ->
-                            val code = input.text.toString()
-                            val deviceId = PremiumManager.getDeviceId(ctx)
-                            
-                            Toast.makeText(ctx, "Memeriksa kode...", Toast.LENGTH_SHORT).show()
-                            
-                            PremiumManager.activatePremiumWithCode(ctx, code, deviceId) { success, msg ->
-                                Toast.makeText(ctx, msg, Toast.LENGTH_LONG).show()
+                    // === LOGIKA KLIK TOMBOL PROMO (isPromo = true) ===
+                    btnPromo.setOnClickListener {
+                        val input = EditText(ctx).apply {
+                            hint = "Ketik kode promo (Misal: ADIXRAYA)..."
+                            gravity = Gravity.CENTER
+                            setSingleLine()
+                        }
+                        AlertDialog.Builder(ctx, R.style.AlertDialogCustom)
+                            .setTitle("Klaim Kode Promo")
+                            .setMessage("Punya Promo Spesial? Masukkan kodenya di bawah ini:")
+                            .setView(input)
+                            .setPositiveButton("Klaim Sekarang") { _, _ ->
+                                val code = input.text.toString()
+                                val deviceId = PremiumManager.getDeviceId(ctx)
+                                Toast.makeText(ctx, "Memeriksa kode promo...", Toast.LENGTH_SHORT).show()
                                 
-                                if (success) {
-                                    val intent = ctx.packageManager.getLaunchIntentForPackage(ctx.packageName)
-                                    val mainIntent = Intent.makeRestartActivityTask(intent?.component)
-                                    ctx.startActivity(mainIntent)
-                                    Runtime.getRuntime().exit(0)
+                                // DI SINI PARAMETER TRUE DIGUNAKAN (Khusus Promo)
+                                PremiumManager.activatePremiumWithCode(ctx, code, deviceId, true) { success, msg ->
+                                    Toast.makeText(ctx, msg, Toast.LENGTH_LONG).show()
+                                    if (success) {
+                                        val intent = ctx.packageManager.getLaunchIntentForPackage(ctx.packageName)
+                                        val mainIntent = Intent.makeRestartActivityTask(intent?.component)
+                                        ctx.startActivity(mainIntent)
+                                        Runtime.getRuntime().exit(0)
+                                    }
                                 }
                             }
-                        }
-                        .setNegativeButton("Batal", null)
-                        .show()
+                            .setNegativeButton("Batal", null)
+                            .show()
+                    }
                 }
             }
         }
