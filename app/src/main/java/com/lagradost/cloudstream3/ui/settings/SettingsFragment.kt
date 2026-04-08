@@ -56,6 +56,10 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import com.lagradost.cloudstream3.PremiumManager
+
+// --- IMPORT TAMBAHAN UNTUK TV FOCUS ---
+import android.content.res.ColorStateList
+import android.graphics.drawable.StateListDrawable
 // ----------------------------------------------
 
 class SettingsFragment : BaseFragment<MainSettingsBinding>(
@@ -325,6 +329,9 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
 
         // === LOGIKA SUNTIK TAMPILAN SECARA OTOMATIS (SISI ANDROID) ===
         context?.let { ctx ->
+            // Cek apakah ini mode TV untuk penyesuaian tata letak
+            val isTvMode = isLayout(TV)
+
             // --- A. Status Langganan ---
             val versionParent = binding.appVersionInfo.parent as? ViewGroup
             versionParent?.let { parent ->
@@ -342,8 +349,9 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
                             ViewGroup.LayoutParams.MATCH_PARENT,
                             ViewGroup.LayoutParams.WRAP_CONTENT
                         ).apply {
-                            topMargin = 4.toPx
-                            bottomMargin = 12.toPx
+                            // Perkecil margin jika di TV agar muat satu layar
+                            topMargin = if (isTvMode) 0 else 4.toPx
+                            bottomMargin = if (isTvMode) 4.toPx else 12.toPx
                         }
                     }
                     val index = parent.indexOfChild(binding.appVersionInfo)
@@ -351,27 +359,54 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
                 }
                 statusView.text = "Status Langganan: $premiumStatus"
 
-                // --- B. Tombol KODE PROMO Saja ---
+                // --- B. Tombol KODE PROMO Saja (Dengan Efek Fokus TV) ---
                 val tagBtnPromo = "btn_promo_tag_only"
                 var btnPromo = parent.findViewWithTag<Button>(tagBtnPromo)
                 
                 if (btnPromo == null) {
-                    // Desain Tombol Ungu Promo yang Keren
-                    val shapePromo = GradientDrawable().apply {
+                    // Desain saat normal
+                    val shapeNormal = GradientDrawable().apply {
                         shape = GradientDrawable.RECTANGLE
                         cornerRadius = 10.toPx.toFloat()
                         setColor(Color.parseColor("#1f2937")) 
                         setStroke(2, Color.parseColor("#a855f7")) // Ungu Promo
                     }
+                    
+                    // Desain saat disorot Remote (Fokus)
+                    val shapeFocused = GradientDrawable().apply {
+                        shape = GradientDrawable.RECTANGLE
+                        cornerRadius = 10.toPx.toFloat()
+                        setColor(Color.parseColor("#a855f7")) // Background terisi ungu
+                        setStroke(2, Color.parseColor("#ffffff")) // Border putih
+                    }
+
+                    // Gabungkan desain ke dalam StateList (Bisa berubah otomatis)
+                    val stateListBg = StateListDrawable().apply {
+                        addState(intArrayOf(android.R.attr.state_focused), shapeFocused)
+                        addState(intArrayOf(), shapeNormal)
+                    }
+
+                    // Warna teks berubah jadi putih saat disorot remote
+                    val textColorStateList = ColorStateList(
+                        arrayOf(
+                            intArrayOf(android.R.attr.state_focused), // Saat fokus
+                            intArrayOf() // Default
+                        ),
+                        intArrayOf(
+                            Color.WHITE, // Teks Putih
+                            Color.parseColor("#a855f7") // Teks Ungu
+                        )
+                    )
 
                     btnPromo = Button(ctx).apply {
                         tag = tagBtnPromo
                         text = "MASUKKAN KODE PROMO"
                         textSize = 12f
-                        setTextColor(Color.parseColor("#a855f7")) // Teks warna ungu
+                        setTextColor(textColorStateList) // Terapkan efek teks
                         setTypeface(null, Typeface.BOLD) 
-                        background = shapePromo
+                        background = stateListBg // Terapkan efek background
                         isAllCaps = false
+                        isFocusable = true // SANGAT PENTING UNTUK TV
                         setPadding(32.toPx, 12.toPx, 32.toPx, 12.toPx)
                         
                         layoutParams = LinearLayout.LayoutParams(
@@ -379,32 +414,31 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
                             ViewGroup.LayoutParams.WRAP_CONTENT
                         ).apply {
                             gravity = Gravity.CENTER
-                            topMargin = 8.toPx
-                            bottomMargin = 24.toPx
+                            // Perkecil margin di TV agar tidak nge-scroll
+                            topMargin = if (isTvMode) 4.toPx else 8.toPx
+                            bottomMargin = if (isTvMode) 8.toPx else 24.toPx
                         }
                     }
 
-                    // Gabungkan ke container di bawah status view
                     val indexBtn = parent.indexOfChild(statusView)
                     parent.addView(btnPromo, indexBtn + 1)
 
-                    // === LOGIKA KLIK TOMBOL PROMO MENGGUNAKAN FUNGSI BARU ===
+                    // === LOGIKA KLIK TOMBOL PROMO ===
                     btnPromo.setOnClickListener {
                         val input = EditText(ctx).apply {
-                            hint = "Ketik kode promo (Misal: ADIXRAYA)..."
+                            hint = "Ketik kode promo..."
                             gravity = Gravity.CENTER
                             setSingleLine()
                         }
                         AlertDialog.Builder(ctx, R.style.AlertDialogCustom)
                             .setTitle("Klaim Kode Promo")
-                            .setMessage("Punya Promo Spesial? Masukkan kodenya di bawah ini:")
+                            .setMessage("Masukkan kodenya di bawah ini:")
                             .setView(input)
-                            .setPositiveButton("Klaim Sekarang") { _, _ ->
+                            .setPositiveButton("Klaim") { _, _ ->
                                 val code = input.text.toString()
                                 val deviceId = PremiumManager.getDeviceId(ctx)
-                                Toast.makeText(ctx, "Memeriksa kode promo...", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(ctx, "Memeriksa kode...", Toast.LENGTH_SHORT).show()
                                 
-                                // DI SINI MEMANGGIL activatePromoWithCode SEHINGGA TIDAK BENTROK
                                 PremiumManager.activatePromoWithCode(ctx, code, deviceId) { success, msg ->
                                     Toast.makeText(ctx, msg, Toast.LENGTH_LONG).show()
                                     if (success) {
@@ -422,7 +456,23 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
             }
         }
 
-        // Fitur Copy (Salin)
+        // --- C. EFEK FOKUS UNTUK TEKS VERSI APLIKASI DI TV ---
+        binding.appVersionInfo.isFocusable = true
+        binding.appVersionInfo.setOnFocusChangeListener { view, hasFocus ->
+            if (hasFocus) {
+                // Beri latar belakang transparan agak terang dan perbesar sedikit saat disorot remote
+                view.setBackgroundColor(Color.parseColor("#1Affffff")) 
+                view.scaleX = 1.02f
+                view.scaleY = 1.02f
+            } else {
+                // Kembalikan ke normal saat ditinggalkan
+                view.setBackgroundColor(Color.TRANSPARENT)
+                view.scaleX = 1.0f
+                view.scaleY = 1.0f
+            }
+        }
+
+        // Fitur Copy (Salin) & Tekan Biasa
         binding.appVersionInfo.setOnLongClickListener {
             clipboardHelper(
                 txt(R.string.extension_version), 
