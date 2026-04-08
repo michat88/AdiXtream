@@ -27,8 +27,9 @@ object PremiumManager {
     val PREMIUM_REPO_URL = RepoProtector.decode(RepoProtector.PREMIUM_REPO_ENCODED)
     val FREE_REPO_URL = RepoProtector.decode(RepoProtector.FREE_REPO_ENCODED)
     
-    // === URL FIREBASE YANG SUDAH TERSEMBUNYI ===
+    // === URL & TOKEN FIREBASE YANG SUDAH TERSEMBUNYI ===
     val FIREBASE_BASE_URL = RepoProtector.decode(RepoProtector.FIREBASE_URL_ENCODED)
+    val FIREBASE_TOKEN = RepoProtector.decode(RepoProtector.FIREBASE_TOKEN_ENCODED)
 
     fun getDeviceId(context: Context): String {
         val androidId = Settings.Secure.getString(context.contentResolver, Settings.Secure.ANDROID_ID)
@@ -47,7 +48,8 @@ object PremiumManager {
 
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                val urlString = "${FIREBASE_BASE_URL}users/$deviceId.json"
+                // SUNTIKAN TOKEN AUTH DI SINI
+                val urlString = "${FIREBASE_BASE_URL}users/$deviceId.json?auth=$FIREBASE_TOKEN"
                 val url = URL(urlString)
                 val connection = url.openConnection() as HttpURLConnection
                 connection.requestMethod = "GET"
@@ -70,14 +72,11 @@ object PremiumManager {
 
                         if (dbCode == inputCode) {
                             if (System.currentTimeMillis() < dbExpired) {
-                                
-                                // === FIX BUG: GUNAKAN COMMIT BUKAN APPLY ===
                                 val prefs = PreferenceManager.getDefaultSharedPreferences(context)
                                 prefs.edit()
                                     .putBoolean(PREF_IS_PREMIUM, true)
                                     .putLong(PREF_EXPIRY_DATE, dbExpired)
                                     .commit() 
-                                // ===========================================
                                 
                                 lastCheckTime = System.currentTimeMillis()
                                 Handler(Looper.getMainLooper()).post { onResult(true, "Aktivasi Kode VIP Berhasil") }
@@ -111,7 +110,8 @@ object PremiumManager {
 
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                val promoUrl = URL("${FIREBASE_BASE_URL}promo_codes/$inputCode.json")
+                // SUNTIKAN TOKEN AUTH DI SINI
+                val promoUrl = URL("${FIREBASE_BASE_URL}promo_codes/$inputCode.json?auth=$FIREBASE_TOKEN")
                 val promoConn = promoUrl.openConnection() as HttpURLConnection
                 promoConn.requestMethod = "GET"
                 promoConn.connectTimeout = 5000 
@@ -137,7 +137,8 @@ object PremiumManager {
                             return@launch
                         }
 
-                        val checkUserPromoUrl = URL("${FIREBASE_BASE_URL}users/$deviceId/redeemed_promos/$inputCode.json")
+                        // SUNTIKAN TOKEN AUTH DI SINI
+                        val checkUserPromoUrl = URL("${FIREBASE_BASE_URL}users/$deviceId/redeemed_promos/$inputCode.json?auth=$FIREBASE_TOKEN")
                         val checkUserPromoConn = checkUserPromoUrl.openConnection() as HttpURLConnection
                         checkUserPromoConn.requestMethod = "GET"
                         val userPromoRes = checkUserPromoConn.inputStream.bufferedReader().use { it.readText() }
@@ -147,7 +148,8 @@ object PremiumManager {
                             return@launch
                         }
 
-                        val userUrl = URL("${FIREBASE_BASE_URL}users/$deviceId.json")
+                        // SUNTIKAN TOKEN AUTH DI SINI
+                        val userUrl = URL("${FIREBASE_BASE_URL}users/$deviceId.json?auth=$FIREBASE_TOKEN")
                         val userConn = userUrl.openConnection() as HttpURLConnection
                         userConn.requestMethod = "GET"
                         var baseTimestamp = System.currentTimeMillis()
@@ -165,7 +167,8 @@ object PremiumManager {
 
                         val newExpiredTimestamp = baseTimestamp + (days * 24L * 60L * 60L * 1000L)
 
-                        val updatePromoUrl = URL("${FIREBASE_BASE_URL}promo_codes/$inputCode.json")
+                        // SUNTIKAN TOKEN AUTH DI SINI
+                        val updatePromoUrl = URL("${FIREBASE_BASE_URL}promo_codes/$inputCode.json?auth=$FIREBASE_TOKEN")
                         val updatePromoConn = updatePromoUrl.openConnection() as HttpURLConnection
                         updatePromoConn.requestMethod = "PATCH"
                         updatePromoConn.setRequestProperty("Content-Type", "application/json")
@@ -174,7 +177,8 @@ object PremiumManager {
                         updatePromoConn.outputStream.use { it.write(promoPatch.toByteArray(Charsets.UTF_8)) }
                         updatePromoConn.responseCode 
 
-                        val updateUserUrl = URL("${FIREBASE_BASE_URL}users/$deviceId.json")
+                        // SUNTIKAN TOKEN AUTH DI SINI
+                        val updateUserUrl = URL("${FIREBASE_BASE_URL}users/$deviceId.json?auth=$FIREBASE_TOKEN")
                         val updateUserConn = updateUserUrl.openConnection() as HttpURLConnection
                         updateUserConn.requestMethod = "PATCH"
                         updateUserConn.setRequestProperty("Content-Type", "application/json")
@@ -187,7 +191,8 @@ object PremiumManager {
                         updateUserConn.outputStream.use { it.write(userPatch.toByteArray(Charsets.UTF_8)) }
                         updateUserConn.responseCode 
 
-                        val markPromoUrl = URL("${FIREBASE_BASE_URL}users/$deviceId/redeemed_promos.json")
+                        // SUNTIKAN TOKEN AUTH DI SINI
+                        val markPromoUrl = URL("${FIREBASE_BASE_URL}users/$deviceId/redeemed_promos.json?auth=$FIREBASE_TOKEN")
                         val markPromoConn = markPromoUrl.openConnection() as HttpURLConnection
                         markPromoConn.requestMethod = "PATCH"
                         markPromoConn.setRequestProperty("Content-Type", "application/json")
@@ -196,13 +201,11 @@ object PremiumManager {
                         markPromoConn.outputStream.use { it.write(markPatch.toByteArray(Charsets.UTF_8)) }
                         markPromoConn.responseCode
 
-                        // === FIX BUG: GUNAKAN COMMIT BUKAN APPLY ===
                         val prefs = PreferenceManager.getDefaultSharedPreferences(context)
                         prefs.edit()
                             .putBoolean(PREF_IS_PREMIUM, true)
                             .putLong(PREF_EXPIRY_DATE, newExpiredTimestamp)
                             .commit() 
-                        // ===========================================
 
                         lastCheckTime = System.currentTimeMillis()
                         Handler(Looper.getMainLooper()).post { onResult(true, "Selamat! Promo $days Hari Berhasil Diklaim.") }
@@ -243,7 +246,7 @@ object PremiumManager {
         prefs.edit()
             .putBoolean(PREF_IS_PREMIUM, false)
             .putLong(PREF_EXPIRY_DATE, 0)
-            .commit() // Diubah juga agar aman
+            .commit() 
     }
     
     fun getExpiryDateString(context: Context): String {
@@ -255,7 +258,8 @@ object PremiumManager {
     private fun checkAndSyncWithServer(context: Context, deviceId: String) {
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                val urlString = "${FIREBASE_BASE_URL}users/$deviceId.json"
+                // SUNTIKAN TOKEN AUTH DI SINI
+                val urlString = "${FIREBASE_BASE_URL}users/$deviceId.json?auth=$FIREBASE_TOKEN"
                 val url = URL(urlString)
                 val connection = url.openConnection() as HttpURLConnection
                 connection.requestMethod = "GET"
@@ -311,7 +315,8 @@ object PremiumManager {
             val prefs = PreferenceManager.getDefaultSharedPreferences(context)
             val localExpiry = prefs.getLong(PREF_EXPIRY_DATE, 0L)
 
-            val urlString = "${FIREBASE_BASE_URL}users/$deviceId.json"
+            // SUNTIKAN TOKEN AUTH DI SINI
+            val urlString = "${FIREBASE_BASE_URL}users/$deviceId.json?auth=$FIREBASE_TOKEN"
             val url = URL(urlString)
             val connection = url.openConnection() as HttpURLConnection
             connection.requestMethod = "PATCH" 
