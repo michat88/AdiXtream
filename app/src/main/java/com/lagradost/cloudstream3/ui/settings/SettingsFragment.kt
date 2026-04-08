@@ -440,6 +440,7 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
                     )
 
                     btnPromo = Button(ctx).apply {
+                        id = View.generateViewId() // Generate ID untuk kunci fokus remote
                         tag = tagBtnPromo
                         text = "MASUKKAN KODE PROMO"
                         textSize = 12f
@@ -542,6 +543,22 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
 
         // --- C. EFEK FOKUS UNTUK TEKS VERSI APLIKASI DI TV ---
         binding.appVersionInfo.isFocusable = true
+        
+        // --- FIX KUTU REMOTE: Navigasi D-Pad Ekstensi <-> Versi <-> Promo ---
+        if (isLayout(TV)) {
+            // Arahkan navigasi Bawah dari Ekstensi ke Versi, dan Atas dari Versi ke Ekstensi
+            binding.settingsExtensions.nextFocusDownId = binding.appVersionInfo.id
+            binding.appVersionInfo.nextFocusUpId = binding.settingsExtensions.id
+            
+            // Arahkan navigasi Bawah dari Versi ke Tombol Promo, dan Atas dari Tombol Promo ke Versi
+            val parent = binding.appVersionInfo.parent as? ViewGroup
+            val btnPromo = parent?.findViewWithTag<Button>("btn_promo_tag_only")
+            btnPromo?.let { btn ->
+                binding.appVersionInfo.nextFocusDownId = btn.id
+                btn.nextFocusUpId = binding.appVersionInfo.id
+            }
+        }
+
         binding.appVersionInfo.setOnFocusChangeListener { view, hasFocus ->
             if (hasFocus) {
                 view.setBackgroundColor(Color.parseColor("#1Affffff")) 
