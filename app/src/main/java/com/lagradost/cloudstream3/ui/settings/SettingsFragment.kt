@@ -428,20 +428,35 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
                     val indexBtn = parent.indexOfChild(statusView)
                     parent.addView(btnPromo, indexBtn + 1)
 
-                    // === LOGIKA KLIK TOMBOL PROMO (DENGAN INPUT KAPITAL & LIMIT 10 KARAKTER) ===
+                    // === LOGIKA KLIK TOMBOL PROMO (DENGAN UI MODERN) ===
                     btnPromo.setOnClickListener {
                         
-                        // Membuat container untuk menjepit ukuran input teks
-                        val inputContainer = FrameLayout(ctx).apply {
-                            // Memberi margin/padding tebal di kiri dan kanan supaya garis input memendek (elegan)
-                            val padHorizontal = 60.toPx
-                            setPadding(padHorizontal, 16.toPx, padHorizontal, 0)
+                        // Container dengan layout vertikal untuk form input yang lebih rapi
+                        val inputContainer = LinearLayout(ctx).apply {
+                            orientation = LinearLayout.VERTICAL
+                            val padHorizontal = 24.toPx
+                            setPadding(padHorizontal, 24.toPx, padHorizontal, 8.toPx)
+                        }
+
+                        // Desain modern untuk kolom input (Rounded corners + Outline senada tombol)
+                        val inputBg = GradientDrawable().apply {
+                            shape = GradientDrawable.RECTANGLE
+                            cornerRadius = 12.toPx.toFloat()
+                            setColor(Color.parseColor("#1f2937")) // Warna background gelap
+                            setStroke(2, Color.parseColor("#a855f7")) // Border ungu AdiXtream
                         }
 
                         val input = EditText(ctx).apply {
-                            hint = "Ketik kode..."
+                            hint = "KETIK KODE..."
+                            setHintTextColor(Color.parseColor("#94a3b8"))
+                            setTextColor(Color.WHITE)
                             gravity = Gravity.CENTER
                             setSingleLine()
+                            background = inputBg 
+                            
+                            // Padding dalam text box biar teks tidak nempel ke garis
+                            val pad = 16.toPx
+                            setPadding(pad, pad, pad, pad)
                             
                             // FITUR BARU: Paksa Huruf Besar Semua & Batasi maksimal 10 Karakter
                             filters = arrayOf(
@@ -449,19 +464,19 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
                                 InputFilter.LengthFilter(10)
                             )
                             
-                            layoutParams = FrameLayout.LayoutParams(
-                                ViewGroup.LayoutParams.MATCH_PARENT, // Tetap match_parent karena sudah dijepit oleh Container
+                            layoutParams = LinearLayout.LayoutParams(
+                                ViewGroup.LayoutParams.MATCH_PARENT,
                                 ViewGroup.LayoutParams.WRAP_CONTENT
                             )
                         }
                         
-                        // Masukkan input ketikan ke dalam wadah (Container)
+                        // Masukkan input ketikan ke dalam wadah
                         inputContainer.addView(input)
 
                         AlertDialog.Builder(ctx, R.style.AlertDialogCustom)
                             .setTitle("Klaim Kode Promo")
                             .setMessage("Masukkan kodenya di bawah ini:")
-                            .setView(inputContainer) // Pasang wadahnya ke dialog
+                            .setView(inputContainer) // Pasang wadah baru ke dialog
                             .setPositiveButton("Klaim") { _, _ ->
                                 val code = input.text.toString()
                                 val deviceId = PremiumManager.getDeviceId(ctx)
