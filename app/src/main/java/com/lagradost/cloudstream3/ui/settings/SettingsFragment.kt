@@ -44,15 +44,19 @@ import java.util.Locale
 import java.util.TimeZone
 import android.widget.Toast
 
-// --- IMPORT TAMBAHAN ADIXTREAM ---
+// --- IMPORT TAMBAHAN ADIXTREAM & REDEEM UI ---
 import android.graphics.Color
-import android.text.Spannable
-import android.text.SpannableString
-import android.text.style.ForegroundColorSpan
+import android.graphics.Typeface
+import android.graphics.drawable.GradientDrawable
+import android.view.Gravity
+import android.view.ViewGroup
 import android.widget.Button
+import android.widget.EditText
+import android.widget.LinearLayout
+import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import com.lagradost.cloudstream3.PremiumManager
-// -----------------------
+// ----------------------------------------------
 
 class SettingsFragment : BaseFragment<MainSettingsBinding>(
     BaseFragment.BindingCreator.Inflate(MainSettingsBinding::inflate)
@@ -254,18 +258,18 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
                 val webButton: Button? = dialog.getButton(AlertDialog.BUTTON_NEUTRAL)
                 webButton?.let { button ->
                     val fullText = "Kunjungi Website"
-                    val spannable = SpannableString(fullText)
+                    val spannable = android.text.SpannableString(fullText)
 
                     spannable.setSpan(
-                        ForegroundColorSpan(Color.parseColor("#FF0000")),
+                        android.text.style.ForegroundColorSpan(Color.parseColor("#FF0000")),
                         0, 8,
-                        Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
+                        android.text.Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
                     )
 
                     spannable.setSpan(
-                        ForegroundColorSpan(Color.WHITE),
+                        android.text.style.ForegroundColorSpan(Color.WHITE),
                         8, fullText.length,
-                        Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
+                        android.text.Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
                     )
 
                     button.text = spannable
@@ -319,67 +323,86 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
             "Gagal Memuat"
         }
 
-        // BUAT BARIS BARU (TEXTVIEW & BUTTON) SECARA OTOMATIS
+        // === LOGIKA SUNTIK TAMPILAN SECARA OTOMATIS (SISI ANDROID) ===
         context?.let { ctx ->
-            val parentLayout = binding.appVersionInfo.parent as? android.view.ViewGroup
-            parentLayout?.let { parent ->
-                
-                // 1. Teks Status Langganan
+            // --- A. Status Langganan (Tetap di posisi lama, di bawah Versi Info) ---
+            val versionParent = binding.appVersionInfo.parent as? ViewGroup
+            versionParent?.let { parent ->
                 val tagStatus = "status_langganan_tag"
-                var statusView = parent.findViewWithTag<android.widget.TextView>(tagStatus)
+                var statusView = parent.findViewWithTag<TextView>(tagStatus)
                 
                 if (statusView == null) {
-                    statusView = android.widget.TextView(ctx).apply {
+                    statusView = TextView(ctx).apply {
                         tag = tagStatus
-                        gravity = android.view.Gravity.CENTER 
+                        gravity = Gravity.CENTER 
                         textSize = 12f 
-                        setTextColor(android.graphics.Color.parseColor("#94a3b8")) 
+                        setTextColor(Color.parseColor("#94a3b8")) 
                         
-                        val params = android.widget.LinearLayout.LayoutParams(
-                            android.view.ViewGroup.LayoutParams.MATCH_PARENT,
-                            android.view.ViewGroup.LayoutParams.WRAP_CONTENT
+                        layoutParams = LinearLayout.LayoutParams(
+                            ViewGroup.LayoutParams.MATCH_PARENT,
+                            ViewGroup.LayoutParams.WRAP_CONTENT
                         ).apply {
                             topMargin = 4.toPx
-                            bottomMargin = 8.toPx
+                            bottomMargin = 12.toPx
                         }
-                        layoutParams = params
                     }
                     val index = parent.indexOfChild(binding.appVersionInfo)
                     parent.addView(statusView, index + 1)
                 }
                 statusView.text = "Status Langganan: $premiumStatus"
+            }
 
-                // 2. Tombol Redeem (Pintu Masuk!)
-                val tagButton = "btn_redeem_tag"
-                var redeemBtn = parent.findViewWithTag<android.widget.Button>(tagButton)
+            // --- B. Tombol Redeem (Pindah ke posisi 'X', Paling Atas) ---
+            val rootLayout = binding.root as? ViewGroup // Pastikan root adalah ViewGroup (LinearLayout vertikal)
+            rootLayout?.let { root ->
+                val tagButton = "btn_redeem_tag_improved"
+                var redeemBtn = root.findViewWithTag<Button>(tagButton)
                 
                 if (redeemBtn == null) {
-                    redeemBtn = android.widget.Button(ctx).apply {
+                    // Membuat Desain Tombol yang Jauh Lebih Keren secara Programmatic
+                    val shape = GradientDrawable().apply {
+                        shape = GradientDrawable.RECTANGLE
+                        cornerRadius = 10.toPx.toFloat() // Sudut membulat rapi
+                        setColor(Color.parseColor("#1f2937")) // Latar belakang dark navy
+                        setStroke(2, Color.parseColor("#06b6d4")) // Garis pinggir cyan khas AdiXtream
+                    }
+
+                    redeemBtn = Button(ctx).apply {
                         tag = tagButton
                         text = "MASUKKAN KODE VIP / PROMO"
-                        textSize = 11f
-                        setTextColor(android.graphics.Color.WHITE)
-                        setBackgroundColor(android.graphics.Color.parseColor("#1f2937")) // Warna tombol dark
+                        textSize = 13f
+                        setTextColor(Color.parseColor("#06b6d4")) // Tulisan warna cyan
+                        setTypeface(null, Typeface.BOLD) // Tulisan tebal
+                        background = shape
                         isAllCaps = false
                         
-                        val btnParams = android.widget.LinearLayout.LayoutParams(
-                            android.view.ViewGroup.LayoutParams.WRAP_CONTENT,
-                            android.view.ViewGroup.LayoutParams.WRAP_CONTENT
+                        // Padding dalam agar tombol proporsional
+                        setPadding(16.toPx, 12.toPx, 16.toPx, 12.toPx)
+
+                        // LayoutParams untuk meletakkan di paling atas (posisi 'X')
+                        // Mengasumsikan root layout adalah LinearLayout Vertikal
+                        layoutParams = LinearLayout.LayoutParams(
+                            ViewGroup.LayoutParams.MATCH_PARENT,
+                            ViewGroup.LayoutParams.WRAP_CONTENT
                         ).apply {
-                            gravity = android.view.Gravity.CENTER
-                            bottomMargin = 24.toPx
+                            gravity = Gravity.CENTER
+                            // Margin agar tidak menempel ke pinggir layar
+                            topMargin = 16.toPx
+                            leftMargin = 16.toPx
+                            rightMargin = 16.toPx
+                            bottomMargin = 8.toPx // Jarak ke konten di bawahnya
                         }
-                        layoutParams = btnParams
                     }
-                    val indexBtn = parent.indexOfChild(statusView)
-                    parent.addView(redeemBtn, indexBtn + 1)
+                    
+                    // Sisipkan tombol di index 0 (paling atas konten)
+                    root.addView(redeemBtn, 0)
                 }
 
-                // Logika Saat Tombol Redeem Ditekan
+                // Logika Saat Tombol Redeem Ditekan (Sama seperti sebelumnya)
                 redeemBtn.setOnClickListener {
-                    val input = android.widget.EditText(ctx).apply {
-                        hint = "Ketik kode di sini..."
-                        gravity = android.view.Gravity.CENTER
+                    val input = EditText(ctx).apply {
+                        hint = "Ketik kode promo di sini..."
+                        gravity = Gravity.CENTER
                         setSingleLine()
                     }
 
@@ -393,12 +416,10 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
                             
                             Toast.makeText(ctx, "Memeriksa kode...", Toast.LENGTH_SHORT).show()
                             
-                            // Panggil logika sakti dari PremiumManager
                             PremiumManager.activatePremiumWithCode(ctx, code, deviceId) { success, msg ->
                                 Toast.makeText(ctx, msg, Toast.LENGTH_LONG).show()
                                 
                                 if (success) {
-                                    // Me-restart aplikasi agar status premium langsung aktif
                                     val intent = ctx.packageManager.getLaunchIntentForPackage(ctx.packageName)
                                     val mainIntent = Intent.makeRestartActivityTask(intent?.component)
                                     ctx.startActivity(mainIntent)
