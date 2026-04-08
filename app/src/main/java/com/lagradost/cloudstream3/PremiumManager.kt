@@ -1,341 +1,439 @@
 package com.lagradost.cloudstream3
 
+import android.app.Activity
+import android.app.Dialog
 import android.content.Context
 import android.content.Intent
-import android.os.Handler
-import android.os.Looper
-import android.provider.Settings
+import android.net.Uri
+import android.view.Gravity
+import android.view.View
+import android.view.ViewGroup
+import android.widget.Button
+import android.widget.EditText
+import android.widget.ImageView
+import android.widget.LinearLayout
+import android.widget.ScrollView
+import android.widget.TextView
 import android.widget.Toast
-import androidx.preference.PreferenceManager
-import org.json.JSONObject
-import java.net.HttpURLConnection
-import java.net.URL
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
-import kotlin.math.abs
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import com.lagradost.cloudstream3.utils.RepoProtector
+import androidx.appcompat.app.AlertDialog
+import com.lagradost.cloudstream3.ui.settings.Globals.EMULATOR
+import com.lagradost.cloudstream3.ui.settings.Globals.TV
+import com.lagradost.cloudstream3.ui.settings.Globals.isLayout
+import com.lagradost.cloudstream3.utils.ImageLoader.loadImage
+import com.lagradost.cloudstream3.utils.UIHelper.toPx
 
-object PremiumManager {
-    private const val PREF_IS_PREMIUM = "is_premium_user"
-    private const val PREF_EXPIRY_DATE = "premium_expiry_date"
-    private var lastCheckTime = 0L
+object PremiumDialogManager {
 
-    val PREMIUM_REPO_URL = RepoProtector.decode(RepoProtector.PREMIUM_REPO_ENCODED)
-    val FREE_REPO_URL = RepoProtector.decode(RepoProtector.FREE_REPO_ENCODED)
-    
-    // === URL & TOKEN FIREBASE YANG SUDAH TERSEMBUNYI ===
-    val FIREBASE_BASE_URL = RepoProtector.decode(RepoProtector.FIREBASE_URL_ENCODED)
-    val FIREBASE_TOKEN = RepoProtector.decode(RepoProtector.FIREBASE_TOKEN_ENCODED)
+    fun showPremiumUnlockDialog(activity: Activity) {
+        val isTv = isLayout(TV or EMULATOR)
 
-    fun getDeviceId(context: Context): String {
-        val androidId = Settings.Secure.getString(context.contentResolver, Settings.Secure.ANDROID_ID)
-        return abs(androidId.hashCode()).toString().take(8)
-    }
+        // Tema Gelap khas Netflix
+        val gradient = android.graphics.drawable.GradientDrawable(
+            android.graphics.drawable.GradientDrawable.Orientation.TOP_BOTTOM,
+            intArrayOf(android.graphics.Color.parseColor("#141414"), android.graphics.Color.parseColor("#000000"))
+        )
+        gradient.cornerRadius = 16f.toPx
 
-    // ==========================================================
-    // FUNGSI 1: KHUSUS KODE VIP PERSONAL
-    // ==========================================================
-    fun activatePremiumWithCode(context: Context, code: String, deviceId: String, onResult: (Boolean, String) -> Unit) {
-        val inputCode = code.trim().uppercase()
-        if (inputCode.isEmpty()) {
-            onResult(false, "Kode tidak boleh kosong!")
-            return
-        }
-
-        CoroutineScope(Dispatchers.IO).launch {
-            try {
-                // SUNTIKAN TOKEN AUTH DI SINI
-                val urlString = "${FIREBASE_BASE_URL}users/$deviceId.json?auth=$FIREBASE_TOKEN"
-                val url = URL(urlString)
-                val connection = url.openConnection() as HttpURLConnection
-                connection.requestMethod = "GET"
-                connection.connectTimeout = 5000 
-                connection.readTimeout = 5000
-
-                if (connection.responseCode == HttpURLConnection.HTTP_OK) {
-                    val response = connection.inputStream.bufferedReader().use { it.readText() }
-                    
-                    if (response != "null") {
-                        val jsonResponse = JSONObject(response)
-                        val dbStatus = jsonResponse.optString("status", "")
-                        val dbCode = jsonResponse.optString("code", "")
-                        val dbExpired = jsonResponse.optLong("expired_at", 0L)
-
-                        if (dbStatus == "banned") {
-                            Handler(Looper.getMainLooper()).post { onResult(false, "Device ini telah di-banned oleh Admin!") }
-                            return@launch
-                        }
-
-                        if (dbCode == inputCode) {
-                            if (System.currentTimeMillis() < dbExpired) {
-                                val prefs = PreferenceManager.getDefaultSharedPreferences(context)
-                                prefs.edit()
-                                    .putBoolean(PREF_IS_PREMIUM, true)
-                                    .putLong(PREF_EXPIRY_DATE, dbExpired)
-                                    .commit() 
-                                
-                                lastCheckTime = System.currentTimeMillis()
-                                Handler(Looper.getMainLooper()).post { onResult(true, "Aktivasi Kode VIP Berhasil") }
-                            } else {
-                                Handler(Looper.getMainLooper()).post { onResult(false, "Masa aktif kode VIP ini sudah kadaluarsa!") }
-                            }
-                        } else {
-                            Handler(Looper.getMainLooper()).post { onResult(false, "Kode VIP tidak valid / bukan milik Device ini!") }
-                        }
-                    } else {
-                        Handler(Looper.getMainLooper()).post { onResult(false, "Device belum terdaftar. Silakan beli akses VIP ke Admin.") }
-                    }
-                } else {
-                    Handler(Looper.getMainLooper()).post { onResult(false, "Gagal menghubungi Server (Error ${connection.responseCode})") }
-                }
-            } catch (e: Exception) {
-                Handler(Looper.getMainLooper()).post { onResult(false, "Koneksi Internet Error / Timeout") }
+        // ==========================================
+        // ADIXTREAM MOD: MANTRA PEMBEKU LAYAR TV
+        // ==========================================
+        val mainLayout = object : LinearLayout(activity) {
+            // Memblokir paksa request scroll dari layout utama
+            override fun requestRectangleOnScreen(rect: android.graphics.Rect?, immediate: Boolean): Boolean {
+                return if (isTv) false else super.requestRectangleOnScreen(rect, immediate)
             }
-        }
-    }
-
-    // ==========================================================
-    // FUNGSI 2: KHUSUS KODE PROMO
-    // ==========================================================
-    fun activatePromoWithCode(context: Context, code: String, deviceId: String, onResult: (Boolean, String) -> Unit) {
-        val inputCode = code.trim().uppercase()
-        if (inputCode.isEmpty()) {
-            onResult(false, "Kode Promo tidak boleh kosong!")
-            return
-        }
-
-        CoroutineScope(Dispatchers.IO).launch {
-            try {
-                // SUNTIKAN TOKEN AUTH DI SINI
-                val promoUrl = URL("${FIREBASE_BASE_URL}promo_codes/$inputCode.json?auth=$FIREBASE_TOKEN")
-                val promoConn = promoUrl.openConnection() as HttpURLConnection
-                promoConn.requestMethod = "GET"
-                promoConn.connectTimeout = 5000 
-                promoConn.readTimeout = 5000
-
-                if (promoConn.responseCode == HttpURLConnection.HTTP_OK) {
-                    val promoResponse = promoConn.inputStream.bufferedReader().use { it.readText() }
-                    
-                    if (promoResponse != "null") {
-                        val jsonPromo = JSONObject(promoResponse)
-                        val maxQuota = jsonPromo.optInt("max_quota", 0)
-                        val usedCount = jsonPromo.optInt("used_count", 0)
-                        val days = jsonPromo.optInt("days", 0)
-                        val validUntil = jsonPromo.optLong("valid_until", 0L)
-                        
-                        if (validUntil > 0L && System.currentTimeMillis() > validUntil) {
-                            Handler(Looper.getMainLooper()).post { onResult(false, "Maaf, batas waktu klaim kode promo ini sudah habis!") }
-                            return@launch
-                        }
-
-                        if (usedCount >= maxQuota) {
-                            Handler(Looper.getMainLooper()).post { onResult(false, "Maaf, Kuota kode promo ini sudah habis!") }
-                            return@launch
-                        }
-
-                        // SUNTIKAN TOKEN AUTH DI SINI
-                        val checkUserPromoUrl = URL("${FIREBASE_BASE_URL}users/$deviceId/redeemed_promos/$inputCode.json?auth=$FIREBASE_TOKEN")
-                        val checkUserPromoConn = checkUserPromoUrl.openConnection() as HttpURLConnection
-                        checkUserPromoConn.requestMethod = "GET"
-                        val userPromoRes = checkUserPromoConn.inputStream.bufferedReader().use { it.readText() }
-                        
-                        if (userPromoRes != "null" && userPromoRes == "true") {
-                            Handler(Looper.getMainLooper()).post { onResult(false, "Anda sudah pernah mengklaim kode promo ini!") }
-                            return@launch
-                        }
-
-                        // SUNTIKAN TOKEN AUTH DI SINI
-                        val userUrl = URL("${FIREBASE_BASE_URL}users/$deviceId.json?auth=$FIREBASE_TOKEN")
-                        val userConn = userUrl.openConnection() as HttpURLConnection
-                        userConn.requestMethod = "GET"
-                        var baseTimestamp = System.currentTimeMillis()
-                        
-                        if (userConn.responseCode == HttpURLConnection.HTTP_OK) {
-                             val userRes = userConn.inputStream.bufferedReader().use { it.readText() }
-                             if (userRes != "null") {
-                                 val jsonUser = JSONObject(userRes)
-                                 val dbExpired = jsonUser.optLong("expired_at", 0L)
-                                 if (dbExpired > baseTimestamp) {
-                                     baseTimestamp = dbExpired 
-                                 }
-                             }
-                        }
-
-                        val newExpiredTimestamp = baseTimestamp + (days * 24L * 60L * 60L * 1000L)
-
-                        // SUNTIKAN TOKEN AUTH DI SINI
-                        val updatePromoUrl = URL("${FIREBASE_BASE_URL}promo_codes/$inputCode.json?auth=$FIREBASE_TOKEN")
-                        val updatePromoConn = updatePromoUrl.openConnection() as HttpURLConnection
-                        updatePromoConn.requestMethod = "PATCH"
-                        updatePromoConn.setRequestProperty("Content-Type", "application/json")
-                        updatePromoConn.doOutput = true
-                        val promoPatch = JSONObject().apply { put("used_count", usedCount + 1) }.toString()
-                        updatePromoConn.outputStream.use { it.write(promoPatch.toByteArray(Charsets.UTF_8)) }
-                        updatePromoConn.responseCode 
-
-                        // SUNTIKAN TOKEN AUTH DI SINI
-                        val updateUserUrl = URL("${FIREBASE_BASE_URL}users/$deviceId.json?auth=$FIREBASE_TOKEN")
-                        val updateUserConn = updateUserUrl.openConnection() as HttpURLConnection
-                        updateUserConn.requestMethod = "PATCH"
-                        updateUserConn.setRequestProperty("Content-Type", "application/json")
-                        updateUserConn.doOutput = true
-                        val userPatch = JSONObject().apply {
-                            put("status", "aktif")
-                            put("expired_at", newExpiredTimestamp)
-                            put("last_update", "Redeemed Promo: $inputCode")
-                        }.toString()
-                        updateUserConn.outputStream.use { it.write(userPatch.toByteArray(Charsets.UTF_8)) }
-                        updateUserConn.responseCode 
-
-                        // SUNTIKAN TOKEN AUTH DI SINI
-                        val markPromoUrl = URL("${FIREBASE_BASE_URL}users/$deviceId/redeemed_promos.json?auth=$FIREBASE_TOKEN")
-                        val markPromoConn = markPromoUrl.openConnection() as HttpURLConnection
-                        markPromoConn.requestMethod = "PATCH"
-                        markPromoConn.setRequestProperty("Content-Type", "application/json")
-                        markPromoConn.doOutput = true
-                        val markPatch = JSONObject().apply { put(inputCode, true) }.toString()
-                        markPromoConn.outputStream.use { it.write(markPatch.toByteArray(Charsets.UTF_8)) }
-                        markPromoConn.responseCode
-
-                        val prefs = PreferenceManager.getDefaultSharedPreferences(context)
-                        prefs.edit()
-                            .putBoolean(PREF_IS_PREMIUM, true)
-                            .putLong(PREF_EXPIRY_DATE, newExpiredTimestamp)
-                            .commit() 
-
-                        lastCheckTime = System.currentTimeMillis()
-                        Handler(Looper.getMainLooper()).post { onResult(true, "Selamat! Promo $days Hari Berhasil Diklaim.") }
-                    } else {
-                        Handler(Looper.getMainLooper()).post { onResult(false, "Kode Promo tidak ditemukan atau salah ketik!") }
-                    }
-                } else {
-                    Handler(Looper.getMainLooper()).post { onResult(false, "Gagal menghubungi Server Promo.") }
-                }
-            } catch (e: Exception) {
-                Handler(Looper.getMainLooper()).post { onResult(false, "Koneksi Internet Error / Timeout") }
+            
+            // PERBAIKAN ERROR: child menggunakan View, rectangle menggunakan Rect?
+            override fun requestChildRectangleOnScreen(child: View, rectangle: android.graphics.Rect?, immediate: Boolean): Boolean {
+                return if (isTv) false else super.requestChildRectangleOnScreen(child, rectangle, immediate)
             }
+        }.apply {
+            orientation = if (isTv) LinearLayout.HORIZONTAL else LinearLayout.VERTICAL
+            setPadding(30, if(isTv) 30 else 60, 30, if(isTv) 30 else 60) 
+            background = gradient
+            gravity = Gravity.CENTER
+            weightSum = if (isTv) 2f else 1f
+            clipChildren = false
+            clipToPadding = false
         }
-    }
 
-    fun isPremium(context: Context): Boolean {
-        val prefs = PreferenceManager.getDefaultSharedPreferences(context)
-        val isPremium = prefs.getBoolean(PREF_IS_PREMIUM, false)
-        val expiryDate = prefs.getLong(PREF_EXPIRY_DATE, 0)
+        val leftPanel = LinearLayout(activity).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER_HORIZONTAL
+            clipChildren = false
+            clipToPadding = false
+            if (isTv) layoutParams = LinearLayout.LayoutParams(0, -2, 1f).apply { setMargins(0,0,20,0) }
+        }
+        val rightPanel = LinearLayout(activity).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER_HORIZONTAL
+            clipChildren = false
+            clipToPadding = false
+            if (isTv) layoutParams = LinearLayout.LayoutParams(0, -2, 1f).apply { setMargins(20,0,0,0) }
+        }
+
+        // Ikon dan Teks
+        val icon = TextView(activity).apply {
+            text = "🍿" // Popcorn
+            textSize = if (isTv) 40f else 50f
+            gravity = Gravity.CENTER
+            setPadding(0, 0, 0, 10)
+        }
+
+        val title = TextView(activity).apply {
+            text = "PREMIUM ACCESS"
+            textSize = if (isTv) 20f else 24f
+            setTextColor(android.graphics.Color.WHITE)
+            typeface = android.graphics.Typeface.DEFAULT_BOLD
+            gravity = Gravity.CENTER
+            setPadding(0, 0, 0, 10)
+        }
         
-        if (isPremium) {
-            if (System.currentTimeMillis() > expiryDate) {
-                deactivatePremium(context) 
-                return false
-            }
-
-            if (System.currentTimeMillis() - lastCheckTime > 5 * 60 * 1000) {
-                lastCheckTime = System.currentTimeMillis()
-                checkAndSyncWithServer(context, getDeviceId(context))
-            }
-            return true
+        val subTitle = TextView(activity).apply {
+            text = "Fitur ini terkunci.\nSilakan hubungi admin untuk\nberlangganan."
+            textSize = 14f
+            setTextColor(android.graphics.Color.parseColor("#B3B3B3")) // Abu Netflix
+            gravity = Gravity.CENTER
+            setPadding(0, 0, 0, if(isTv) 15 else 30)
         }
-        return false
-    }
 
-    fun deactivatePremium(context: Context) {
-        val prefs = PreferenceManager.getDefaultSharedPreferences(context)
-        prefs.edit()
-            .putBoolean(PREF_IS_PREMIUM, false)
-            .putLong(PREF_EXPIRY_DATE, 0)
-            .commit() 
-    }
-    
-    fun getExpiryDateString(context: Context): String {
-        val prefs = PreferenceManager.getDefaultSharedPreferences(context)
-        val date = prefs.getLong(PREF_EXPIRY_DATE, 0)
-        return if (date == 0L) "Non-Premium" else SimpleDateFormat("dd MMM yyyy", Locale.getDefault()).format(Date(date))
-    }
-    
-    private fun checkAndSyncWithServer(context: Context, deviceId: String) {
-        CoroutineScope(Dispatchers.IO).launch {
-            try {
-                // SUNTIKAN TOKEN AUTH DI SINI
-                val urlString = "${FIREBASE_BASE_URL}users/$deviceId.json?auth=$FIREBASE_TOKEN"
-                val url = URL(urlString)
-                val connection = url.openConnection() as HttpURLConnection
-                connection.requestMethod = "GET"
-                connection.connectTimeout = 5000 
-                connection.readTimeout = 5000
+        // Kotak Harga Netflix
+        val priceBoxBg = android.graphics.drawable.GradientDrawable().apply {
+            setColor(android.graphics.Color.parseColor("#222222")) // Dark grey solid
+            cornerRadius = 8f.toPx
+        }
+        val priceLayout = LinearLayout(activity).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(40, 30, 40, 30)
+            background = priceBoxBg
+            layoutParams = LinearLayout.LayoutParams(-1, -2).apply { setMargins(10, 0, 10, if(isTv) 15 else 30) }
+            
+            fun addPrice(dur: String, price: String) {
+                val row = LinearLayout(activity).apply {
+                    orientation = LinearLayout.HORIZONTAL
+                    setPadding(0, 8, 0, 8)
+                    weightSum = 2f
+                }
+                val t1 = TextView(activity).apply {
+                    text = dur
+                    textSize = 15f
+                    setTextColor(android.graphics.Color.WHITE)
+                    layoutParams = LinearLayout.LayoutParams(0, -2, 1f)
+                }
+                val t2 = TextView(activity).apply {
+                    text = price
+                    textSize = 15f
+                    setTextColor(android.graphics.Color.parseColor("#E50914")) // Merah Netflix
+                    typeface = android.graphics.Typeface.DEFAULT_BOLD
+                    layoutParams = LinearLayout.LayoutParams(0, -2, 1f)
+                    gravity = Gravity.END
+                }
+                row.addView(t1)
+                row.addView(t2)
+                addView(row)
+            }
+            
+            addPrice("1 Bulan", "Rp 10.000")
+            addPrice("6 Bulan", "Rp 30.000")
+            addPrice("1 Tahun", "Rp 50.000")
+        }
 
-                if (connection.responseCode == HttpURLConnection.HTTP_OK) {
-                    val response = connection.inputStream.bufferedReader().use { it.readText() }
-                    
-                    if (response == "null") {
-                        registerUserToServer(context, deviceId)
-                    } else {
-                        val jsonResponse = JSONObject(response)
-                        val dbStatus = jsonResponse.optString("status", "")
-                        val dbExpired = jsonResponse.optLong("expired_at", 0L)
+        // SCAN UNTUK BAYAR
+        val qrisTitle = TextView(activity).apply {
+            text = "SCAN UNTUK BAYAR"
+            textSize = 12f
+            setTextColor(android.graphics.Color.parseColor("#B3B3B3"))
+            gravity = Gravity.CENTER
+            setPadding(0, 0, 0, 10)
+        }
+        val qrisImage = ImageView(activity).apply {
+            layoutParams = LinearLayout.LayoutParams(-1, if(isTv) 180.toPx else -2).apply { setMargins(40, 0, 40, 0) }
+            adjustViewBounds = true 
+            scaleType = ImageView.ScaleType.FIT_CENTER
+            loadImage("https://raw.githubusercontent.com/michat88/Zaneta/main/Icons/qris.png") 
+        }
+        val qrisFooter = TextView(activity).apply {
+            text = "OVO / DANA / GOPAY / SHOPEEPAY / BANK"
+            textSize = 11f
+            setTextColor(android.graphics.Color.parseColor("#B3B3B3"))
+            gravity = Gravity.CENTER
+            setPadding(0, 10, 0, if(isTv) 15 else 30)
+        }
 
-                        val prefs = PreferenceManager.getDefaultSharedPreferences(context)
-                        val wasPremium = prefs.getBoolean(PREF_IS_PREMIUM, false)
-                        
-                        val isBanned = dbStatus == "banned"
-                        val isExpired = dbStatus == "aktif" && dbExpired > 0L && System.currentTimeMillis() > dbExpired
-                        
-                        if (isBanned || isExpired) {
-                            if (wasPremium) {
-                                deactivatePremium(context) 
-                                
-                                Handler(Looper.getMainLooper()).post {
-                                    val pesan = if (isBanned) {
-                                        "⛔ AKSES PREMIUM DICABUT OLEH ADMIN!"
-                                    } else {
-                                        "⚠️ Masa Aktif Premium Habis. Yuk perpanjang lagi!"
-                                    }
-                                    
-                                    Toast.makeText(context, pesan, Toast.LENGTH_LONG).show()
-                                    val intent = context.packageManager.getLaunchIntentForPackage(context.packageName)
-                                    val mainIntent = Intent.makeRestartActivityTask(intent?.component)
-                                    context.startActivity(mainIntent)
-                                    Runtime.getRuntime().exit(0)
-                                }
-                            }
-                        } else if (dbStatus == "aktif" && dbExpired > 0L) {
-                            prefs.edit().putLong(PREF_EXPIRY_DATE, dbExpired).apply()
-                        }
+        // Kotak Device ID Polos
+        val deviceIdVal = PremiumManager.getDeviceId(activity)
+        
+        val idBackground = android.graphics.drawable.GradientDrawable().apply {
+            setColor(android.graphics.Color.parseColor("#222222")) 
+            cornerRadius = 8f.toPx
+        }
+        
+        val idContainer = LinearLayout(activity).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(20, 20, 20, 20)
+            background = idBackground
+            
+            // Simetris 30px
+            layoutParams = LinearLayout.LayoutParams(-1, -2).apply { 
+                setMargins(30.toPx, 0, 30.toPx, if(isTv) 15 else 30) 
+            }
+            
+            isFocusable = true 
+            isClickable = true
+            
+            // Animasi untuk TV/HP
+            applyModernButtonEffects(this, isTv, scaleOnTv = 1.05f)
+            
+            setOnClickListener {
+                val clipboard = activity.getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+                val clip = android.content.ClipData.newPlainText("Device ID", deviceIdVal)
+                clipboard.setPrimaryClip(clip)
+                Toast.makeText(activity, "ID Disalin!", Toast.LENGTH_SHORT).show()
+            }
+        }
+        val idLabel = TextView(activity).apply {
+            text = "DEVICE ID ANDA (Tap to copy):"
+            textSize = 12f
+            setTextColor(android.graphics.Color.parseColor("#B3B3B3"))
+            gravity = Gravity.CENTER
+        }
+        val idValueRow = LinearLayout(activity).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER; setPadding(0, 5, 0, 0) }
+        val idValue = TextView(activity).apply {
+            text = deviceIdVal
+            textSize = if(isTv) 20f else 24f
+            setTextColor(android.graphics.Color.WHITE) 
+            typeface = android.graphics.Typeface.DEFAULT_BOLD
+            setPadding(0, 0, 15, 0)
+        }
+        val copyIcon = TextView(activity).apply { text = "⎘"; setTextColor(android.graphics.Color.parseColor("#E50914")); textSize = 20f }
+        idValueRow.addView(idValue)
+        idValueRow.addView(copyIcon)
+        idContainer.addView(idLabel)
+        idContainer.addView(idValueRow)
+
+        // Input Kode Ala Netflix
+        val inputBg = android.graphics.drawable.GradientDrawable().apply {
+            setColor(android.graphics.Color.parseColor("#333333")) 
+            cornerRadius = 4f.toPx
+        }
+        
+        val inputCode = EditText(activity).apply {
+            hint = "Masukkan KODE di sini"
+            setHintTextColor(android.graphics.Color.parseColor("#8C8C8C"))
+            setTextColor(android.graphics.Color.WHITE)
+            gravity = Gravity.CENTER
+            setPadding(20, 30, 20, 30)
+            textSize = 16f
+            setSingleLine()
+            
+            background = inputBg
+            
+            // Simetris 30px
+            layoutParams = LinearLayout.LayoutParams(-1, -2).apply { 
+                setMargins(30.toPx, 0, 30.toPx, if(isTv) 15 else 30) 
+            }
+            
+            isFocusable = true 
+            isFocusableInTouchMode = true
+            
+            // Animasi untuk TV/HP
+            applyModernButtonEffects(this, isTv, scaleOnTv = 1.02f)
+        }
+
+        // Tombol Unlock Merah Netflix
+        val btnBackground = android.graphics.drawable.GradientDrawable().apply {
+            setColor(android.graphics.Color.parseColor("#E50914"))
+            cornerRadius = 4f.toPx 
+        }
+
+        val btnUnlock = Button(activity).apply {
+            text = "UNLOCK NOW"
+            textSize = 16f
+            
+            background = btnBackground 
+            
+            setTextColor(android.graphics.Color.WHITE)
+            typeface = android.graphics.Typeface.DEFAULT_BOLD
+            layoutParams = LinearLayout.LayoutParams(-1, 55.toPx).apply { 
+                // Simetris 30px
+                setMargins(30.toPx, 0, 30.toPx, 20) 
+            }
+            
+            applyModernButtonEffects(this, isTv, scaleOnTv = 1.05f)
+        }
+        
+        // Tombol Telegram 
+        val telBackground = android.graphics.drawable.GradientDrawable().apply { 
+            setColor(android.graphics.Color.TRANSPARENT); cornerRadius = 16f.toPx 
+        }
+
+        val btnAdminRow = LinearLayout(activity).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER
+            setPadding(20, 10, 20, 10)
+            
+            background = telBackground 
+            
+            applyModernButtonEffects(this, isTv, scaleOnTv = 1.05f)
+            
+            // PENANGANAN KHUSUS TV UNTUK TELEGRAM
+            setOnClickListener {
+                if (isTv) {
+                    Toast.makeText(activity, "Gunakan HP Anda untuk menghubungi Admin via Telegram: @michat88", Toast.LENGTH_LONG).show()
+                } else {
+                    try {
+                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://t.me/michat88"))
+                        activity.startActivity(intent)
+                    } catch (e: Exception) { 
+                        Toast.makeText(activity, "Telegram tidak ditemukan", Toast.LENGTH_SHORT).show() 
                     }
                 }
-            } catch (e: Exception) {
             }
         }
+        
+        val textAdmin = TextView(activity).apply { text = "HUBUNGI ADMIN "; setTextColor(android.graphics.Color.WHITE); textSize = 13f; typeface = android.graphics.Typeface.DEFAULT_BOLD }
+        val iconAdmin = ImageView(activity).apply { layoutParams = LinearLayout.LayoutParams(18.toPx, 18.toPx).apply { setMargins(10, 0, 0, 0) }; scaleType = ImageView.ScaleType.FIT_CENTER; loadImage("https://raw.githubusercontent.com/michat88/AdiXtream/master/asset/telegram.png") }
+        btnAdminRow.addView(textAdmin)
+        btnAdminRow.addView(iconAdmin)
+
+        // Logika Klik Unlock (ONLINE SYSTEM)
+        btnUnlock.setOnClickListener {
+            val code = inputCode.text.toString().trim().uppercase()
+            if (code.isEmpty()) {
+                Toast.makeText(activity, "Masukkan kode terlebih dahulu!", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+            
+            // Ubah teks tombol jadi proses loading
+            btnUnlock.text = "MEMVERIFIKASI..."
+            btnUnlock.isEnabled = false
+
+            PremiumManager.activatePremiumWithCode(activity, code, deviceIdVal) { isSuccess, message ->
+                // Kembalikan tombol seperti semula setelah server menjawab
+                btnUnlock.isEnabled = true
+                btnUnlock.text = "UNLOCK NOW"
+                
+                if (isSuccess) {
+                    (btnUnlock.tag as? Dialog)?.dismiss()
+                    val expiryDate = PremiumManager.getExpiryDateString(activity)
+                    
+                    AlertDialog.Builder(activity)
+                        .setTitle("✅ PREMIUM DIAKTIFKAN")
+                        .setMessage("Terima kasih telah berlangganan!\n\n📅 Masa Aktif: $expiryDate\n\nAplikasi akan direstart...")
+                        .setCancelable(false)
+                        .setPositiveButton("OK") { _, _ ->
+                            val packageManager = activity.packageManager
+                            val intent = packageManager.getLaunchIntentForPackage(activity.packageName)
+                            val componentName = intent?.component
+                            val mainIntent = Intent.makeRestartActivityTask(componentName)
+                            activity.startActivity(mainIntent)
+                            Runtime.getRuntime().exit(0)
+                        }
+                        .show()
+                } else {
+                    Toast.makeText(activity, "⛔ $message", Toast.LENGTH_LONG).show()
+                }
+            }
+        }
+
+        // Menyusun View ke Panels
+        if (isTv) {
+            leftPanel.addView(icon)
+            leftPanel.addView(title)
+            leftPanel.addView(subTitle)
+            leftPanel.addView(priceLayout)
+            leftPanel.addView(btnAdminRow)
+
+            rightPanel.addView(qrisTitle)
+            rightPanel.addView(qrisImage)
+            rightPanel.addView(qrisFooter)
+            rightPanel.addView(idContainer)
+            rightPanel.addView(inputCode)
+            rightPanel.addView(btnUnlock)
+
+            mainLayout.addView(leftPanel)
+            mainLayout.addView(rightPanel)
+        } else {
+            mainLayout.addView(icon)
+            mainLayout.addView(title)
+            mainLayout.addView(subTitle)
+            mainLayout.addView(priceLayout)
+            mainLayout.addView(qrisTitle)
+            mainLayout.addView(qrisImage)
+            mainLayout.addView(qrisFooter)
+            mainLayout.addView(idContainer)
+            mainLayout.addView(inputCode)
+            mainLayout.addView(btnUnlock)
+            mainLayout.addView(btnAdminRow)
+        }
+
+        // Membuat Dialog murni (tanpa embel-embel ScrollView bawaan AlertDialog)
+        val dialog = Dialog(activity, android.R.style.Theme_DeviceDefault_Dialog_NoActionBar)
+        dialog.window?.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT))
+        
+        if (isTv) {
+            dialog.setContentView(mainLayout)
+        } else {
+            val scroll = ScrollView(activity).apply { 
+                clipChildren = false
+                clipToPadding = false
+                addView(mainLayout) 
+            }
+            dialog.setContentView(scroll)
+        }
+
+        dialog.setOnShowListener {
+            val displayMetrics = activity.resources.displayMetrics
+            val width = (displayMetrics.widthPixels * 0.90).toInt() 
+            // Untuk TV, paksa juga height-nya agar tidak melebihi layar yang memicu scroll OS
+            val height = if (isTv) (displayMetrics.heightPixels * 0.90).toInt() else ViewGroup.LayoutParams.WRAP_CONTENT
+            dialog.window?.setLayout(width, height)
+        }
+
+        btnUnlock.tag = dialog
+        dialog.show()
     }
 
-    private fun registerUserToServer(context: Context, deviceId: String) {
-        try {
-            val prefs = PreferenceManager.getDefaultSharedPreferences(context)
-            val localExpiry = prefs.getLong(PREF_EXPIRY_DATE, 0L)
+    /**
+     * ADIXTREAM MOD: Fungsi Pembantu untuk Animasi Tombol Modern
+     */
+    private fun applyModernButtonEffects(button: View, isTv: Boolean, scaleOnTv: Float = 1.05f) {
+        button.isFocusable = true
+        button.isClickable = true
 
-            // SUNTIKAN TOKEN AUTH DI SINI
-            val urlString = "${FIREBASE_BASE_URL}users/$deviceId.json?auth=$FIREBASE_TOKEN"
-            val url = URL(urlString)
-            val connection = url.openConnection() as HttpURLConnection
-            connection.requestMethod = "PATCH" 
-            connection.setRequestProperty("Content-Type", "application/json")
-            connection.doOutput = true
-            
-            val jsonPayload = JSONObject().apply {
-                put("status", "aktif")
-                put("expired_at", localExpiry)
-                put("last_update", "Auto-Sync from Android App")
-            }.toString()
-            
-            connection.outputStream.use { os ->
-                val input = jsonPayload.toByteArray(Charsets.UTF_8)
-                os.write(input, 0, input.size)
+        if (isTv) {
+            button.setOnFocusChangeListener { view, hasFocus ->
+                if (hasFocus) {
+                    view.animate()
+                        .scaleX(scaleOnTv)
+                        .scaleY(scaleOnTv)
+                        .translationZ(10f)
+                        .setDuration(150)
+                        .start()
+                } else {
+                    view.animate()
+                        .scaleX(1f)
+                        .scaleY(1f)
+                        .translationZ(0f)
+                        .setDuration(150)
+                        .start()
+                }
             }
-            connection.responseCode 
-        } catch (e: Exception) {
-            e.printStackTrace()
+        } else {
+            button.translationZ = 4f
+        }
+
+        button.setOnTouchListener { view, event ->
+            when (event.action) {
+                android.view.MotionEvent.ACTION_DOWN -> {
+                    view.animate().scaleX(0.96f).scaleY(0.96f).setDuration(100).start()
+                }
+                android.view.MotionEvent.ACTION_UP, android.view.MotionEvent.ACTION_CANCEL -> {
+                    val targetScale = if (isTv && view.hasFocus()) scaleOnTv else 1f
+                    view.animate().scaleX(targetScale).scaleY(targetScale).setDuration(100).start()
+                }
+            }
+            false 
         }
     }
 }
