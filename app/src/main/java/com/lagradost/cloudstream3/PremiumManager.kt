@@ -35,9 +35,9 @@ object PremiumManager {
         return abs(androidId.hashCode()).toString().take(8)
     }
 
-    /**
-     * VERIFIKASI KODE ONLINE KE FIREBASE (MENDUKUNG KODE PERSONAL & PROMO)
-     */
+    // ==========================================================
+    // FUNGSI 1: KHUSUS KODE VIP PERSONAL (Dipanggil Menu Ekstensi)
+    // ==========================================================
     fun activatePremiumWithCode(context: Context, code: String, deviceId: String, onResult: (Boolean, String) -> Unit) {
         val inputCode = code.trim().uppercase()
         if (inputCode.isEmpty()) {
@@ -47,120 +47,6 @@ object PremiumManager {
 
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                // ==========================================================
-                // TAHAP 1: CEK APAKAH INI KODE PROMO / REDEEM CODE
-                // ==========================================================
-                val promoUrl = URL("${FIREBASE_BASE_URL}promo_codes/$inputCode.json")
-                val promoConn = promoUrl.openConnection() as HttpURLConnection
-                promoConn.requestMethod = "GET"
-                promoConn.connectTimeout = 5000 
-                promoConn.readTimeout = 5000
-
-                if (promoConn.responseCode == HttpURLConnection.HTTP_OK) {
-                    val promoResponse = promoConn.inputStream.bufferedReader().use { it.readText() }
-                    
-                    if (promoResponse != "null") {
-                        // KODE PROMO DITEMUKAN!
-                        val jsonPromo = JSONObject(promoResponse)
-                        val maxQuota = jsonPromo.optInt("max_quota", 0)
-                        val usedCount = jsonPromo.optInt("used_count", 0)
-                        val days = jsonPromo.optInt("days", 0)
-                        val validUntil = jsonPromo.optLong("valid_until", 0L)
-                        
-                        // Cek Batas Waktu Klaim (Apakah promo sudah basi/hangus?)
-                        if (validUntil > 0L && System.currentTimeMillis() > validUntil) {
-                            Handler(Looper.getMainLooper()).post { onResult(false, "Maaf, batas waktu klaim kode promo ini sudah habis!") }
-                            return@launch
-                        }
-
-                        // Cek Kuota
-                        if (usedCount >= maxQuota) {
-                            Handler(Looper.getMainLooper()).post { onResult(false, "Maaf, Kuota kode promo ini sudah habis!") }
-                            return@launch
-                        }
-
-                        // Cek apakah user ini sudah pernah pakai promo yang sama (Anti Tuyul)
-                        val checkUserPromoUrl = URL("${FIREBASE_BASE_URL}users/$deviceId/redeemed_promos/$inputCode.json")
-                        val checkUserPromoConn = checkUserPromoUrl.openConnection() as HttpURLConnection
-                        checkUserPromoConn.requestMethod = "GET"
-                        val userPromoRes = checkUserPromoConn.inputStream.bufferedReader().use { it.readText() }
-                        
-                        if (userPromoRes != "null" && userPromoRes == "true") {
-                            Handler(Looper.getMainLooper()).post { onResult(false, "Anda sudah pernah mengklaim kode promo ini!") }
-                            return@launch
-                        }
-
-                        // Proses Klaim Promo Berhasil!
-                        // 1. Cek masa aktif user saat ini (biar sisa harinya ditambahkan/akumulasi)
-                        val userUrl = URL("${FIREBASE_BASE_URL}users/$deviceId.json")
-                        val userConn = userUrl.openConnection() as HttpURLConnection
-                        userConn.requestMethod = "GET"
-                        var baseTimestamp = System.currentTimeMillis()
-                        
-                        if (userConn.responseCode == HttpURLConnection.HTTP_OK) {
-                             val userRes = userConn.inputStream.bufferedReader().use { it.readText() }
-                             if (userRes != "null") {
-                                 val jsonUser = JSONObject(userRes)
-                                 val dbExpired = jsonUser.optLong("expired_at", 0L)
-                                 if (dbExpired > baseTimestamp) {
-                                     baseTimestamp = dbExpired // Lanjutkan dari sisa hari sebelumnya
-                                 }
-                             }
-                        }
-
-                        val newExpiredTimestamp = baseTimestamp + (days * 24L * 60L * 60L * 1000L)
-
-                        // 2. Tambah angka "Terpakai" (used_count) di Laci Promo
-                        val updatePromoUrl = URL("${FIREBASE_BASE_URL}promo_codes/$inputCode.json")
-                        val updatePromoConn = updatePromoUrl.openConnection() as HttpURLConnection
-                        updatePromoConn.requestMethod = "PATCH"
-                        updatePromoConn.setRequestProperty("Content-Type", "application/json")
-                        updatePromoConn.doOutput = true
-                        val promoPatch = JSONObject().apply { put("used_count", usedCount + 1) }.toString()
-                        updatePromoConn.outputStream.use { it.write(promoPatch.toByteArray(Charsets.UTF_8)) }
-                        updatePromoConn.responseCode 
-
-                        // 3. Update status VIP & masa aktif di Laci User
-                        val updateUserUrl = URL("${FIREBASE_BASE_URL}users/$deviceId.json")
-                        val updateUserConn = updateUserUrl.openConnection() as HttpURLConnection
-                        updateUserConn.requestMethod = "PATCH"
-                        updateUserConn.setRequestProperty("Content-Type", "application/json")
-                        updateUserConn.doOutput = true
-                        val userPatch = JSONObject().apply {
-                            put("status", "aktif")
-                            put("expired_at", newExpiredTimestamp)
-                            put("last_update", "Redeemed Promo: $inputCode")
-                        }.toString()
-                        updateUserConn.outputStream.use { it.write(userPatch.toByteArray(Charsets.UTF_8)) }
-                        updateUserConn.responseCode 
-
-                        // 4. Tandai bahwa user ini sudah pakai promo ini
-                        val markPromoUrl = URL("${FIREBASE_BASE_URL}users/$deviceId/redeemed_promos.json")
-                        val markPromoConn = markPromoUrl.openConnection() as HttpURLConnection
-                        markPromoConn.requestMethod = "PATCH"
-                        markPromoConn.setRequestProperty("Content-Type", "application/json")
-                        markPromoConn.doOutput = true
-                        val markPatch = JSONObject().apply { put(inputCode, true) }.toString()
-                        markPromoConn.outputStream.use { it.write(markPatch.toByteArray(Charsets.UTF_8)) }
-                        markPromoConn.responseCode
-
-                        // 5. Simpan di Lokal & Selesai
-                        val prefs = PreferenceManager.getDefaultSharedPreferences(context)
-                        prefs.edit().apply {
-                            putBoolean(PREF_IS_PREMIUM, true)
-                            putLong(PREF_EXPIRY_DATE, newExpiredTimestamp) 
-                            apply()
-                        }
-                        lastCheckTime = System.currentTimeMillis()
-                        Handler(Looper.getMainLooper()).post { onResult(true, "Selamat! Promo $days Hari Berhasil Diklaim.") }
-                        
-                        return@launch // Hentikan proses, jangan lanjut ke kode personal
-                    }
-                }
-
-                // ==========================================================
-                // TAHAP 2: JIKA BUKAN PROMO, CEK SEBAGAI KODE PERSONAL NORMAL
-                // ==========================================================
                 val urlString = "${FIREBASE_BASE_URL}users/$deviceId.json"
                 val url = URL(urlString)
                 val connection = url.openConnection() as HttpURLConnection
@@ -191,20 +77,143 @@ object PremiumManager {
                                     apply()
                                 }
                                 lastCheckTime = System.currentTimeMillis()
-                                Handler(Looper.getMainLooper()).post { onResult(true, "Aktivasi Kode Pribadi Berhasil") }
+                                Handler(Looper.getMainLooper()).post { onResult(true, "Aktivasi Kode VIP Berhasil") }
                             } else {
-                                Handler(Looper.getMainLooper()).post { onResult(false, "Masa aktif kode ini sudah kadaluarsa!") }
+                                Handler(Looper.getMainLooper()).post { onResult(false, "Masa aktif kode VIP ini sudah kadaluarsa!") }
                             }
                         } else {
-                            Handler(Looper.getMainLooper()).post { onResult(false, "Kode tidak valid / bukan milik Device ini!") }
+                            Handler(Looper.getMainLooper()).post { onResult(false, "Kode VIP tidak valid / bukan milik Device ini!") }
                         }
                     } else {
-                        Handler(Looper.getMainLooper()).post { onResult(false, "Device/Kode belum terdaftar. Hubungi Admin.") }
+                        Handler(Looper.getMainLooper()).post { onResult(false, "Device belum terdaftar. Silakan beli akses VIP ke Admin.") }
                     }
                 } else {
                     Handler(Looper.getMainLooper()).post { onResult(false, "Gagal menghubungi Server (Error ${connection.responseCode})") }
                 }
+            } catch (e: Exception) {
+                Handler(Looper.getMainLooper()).post { onResult(false, "Koneksi Internet Error / Timeout") }
+            }
+        }
+    }
 
+    // ==========================================================
+    // FUNGSI 2: KHUSUS KODE PROMO (Dipanggil Tombol Settings Baru)
+    // ==========================================================
+    fun activatePromoWithCode(context: Context, code: String, deviceId: String, onResult: (Boolean, String) -> Unit) {
+        val inputCode = code.trim().uppercase()
+        if (inputCode.isEmpty()) {
+            onResult(false, "Kode Promo tidak boleh kosong!")
+            return
+        }
+
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                val promoUrl = URL("${FIREBASE_BASE_URL}promo_codes/$inputCode.json")
+                val promoConn = promoUrl.openConnection() as HttpURLConnection
+                promoConn.requestMethod = "GET"
+                promoConn.connectTimeout = 5000 
+                promoConn.readTimeout = 5000
+
+                if (promoConn.responseCode == HttpURLConnection.HTTP_OK) {
+                    val promoResponse = promoConn.inputStream.bufferedReader().use { it.readText() }
+                    
+                    if (promoResponse != "null") {
+                        val jsonPromo = JSONObject(promoResponse)
+                        val maxQuota = jsonPromo.optInt("max_quota", 0)
+                        val usedCount = jsonPromo.optInt("used_count", 0)
+                        val days = jsonPromo.optInt("days", 0)
+                        val validUntil = jsonPromo.optLong("valid_until", 0L)
+                        
+                        // Cek Batas Waktu Klaim
+                        if (validUntil > 0L && System.currentTimeMillis() > validUntil) {
+                            Handler(Looper.getMainLooper()).post { onResult(false, "Maaf, batas waktu klaim kode promo ini sudah habis!") }
+                            return@launch
+                        }
+
+                        // Cek Kuota
+                        if (usedCount >= maxQuota) {
+                            Handler(Looper.getMainLooper()).post { onResult(false, "Maaf, Kuota kode promo ini sudah habis!") }
+                            return@launch
+                        }
+
+                        // Cek apakah user ini sudah pernah pakai promo yang sama (Anti Tuyul)
+                        val checkUserPromoUrl = URL("${FIREBASE_BASE_URL}users/$deviceId/redeemed_promos/$inputCode.json")
+                        val checkUserPromoConn = checkUserPromoUrl.openConnection() as HttpURLConnection
+                        checkUserPromoConn.requestMethod = "GET"
+                        val userPromoRes = checkUserPromoConn.inputStream.bufferedReader().use { it.readText() }
+                        
+                        if (userPromoRes != "null" && userPromoRes == "true") {
+                            Handler(Looper.getMainLooper()).post { onResult(false, "Anda sudah pernah mengklaim kode promo ini!") }
+                            return@launch
+                        }
+
+                        // Proses Klaim Promo Berhasil!
+                        val userUrl = URL("${FIREBASE_BASE_URL}users/$deviceId.json")
+                        val userConn = userUrl.openConnection() as HttpURLConnection
+                        userConn.requestMethod = "GET"
+                        var baseTimestamp = System.currentTimeMillis()
+                        
+                        if (userConn.responseCode == HttpURLConnection.HTTP_OK) {
+                             val userRes = userConn.inputStream.bufferedReader().use { it.readText() }
+                             if (userRes != "null") {
+                                 val jsonUser = JSONObject(userRes)
+                                 val dbExpired = jsonUser.optLong("expired_at", 0L)
+                                 if (dbExpired > baseTimestamp) {
+                                     baseTimestamp = dbExpired 
+                                 }
+                             }
+                        }
+
+                        val newExpiredTimestamp = baseTimestamp + (days * 24L * 60L * 60L * 1000L)
+
+                        // Update Promo Laci
+                        val updatePromoUrl = URL("${FIREBASE_BASE_URL}promo_codes/$inputCode.json")
+                        val updatePromoConn = updatePromoUrl.openConnection() as HttpURLConnection
+                        updatePromoConn.requestMethod = "PATCH"
+                        updatePromoConn.setRequestProperty("Content-Type", "application/json")
+                        updatePromoConn.doOutput = true
+                        val promoPatch = JSONObject().apply { put("used_count", usedCount + 1) }.toString()
+                        updatePromoConn.outputStream.use { it.write(promoPatch.toByteArray(Charsets.UTF_8)) }
+                        updatePromoConn.responseCode 
+
+                        // Update User Laci
+                        val updateUserUrl = URL("${FIREBASE_BASE_URL}users/$deviceId.json")
+                        val updateUserConn = updateUserUrl.openConnection() as HttpURLConnection
+                        updateUserConn.requestMethod = "PATCH"
+                        updateUserConn.setRequestProperty("Content-Type", "application/json")
+                        updateUserConn.doOutput = true
+                        val userPatch = JSONObject().apply {
+                            put("status", "aktif")
+                            put("expired_at", newExpiredTimestamp)
+                            put("last_update", "Redeemed Promo: $inputCode")
+                        }.toString()
+                        updateUserConn.outputStream.use { it.write(userPatch.toByteArray(Charsets.UTF_8)) }
+                        updateUserConn.responseCode 
+
+                        // Tandai Promo
+                        val markPromoUrl = URL("${FIREBASE_BASE_URL}users/$deviceId/redeemed_promos.json")
+                        val markPromoConn = markPromoUrl.openConnection() as HttpURLConnection
+                        markPromoConn.requestMethod = "PATCH"
+                        markPromoConn.setRequestProperty("Content-Type", "application/json")
+                        markPromoConn.doOutput = true
+                        val markPatch = JSONObject().apply { put(inputCode, true) }.toString()
+                        markPromoConn.outputStream.use { it.write(markPatch.toByteArray(Charsets.UTF_8)) }
+                        markPromoConn.responseCode
+
+                        val prefs = PreferenceManager.getDefaultSharedPreferences(context)
+                        prefs.edit().apply {
+                            putBoolean(PREF_IS_PREMIUM, true)
+                            putLong(PREF_EXPIRY_DATE, newExpiredTimestamp) 
+                            apply()
+                        }
+                        lastCheckTime = System.currentTimeMillis()
+                        Handler(Looper.getMainLooper()).post { onResult(true, "Selamat! Promo $days Hari Berhasil Diklaim.") }
+                    } else {
+                        Handler(Looper.getMainLooper()).post { onResult(false, "Kode Promo tidak ditemukan atau salah ketik!") }
+                    }
+                } else {
+                    Handler(Looper.getMainLooper()).post { onResult(false, "Gagal menghubungi Server Promo.") }
+                }
             } catch (e: Exception) {
                 Handler(Looper.getMainLooper()).post { onResult(false, "Koneksi Internet Error / Timeout") }
             }
