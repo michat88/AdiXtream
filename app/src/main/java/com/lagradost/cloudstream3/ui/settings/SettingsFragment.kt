@@ -325,7 +325,7 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
 
         // === LOGIKA SUNTIK TAMPILAN SECARA OTOMATIS (SISI ANDROID) ===
         context?.let { ctx ->
-            // --- A. Status Langganan (Tetap di posisi lama, di bawah Versi Info) ---
+            // --- A. Status Langganan ---
             val versionParent = binding.appVersionInfo.parent as? ViewGroup
             versionParent?.let { parent ->
                 val tagStatus = "status_langganan_tag"
@@ -350,16 +350,13 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
                     parent.addView(statusView, index + 1)
                 }
                 statusView.text = "Status Langganan: $premiumStatus"
-            }
 
-            // --- B. Tombol Redeem (Pindah ke posisi 'X', Paling Atas) ---
-            val rootLayout = binding.root as? ViewGroup // Pastikan root adalah ViewGroup (LinearLayout vertikal)
-            rootLayout?.let { root ->
+                // --- B. Tombol Redeem (Dikembalikan ke Bawah dengan Gaya Baru) ---
                 val tagButton = "btn_redeem_tag_improved"
-                var redeemBtn = root.findViewWithTag<Button>(tagButton)
+                var redeemBtn = parent.findViewWithTag<Button>(tagButton)
                 
                 if (redeemBtn == null) {
-                    // Membuat Desain Tombol yang Jauh Lebih Keren secara Programmatic
+                    // Membuat Desain Tombol yang Jauh Lebih Keren
                     val shape = GradientDrawable().apply {
                         shape = GradientDrawable.RECTANGLE
                         cornerRadius = 10.toPx.toFloat() // Sudut membulat rapi
@@ -370,7 +367,7 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
                     redeemBtn = Button(ctx).apply {
                         tag = tagButton
                         text = "MASUKKAN KODE VIP / PROMO"
-                        textSize = 13f
+                        textSize = 12f
                         setTextColor(Color.parseColor("#06b6d4")) // Tulisan warna cyan
                         setTypeface(null, Typeface.BOLD) // Tulisan tebal
                         background = shape
@@ -379,26 +376,23 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
                         // Padding dalam agar tombol proporsional
                         setPadding(16.toPx, 12.toPx, 16.toPx, 12.toPx)
 
-                        // LayoutParams untuk meletakkan di paling atas (posisi 'X')
-                        // Mengasumsikan root layout adalah LinearLayout Vertikal
+                        // LayoutParams untuk meletakkan di tengah bawah
                         layoutParams = LinearLayout.LayoutParams(
-                            ViewGroup.LayoutParams.MATCH_PARENT,
+                            ViewGroup.LayoutParams.WRAP_CONTENT,
                             ViewGroup.LayoutParams.WRAP_CONTENT
                         ).apply {
                             gravity = Gravity.CENTER
-                            // Margin agar tidak menempel ke pinggir layar
-                            topMargin = 16.toPx
-                            leftMargin = 16.toPx
-                            rightMargin = 16.toPx
-                            bottomMargin = 8.toPx // Jarak ke konten di bawahnya
+                            topMargin = 8.toPx
+                            bottomMargin = 24.toPx // Jarak ke bawah
                         }
                     }
                     
-                    // Sisipkan tombol di index 0 (paling atas konten)
-                    root.addView(redeemBtn, 0)
+                    // Sisipkan tombol di bawah status langganan
+                    val indexBtn = parent.indexOfChild(statusView)
+                    parent.addView(redeemBtn, indexBtn + 1)
                 }
 
-                // Logika Saat Tombol Redeem Ditekan (Sama seperti sebelumnya)
+                // Logika Saat Tombol Redeem Ditekan
                 redeemBtn.setOnClickListener {
                     val input = EditText(ctx).apply {
                         hint = "Ketik kode promo di sini..."
