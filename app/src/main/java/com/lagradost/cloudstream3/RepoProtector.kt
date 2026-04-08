@@ -22,7 +22,4 @@ object RepoProtector {
     
     // URL Firebase AdiXtream (Sudah di-encode ke Base64)
     val FIREBASE_URL_ENCODED = "aHR0cHM6Ly9hZGl4dHJlYW0tcHJlbWl1bS1kZWZhdWx0LXJ0ZGIuYXNpYS1zb3V0aGVhc3QxLmZpcmViYXNlZGF0YWJhc2UuYXBwLw=="
-    
-    // === TAMBAHAN BARU: Token Rahasia Firebase (Sudah di-encode ke Base64) ===
-    val FIREBASE_TOKEN_ENCODED = "bmNMUmo4bGsxRklOZTJXcTM5bXoxaW1CQXVlTE5hNGRGdmQ2dmtVTg=="
 }
