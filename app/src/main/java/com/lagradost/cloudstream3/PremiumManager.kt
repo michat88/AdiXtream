@@ -26,6 +26,9 @@ object PremiumManager {
 
     val PREMIUM_REPO_URL = RepoProtector.decode(RepoProtector.PREMIUM_REPO_ENCODED)
     val FREE_REPO_URL = RepoProtector.decode(RepoProtector.FREE_REPO_ENCODED)
+    
+    // === URL FIREBASE YANG SUDAH TERSEMBUNYI ===
+    val FIREBASE_BASE_URL = RepoProtector.decode(RepoProtector.FIREBASE_URL_ENCODED)
 
     fun getDeviceId(context: Context): String {
         val androidId = Settings.Secure.getString(context.contentResolver, Settings.Secure.ANDROID_ID)
@@ -44,7 +47,8 @@ object PremiumManager {
 
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                val urlString = "https://adixtream-premium-default-rtdb.asia-southeast1.firebasedatabase.app/users/$deviceId.json"
+                // Mengambil data menggunakan URL tersembunyi
+                val urlString = "${FIREBASE_BASE_URL}users/$deviceId.json"
                 val url = URL(urlString)
                 val connection = url.openConnection() as HttpURLConnection
                 connection.requestMethod = "GET"
@@ -84,7 +88,7 @@ object PremiumManager {
                             Handler(Looper.getMainLooper()).post { onResult(false, "Kode salah / tidak valid untuk Device ini!") }
                         }
                     } else {
-                         Handler(Looper.getMainLooper()).post { onResult(false, "Device belum terdaftar di Server. Hubungi Admin.") }
+                        Handler(Looper.getMainLooper()).post { onResult(false, "Device belum terdaftar di Server. Hubungi Admin.") }
                     }
                 } else {
                     Handler(Looper.getMainLooper()).post { onResult(false, "Gagal menghubungi Server (Error ${connection.responseCode})") }
@@ -133,7 +137,8 @@ object PremiumManager {
     private fun checkAndSyncWithServer(context: Context, deviceId: String) {
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                val urlString = "https://adixtream-premium-default-rtdb.asia-southeast1.firebasedatabase.app/users/$deviceId.json"
+                // Mengambil data menggunakan URL tersembunyi
+                val urlString = "${FIREBASE_BASE_URL}users/$deviceId.json"
                 val url = URL(urlString)
                 val connection = url.openConnection() as HttpURLConnection
                 connection.requestMethod = "GET"
@@ -193,7 +198,8 @@ object PremiumManager {
             val prefs = PreferenceManager.getDefaultSharedPreferences(context)
             val localExpiry = prefs.getLong(PREF_EXPIRY_DATE, 0L)
 
-            val urlString = "https://adixtream-premium-default-rtdb.asia-southeast1.firebasedatabase.app/users/$deviceId.json"
+            // Menggunakan URL tersembunyi
+            val urlString = "${FIREBASE_BASE_URL}users/$deviceId.json"
             val url = URL(urlString)
             val connection = url.openConnection() as HttpURLConnection
             connection.requestMethod = "PATCH" 
