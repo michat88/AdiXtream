@@ -388,7 +388,7 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
                     val indexBtn = parent.indexOfChild(statusView)
                     parent.addView(btnPromo, indexBtn + 1)
 
-                    // === LOGIKA KLIK TOMBOL PROMO (isPromo = true) ===
+                    // === LOGIKA KLIK TOMBOL PROMO MENGGUNAKAN FUNGSI BARU ===
                     btnPromo.setOnClickListener {
                         val input = EditText(ctx).apply {
                             hint = "Ketik kode promo (Misal: ADIXRAYA)..."
@@ -404,8 +404,8 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
                                 val deviceId = PremiumManager.getDeviceId(ctx)
                                 Toast.makeText(ctx, "Memeriksa kode promo...", Toast.LENGTH_SHORT).show()
                                 
-                                // DI SINI PARAMETER TRUE DIGUNAKAN (Khusus Promo)
-                                PremiumManager.activatePremiumWithCode(ctx, code, deviceId, true) { success, msg ->
+                                // DI SINI MEMANGGIL activatePromoWithCode SEHINGGA TIDAK BENTROK
+                                PremiumManager.activatePromoWithCode(ctx, code, deviceId) { success, msg ->
                                     Toast.makeText(ctx, msg, Toast.LENGTH_LONG).show()
                                     if (success) {
                                         val intent = ctx.packageManager.getLaunchIntentForPackage(ctx.packageName)
