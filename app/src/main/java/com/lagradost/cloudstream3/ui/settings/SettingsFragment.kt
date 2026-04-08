@@ -55,6 +55,8 @@ import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
+import androidx.constraintlayout.widget.ConstraintLayout
+import androidx.constraintlayout.widget.ConstraintSet
 import com.lagradost.cloudstream3.PremiumManager
 
 // --- IMPORT TAMBAHAN UNTUK TV FOCUS & INPUT LIMIT ---
@@ -336,34 +338,70 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
             // Cek apakah ini mode TV untuk penyesuaian tata letak
             val isTvMode = isLayout(TV)
 
-            // --- A. Status Langganan ---
-            val versionParent = binding.appVersionInfo.parent as? ViewGroup
-            versionParent?.let { parent ->
-                val tagStatus = "status_langganan_tag"
-                var statusView = parent.findViewWithTag<TextView>(tagStatus)
-                
-                if (statusView == null) {
-                    statusView = TextView(ctx).apply {
-                        tag = tagStatus
-                        gravity = Gravity.CENTER 
-                        textSize = 12f 
-                        setTextColor(Color.parseColor("#94a3b8")) 
+            // --- A1. STATUS LANGGANAN KHUSUS TV (Dipindah ke Atas Kanan) ---
+            if (isTvMode) {
+                val profileParent = binding.settingsProfileText.parent as? ViewGroup
+                profileParent?.let { pParent ->
+                    val tvTag = "status_tv_tag"
+                    if (pParent.findViewWithTag<TextView>(tvTag) == null) {
+                        val tvStatus = TextView(ctx).apply {
+                            tag = tvTag
+                            text = "Status Langganan: $premiumStatus"
+                            textSize = 13f 
+                            setTextColor(Color.parseColor("#94a3b8"))
+                            setTypeface(null, Typeface.BOLD)
+                            gravity = Gravity.END or Gravity.CENTER_VERTICAL
+                        }
                         
-                        layoutParams = LinearLayout.LayoutParams(
-                            ViewGroup.LayoutParams.MATCH_PARENT,
-                            ViewGroup.LayoutParams.WRAP_CONTENT
-                        ).apply {
-                            // Margin dirapatkan maksimal saat di TV
-                            topMargin = 0
-                            bottomMargin = if (isTvMode) 0 else 12.toPx 
+                        if (pParent is ConstraintLayout) {
+                            tvStatus.id = View.generateViewId()
+                            pParent.addView(tvStatus)
+                            val set = ConstraintSet()
+                            set.clone(pParent)
+                            // Sejajarkan ke kanan dengan margin 32px
+                            set.connect(tvStatus.id, ConstraintSet.END, ConstraintSet.PARENT_ID, ConstraintSet.END, 32.toPx)
+                            // Sejajarkan vertikal dengan teks Default
+                            set.connect(tvStatus.id, ConstraintSet.TOP, binding.settingsProfileText.id, ConstraintSet.TOP)
+                            set.connect(tvStatus.id, ConstraintSet.BOTTOM, binding.settingsProfileText.id, ConstraintSet.BOTTOM)
+                            set.applyTo(pParent)
+                        } else {
+                            // Fallback jika layout beda
+                            binding.settingsProfileText.text = "${binding.settingsProfileText.text}   •   Langganan: $premiumStatus"
                         }
                     }
-                    val index = parent.indexOfChild(binding.appVersionInfo)
-                    parent.addView(statusView, index + 1)
                 }
-                statusView.text = "Status Langganan: $premiumStatus"
+            }
 
-                // --- B. Tombol KODE PROMO Saja (Gaya Netflix & Fokus TV) ---
+            // --- A2. STATUS LANGGANAN KHUSUS HP (Tetap di bawah) ---
+            val versionParent = binding.appVersionInfo.parent as? ViewGroup
+            versionParent?.let { parent ->
+                
+                if (!isTvMode) {
+                    val tagStatus = "status_langganan_tag"
+                    var statusView = parent.findViewWithTag<TextView>(tagStatus)
+                    
+                    if (statusView == null) {
+                        statusView = TextView(ctx).apply {
+                            tag = tagStatus
+                            gravity = Gravity.CENTER 
+                            textSize = 12f 
+                            setTextColor(Color.parseColor("#94a3b8")) 
+                            
+                            layoutParams = LinearLayout.LayoutParams(
+                                ViewGroup.LayoutParams.MATCH_PARENT,
+                                ViewGroup.LayoutParams.WRAP_CONTENT
+                            ).apply {
+                                topMargin = 0
+                                bottomMargin = 12.toPx 
+                            }
+                        }
+                        val index = parent.indexOfChild(binding.appVersionInfo)
+                        parent.addView(statusView, index + 1)
+                    }
+                    statusView.text = "Status Langganan: $premiumStatus"
+                }
+
+                // --- B. Tombol KODE PROMO (Gaya Netflix & Fokus TV) ---
                 val tagBtnPromo = "btn_promo_tag_only"
                 var btnPromo = parent.findViewWithTag<Button>(tagBtnPromo)
                 
@@ -420,13 +458,20 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
                             ViewGroup.LayoutParams.WRAP_CONTENT
                         ).apply {
                             gravity = Gravity.CENTER
-                            // Margin nol untuk TV agar anti-scroll
-                            topMargin = if (isTvMode) 0 else 8.toPx
+                            // Jarak atas dinaikkan untuk TV karena status langganan dipindah ke atas
+                            topMargin = if (isTvMode) 4.toPx else 8.toPx
                             bottomMargin = if (isTvMode) 0 else 24.toPx
                         }
                     }
 
-                    val indexBtn = parent.indexOfChild(statusView)
+                    // Penentuan letak suntik tombol
+                    val targetView = if (isTvMode) {
+                        binding.appVersionInfo // TV: Tempel langsung di bawah versi
+                    } else {
+                        parent.findViewWithTag<TextView>("status_langganan_tag") ?: binding.appVersionInfo // HP: Di bawah status
+                    }
+                    
+                    val indexBtn = parent.indexOfChild(targetView)
                     parent.addView(btnPromo, indexBtn + 1)
 
                     // === LOGIKA KLIK TOMBOL PROMO (DENGAN UI INPUT NETFLIX) ===
