@@ -1,434 +1,336 @@
-package com.lagradost.cloudstream3.ui.settings
+package com.lagradost.cloudstream3
 
+import android.content.Context
 import android.content.Intent
-import android.net.Uri
-import android.os.Bundle
-import android.util.Log
-import android.view.View
-import android.widget.ImageView
-import androidx.annotation.StringRes
-import androidx.core.view.children
-import androidx.core.view.updateLayoutParams
-import androidx.fragment.app.Fragment
-import androidx.preference.Preference
-import androidx.preference.PreferenceFragmentCompat
-import com.google.android.material.appbar.AppBarLayout
-import com.google.android.material.appbar.MaterialToolbar
-import com.lagradost.cloudstream3.BuildConfig
-import com.lagradost.cloudstream3.R
-import com.lagradost.cloudstream3.databinding.MainSettingsBinding
-import com.lagradost.cloudstream3.mvvm.logError
-import com.lagradost.cloudstream3.mvvm.safe
-import com.lagradost.cloudstream3.syncproviders.AccountManager
-import com.lagradost.cloudstream3.syncproviders.AuthRepo
-import com.lagradost.cloudstream3.ui.BaseFragment
-import com.lagradost.cloudstream3.ui.home.HomeFragment.Companion.errorProfilePic
-import com.lagradost.cloudstream3.ui.settings.Globals.EMULATOR
-import com.lagradost.cloudstream3.ui.settings.Globals.PHONE
-import com.lagradost.cloudstream3.ui.settings.Globals.TV
-import com.lagradost.cloudstream3.ui.settings.Globals.isLandscape
-import com.lagradost.cloudstream3.ui.settings.Globals.isLayout
-import com.lagradost.cloudstream3.utils.DataStoreHelper
-import com.lagradost.cloudstream3.utils.ImageLoader.loadImage
-import com.lagradost.cloudstream3.utils.UIHelper.clipboardHelper
-import com.lagradost.cloudstream3.utils.UIHelper.fixSystemBarsPadding
-import com.lagradost.cloudstream3.utils.UIHelper.navigate
-import com.lagradost.cloudstream3.utils.UIHelper.toPx
-import com.lagradost.cloudstream3.utils.getImageFromDrawable
-import com.lagradost.cloudstream3.utils.txt
-import java.io.File
-import java.text.DateFormat
+import android.os.Handler
+import android.os.Looper
+import android.provider.Settings
+import android.widget.Toast
+import androidx.preference.PreferenceManager
+import org.json.JSONObject
+import java.net.HttpURLConnection
+import java.net.URL
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
-import java.util.TimeZone
-import android.widget.Toast
+import kotlin.math.abs
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import com.lagradost.cloudstream3.utils.RepoProtector
 
-// --- IMPORT TAMBAHAN ADIXTREAM & REDEEM UI ---
-import android.graphics.Color
-import android.graphics.Typeface
-import android.graphics.drawable.GradientDrawable
-import android.view.Gravity
-import android.view.ViewGroup
-import android.widget.Button
-import android.widget.EditText
-import android.widget.LinearLayout
-import android.widget.TextView
-import androidx.appcompat.app.AlertDialog
-import com.lagradost.cloudstream3.PremiumManager
-// ----------------------------------------------
+object PremiumManager {
+    private const val PREF_IS_PREMIUM = "is_premium_user"
+    private const val PREF_EXPIRY_DATE = "premium_expiry_date"
+    private var lastCheckTime = 0L
 
-class SettingsFragment : BaseFragment<MainSettingsBinding>(
-    BaseFragment.BindingCreator.Inflate(MainSettingsBinding::inflate)
-) {
-    companion object {
-        fun PreferenceFragmentCompat?.getPref(id: Int): Preference? {
-            if (this == null) return null
-            return try {
-                findPreference(getString(id))
-            } catch (e: Exception) {
-                logError(e)
-                null
-            }
+    val PREMIUM_REPO_URL = RepoProtector.decode(RepoProtector.PREMIUM_REPO_ENCODED)
+    val FREE_REPO_URL = RepoProtector.decode(RepoProtector.FREE_REPO_ENCODED)
+    
+    // === URL FIREBASE YANG SUDAH TERSEMBUNYI ===
+    val FIREBASE_BASE_URL = RepoProtector.decode(RepoProtector.FIREBASE_URL_ENCODED)
+
+    fun getDeviceId(context: Context): String {
+        val androidId = Settings.Secure.getString(context.contentResolver, Settings.Secure.ANDROID_ID)
+        return abs(androidId.hashCode()).toString().take(8)
+    }
+
+    // ==========================================================
+    // FUNGSI 1: KHUSUS KODE VIP PERSONAL
+    // ==========================================================
+    fun activatePremiumWithCode(context: Context, code: String, deviceId: String, onResult: (Boolean, String) -> Unit) {
+        val inputCode = code.trim().uppercase()
+        if (inputCode.isEmpty()) {
+            onResult(false, "Kode tidak boleh kosong!")
+            return
         }
 
-        fun PreferenceFragmentCompat?.hidePrefs(ids: List<Int>, layoutFlags: Int) {
-            if (this == null) return
+        CoroutineScope(Dispatchers.IO).launch {
             try {
-                ids.forEach {
-                    getPref(it)?.isVisible = !isLayout(layoutFlags)
+                val urlString = "${FIREBASE_BASE_URL}users/$deviceId.json"
+                val url = URL(urlString)
+                val connection = url.openConnection() as HttpURLConnection
+                connection.requestMethod = "GET"
+                connection.connectTimeout = 5000 
+                connection.readTimeout = 5000
+
+                if (connection.responseCode == HttpURLConnection.HTTP_OK) {
+                    val response = connection.inputStream.bufferedReader().use { it.readText() }
+                    
+                    if (response != "null") {
+                        val jsonResponse = JSONObject(response)
+                        val dbStatus = jsonResponse.optString("status", "")
+                        val dbCode = jsonResponse.optString("code", "")
+                        val dbExpired = jsonResponse.optLong("expired_at", 0L)
+
+                        if (dbStatus == "banned") {
+                            Handler(Looper.getMainLooper()).post { onResult(false, "Device ini telah di-banned oleh Admin!") }
+                            return@launch
+                        }
+
+                        if (dbCode == inputCode) {
+                            if (System.currentTimeMillis() < dbExpired) {
+                                
+                                // === FIX BUG: GUNAKAN COMMIT BUKAN APPLY ===
+                                val prefs = PreferenceManager.getDefaultSharedPreferences(context)
+                                prefs.edit()
+                                    .putBoolean(PREF_IS_PREMIUM, true)
+                                    .putLong(PREF_EXPIRY_DATE, dbExpired)
+                                    .commit() 
+                                // ===========================================
+                                
+                                lastCheckTime = System.currentTimeMillis()
+                                Handler(Looper.getMainLooper()).post { onResult(true, "Aktivasi Kode VIP Berhasil") }
+                            } else {
+                                Handler(Looper.getMainLooper()).post { onResult(false, "Masa aktif kode VIP ini sudah kadaluarsa!") }
+                            }
+                        } else {
+                            Handler(Looper.getMainLooper()).post { onResult(false, "Kode VIP tidak valid / bukan milik Device ini!") }
+                        }
+                    } else {
+                        Handler(Looper.getMainLooper()).post { onResult(false, "Device belum terdaftar. Silakan beli akses VIP ke Admin.") }
+                    }
+                } else {
+                    Handler(Looper.getMainLooper()).post { onResult(false, "Gagal menghubungi Server (Error ${connection.responseCode})") }
                 }
             } catch (e: Exception) {
-                logError(e)
+                Handler(Looper.getMainLooper()).post { onResult(false, "Koneksi Internet Error / Timeout") }
             }
-        }
-
-        fun Preference?.hideOn(layoutFlags: Int): Preference? {
-            if (this == null) return null
-            this.isVisible = !isLayout(layoutFlags)
-            return if(this.isVisible) this else null
-        }
-
-        fun PreferenceFragmentCompat.setPaddingBottom() {
-            if (isLayout(TV or EMULATOR)) {
-                listView?.setPadding(0, 0, 0, 100.toPx)
-            }
-        }
-
-        fun PreferenceFragmentCompat.setToolBarScrollFlags() {
-            if (isLayout(TV or EMULATOR)) {
-                val settingsAppbar = view?.findViewById<MaterialToolbar>(R.id.settings_toolbar)
-                settingsAppbar?.updateLayoutParams<AppBarLayout.LayoutParams> {
-                    scrollFlags = AppBarLayout.LayoutParams.SCROLL_FLAG_NO_SCROLL
-                }
-            }
-        }
-
-        fun Fragment?.setToolBarScrollFlags() {
-            if (isLayout(TV or EMULATOR)) {
-                val settingsAppbar = this?.view?.findViewById<MaterialToolbar>(R.id.settings_toolbar)
-                settingsAppbar?.updateLayoutParams<AppBarLayout.LayoutParams> {
-                    scrollFlags = AppBarLayout.LayoutParams.SCROLL_FLAG_NO_SCROLL
-                }
-            }
-        }
-
-        fun Fragment?.setUpToolbar(title: String) {
-            if (this == null) return
-            val settingsToolbar = view?.findViewById<MaterialToolbar>(R.id.settings_toolbar) ?: return
-            settingsToolbar.apply {
-                setTitle(title)
-                if (isLayout(PHONE or EMULATOR)) {
-                    setNavigationIcon(R.drawable.ic_baseline_arrow_back_24)
-                    setNavigationOnClickListener {
-                        activity?.onBackPressedDispatcher?.onBackPressed()
-                    }
-                }
-            }
-        }
-
-        fun Fragment?.setUpToolbar(@StringRes title: Int) {
-            if (this == null) return
-            val settingsToolbar = view?.findViewById<MaterialToolbar>(R.id.settings_toolbar) ?: return
-            settingsToolbar.apply {
-                setTitle(title)
-                if (isLayout(PHONE or EMULATOR)) {
-                    setNavigationIcon(R.drawable.ic_baseline_arrow_back_24)
-                    children.firstOrNull { it is ImageView }?.tag = getString(R.string.tv_no_focus_tag)
-                    setNavigationOnClickListener {
-                        safe { activity?.onBackPressedDispatcher?.onBackPressed() }
-                    }
-                }
-            }
-        }
-
-        fun Fragment.setSystemBarsPadding() {
-            view?.let {
-                fixSystemBarsPadding(
-                    it,
-                    padLeft = isLayout(TV or EMULATOR),
-                    padBottom = isLandscape()
-                )
-            }
-        }
-
-        fun getFolderSize(dir: File): Long {
-            var size: Long = 0
-            dir.listFiles()?.let {
-                for (file in it) {
-                    size += if (file.isFile) file.length() else getFolderSize(file)
-                }
-            }
-            return size
         }
     }
 
-    override fun fixLayout(view: View) {
-        fixSystemBarsPadding(
-            view,
-            padBottom = isLandscape(),
-            padLeft = isLayout(TV or EMULATOR)
-        )
+    // ==========================================================
+    // FUNGSI 2: KHUSUS KODE PROMO
+    // ==========================================================
+    fun activatePromoWithCode(context: Context, code: String, deviceId: String, onResult: (Boolean, String) -> Unit) {
+        val inputCode = code.trim().uppercase()
+        if (inputCode.isEmpty()) {
+            onResult(false, "Kode Promo tidak boleh kosong!")
+            return
+        }
+
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                val promoUrl = URL("${FIREBASE_BASE_URL}promo_codes/$inputCode.json")
+                val promoConn = promoUrl.openConnection() as HttpURLConnection
+                promoConn.requestMethod = "GET"
+                promoConn.connectTimeout = 5000 
+                promoConn.readTimeout = 5000
+
+                if (promoConn.responseCode == HttpURLConnection.HTTP_OK) {
+                    val promoResponse = promoConn.inputStream.bufferedReader().use { it.readText() }
+                    
+                    if (promoResponse != "null") {
+                        val jsonPromo = JSONObject(promoResponse)
+                        val maxQuota = jsonPromo.optInt("max_quota", 0)
+                        val usedCount = jsonPromo.optInt("used_count", 0)
+                        val days = jsonPromo.optInt("days", 0)
+                        val validUntil = jsonPromo.optLong("valid_until", 0L)
+                        
+                        if (validUntil > 0L && System.currentTimeMillis() > validUntil) {
+                            Handler(Looper.getMainLooper()).post { onResult(false, "Maaf, batas waktu klaim kode promo ini sudah habis!") }
+                            return@launch
+                        }
+
+                        if (usedCount >= maxQuota) {
+                            Handler(Looper.getMainLooper()).post { onResult(false, "Maaf, Kuota kode promo ini sudah habis!") }
+                            return@launch
+                        }
+
+                        val checkUserPromoUrl = URL("${FIREBASE_BASE_URL}users/$deviceId/redeemed_promos/$inputCode.json")
+                        val checkUserPromoConn = checkUserPromoUrl.openConnection() as HttpURLConnection
+                        checkUserPromoConn.requestMethod = "GET"
+                        val userPromoRes = checkUserPromoConn.inputStream.bufferedReader().use { it.readText() }
+                        
+                        if (userPromoRes != "null" && userPromoRes == "true") {
+                            Handler(Looper.getMainLooper()).post { onResult(false, "Anda sudah pernah mengklaim kode promo ini!") }
+                            return@launch
+                        }
+
+                        val userUrl = URL("${FIREBASE_BASE_URL}users/$deviceId.json")
+                        val userConn = userUrl.openConnection() as HttpURLConnection
+                        userConn.requestMethod = "GET"
+                        var baseTimestamp = System.currentTimeMillis()
+                        
+                        if (userConn.responseCode == HttpURLConnection.HTTP_OK) {
+                             val userRes = userConn.inputStream.bufferedReader().use { it.readText() }
+                             if (userRes != "null") {
+                                 val jsonUser = JSONObject(userRes)
+                                 val dbExpired = jsonUser.optLong("expired_at", 0L)
+                                 if (dbExpired > baseTimestamp) {
+                                     baseTimestamp = dbExpired 
+                                 }
+                             }
+                        }
+
+                        val newExpiredTimestamp = baseTimestamp + (days * 24L * 60L * 60L * 1000L)
+
+                        val updatePromoUrl = URL("${FIREBASE_BASE_URL}promo_codes/$inputCode.json")
+                        val updatePromoConn = updatePromoUrl.openConnection() as HttpURLConnection
+                        updatePromoConn.requestMethod = "PATCH"
+                        updatePromoConn.setRequestProperty("Content-Type", "application/json")
+                        updatePromoConn.doOutput = true
+                        val promoPatch = JSONObject().apply { put("used_count", usedCount + 1) }.toString()
+                        updatePromoConn.outputStream.use { it.write(promoPatch.toByteArray(Charsets.UTF_8)) }
+                        updatePromoConn.responseCode 
+
+                        val updateUserUrl = URL("${FIREBASE_BASE_URL}users/$deviceId.json")
+                        val updateUserConn = updateUserUrl.openConnection() as HttpURLConnection
+                        updateUserConn.requestMethod = "PATCH"
+                        updateUserConn.setRequestProperty("Content-Type", "application/json")
+                        updateUserConn.doOutput = true
+                        val userPatch = JSONObject().apply {
+                            put("status", "aktif")
+                            put("expired_at", newExpiredTimestamp)
+                            put("last_update", "Redeemed Promo: $inputCode")
+                        }.toString()
+                        updateUserConn.outputStream.use { it.write(userPatch.toByteArray(Charsets.UTF_8)) }
+                        updateUserConn.responseCode 
+
+                        val markPromoUrl = URL("${FIREBASE_BASE_URL}users/$deviceId/redeemed_promos.json")
+                        val markPromoConn = markPromoUrl.openConnection() as HttpURLConnection
+                        markPromoConn.requestMethod = "PATCH"
+                        markPromoConn.setRequestProperty("Content-Type", "application/json")
+                        markPromoConn.doOutput = true
+                        val markPatch = JSONObject().apply { put(inputCode, true) }.toString()
+                        markPromoConn.outputStream.use { it.write(markPatch.toByteArray(Charsets.UTF_8)) }
+                        markPromoConn.responseCode
+
+                        // === FIX BUG: GUNAKAN COMMIT BUKAN APPLY ===
+                        val prefs = PreferenceManager.getDefaultSharedPreferences(context)
+                        prefs.edit()
+                            .putBoolean(PREF_IS_PREMIUM, true)
+                            .putLong(PREF_EXPIRY_DATE, newExpiredTimestamp)
+                            .commit() 
+                        // ===========================================
+
+                        lastCheckTime = System.currentTimeMillis()
+                        Handler(Looper.getMainLooper()).post { onResult(true, "Selamat! Promo $days Hari Berhasil Diklaim.") }
+                    } else {
+                        Handler(Looper.getMainLooper()).post { onResult(false, "Kode Promo tidak ditemukan atau salah ketik!") }
+                    }
+                } else {
+                    Handler(Looper.getMainLooper()).post { onResult(false, "Gagal menghubungi Server Promo.") }
+                }
+            } catch (e: Exception) {
+                Handler(Looper.getMainLooper()).post { onResult(false, "Koneksi Internet Error / Timeout") }
+            }
+        }
     }
 
-    override fun onBindingCreated(binding: MainSettingsBinding) {
-        fun navigate(id: Int) {
-            activity?.navigate(id, Bundle())
-        }
-
-        fun hasProfilePictureFromAccountManagers(accountManagers: Array<AuthRepo>): Boolean {
-            for (syncApi in accountManagers) {
-                val login = syncApi.authUser()
-                val pic = login?.profilePicture ?: continue
-                binding.settingsProfilePic.let { imageView ->
-                    imageView.loadImage(pic) {
-                        error { getImageFromDrawable(context ?: return@error null, errorProfilePic) }
-                    }
-                }
-                binding.settingsProfileText.text = login.name
-                return true 
-            }
-            return false 
-        }
-
-        if (!hasProfilePictureFromAccountManagers(AccountManager.allApis)) {
-            val activity = activity ?: return
-            val currentAccount = try {
-                DataStoreHelper.accounts.firstOrNull {
-                    it.keyIndex == DataStoreHelper.selectedKeyIndex
-                } ?: activity.let { DataStoreHelper.getDefaultAccount(activity) }
-            } catch (t: IllegalStateException) {
-                Log.e("AccountManager", "Activity not found", t)
-                null
-            }
-            binding.settingsProfilePic.loadImage(currentAccount?.image)
-            binding.settingsProfileText.text = currentAccount?.name
-        }
-
-        binding.apply {
-
-            // --- 1. MODIFIKASI ADIXTREAM: BYPASS MASUK LANGSUNG KE PLUGINS ---
-            settingsExtensions.setOnClickListener {
-                try {
-                    val bundle = Bundle()
-                    val context = requireContext()
-
-                    // Cek Status Premium User
-                    val isPremium = PremiumManager.isPremium(context)
-
-                    // Tentukan Nama Repo & URL berdasarkan status
-                    val repoName = if (isPremium) "Repository Premium" else "Repository Gratis"
-                    val repoUrl = if (isPremium) PremiumManager.PREMIUM_REPO_URL else PremiumManager.FREE_REPO_URL
-
-                    // Masukkan ke Bundle
-                    bundle.putString("name", repoName)
-                    bundle.putString("url", repoUrl)
-                    bundle.putBoolean("isLocal", false)
-
-                    // Navigasi langsung ke PluginsFragment (melewati Extensions)
-                    activity?.navigate(R.id.navigation_settings_plugins, bundle)
-                } catch (e: Exception) {
-                    logError(e)
-                }
-            }
-            // --------------------------------------------------------
-
-            // --- 2. MODIFIKASI ADIXTREAM: LOGIKA TOMBOL TENTANG (MERAH PUTIH) ---
-            appVersionInfo.setOnClickListener {
-                val builder = AlertDialog.Builder(requireContext(), R.style.AlertDialogCustom)
-                builder.setTitle("Tentang AdiXtream")
-                builder.setMessage("AdiXtream dikembangkan oleh michat88.\n\nAplikasi ini berbasis pada proyek open-source CloudStream.\n\nTerima kasih kepada Developer CloudStream (Lagradost & Tim) atas kode sumber yang luar biasa ini.")
-
-                builder.setNeutralButton("Kunjungi Website") { _, _ ->
-                    try {
-                        val browserIntent = Intent(Intent.ACTION_VIEW, Uri.parse("https://michat88.github.io/adixtream-web/"))
-                        startActivity(browserIntent)
-                    } catch (e: Exception) {
-                        e.printStackTrace()
-                    }
-                }
-
-                builder.setPositiveButton("Tutup") { dialog, _ ->
-                    dialog.dismiss()
-                }
-
-                val dialog: AlertDialog = builder.create()
-                dialog.show()
-
-                val webButton: Button? = dialog.getButton(AlertDialog.BUTTON_NEUTRAL)
-                webButton?.let { button ->
-                    val fullText = "Kunjungi Website"
-                    val spannable = android.text.SpannableString(fullText)
-
-                    spannable.setSpan(
-                        android.text.style.ForegroundColorSpan(Color.parseColor("#FF0000")),
-                        0, 8,
-                        android.text.Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
-                    )
-
-                    spannable.setSpan(
-                        android.text.style.ForegroundColorSpan(Color.WHITE),
-                        8, fullText.length,
-                        android.text.Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
-                    )
-
-                    button.text = spannable
-                }
-            }
-            // --------------------------------------------------
-
-            listOf(
-                settingsGeneral to R.id.action_navigation_global_to_navigation_settings_general,
-                settingsPlayer to R.id.action_navigation_global_to_navigation_settings_player,
-                settingsCredits to R.id.action_navigation_global_to_navigation_settings_account,
-                settingsUi to R.id.action_navigation_global_to_navigation_settings_ui,
-                settingsProviders to R.id.action_navigation_global_to_navigation_settings_providers,
-                settingsUpdates to R.id.action_navigation_global_to_navigation_settings_updates,
-            ).forEach { (view, navigationId) ->
-                view.apply {
-                    setOnClickListener { navigate(navigationId) }
-                    if (isLayout(TV)) {
-                        isFocusable = true
-                        isFocusableInTouchMode = true
-                    }
-                }
-            }
-
-            if (isLayout(TV)) {
-                settingsGeneral.requestFocus()
-            }
-        }
-
-        // ==========================================================
-        // --- 3. LOGIKA VERSI, STATUS LANGGANAN & TOMBOL PROMO SAJA ---
-        // ==========================================================
+    fun isPremium(context: Context): Boolean {
+        val prefs = PreferenceManager.getDefaultSharedPreferences(context)
+        val isPremium = prefs.getBoolean(PREF_IS_PREMIUM, false)
+        val expiryDate = prefs.getLong(PREF_EXPIRY_DATE, 0)
         
-        val appVersion = BuildConfig.APP_VERSION
-        val commitInfo = getString(R.string.commit_hash)
-        val buildTimestamp = SimpleDateFormat.getDateTimeInstance(
-            DateFormat.LONG, DateFormat.LONG, Locale.getDefault()
-        ).apply { 
-            timeZone = TimeZone.getTimeZone("UTC")
-        }.format(Date(BuildConfig.BUILD_DATE)).replace("UTC", "")
+        if (isPremium) {
+            if (System.currentTimeMillis() > expiryDate) {
+                deactivatePremium(context) 
+                return false
+            }
 
-        binding.appVersion.text = appVersion
-        binding.buildDate.text = buildTimestamp
-        
-        // Ambil Status Premium
-        val context = context
-        val premiumStatus = if (context != null) {
-            val dateStr = PremiumManager.getExpiryDateString(context)
-            if (dateStr == "Non-Premium") "Gratis" else "Aktif s/d $dateStr"
-        } else {
-            "Gagal Memuat"
+            if (System.currentTimeMillis() - lastCheckTime > 5 * 60 * 1000) {
+                lastCheckTime = System.currentTimeMillis()
+                checkAndSyncWithServer(context, getDeviceId(context))
+            }
+            return true
         }
+        return false
+    }
 
-        // === LOGIKA SUNTIK TAMPILAN SECARA OTOMATIS (SISI ANDROID) ===
-        context?.let { ctx ->
-            // --- A. Status Langganan ---
-            val versionParent = binding.appVersionInfo.parent as? ViewGroup
-            versionParent?.let { parent ->
-                val tagStatus = "status_langganan_tag"
-                var statusView = parent.findViewWithTag<TextView>(tagStatus)
-                
-                if (statusView == null) {
-                    statusView = TextView(ctx).apply {
-                        tag = tagStatus
-                        gravity = Gravity.CENTER 
-                        textSize = 12f 
-                        setTextColor(Color.parseColor("#94a3b8")) 
+    fun deactivatePremium(context: Context) {
+        val prefs = PreferenceManager.getDefaultSharedPreferences(context)
+        prefs.edit()
+            .putBoolean(PREF_IS_PREMIUM, false)
+            .putLong(PREF_EXPIRY_DATE, 0)
+            .commit() // Diubah juga agar aman
+    }
+    
+    fun getExpiryDateString(context: Context): String {
+        val prefs = PreferenceManager.getDefaultSharedPreferences(context)
+        val date = prefs.getLong(PREF_EXPIRY_DATE, 0)
+        return if (date == 0L) "Non-Premium" else SimpleDateFormat("dd MMM yyyy", Locale.getDefault()).format(Date(date))
+    }
+    
+    private fun checkAndSyncWithServer(context: Context, deviceId: String) {
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                val urlString = "${FIREBASE_BASE_URL}users/$deviceId.json"
+                val url = URL(urlString)
+                val connection = url.openConnection() as HttpURLConnection
+                connection.requestMethod = "GET"
+                connection.connectTimeout = 5000 
+                connection.readTimeout = 5000
+
+                if (connection.responseCode == HttpURLConnection.HTTP_OK) {
+                    val response = connection.inputStream.bufferedReader().use { it.readText() }
+                    
+                    if (response == "null") {
+                        registerUserToServer(context, deviceId)
+                    } else {
+                        val jsonResponse = JSONObject(response)
+                        val dbStatus = jsonResponse.optString("status", "")
+                        val dbExpired = jsonResponse.optLong("expired_at", 0L)
+
+                        val prefs = PreferenceManager.getDefaultSharedPreferences(context)
+                        val wasPremium = prefs.getBoolean(PREF_IS_PREMIUM, false)
                         
-                        layoutParams = LinearLayout.LayoutParams(
-                            ViewGroup.LayoutParams.MATCH_PARENT,
-                            ViewGroup.LayoutParams.WRAP_CONTENT
-                        ).apply {
-                            topMargin = 4.toPx
-                            bottomMargin = 12.toPx
-                        }
-                    }
-                    val index = parent.indexOfChild(binding.appVersionInfo)
-                    parent.addView(statusView, index + 1)
-                }
-                statusView.text = "Status Langganan: $premiumStatus"
-
-                // --- B. Tombol KODE PROMO Saja ---
-                val tagBtnPromo = "btn_promo_tag_only"
-                var btnPromo = parent.findViewWithTag<Button>(tagBtnPromo)
-                
-                if (btnPromo == null) {
-                    // Desain Tombol Ungu Promo yang Keren
-                    val shapePromo = GradientDrawable().apply {
-                        shape = GradientDrawable.RECTANGLE
-                        cornerRadius = 10.toPx.toFloat()
-                        setColor(Color.parseColor("#1f2937")) 
-                        setStroke(2, Color.parseColor("#a855f7")) // Ungu Promo
-                    }
-
-                    btnPromo = Button(ctx).apply {
-                        tag = tagBtnPromo
-                        text = "MASUKKAN KODE PROMO"
-                        textSize = 12f
-                        setTextColor(Color.parseColor("#a855f7")) // Teks warna ungu
-                        setTypeface(null, Typeface.BOLD) 
-                        background = shapePromo
-                        isAllCaps = false
-                        setPadding(32.toPx, 12.toPx, 32.toPx, 12.toPx)
+                        val isBanned = dbStatus == "banned"
+                        val isExpired = dbStatus == "aktif" && dbExpired > 0L && System.currentTimeMillis() > dbExpired
                         
-                        layoutParams = LinearLayout.LayoutParams(
-                            ViewGroup.LayoutParams.WRAP_CONTENT,
-                            ViewGroup.LayoutParams.WRAP_CONTENT
-                        ).apply {
-                            gravity = Gravity.CENTER
-                            topMargin = 8.toPx
-                            bottomMargin = 24.toPx
-                        }
-                    }
-
-                    // Gabungkan ke container di bawah status view
-                    val indexBtn = parent.indexOfChild(statusView)
-                    parent.addView(btnPromo, indexBtn + 1)
-
-                    // === LOGIKA KLIK TOMBOL PROMO MENGGUNAKAN FUNGSI BARU ===
-                    btnPromo.setOnClickListener {
-                        val input = EditText(ctx).apply {
-                            hint = "Ketik kode promo (Misal: ADIXRAYA)..."
-                            gravity = Gravity.CENTER
-                            setSingleLine()
-                        }
-                        AlertDialog.Builder(ctx, R.style.AlertDialogCustom)
-                            .setTitle("Klaim Kode Promo")
-                            .setMessage("Punya Promo Spesial? Masukkan kodenya di bawah ini:")
-                            .setView(input)
-                            .setPositiveButton("Klaim Sekarang") { _, _ ->
-                                val code = input.text.toString()
-                                val deviceId = PremiumManager.getDeviceId(ctx)
-                                Toast.makeText(ctx, "Memeriksa kode promo...", Toast.LENGTH_SHORT).show()
+                        if (isBanned || isExpired) {
+                            if (wasPremium) {
+                                deactivatePremium(context) 
                                 
-                                // DI SINI MEMANGGIL activatePromoWithCode SEHINGGA TIDAK BENTROK
-                                PremiumManager.activatePromoWithCode(ctx, code, deviceId) { success, msg ->
-                                    Toast.makeText(ctx, msg, Toast.LENGTH_LONG).show()
-                                    if (success) {
-                                        val intent = ctx.packageManager.getLaunchIntentForPackage(ctx.packageName)
-                                        val mainIntent = Intent.makeRestartActivityTask(intent?.component)
-                                        ctx.startActivity(mainIntent)
-                                        Runtime.getRuntime().exit(0)
+                                Handler(Looper.getMainLooper()).post {
+                                    val pesan = if (isBanned) {
+                                        "⛔ AKSES PREMIUM DICABUT OLEH ADMIN!"
+                                    } else {
+                                        "⚠️ Masa Aktif Premium Habis. Yuk perpanjang lagi!"
                                     }
+                                    
+                                    Toast.makeText(context, pesan, Toast.LENGTH_LONG).show()
+                                    val intent = context.packageManager.getLaunchIntentForPackage(context.packageName)
+                                    val mainIntent = Intent.makeRestartActivityTask(intent?.component)
+                                    context.startActivity(mainIntent)
+                                    Runtime.getRuntime().exit(0)
                                 }
                             }
-                            .setNegativeButton("Batal", null)
-                            .show()
+                        } else if (dbStatus == "aktif" && dbExpired > 0L) {
+                            prefs.edit().putLong(PREF_EXPIRY_DATE, dbExpired).apply()
+                        }
                     }
                 }
+            } catch (e: Exception) {
             }
         }
+    }
 
-        // Fitur Copy (Salin)
-        binding.appVersionInfo.setOnLongClickListener {
-            clipboardHelper(
-                txt(R.string.extension_version), 
-                "$appVersion $commitInfo $buildTimestamp\nStatus Langganan: $premiumStatus"
-            )
-            true
+    private fun registerUserToServer(context: Context, deviceId: String) {
+        try {
+            val prefs = PreferenceManager.getDefaultSharedPreferences(context)
+            val localExpiry = prefs.getLong(PREF_EXPIRY_DATE, 0L)
+
+            val urlString = "${FIREBASE_BASE_URL}users/$deviceId.json"
+            val url = URL(urlString)
+            val connection = url.openConnection() as HttpURLConnection
+            connection.requestMethod = "PATCH" 
+            connection.setRequestProperty("Content-Type", "application/json")
+            connection.doOutput = true
+            
+            val jsonPayload = JSONObject().apply {
+                put("status", "aktif")
+                put("expired_at", localExpiry)
+                put("last_update", "Auto-Sync from Android App")
+            }.toString()
+            
+            connection.outputStream.use { os ->
+                val input = jsonPayload.toByteArray(Charsets.UTF_8)
+                os.write(input, 0, input.size)
+            }
+            connection.responseCode 
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
     }
 }
