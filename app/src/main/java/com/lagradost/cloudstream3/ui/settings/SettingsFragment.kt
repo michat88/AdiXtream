@@ -42,6 +42,7 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import java.util.TimeZone
+import android.widget.Toast
 
 // --- IMPORT TAMBAHAN ADIXTREAM ---
 import android.graphics.Color
@@ -295,10 +296,9 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
         }
 
         // ==========================================================
-        // --- 3. LOGIKA VERSI & STATUS LANGGANAN (DIPERBAIKI) ---
+        // --- 3. LOGIKA VERSI, STATUS LANGGANAN & TOMBOL REDEEM ---
         // ==========================================================
         
-        // Kembalikan ke kode aslinya, jangan diubah agar tidak berantakan
         val appVersion = BuildConfig.APP_VERSION
         val commitInfo = getString(R.string.commit_hash)
         val buildTimestamp = SimpleDateFormat.getDateTimeInstance(
@@ -319,41 +319,100 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
             "Gagal Memuat"
         }
 
-        // BUAT BARIS BARU (TEXTVIEW) SECARA OTOMATIS DI BAWAH BARIS VERSI
+        // BUAT BARIS BARU (TEXTVIEW & BUTTON) SECARA OTOMATIS
         context?.let { ctx ->
             val parentLayout = binding.appVersionInfo.parent as? android.view.ViewGroup
             parentLayout?.let { parent ->
+                
+                // 1. Teks Status Langganan
                 val tagStatus = "status_langganan_tag"
                 var statusView = parent.findViewWithTag<android.widget.TextView>(tagStatus)
                 
-                // Jika belum ada teks statusnya, kita buat baru
                 if (statusView == null) {
                     statusView = android.widget.TextView(ctx).apply {
                         tag = tagStatus
-                        gravity = android.view.Gravity.CENTER // Posisikan di tengah
-                        textSize = 12f // Ukuran font proporsional
-                        setTextColor(android.graphics.Color.parseColor("#94a3b8")) // Warna abu-abu yang pas dengan tema
+                        gravity = android.view.Gravity.CENTER 
+                        textSize = 12f 
+                        setTextColor(android.graphics.Color.parseColor("#94a3b8")) 
                         
                         val params = android.widget.LinearLayout.LayoutParams(
                             android.view.ViewGroup.LayoutParams.MATCH_PARENT,
                             android.view.ViewGroup.LayoutParams.WRAP_CONTENT
                         ).apply {
                             topMargin = 4.toPx
-                            bottomMargin = 24.toPx
+                            bottomMargin = 8.toPx
                         }
                         layoutParams = params
                     }
-                    // Sisipkan persis di bawah container "appVersionInfo"
                     val index = parent.indexOfChild(binding.appVersionInfo)
                     parent.addView(statusView, index + 1)
                 }
-                
-                // Setel teksnya
                 statusView.text = "Status Langganan: $premiumStatus"
+
+                // 2. Tombol Redeem (Pintu Masuk!)
+                val tagButton = "btn_redeem_tag"
+                var redeemBtn = parent.findViewWithTag<android.widget.Button>(tagButton)
+                
+                if (redeemBtn == null) {
+                    redeemBtn = android.widget.Button(ctx).apply {
+                        tag = tagButton
+                        text = "MASUKKAN KODE VIP / PROMO"
+                        textSize = 11f
+                        setTextColor(android.graphics.Color.WHITE)
+                        setBackgroundColor(android.graphics.Color.parseColor("#1f2937")) // Warna tombol dark
+                        isAllCaps = false
+                        
+                        val btnParams = android.widget.LinearLayout.LayoutParams(
+                            android.view.ViewGroup.LayoutParams.WRAP_CONTENT,
+                            android.view.ViewGroup.LayoutParams.WRAP_CONTENT
+                        ).apply {
+                            gravity = android.view.Gravity.CENTER
+                            bottomMargin = 24.toPx
+                        }
+                        layoutParams = btnParams
+                    }
+                    val indexBtn = parent.indexOfChild(statusView)
+                    parent.addView(redeemBtn, indexBtn + 1)
+                }
+
+                // Logika Saat Tombol Redeem Ditekan
+                redeemBtn.setOnClickListener {
+                    val input = android.widget.EditText(ctx).apply {
+                        hint = "Ketik kode di sini..."
+                        gravity = android.view.Gravity.CENTER
+                        setSingleLine()
+                    }
+
+                    AlertDialog.Builder(ctx, R.style.AlertDialogCustom)
+                        .setTitle("Aktivasi VIP / Klaim Promo")
+                        .setMessage("Masukkan Kode VIP pribadi atau Kode Promo Anda:")
+                        .setView(input)
+                        .setPositiveButton("Klaim Sekarang") { _, _ ->
+                            val code = input.text.toString()
+                            val deviceId = PremiumManager.getDeviceId(ctx)
+                            
+                            Toast.makeText(ctx, "Memeriksa kode...", Toast.LENGTH_SHORT).show()
+                            
+                            // Panggil logika sakti dari PremiumManager
+                            PremiumManager.activatePremiumWithCode(ctx, code, deviceId) { success, msg ->
+                                Toast.makeText(ctx, msg, Toast.LENGTH_LONG).show()
+                                
+                                if (success) {
+                                    // Me-restart aplikasi agar status premium langsung aktif
+                                    val intent = ctx.packageManager.getLaunchIntentForPackage(ctx.packageName)
+                                    val mainIntent = Intent.makeRestartActivityTask(intent?.component)
+                                    ctx.startActivity(mainIntent)
+                                    Runtime.getRuntime().exit(0)
+                                }
+                            }
+                        }
+                        .setNegativeButton("Batal", null)
+                        .show()
+                }
             }
         }
 
-        // Fitur Copy (Salin) saat ditekan tahan tetap mencakup status langganan
+        // Fitur Copy (Salin)
         binding.appVersionInfo.setOnLongClickListener {
             clipboardHelper(
                 txt(R.string.extension_version), 
