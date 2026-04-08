@@ -65,7 +65,14 @@ object PremiumManager {
                         val maxQuota = jsonPromo.optInt("max_quota", 0)
                         val usedCount = jsonPromo.optInt("used_count", 0)
                         val days = jsonPromo.optInt("days", 0)
+                        val validUntil = jsonPromo.optLong("valid_until", 0L)
                         
+                        // Cek Batas Waktu Klaim (Apakah promo sudah basi/hangus?)
+                        if (validUntil > 0L && System.currentTimeMillis() > validUntil) {
+                            Handler(Looper.getMainLooper()).post { onResult(false, "Maaf, batas waktu klaim kode promo ini sudah habis!") }
+                            return@launch
+                        }
+
                         // Cek Kuota
                         if (usedCount >= maxQuota) {
                             Handler(Looper.getMainLooper()).post { onResult(false, "Maaf, Kuota kode promo ini sudah habis!") }
