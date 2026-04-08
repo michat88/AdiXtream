@@ -97,7 +97,8 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
 
         fun PreferenceFragmentCompat.setPaddingBottom() {
             if (isLayout(TV or EMULATOR)) {
-                listView?.setPadding(0, 0, 0, 100.toPx)
+                // Diubah jadi 0 untuk menghilangkan skrol di TV
+                listView?.setPadding(0, 0, 0, 0)
             }
         }
 
@@ -153,7 +154,7 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
                 fixSystemBarsPadding(
                     it,
                     padLeft = isLayout(TV or EMULATOR),
-                    padBottom = isLandscape()
+                    padBottom = if (isLayout(TV or EMULATOR)) false else isLandscape()
                 )
             }
         }
@@ -172,7 +173,8 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
     override fun fixLayout(view: View) {
         fixSystemBarsPadding(
             view,
-            padBottom = isLandscape(),
+            // Hilangkan padding bawah jika di TV agar tidak over-scroll
+            padBottom = if (isLayout(TV or EMULATOR)) false else isLandscape(),
             padLeft = isLayout(TV or EMULATOR)
         )
     }
@@ -361,42 +363,41 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
                 }
                 statusView.text = "Status Langganan: $premiumStatus"
 
-                // --- B. Tombol KODE PROMO Saja (Dengan Efek Fokus TV) ---
+                // --- B. Tombol KODE PROMO Saja (Gaya Netflix & Fokus TV) ---
                 val tagBtnPromo = "btn_promo_tag_only"
                 var btnPromo = parent.findViewWithTag<Button>(tagBtnPromo)
                 
                 if (btnPromo == null) {
-                    // Desain saat normal
+                    // Desain saat normal (Gaya Netflix)
                     val shapeNormal = GradientDrawable().apply {
                         shape = GradientDrawable.RECTANGLE
-                        cornerRadius = 10.toPx.toFloat()
-                        setColor(Color.parseColor("#1f2937")) 
-                        setStroke(2, Color.parseColor("#a855f7")) // Ungu Promo
+                        cornerRadius = 4.toPx.toFloat() // Ujung lebih mengotak
+                        setColor(Color.parseColor("#E50914")) // Merah Netflix
                     }
                     
                     // Desain saat disorot Remote (Fokus)
                     val shapeFocused = GradientDrawable().apply {
                         shape = GradientDrawable.RECTANGLE
-                        cornerRadius = 10.toPx.toFloat()
-                        setColor(Color.parseColor("#a855f7")) // Background terisi ungu
-                        setStroke(2, Color.parseColor("#ffffff")) // Border putih
+                        cornerRadius = 4.toPx.toFloat()
+                        setColor(Color.parseColor("#E50914")) // Latar tetap merah
+                        setStroke(3.toPx, Color.WHITE) // Border putih tebal
                     }
 
-                    // Gabungkan desain ke dalam StateList (Bisa berubah otomatis)
+                    // Gabungkan desain ke dalam StateList
                     val stateListBg = StateListDrawable().apply {
                         addState(intArrayOf(android.R.attr.state_focused), shapeFocused)
                         addState(intArrayOf(), shapeNormal)
                     }
 
-                    // Warna teks berubah jadi putih saat disorot remote
+                    // Warna teks putih untuk semua state
                     val textColorStateList = ColorStateList(
                         arrayOf(
-                            intArrayOf(android.R.attr.state_focused), // Saat fokus
-                            intArrayOf() // Default
+                            intArrayOf(android.R.attr.state_focused),
+                            intArrayOf()
                         ),
                         intArrayOf(
-                            Color.WHITE, // Teks Putih
-                            Color.parseColor("#a855f7") // Teks Ungu
+                            Color.WHITE,
+                            Color.WHITE
                         )
                     )
 
@@ -404,14 +405,14 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
                         tag = tagBtnPromo
                         text = "MASUKKAN KODE PROMO"
                         textSize = 12f
-                        setTextColor(textColorStateList) // Terapkan efek teks
+                        setTextColor(textColorStateList) 
                         setTypeface(null, Typeface.BOLD) 
-                        background = stateListBg // Terapkan efek background
+                        background = stateListBg 
                         isAllCaps = false
-                        isFocusable = true // SANGAT PENTING UNTUK TV
+                        isFocusable = true 
                         
-                        // Padding dikecilkan sedikit di TV biar lebih irit ruang vertikal
-                        val padVert = if (isTvMode) 8.toPx else 12.toPx
+                        // Padding ditekan untuk TV
+                        val padVert = if (isTvMode) 6.toPx else 12.toPx
                         setPadding(32.toPx, padVert, 32.toPx, padVert)
                         
                         layoutParams = LinearLayout.LayoutParams(
@@ -419,46 +420,42 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
                             ViewGroup.LayoutParams.WRAP_CONTENT
                         ).apply {
                             gravity = Gravity.CENTER
-                            // Perkecil margin di TV sampai mendekati 0 agar anti-scroll
-                            topMargin = if (isTvMode) 2.toPx else 8.toPx
-                            bottomMargin = if (isTvMode) 2.toPx else 24.toPx
+                            // Margin nol untuk TV agar anti-scroll
+                            topMargin = if (isTvMode) 0 else 8.toPx
+                            bottomMargin = if (isTvMode) 0 else 24.toPx
                         }
                     }
 
                     val indexBtn = parent.indexOfChild(statusView)
                     parent.addView(btnPromo, indexBtn + 1)
 
-                    // === LOGIKA KLIK TOMBOL PROMO (DENGAN UI MODERN) ===
+                    // === LOGIKA KLIK TOMBOL PROMO (DENGAN UI INPUT NETFLIX) ===
                     btnPromo.setOnClickListener {
                         
-                        // Container dengan layout vertikal untuk form input yang lebih rapi
                         val inputContainer = LinearLayout(ctx).apply {
                             orientation = LinearLayout.VERTICAL
                             val padHorizontal = 24.toPx
                             setPadding(padHorizontal, 24.toPx, padHorizontal, 8.toPx)
                         }
 
-                        // Desain modern untuk kolom input (Rounded corners + Outline senada tombol)
+                        // Desain input kolom Netflix (Dark grey tanpa border warna-warni)
                         val inputBg = GradientDrawable().apply {
                             shape = GradientDrawable.RECTANGLE
-                            cornerRadius = 12.toPx.toFloat()
-                            setColor(Color.parseColor("#1f2937")) // Warna background gelap
-                            setStroke(2, Color.parseColor("#a855f7")) // Border ungu AdiXtream
+                            cornerRadius = 4.toPx.toFloat()
+                            setColor(Color.parseColor("#333333")) // Abu-abu gelap ala Netflix
                         }
 
                         val input = EditText(ctx).apply {
                             hint = "KETIK KODE..."
-                            setHintTextColor(Color.parseColor("#94a3b8"))
+                            setHintTextColor(Color.parseColor("#8C8C8C"))
                             setTextColor(Color.WHITE)
                             gravity = Gravity.CENTER
                             setSingleLine()
                             background = inputBg 
                             
-                            // Padding dalam text box biar teks tidak nempel ke garis
                             val pad = 16.toPx
                             setPadding(pad, pad, pad, pad)
                             
-                            // FITUR BARU: Paksa Huruf Besar Semua & Batasi maksimal 10 Karakter
                             filters = arrayOf(
                                 InputFilter.AllCaps(),
                                 InputFilter.LengthFilter(10)
@@ -470,13 +467,12 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
                             )
                         }
                         
-                        // Masukkan input ketikan ke dalam wadah
                         inputContainer.addView(input)
 
                         AlertDialog.Builder(ctx, R.style.AlertDialogCustom)
                             .setTitle("Klaim Kode Promo")
                             .setMessage("Masukkan kodenya di bawah ini:")
-                            .setView(inputContainer) // Pasang wadah baru ke dialog
+                            .setView(inputContainer) 
                             .setPositiveButton("Klaim") { _, _ ->
                                 val code = input.text.toString()
                                 val deviceId = PremiumManager.getDeviceId(ctx)
@@ -503,12 +499,10 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
         binding.appVersionInfo.isFocusable = true
         binding.appVersionInfo.setOnFocusChangeListener { view, hasFocus ->
             if (hasFocus) {
-                // Beri latar belakang transparan agak terang dan perbesar sedikit saat disorot remote
                 view.setBackgroundColor(Color.parseColor("#1Affffff")) 
                 view.scaleX = 1.02f
                 view.scaleY = 1.02f
             } else {
-                // Kembalikan ke normal saat ditinggalkan
                 view.setBackgroundColor(Color.TRANSPARENT)
                 view.scaleX = 1.0f
                 view.scaleY = 1.0f
