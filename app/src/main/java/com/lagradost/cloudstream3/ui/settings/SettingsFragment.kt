@@ -57,9 +57,11 @@ import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import com.lagradost.cloudstream3.PremiumManager
 
-// --- IMPORT TAMBAHAN UNTUK TV FOCUS ---
+// --- IMPORT TAMBAHAN UNTUK TV FOCUS & INPUT LIMIT ---
 import android.content.res.ColorStateList
 import android.graphics.drawable.StateListDrawable
+import android.text.InputFilter
+import android.widget.FrameLayout
 // ----------------------------------------------
 
 class SettingsFragment : BaseFragment<MainSettingsBinding>(
@@ -349,9 +351,9 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
                             ViewGroup.LayoutParams.MATCH_PARENT,
                             ViewGroup.LayoutParams.WRAP_CONTENT
                         ).apply {
-                            // Perkecil margin jika di TV agar muat satu layar
-                            topMargin = if (isTvMode) 0 else 4.toPx
-                            bottomMargin = if (isTvMode) 4.toPx else 12.toPx
+                            // Margin dirapatkan maksimal saat di TV
+                            topMargin = 0
+                            bottomMargin = if (isTvMode) 0 else 12.toPx 
                         }
                     }
                     val index = parent.indexOfChild(binding.appVersionInfo)
@@ -407,33 +409,59 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
                         background = stateListBg // Terapkan efek background
                         isAllCaps = false
                         isFocusable = true // SANGAT PENTING UNTUK TV
-                        setPadding(32.toPx, 12.toPx, 32.toPx, 12.toPx)
+                        
+                        // Padding dikecilkan sedikit di TV biar lebih irit ruang vertikal
+                        val padVert = if (isTvMode) 8.toPx else 12.toPx
+                        setPadding(32.toPx, padVert, 32.toPx, padVert)
                         
                         layoutParams = LinearLayout.LayoutParams(
                             ViewGroup.LayoutParams.WRAP_CONTENT,
                             ViewGroup.LayoutParams.WRAP_CONTENT
                         ).apply {
                             gravity = Gravity.CENTER
-                            // Perkecil margin di TV agar tidak nge-scroll
-                            topMargin = if (isTvMode) 4.toPx else 8.toPx
-                            bottomMargin = if (isTvMode) 8.toPx else 24.toPx
+                            // Perkecil margin di TV sampai mendekati 0 agar anti-scroll
+                            topMargin = if (isTvMode) 2.toPx else 8.toPx
+                            bottomMargin = if (isTvMode) 2.toPx else 24.toPx
                         }
                     }
 
                     val indexBtn = parent.indexOfChild(statusView)
                     parent.addView(btnPromo, indexBtn + 1)
 
-                    // === LOGIKA KLIK TOMBOL PROMO ===
+                    // === LOGIKA KLIK TOMBOL PROMO (DENGAN INPUT KAPITAL & LIMIT 10 KARAKTER) ===
                     btnPromo.setOnClickListener {
+                        
+                        // Membuat container untuk menjepit ukuran input teks
+                        val inputContainer = FrameLayout(ctx).apply {
+                            // Memberi margin/padding tebal di kiri dan kanan supaya garis input memendek (elegan)
+                            val padHorizontal = 60.toPx
+                            setPadding(padHorizontal, 16.toPx, padHorizontal, 0)
+                        }
+
                         val input = EditText(ctx).apply {
-                            hint = "Ketik kode promo..."
+                            hint = "Ketik kode..."
                             gravity = Gravity.CENTER
                             setSingleLine()
+                            
+                            // FITUR BARU: Paksa Huruf Besar Semua & Batasi maksimal 10 Karakter
+                            filters = arrayOf(
+                                InputFilter.AllCaps(),
+                                InputFilter.LengthFilter(10)
+                            )
+                            
+                            layoutParams = FrameLayout.LayoutParams(
+                                ViewGroup.LayoutParams.MATCH_PARENT, // Tetap match_parent karena sudah dijepit oleh Container
+                                ViewGroup.LayoutParams.WRAP_CONTENT
+                            )
                         }
+                        
+                        // Masukkan input ketikan ke dalam wadah (Container)
+                        inputContainer.addView(input)
+
                         AlertDialog.Builder(ctx, R.style.AlertDialogCustom)
                             .setTitle("Klaim Kode Promo")
                             .setMessage("Masukkan kodenya di bawah ini:")
-                            .setView(input)
+                            .setView(inputContainer) // Pasang wadahnya ke dialog
                             .setPositiveButton("Klaim") { _, _ ->
                                 val code = input.text.toString()
                                 val deviceId = PremiumManager.getDeviceId(ctx)
