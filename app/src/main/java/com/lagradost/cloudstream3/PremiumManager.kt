@@ -2,11 +2,13 @@ package com.lagradost.cloudstream3
 
 import android.content.Context
 import android.content.Intent
+import android.content.SharedPreferences
 import android.os.Handler
 import android.os.Looper
 import android.provider.Settings
 import android.widget.Toast
-import androidx.preference.PreferenceManager
+import androidx.security.crypto.EncryptedSharedPreferences
+import androidx.security.crypto.MasterKey
 import org.json.JSONObject
 import java.net.HttpURLConnection
 import java.net.URL
@@ -31,6 +33,23 @@ object PremiumManager {
     fun getDeviceId(context: Context): String {
         val androidId = Settings.Secure.getString(context.contentResolver, Settings.Secure.ANDROID_ID)
         return abs(androidId.hashCode()).toString().take(8)
+    }
+
+    // ==========================================================
+    // FUNGSI KHUSUS: ENCRYPTED SHARED PREFERENCES (ANTI-HACK)
+    // ==========================================================
+    private fun getSecurePrefs(context: Context): SharedPreferences {
+        val masterKey = MasterKey.Builder(context)
+            .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
+            .build()
+
+        return EncryptedSharedPreferences.create(
+            context,
+            "premium_secure_data",
+            masterKey,
+            EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+            EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+        )
     }
 
     // ==========================================================
@@ -67,8 +86,9 @@ object PremiumManager {
 
                         if (dbCode == inputCode) {
                             if (System.currentTimeMillis() < dbExpired) {
-                                val prefs = PreferenceManager.getDefaultSharedPreferences(context)
-                                prefs.edit()
+                                // MENGGUNAKAN SECURE PREFS DI SINI
+                                val securePrefs = getSecurePrefs(context)
+                                securePrefs.edit()
                                     .putBoolean(PREF_IS_PREMIUM, true)
                                     .putLong(PREF_EXPIRY_DATE, dbExpired)
                                     .apply() 
@@ -94,7 +114,7 @@ object PremiumManager {
     }
 
     // ==========================================================
-    // FUNGSI 2: AKTIVASI KODE PROMO UMUM (SUDAH ANTI RACE-CONDITION & KONFLIK)
+    // FUNGSI 2: AKTIVASI KODE PROMO UMUM (SUDAH ANTI RACE-CONDITION)
     // ==========================================================
     fun activatePromoWithCode(context: Context, code: String, deviceId: String, onResult: (Boolean, String) -> Unit) {
         val inputCode = code.trim().uppercase()
@@ -160,9 +180,7 @@ object PremiumManager {
                 
                 updatePromoConn.outputStream.use { it.write(promoPatch.toByteArray(Charsets.UTF_8)) }
                 
-                // FIX: Cek response code dari update kuota promo!
-                val updatePromoCode = updatePromoConn.responseCode
-                if (updatePromoCode != HttpURLConnection.HTTP_OK) {
+                if (updatePromoConn.responseCode != HttpURLConnection.HTTP_OK) {
                     Handler(Looper.getMainLooper()).post { onResult(false, "Gagal sinkronisasi kuota promo. Coba lagi.") }
                     return@launch
                 }
@@ -200,15 +218,14 @@ object PremiumManager {
                 
                 updateUserConn.outputStream.use { it.write(userPatch.toByteArray(Charsets.UTF_8)) }
                 
-                // 6. Cek Response Update Masa Aktif
                 if (updateUserConn.responseCode != HttpURLConnection.HTTP_OK) {
                     Handler(Looper.getMainLooper()).post { onResult(false, "Gagal mengupdate masa aktif di server!") }
                     return@launch
                 }
 
-                // 7. Simpan ke Preferensi HP User
-                val prefs = PreferenceManager.getDefaultSharedPreferences(context)
-                prefs.edit()
+                // 6. Simpan ke Encrypted Preferences HP User
+                val securePrefs = getSecurePrefs(context)
+                securePrefs.edit()
                     .putBoolean(PREF_IS_PREMIUM, true)
                     .putLong(PREF_EXPIRY_DATE, newExpiredTimestamp)
                     .apply() 
@@ -226,9 +243,9 @@ object PremiumManager {
     // FUNGSI 3: CEK STATUS PREMIUM
     // ==========================================================
     fun isPremium(context: Context): Boolean {
-        val prefs = PreferenceManager.getDefaultSharedPreferences(context)
-        val isPremium = prefs.getBoolean(PREF_IS_PREMIUM, false)
-        val expiryDate = prefs.getLong(PREF_EXPIRY_DATE, 0)
+        val securePrefs = getSecurePrefs(context)
+        val isPremium = securePrefs.getBoolean(PREF_IS_PREMIUM, false)
+        val expiryDate = securePrefs.getLong(PREF_EXPIRY_DATE, 0)
         
         if (isPremium) {
             if (System.currentTimeMillis() > expiryDate) {
@@ -246,16 +263,16 @@ object PremiumManager {
     }
 
     fun deactivatePremium(context: Context) {
-        val prefs = PreferenceManager.getDefaultSharedPreferences(context)
-        prefs.edit()
+        val securePrefs = getSecurePrefs(context)
+        securePrefs.edit()
             .putBoolean(PREF_IS_PREMIUM, false)
             .putLong(PREF_EXPIRY_DATE, 0)
             .apply() 
     }
     
     fun getExpiryDateString(context: Context): String {
-        val prefs = PreferenceManager.getDefaultSharedPreferences(context)
-        val date = prefs.getLong(PREF_EXPIRY_DATE, 0)
+        val securePrefs = getSecurePrefs(context)
+        val date = securePrefs.getLong(PREF_EXPIRY_DATE, 0)
         return if (date == 0L) "Non-Premium" else SimpleDateFormat("dd MMM yyyy", Locale.getDefault()).format(Date(date))
     }
     
@@ -281,8 +298,8 @@ object PremiumManager {
                         val dbStatus = jsonResponse.optString("status", "")
                         val dbExpired = jsonResponse.optLong("expired_at", 0L)
 
-                        val prefs = PreferenceManager.getDefaultSharedPreferences(context)
-                        val wasPremium = prefs.getBoolean(PREF_IS_PREMIUM, false)
+                        val securePrefs = getSecurePrefs(context)
+                        val wasPremium = securePrefs.getBoolean(PREF_IS_PREMIUM, false)
                         
                         val isBanned = dbStatus == "banned"
                         val isExpired = dbStatus == "aktif" && dbExpired > 0L && System.currentTimeMillis() > dbExpired
@@ -300,7 +317,7 @@ object PremiumManager {
                                 }
                             }
                         } else if (dbStatus == "aktif" && dbExpired > 0L) {
-                            prefs.edit().putLong(PREF_EXPIRY_DATE, dbExpired).apply()
+                            securePrefs.edit().putLong(PREF_EXPIRY_DATE, dbExpired).apply()
                         }
                     }
                 }
@@ -331,7 +348,6 @@ object PremiumManager {
                 os.write(input, 0, input.size)
             }
             
-            // FIX: Cek response code agar terlihat di console/log jika gagal
             val responseCode = connection.responseCode
             if (responseCode != HttpURLConnection.HTTP_OK) {
                 println("PremiumManager: Registrasi awal gagal dengan kode $responseCode")
