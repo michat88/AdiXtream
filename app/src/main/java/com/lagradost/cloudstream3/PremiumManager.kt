@@ -94,7 +94,7 @@ object PremiumManager {
     }
 
     // ==========================================================
-    // FUNGSI 2: AKTIVASI KODE PROMO UMUM (SUDAH ANTI RACE-CONDITION & KONFLIK STATUS)
+    // FUNGSI 2: AKTIVASI KODE PROMO UMUM (SUDAH ANTI RACE-CONDITION & KONFLIK)
     // ==========================================================
     fun activatePromoWithCode(context: Context, code: String, deviceId: String, onResult: (Boolean, String) -> Unit) {
         val inputCode = code.trim().uppercase()
@@ -131,8 +131,6 @@ object PremiumManager {
                 val validUntil = jsonPromo.optLong("valid_until", 0L)
 
                 // 2. ATOMIC LOCK MENGGUNAKAN FIREBASE RULES
-                // Kita mengirim PUT ke redeemed_promos. Jika sudah diklaim, habis kuota, 
-                // atau waktu habis, Firebase Rules akan OTOMATIS MENOLAK (HTTP 401/403).
                 val markPromoUrl = URL("${FIREBASE_BASE_URL}users/$deviceId/redeemed_promos/$inputCode.json")
                 val markPromoConn = markPromoUrl.openConnection() as HttpURLConnection
                 markPromoConn.requestMethod = "PUT"
@@ -161,7 +159,13 @@ object PremiumManager {
                 }.toString()
                 
                 updatePromoConn.outputStream.use { it.write(promoPatch.toByteArray(Charsets.UTF_8)) }
-                updatePromoConn.responseCode 
+                
+                // FIX: Cek response code dari update kuota promo!
+                val updatePromoCode = updatePromoConn.responseCode
+                if (updatePromoCode != HttpURLConnection.HTTP_OK) {
+                    Handler(Looper.getMainLooper()).post { onResult(false, "Gagal sinkronisasi kuota promo. Coba lagi.") }
+                    return@launch
+                }
 
                 // 4. Kalkulasi Masa Aktif User Saat Ini
                 val userUrl = URL("${FIREBASE_BASE_URL}users/$deviceId.json")
@@ -317,7 +321,6 @@ object PremiumManager {
             connection.setRequestProperty("Content-Type", "application/json")
             connection.doOutput = true
             
-            // Mengirim status dan last_update HANYA saat pendaftaran awal
             val jsonPayload = JSONObject().apply {
                 put("status", "aktif")
                 put("last_update", "Auto-Sync from Android App")
@@ -327,7 +330,12 @@ object PremiumManager {
                 val input = jsonPayload.toByteArray(Charsets.UTF_8)
                 os.write(input, 0, input.size)
             }
-            connection.responseCode 
+            
+            // FIX: Cek response code agar terlihat di console/log jika gagal
+            val responseCode = connection.responseCode
+            if (responseCode != HttpURLConnection.HTTP_OK) {
+                println("PremiumManager: Registrasi awal gagal dengan kode $responseCode")
+            }
         } catch (e: Exception) {
             e.printStackTrace()
         }
