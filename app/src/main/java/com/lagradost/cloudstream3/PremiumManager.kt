@@ -94,7 +94,7 @@ object PremiumManager {
     }
 
     // ==========================================================
-    // FUNGSI 2: AKTIVASI KODE PROMO UMUM (SUDAH ANTI RACE-CONDITION)
+    // FUNGSI 2: AKTIVASI KODE PROMO UMUM (SUDAH ANTI RACE-CONDITION & KONFLIK STATUS)
     // ==========================================================
     fun activatePromoWithCode(context: Context, code: String, deviceId: String, onResult: (Boolean, String) -> Unit) {
         val inputCode = code.trim().uppercase()
@@ -131,8 +131,8 @@ object PremiumManager {
                 val validUntil = jsonPromo.optLong("valid_until", 0L)
 
                 // 2. ATOMIC LOCK MENGGUNAKAN FIREBASE RULES
-                // Kita "tembak" database untuk klaim promo. Firebase Rules yang kita buat
-                // akan OTOMATIS MENOLAK (HTTP 401/403) jika kuota habis, expired, atau sudah pernah diklaim!
+                // Kita mengirim PUT ke redeemed_promos. Jika sudah diklaim, habis kuota, 
+                // atau waktu habis, Firebase Rules akan OTOMATIS MENOLAK (HTTP 401/403).
                 val markPromoUrl = URL("${FIREBASE_BASE_URL}users/$deviceId/redeemed_promos/$inputCode.json")
                 val markPromoConn = markPromoUrl.openConnection() as HttpURLConnection
                 markPromoConn.requestMethod = "PUT"
@@ -140,22 +140,18 @@ object PremiumManager {
                 markPromoConn.doOutput = true
                 markPromoConn.outputStream.use { it.write("true".toByteArray(Charsets.UTF_8)) }
                 
-                val markResponseCode = markPromoConn.responseCode
-                
-                // Jika ditolak oleh Firebase Rules
-                if (markResponseCode != HttpURLConnection.HTTP_OK) {
+                if (markPromoConn.responseCode != HttpURLConnection.HTTP_OK) {
                     Handler(Looper.getMainLooper()).post { onResult(false, "Gagal! Promo sudah pernah diklaim, habis kuota, atau kadaluarsa.") }
                     return@launch
                 }
 
-                // 3. Jika berhasil klaim, kita update used_count sesuai Rules Anti-Hacker
+                // 3. Update used_count sesuai Rules Anti-Hacker
                 val updatePromoUrl = URL("${FIREBASE_BASE_URL}promo_codes/$inputCode.json")
                 val updatePromoConn = updatePromoUrl.openConnection() as HttpURLConnection
                 updatePromoConn.requestMethod = "PATCH"
                 updatePromoConn.setRequestProperty("Content-Type", "application/json")
                 updatePromoConn.doOutput = true
                 
-                // Rules mewajibkan kita mengirim SELURUH payload untuk validasi
                 val promoPatch = JSONObject().apply { 
                     put("used_count", usedCount + 1)
                     put("days", days)
@@ -165,9 +161,9 @@ object PremiumManager {
                 }.toString()
                 
                 updatePromoConn.outputStream.use { it.write(promoPatch.toByteArray(Charsets.UTF_8)) }
-                updatePromoConn.responseCode // Jalankan request
+                updatePromoConn.responseCode 
 
-                // 4. Kalkulasi dan Update Masa Aktif User
+                // 4. Kalkulasi Masa Aktif User Saat Ini
                 val userUrl = URL("${FIREBASE_BASE_URL}users/$deviceId.json")
                 val userConn = userUrl.openConnection() as HttpURLConnection
                 userConn.requestMethod = "GET"
@@ -186,20 +182,27 @@ object PremiumManager {
 
                 val newExpiredTimestamp = baseTimestamp + (days * 24L * 60L * 60L * 1000L)
 
+                // 5. Update Masa Aktif User Tanpa Mengirim Field 'status'
                 val updateUserUrl = URL("${FIREBASE_BASE_URL}users/$deviceId.json")
                 val updateUserConn = updateUserUrl.openConnection() as HttpURLConnection
                 updateUserConn.requestMethod = "PATCH"
                 updateUserConn.setRequestProperty("Content-Type", "application/json")
                 updateUserConn.doOutput = true
+                
                 val userPatch = JSONObject().apply {
-                    put("status", "aktif")
                     put("expired_at", newExpiredTimestamp)
                     put("last_update", "Redeemed Promo: $inputCode")
                 }.toString()
+                
                 updateUserConn.outputStream.use { it.write(userPatch.toByteArray(Charsets.UTF_8)) }
-                updateUserConn.responseCode 
+                
+                // 6. Cek Response Update Masa Aktif
+                if (updateUserConn.responseCode != HttpURLConnection.HTTP_OK) {
+                    Handler(Looper.getMainLooper()).post { onResult(false, "Gagal mengupdate masa aktif di server!") }
+                    return@launch
+                }
 
-                // 5. Simpan ke HP User
+                // 7. Simpan ke Preferensi HP User
                 val prefs = PreferenceManager.getDefaultSharedPreferences(context)
                 prefs.edit()
                     .putBoolean(PREF_IS_PREMIUM, true)
@@ -216,7 +219,7 @@ object PremiumManager {
     }
 
     // ==========================================================
-    // FUNGSI 3 & 4 (CEK PREMIUM & SYNC) TETAP SAMA
+    // FUNGSI 3: CEK STATUS PREMIUM
     // ==========================================================
     fun isPremium(context: Context): Boolean {
         val prefs = PreferenceManager.getDefaultSharedPreferences(context)
@@ -252,6 +255,9 @@ object PremiumManager {
         return if (date == 0L) "Non-Premium" else SimpleDateFormat("dd MMM yyyy", Locale.getDefault()).format(Date(date))
     }
     
+    // ==========================================================
+    // FUNGSI 4: SINKRONISASI KEAMANAN (BACKGROUND)
+    // ==========================================================
     private fun checkAndSyncWithServer(context: Context, deviceId: String) {
         CoroutineScope(Dispatchers.IO).launch {
             try {
@@ -295,13 +301,13 @@ object PremiumManager {
                     }
                 }
             } catch (e: Exception) {
-                // Abaikan error jaringan
+                // Abaikan error jaringan saat sinkronisasi
             }
         }
     }
 
     // ==========================================================
-    // FUNGSI 5: DAFTARKAN DEVICE ID BARU (DIPERBAIKI)
+    // FUNGSI 5: DAFTARKAN DEVICE ID BARU
     // ==========================================================
     private fun registerUserToServer(context: Context, deviceId: String) {
         try {
@@ -311,7 +317,7 @@ object PremiumManager {
             connection.setRequestProperty("Content-Type", "application/json")
             connection.doOutput = true
             
-            // Hapus expired_at dari payload registrasi awal agar tidak diblokir Rules
+            // Mengirim status dan last_update HANYA saat pendaftaran awal
             val jsonPayload = JSONObject().apply {
                 put("status", "aktif")
                 put("last_update", "Auto-Sync from Android App")
