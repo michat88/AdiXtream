@@ -986,6 +986,11 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
     @Suppress("DEPRECATION_ERROR")
     override fun onCreate(savedInstanceState: Bundle?) {
         app.initClient(this)
+        
+        // --- ADIXTREAM: MIGRASI SILENT USER OFFLINE LAMA ---
+        PremiumManager.checkAndMigrateOldOfflineUser(this)
+        // ---------------------------------------------------
+
         val settingsManager = PreferenceManager.getDefaultSharedPreferences(this)
 
         setLastError(this)
