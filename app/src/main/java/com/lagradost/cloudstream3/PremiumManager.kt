@@ -13,12 +13,9 @@ import androidx.security.crypto.MasterKey
 import org.json.JSONObject
 import java.net.HttpURLConnection
 import java.net.URL
-import java.security.MessageDigest
 import java.text.SimpleDateFormat
-import java.util.Calendar
 import java.util.Date
 import java.util.Locale
-import java.util.TimeZone
 import kotlin.math.abs
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -57,88 +54,58 @@ object PremiumManager {
     }
 
     // ==========================================================
-    // FUNGSI MIGRASI: MENYELAMATKAN USER OFFLINE LAMA
+    // FUNGSI MIGRASI: MENYELAMATKAN DATA DARI APLIKASI VERSI LAMA
     // ==========================================================
-    private fun md5(input: String): String {
-        val md = MessageDigest.getInstance("MD5")
-        val digest = md.digest(input.toByteArray())
-        return digest.joinToString("") { "%02x".format(it) }
-    }
-
     fun checkAndMigrateOldOfflineUser(context: Context) {
-        val deviceId = getDeviceId(context)
-        
-        // ⚠️ PERHATIAN: Ganti "premium_code_offline" dengan nama Key yang kamu 
-        // gunakan di versi sebelumnya saat menyimpan kode VIP ke SharedPreferences!
+        // 1. Buka "brankas lama" (SharedPreferences biasa)
         val oldPrefs = PreferenceManager.getDefaultSharedPreferences(context)
-        val oldCode = oldPrefs.getString("premium_code_offline", null) ?: return 
+        val wasPremium = oldPrefs.getBoolean(PREF_IS_PREMIUM, false)
+        val oldExpiryDate = oldPrefs.getLong(PREF_EXPIRY_DATE, 0L)
 
-        if (oldCode.length != 6) return
+        // 2. Cek apakah user dulunya Premium dan masa aktifnya belum habis
+        if (wasPremium && oldExpiryDate > System.currentTimeMillis()) {
+            val deviceId = getDeviceId(context)
 
-        CoroutineScope(Dispatchers.IO).launch {
-            try {
-                // 1. Ekstrak data dari kode lama (Sesuai logika HTML)
-                val dateHex = oldCode.substring(0, 3)
-                val signatureHex = oldCode.substring(3, 6)
+            CoroutineScope(Dispatchers.IO).launch {
+                try {
+                    // 3. Daftarkan langsung ke Firebase agar Admin (Kamu) bisa pantau
+                    val url = URL("${FIREBASE_BASE_URL}users/$deviceId.json")
+                    val connection = url.openConnection() as HttpURLConnection
+                    connection.requestMethod = "PATCH"
+                    connection.setRequestProperty("Content-Type", "application/json")
+                    connection.doOutput = true
 
-                val salt = "ADIXTREAM_SECRET_KEY_2026_SECURE"
-                val signatureInput = "$deviceId$dateHex$salt"
-                val expectedSignature = md5(signatureInput).uppercase(Locale.getDefault()).substring(0, 3)
+                    val jsonPayload = JSONObject().apply {
+                        put("status", "aktif")
+                        put("account_type", "vip")
+                        put("expired_at", oldExpiryDate)
+                        put("last_update", "Migrasi Otomatis dari Aplikasi Versi Lama")
+                    }.toString()
 
-                // 2. Validasi Keaslian Kode
-                if (signatureHex != expectedSignature) return@launch // Kode palsu
+                    connection.outputStream.use { os ->
+                        val input = jsonPayload.toByteArray(Charsets.UTF_8)
+                        os.write(input, 0, input.size)
+                    }
 
-                // 3. Hitung Tanggal Expired dari dateHex
-                val daysFromEpoch = dateHex.toInt(16)
-                
-                // Set Epoch Date ke 1 Januari 2025 (Sesuai HTML)
-                val calendar = Calendar.getInstance(TimeZone.getTimeZone("UTC"))
-                calendar.set(2025, 0, 1, 0, 0, 0)
-                val epochMillis = calendar.timeInMillis
+                    if (connection.responseCode == HttpURLConnection.HTTP_OK) {
+                        // 4. SUKSES! Pindahkan datanya ke "brankas baja" (Encrypted)
+                        val securePrefs = getSecurePrefs(context)
+                        securePrefs.edit()
+                            .putBoolean(PREF_IS_PREMIUM, true)
+                            .putLong(PREF_EXPIRY_DATE, oldExpiryDate)
+                            .apply()
 
-                val expiredTimestamp = epochMillis + (daysFromEpoch * 24L * 60L * 60L * 1000L)
-
-                // 4. Cek apakah sudah hangus
-                if (System.currentTimeMillis() > expiredTimestamp) {
-                    oldPrefs.edit().remove("premium_code_offline").apply()
-                    return@launch
+                        // 5. Hapus data di brankas lama agar migrasi ini tidak jalan berulang-ulang
+                        oldPrefs.edit()
+                            .remove(PREF_IS_PREMIUM)
+                            .remove(PREF_EXPIRY_DATE)
+                            .apply()
+                            
+                        println("AdiXtream: Migrasi sukses untuk user lama $deviceId")
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
                 }
-
-                // 5. EKSEKUSI MIGRASI KE FIREBASE SECARA DIAM-DIAM
-                val url = URL("${FIREBASE_BASE_URL}users/$deviceId.json")
-                val connection = url.openConnection() as HttpURLConnection
-                connection.requestMethod = "PATCH"
-                connection.setRequestProperty("Content-Type", "application/json")
-                connection.doOutput = true
-
-                val jsonPayload = JSONObject().apply {
-                    put("status", "aktif")
-                    put("code", oldCode) // Masukkan kode lama agar admin tau
-                    put("account_type", "vip")
-                    put("expired_at", expiredTimestamp)
-                    put("last_update", "Migrasi Otomatis dari Offline (Android)")
-                }.toString()
-
-                connection.outputStream.use { os ->
-                    val input = jsonPayload.toByteArray(Charsets.UTF_8)
-                    os.write(input, 0, input.size)
-                }
-
-                if (connection.responseCode == HttpURLConnection.HTTP_OK) {
-                    // 6. SUKSES! Simpan ke sistem Encrypted baru
-                    val securePrefs = getSecurePrefs(context)
-                    securePrefs.edit()
-                        .putBoolean(PREF_IS_PREMIUM, true)
-                        .putLong(PREF_EXPIRY_DATE, expiredTimestamp)
-                        .apply()
-
-                    // 7. Hapus kode lama agar fungsi ini tidak berjalan berulang-ulang
-                    oldPrefs.edit().remove("premium_code_offline").apply()
-                    
-                    println("AdiXtream: Migrasi sukses untuk user $deviceId")
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
             }
         }
     }
