@@ -57,18 +57,31 @@ object PremiumManager {
     // FUNGSI MIGRASI: MENYELAMATKAN DATA DARI APLIKASI VERSI LAMA
     // ==========================================================
     fun checkAndMigrateOldOfflineUser(context: Context) {
-        // 1. Buka "brankas lama" (SharedPreferences biasa)
         val oldPrefs = PreferenceManager.getDefaultSharedPreferences(context)
         val wasPremium = oldPrefs.getBoolean(PREF_IS_PREMIUM, false)
         val oldExpiryDate = oldPrefs.getLong(PREF_EXPIRY_DATE, 0L)
 
-        // 2. Cek apakah user dulunya Premium dan masa aktifnya belum habis
+        // 1. Cek apakah user dulunya Premium dan masa aktifnya belum habis
         if (wasPremium && oldExpiryDate > System.currentTimeMillis()) {
-            val deviceId = getDeviceId(context)
+            
+            // 2. PINDAHKAN LANGSUNG KE BRANKAS BAJA! (Tanpa nunggu Firebase)
+            // Ini menjamin user langsung terdeteksi sebagai VIP saat aplikasi baru dibuka
+            val securePrefs = getSecurePrefs(context)
+            securePrefs.edit()
+                .putBoolean(PREF_IS_PREMIUM, true)
+                .putLong(PREF_EXPIRY_DATE, oldExpiryDate)
+                .apply()
 
+            // 3. Hapus data di brankas lama agar migrasi tidak jalan terus-menerus
+            oldPrefs.edit()
+                .remove(PREF_IS_PREMIUM)
+                .remove(PREF_EXPIRY_DATE)
+                .apply()
+
+            // 4. Laporkan ke Firebase di background (Tanpa mengirim account_type)
+            val deviceId = getDeviceId(context)
             CoroutineScope(Dispatchers.IO).launch {
                 try {
-                    // 3. Daftarkan langsung ke Firebase agar Admin (Kamu) bisa pantau
                     val url = URL("${FIREBASE_BASE_URL}users/$deviceId.json")
                     val connection = url.openConnection() as HttpURLConnection
                     connection.requestMethod = "PATCH"
@@ -77,9 +90,8 @@ object PremiumManager {
 
                     val jsonPayload = JSONObject().apply {
                         put("status", "aktif")
-                        put("account_type", "vip")
                         put("expired_at", oldExpiryDate)
-                        put("last_update", "Migrasi Otomatis dari Aplikasi Versi Lama")
+                        put("last_update", "Migrasi Otomatis dari Aplikasi Lama")
                     }.toString()
 
                     connection.outputStream.use { os ->
@@ -88,20 +100,9 @@ object PremiumManager {
                     }
 
                     if (connection.responseCode == HttpURLConnection.HTTP_OK) {
-                        // 4. SUKSES! Pindahkan datanya ke "brankas baja" (Encrypted)
-                        val securePrefs = getSecurePrefs(context)
-                        securePrefs.edit()
-                            .putBoolean(PREF_IS_PREMIUM, true)
-                            .putLong(PREF_EXPIRY_DATE, oldExpiryDate)
-                            .apply()
-
-                        // 5. Hapus data di brankas lama agar migrasi ini tidak jalan berulang-ulang
-                        oldPrefs.edit()
-                            .remove(PREF_IS_PREMIUM)
-                            .remove(PREF_EXPIRY_DATE)
-                            .apply()
-                            
                         println("AdiXtream: Migrasi sukses untuk user lama $deviceId")
+                    } else {
+                        println("AdiXtream: Gagal lapor migrasi ke Firebase, ditolak oleh Rules.")
                     }
                 } catch (e: Exception) {
                     e.printStackTrace()
