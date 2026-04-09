@@ -204,8 +204,6 @@ import com.lagradost.cloudstream3.plugins.RepositoryManager
 import com.lagradost.cloudstream3.ui.settings.extensions.PluginsViewModel
 import com.lagradost.cloudstream3.ui.settings.extensions.RepositoryData
 import com.lagradost.cloudstream3.PremiumManager
-import com.google.firebase.ktx.Firebase
-import com.google.firebase.auth.ktx.auth
 // -----------------------
 
 class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCallback {
@@ -992,13 +990,6 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
 
         setLastError(this)
 
-        // === ADIXTREAM: INIT FIREBASE AUTH ===
-        // Berjalan async di background, tidak memblokir UI sama sekali.
-        PremiumManager.initFirebaseAuth(this) {
-            Log.d(TAG, "Firebase Auth & Mapping Berhasil Diinisialisasi")
-        }
-        // =====================================
-
         val settingsForProvider = SettingsJson()
         settingsForProvider.enableAdult = settingsManager.getBoolean(getString(R.string.enable_nsfw_on_providers_key), false)
         MainAPI.settingsForProvider = settingsForProvider
@@ -1024,11 +1015,13 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                 Log.d(TAG, "Status Repo tidak sinkron. Melakukan penyesuaian otomatis...")
 
                 // === ADIXTREAM SECURITY: SAPU BERSIH PLUGIN LAMA ===
+                // Jika repo berubah (misal dari Premium kembali ke Free karena Banned),
+                // kita WAJIB menghapus file fisik plugin premium yang sudah terlanjur didownload.
                 try {
-                    APIHolder.allProviders.clear() 
+                    APIHolder.allProviders.clear() // Kosongkan memori sementara
                     val pluginDir1 = java.io.File(this@MainActivity.filesDir, "plugins")
                     val pluginDir2 = java.io.File(this@MainActivity.filesDir, "Plugins")
-                    if (pluginDir1.exists()) pluginDir1.deleteRecursively()
+                    if (pluginDir1.exists()) pluginDir1.deleteRecursively() // Hapus file fisik
                     if (pluginDir2.exists()) pluginDir2.deleteRecursively()
                 } catch (e: Exception) { 
                     logError(e) 
@@ -1049,12 +1042,14 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                 } catch (e: Exception) { logError(e) }
             }
 
+            // Gunakan delay dari coroutine, bukan Thread.sleep
             kotlinx.coroutines.delay(1000)
 
             if (lastError == null && !PluginManager.checkSafeModeFile()) {
                 if (isRepoChanged) {
                     try {
                         Log.d(TAG, "Mengunduh plugin dari Repo Baru...")
+                        // Download berjalan di background
                         PluginsViewModel.downloadAll(this@MainActivity, targetRepoUrl, null)
                         PluginManager.___DO_NOT_CALL_FROM_A_PLUGIN_loadAllOnlinePlugins(this@MainActivity)
                         PluginManager.___DO_NOT_CALL_FROM_A_PLUGIN_loadAllLocalPlugins(this@MainActivity, false)
@@ -1073,10 +1068,12 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                     PluginManager.___DO_NOT_CALL_FROM_A_PLUGIN_loadAllLocalPlugins(this@MainActivity, false)
                 }
 
-                // === LOGIKA AUTO-SELECT PLUGIN ASLI YANG DIKEMBALIKAN ===
+                // === SOLUSI FINAL: OPTIMASI POLLING COROUTINES & FILTER NSFW ===
                 val isAdultEnabled = settingsManager.getBoolean(getString(R.string.enable_nsfw_on_providers_key), false)
 
+                // Gunakan withTimeoutOrNull untuk membatasi waktu tunggu maksimal 15 detik (15000 ms)
                 kotlinx.coroutines.withTimeoutOrNull(15_000L) {
+                    // Cek terus setiap 500ms sampai ada setidaknya 1 provider valid
                     while (APIHolder.allProviders.none { provider -> 
                         provider.hasMainPage && (isAdultEnabled || !provider.supportedTypes.contains(com.lagradost.cloudstream3.TvType.NSFW)) 
                     }) {
@@ -1084,12 +1081,14 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                     }
                 }
 
+                // Ambil daftar provider yang sudah terfilter dengan aman
                 val availableProviders = APIHolder.allProviders.filter { provider ->
                     provider.hasMainPage && (isAdultEnabled || !provider.supportedTypes.contains(com.lagradost.cloudstream3.TvType.NSFW))
                 }
                 
                 val currentSelected = DataStoreHelper.currentHomePage
 
+                // Jika daftar plugin sudah muncul, otomatis pilih urutan pertama
                 if (currentSelected == null || availableProviders.none { it.name == currentSelected }) {
                     if (availableProviders.isNotEmpty()) {
                         val targetApiToLoad = availableProviders.first().name
@@ -1101,6 +1100,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                         mainPluginsLoadedEvent.invoke(false)
                     }
                 } else {
+                    // Eksekusi jika tidak ada perubahan repo
                     mainPluginsLoadedEvent.invoke(loadSinglePlugin(this@MainActivity, currentSelected))
                     reloadHomeEvent.invoke(true)
                 }
@@ -1164,6 +1164,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                         R.id.result_bookmark_Button,
                         R.id.result_favorite_Button,
                         R.id.result_subscribe_Button,
+                        R.id.result_search_Button,
                         R.id.result_episodes_show_button,
                     )
 
