@@ -97,7 +97,8 @@ android {
         release {
             signingConfig = signingConfigs.getByName("release")
             isDebuggable = false
-            isMinifyEnabled = false
+            // Note: Nanti kalau sudah sukses build-nya, isMinifyEnabled ini bisa kita ubah ke true untuk enkripsi kode ya!
+            isMinifyEnabled = false 
             isShrinkResources = false
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
@@ -183,6 +184,11 @@ dependencies {
     implementation(libs.tvprovider)
     implementation(libs.overlappingpanels)
     implementation(libs.biometric)
+    
+    // === TAMBAHAN ADIXTREAM: SECURITY CRYPTO (ANTI-HACK) ===
+    implementation("androidx.security:security-crypto:1.1.0-alpha06")
+    // =======================================================
+
     implementation(libs.previewseekbar.media3)
     implementation(libs.qrcode.kotlin)
 
