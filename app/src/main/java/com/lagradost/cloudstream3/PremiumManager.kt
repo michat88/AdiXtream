@@ -7,14 +7,18 @@ import android.os.Handler
 import android.os.Looper
 import android.provider.Settings
 import android.widget.Toast
+import androidx.preference.PreferenceManager
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
 import org.json.JSONObject
 import java.net.HttpURLConnection
 import java.net.URL
+import java.security.MessageDigest
 import java.text.SimpleDateFormat
+import java.util.Calendar
 import java.util.Date
 import java.util.Locale
+import java.util.TimeZone
 import kotlin.math.abs
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -53,6 +57,93 @@ object PremiumManager {
     }
 
     // ==========================================================
+    // FUNGSI MIGRASI: MENYELAMATKAN USER OFFLINE LAMA
+    // ==========================================================
+    private fun md5(input: String): String {
+        val md = MessageDigest.getInstance("MD5")
+        val digest = md.digest(input.toByteArray())
+        return digest.joinToString("") { "%02x".format(it) }
+    }
+
+    fun checkAndMigrateOldOfflineUser(context: Context) {
+        val deviceId = getDeviceId(context)
+        
+        // ⚠️ PERHATIAN: Ganti "premium_code_offline" dengan nama Key yang kamu 
+        // gunakan di versi sebelumnya saat menyimpan kode VIP ke SharedPreferences!
+        val oldPrefs = PreferenceManager.getDefaultSharedPreferences(context)
+        val oldCode = oldPrefs.getString("premium_code_offline", null) ?: return 
+
+        if (oldCode.length != 6) return
+
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                // 1. Ekstrak data dari kode lama (Sesuai logika HTML)
+                val dateHex = oldCode.substring(0, 3)
+                val signatureHex = oldCode.substring(3, 6)
+
+                val salt = "ADIXTREAM_SECRET_KEY_2026_SECURE"
+                val signatureInput = "$deviceId$dateHex$salt"
+                val expectedSignature = md5(signatureInput).uppercase(Locale.getDefault()).substring(0, 3)
+
+                // 2. Validasi Keaslian Kode
+                if (signatureHex != expectedSignature) return@launch // Kode palsu
+
+                // 3. Hitung Tanggal Expired dari dateHex
+                val daysFromEpoch = dateHex.toInt(16)
+                
+                // Set Epoch Date ke 1 Januari 2025 (Sesuai HTML)
+                val calendar = Calendar.getInstance(TimeZone.getTimeZone("UTC"))
+                calendar.set(2025, 0, 1, 0, 0, 0)
+                val epochMillis = calendar.timeInMillis
+
+                val expiredTimestamp = epochMillis + (daysFromEpoch * 24L * 60L * 60L * 1000L)
+
+                // 4. Cek apakah sudah hangus
+                if (System.currentTimeMillis() > expiredTimestamp) {
+                    oldPrefs.edit().remove("premium_code_offline").apply()
+                    return@launch
+                }
+
+                // 5. EKSEKUSI MIGRASI KE FIREBASE SECARA DIAM-DIAM
+                val url = URL("${FIREBASE_BASE_URL}users/$deviceId.json")
+                val connection = url.openConnection() as HttpURLConnection
+                connection.requestMethod = "PATCH"
+                connection.setRequestProperty("Content-Type", "application/json")
+                connection.doOutput = true
+
+                val jsonPayload = JSONObject().apply {
+                    put("status", "aktif")
+                    put("code", oldCode) // Masukkan kode lama agar admin tau
+                    put("account_type", "vip")
+                    put("expired_at", expiredTimestamp)
+                    put("last_update", "Migrasi Otomatis dari Offline (Android)")
+                }.toString()
+
+                connection.outputStream.use { os ->
+                    val input = jsonPayload.toByteArray(Charsets.UTF_8)
+                    os.write(input, 0, input.size)
+                }
+
+                if (connection.responseCode == HttpURLConnection.HTTP_OK) {
+                    // 6. SUKSES! Simpan ke sistem Encrypted baru
+                    val securePrefs = getSecurePrefs(context)
+                    securePrefs.edit()
+                        .putBoolean(PREF_IS_PREMIUM, true)
+                        .putLong(PREF_EXPIRY_DATE, expiredTimestamp)
+                        .apply()
+
+                    // 7. Hapus kode lama agar fungsi ini tidak berjalan berulang-ulang
+                    oldPrefs.edit().remove("premium_code_offline").apply()
+                    
+                    println("AdiXtream: Migrasi sukses untuk user $deviceId")
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+
+    // ==========================================================
     // FUNGSI 1: AKTIVASI KODE VIP PERSONAL
     // ==========================================================
     fun activatePremiumWithCode(context: Context, code: String, deviceId: String, onResult: (Boolean, String) -> Unit) {
@@ -86,7 +177,6 @@ object PremiumManager {
 
                         if (dbCode == inputCode) {
                             if (System.currentTimeMillis() < dbExpired) {
-                                // MENGGUNAKAN SECURE PREFS DI SINI
                                 val securePrefs = getSecurePrefs(context)
                                 securePrefs.edit()
                                     .putBoolean(PREF_IS_PREMIUM, true)
@@ -125,7 +215,6 @@ object PremiumManager {
 
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                // 1. Ambil data Promo
                 val promoUrl = URL("${FIREBASE_BASE_URL}promo_codes/$inputCode.json")
                 val promoConn = promoUrl.openConnection() as HttpURLConnection
                 promoConn.requestMethod = "GET"
@@ -150,7 +239,6 @@ object PremiumManager {
                 val days = jsonPromo.optInt("days", 0)
                 val validUntil = jsonPromo.optLong("valid_until", 0L)
 
-                // 2. ATOMIC LOCK MENGGUNAKAN FIREBASE RULES
                 val markPromoUrl = URL("${FIREBASE_BASE_URL}users/$deviceId/redeemed_promos/$inputCode.json")
                 val markPromoConn = markPromoUrl.openConnection() as HttpURLConnection
                 markPromoConn.requestMethod = "PUT"
@@ -163,7 +251,6 @@ object PremiumManager {
                     return@launch
                 }
 
-                // 3. Update used_count sesuai Rules Anti-Hacker
                 val updatePromoUrl = URL("${FIREBASE_BASE_URL}promo_codes/$inputCode.json")
                 val updatePromoConn = updatePromoUrl.openConnection() as HttpURLConnection
                 updatePromoConn.requestMethod = "PATCH"
@@ -185,7 +272,6 @@ object PremiumManager {
                     return@launch
                 }
 
-                // 4. Kalkulasi Masa Aktif User Saat Ini
                 val userUrl = URL("${FIREBASE_BASE_URL}users/$deviceId.json")
                 val userConn = userUrl.openConnection() as HttpURLConnection
                 userConn.requestMethod = "GET"
@@ -204,7 +290,6 @@ object PremiumManager {
 
                 val newExpiredTimestamp = baseTimestamp + (days * 24L * 60L * 60L * 1000L)
 
-                // 5. Update Masa Aktif User Tanpa Mengirim Field 'status'
                 val updateUserUrl = URL("${FIREBASE_BASE_URL}users/$deviceId.json")
                 val updateUserConn = updateUserUrl.openConnection() as HttpURLConnection
                 updateUserConn.requestMethod = "PATCH"
@@ -223,7 +308,6 @@ object PremiumManager {
                     return@launch
                 }
 
-                // 6. Simpan ke Encrypted Preferences HP User
                 val securePrefs = getSecurePrefs(context)
                 securePrefs.edit()
                     .putBoolean(PREF_IS_PREMIUM, true)
