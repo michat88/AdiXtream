@@ -121,8 +121,8 @@ android {
         minSdk = libs.versions.minSdk.get().toInt()
         targetSdk = libs.versions.targetSdk.get().toInt()
         
-        versionCode = 85
-        versionName = "4.7.8"
+        versionCode = 86
+        versionName = "4.7.9"
 
         // --- PEMBATASAN BAHASA ADIXTREAM ---
         resConfigs("en", "id", "in")
