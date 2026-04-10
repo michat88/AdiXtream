@@ -36,6 +36,7 @@ import com.lagradost.cloudstream3.utils.UIHelper.navigate
 import com.lagradost.cloudstream3.utils.UIHelper.toPx
 import com.lagradost.cloudstream3.utils.getImageFromDrawable
 import com.lagradost.cloudstream3.utils.txt
+import com.lagradost.cloudstream3.utils.GitInfo.currentCommitHash // IMPORT BARU YANG DIBUTUHKAN
 import java.io.File
 import java.text.DateFormat
 import java.text.SimpleDateFormat
@@ -310,11 +311,12 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
         }
 
         // ==========================================================
-        // --- 3. LOGIKA VERSI, STATUS LANGGANAN & TOMBOL PROMO SAJA ---
+        // --- 3. LOGIKA VERSI, STATUS LANGGANAN & TOMBOL PROMO ---
         // ==========================================================
         
-        val appVersion = BuildConfig.APP_VERSION
-        val commitInfo = getString(R.string.commit_hash)
+        // --- PERBAIKAN: Menggunakan versi dan commit hash terbaru ---
+        val appVersion = BuildConfig.VERSION_NAME
+        val commitInfo = activity?.currentCommitHash() ?: ""
         val buildTimestamp = SimpleDateFormat.getDateTimeInstance(
             DateFormat.LONG, DateFormat.LONG, Locale.getDefault()
         ).apply { 
@@ -323,6 +325,7 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
 
         binding.appVersion.text = appVersion
         binding.buildDate.text = buildTimestamp
+        binding.commitHash.text = commitInfo // Binding text view agar muncul di UI
         
         // Ambil Status Premium
         val context = context
