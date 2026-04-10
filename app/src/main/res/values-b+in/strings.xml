@@ -445,13 +445,16 @@
     <string name="yes">Ya</string>
     <string name="extension_install_first">Install ekstensi terlebih dahulu</string>
     <string name="all_languages_preference">Semua Bahasa</string>
+    
     <string name="skip_type_format" formatted="true">Lewati %s</string>
     <string name="skip_type_op">Pembuka</string>
+    <string name="skip_type_mixed_op">Sesi pembuka ganda</string>
     <string name="skip_type_ed">Sesi Akhir</string>
-    <string name="skip_type_recap">Sinopsis</string>
     <string name="skip_type_mixed_ed">Sesi akhir ganda</string>
-    <string name="skip_type_creddits">Sesi Kredit</string>
+    <string name="skip_type_recap">Sinopsis</string>
     <string name="skip_type_intro">Sesi Intro</string>
+    <string name="skip_type_preview">Pratinjau</string>
+    <string name="skip_type_creddits">Sesi Kredit</string>
     <string name="clipboard_too_large">Terlalu banyak teks. Tidak dapat menyalin ke papan klip.</string>
     <string name="confirm_exit_dialog">Yakin ingin keluar?</string>
     <string name="no">Tidak</string>
@@ -462,7 +465,6 @@
     <string name="enable_skip_op_from_database_des">Tampilkan popup untuk skip sesi pembuka/akhir</string>
     <string name="update_notification_downloading">Mengunduh pembaruan…</string>
     <string name="apk_installer_legacy">Versi lama</string>
-    <string name="skip_type_mixed_op">Sesi pembuka ganda</string>
     <string name="apk_installer_package_installer">PackageInstaller</string>
     <string name="plugin_downloaded">Plugin terunduh</string>
     <string name="delayed_update_notice">Aplikasi akan diperbarui setelah keluar</string>
