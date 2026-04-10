@@ -13,6 +13,50 @@ plugins {
 
 val javaTarget = JvmTarget.fromTarget(libs.versions.jvmTarget.get())
 
+// === 1. TAMBAHAN DARI CLOUDSTREAM: TUGAS PEMBUAT GIT-HASH.TXT ===
+abstract class GenerateGitHashTask : DefaultTask() {
+    @get:InputFile
+    @get:PathSensitive(PathSensitivity.RELATIVE)
+    abstract val headFile: RegularFileProperty
+
+    @get:InputDirectory
+    @get:PathSensitive(PathSensitivity.RELATIVE)
+    abstract val headsDir: DirectoryProperty
+
+    @get:OutputDirectory
+    abstract val outputDir: DirectoryProperty
+
+    @TaskAction
+    fun generate() {
+        val head = headFile.get().asFile
+        val hash = try {
+            if (head.exists()) {
+                val headContent = head.readText().trim()
+                if (headContent.startsWith("ref:")) {
+                    val refPath = headContent.substring(5).trim()
+                    val commitFile = File(head.parentFile, refPath)
+                    if (commitFile.exists()) commitFile.readText().trim() else ""
+                } else headContent 
+            } else "" 
+        } catch (_: Throwable) {
+            "" 
+        }.take(7) 
+
+        val outFile = outputDir.file("git-hash.txt").get().asFile
+        outFile.parentFile.mkdirs()
+        outFile.writeText(hash)
+    }
+}
+
+val generateGitHash = tasks.register<GenerateGitHashTask>("generateGitHash") {
+    val gitDir = layout.projectDirectory.dir("../.git")
+    headFile.set(gitDir.file("HEAD"))
+    headsDir.set(gitDir.dir("refs/heads"))
+    outputDir.set(layout.buildDirectory.dir("generated/git"))
+}
+// ================================================================
+
+// (Fungsi lama AdiXtream tetap dipertahankan untuk berjaga-jaga jika masih dipanggil)
 fun getGitCommitHash(): String {
     return try {
         val headFile = file("${project.rootDir}/.git/HEAD")
@@ -43,6 +87,17 @@ android {
         includeInBundle = false
     }
 
+    // === 2. TAMBAHAN DARI CLOUDSTREAM: MENYIMPAN FILE KE ASSETS ===
+    androidComponents {
+        onVariants { variant ->
+            variant.sources.assets?.addGeneratedSourceDirectory(
+                generateGitHash,
+                GenerateGitHashTask::outputDir
+            )
+        }
+    }
+    // ==============================================================
+
     viewBinding {
         enable = true
     }
@@ -70,7 +125,6 @@ android {
         versionName = "4.7.8"
 
         // --- PEMBATASAN BAHASA ADIXTREAM ---
-        // Hanya memasukkan bahasa Inggris ("en") dan Indonesia ("id" / "in") agar ukuran APK jauh lebih kecil
         resConfigs("en", "id", "in")
         // -----------------------------------
 
@@ -97,7 +151,6 @@ android {
         release {
             signingConfig = signingConfigs.getByName("release")
             isDebuggable = false
-            // Note: Nanti kalau sudah sukses build-nya, isMinifyEnabled ini bisa kita ubah ke true untuk enkripsi kode ya!
             isMinifyEnabled = false 
             isShrinkResources = false
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
