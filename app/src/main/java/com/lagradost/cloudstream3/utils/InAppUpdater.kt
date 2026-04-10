@@ -18,12 +18,13 @@ import com.lagradost.cloudstream3.services.PackageInstallerService
 import com.lagradost.cloudstream3.utils.AppContextUtils.setDefaultFocus
 import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import com.lagradost.cloudstream3.utils.Coroutines.ioSafe
+import com.lagradost.cloudstream3.utils.GitInfo.currentCommitHash // IMPORT BARU DARI CLOUDSTREAM
 import java.io.BufferedReader
 import java.io.IOException
 import java.io.InputStreamReader
 
 object InAppUpdater {
-    // --- PENYESUAIAN ADIXTREAM ---
+    // --- PENYESUAIAN ADIXTREAM (DIPERTAHANKAN) ---
     private const val GITHUB_USER_NAME = "michat88"
     private const val GITHUB_REPO = "AdiXtream"
 
@@ -122,7 +123,8 @@ object InAppUpdater {
         val tagResponse = parseJson<GithubTag>(app.get(tagUrl, headers = headers).text)
         val updateCommitHash = tagResponse.githubObject.sha.trim().take(7)
 
-        return Update(getString(R.string.commit_hash) != updateCommitHash, foundAsset.browserDownloadUrl, updateCommitHash, found.body, found.nodeId)
+        // --- SISTEM PENGECEKAN DINAMIS (DIADopsi DARI CLOUDSTREAM) ---
+        return Update(currentCommitHash() != updateCommitHash, foundAsset.browserDownloadUrl, updateCommitHash, found.body, found.nodeId)
     }
 
     fun Activity.installPreReleaseIfNeeded() = ioSafe {
@@ -141,6 +143,7 @@ object InAppUpdater {
     }
 
     suspend fun Activity.runAutoUpdate(checkAutoUpdate: Boolean = true, installPrerelease: Boolean = false): Boolean {
+        // --- SISTEM KEAMANAN UNDUHAN GANDA (DIPERTAHANKAN DARI ADIXTREAM) ---
         if (PackageInstallerService.isDownloading) {
             Log.d(LOG_TAG, "Update dibatalkan karena unduhan sedang berjalan di latar belakang.")
             return false
@@ -172,7 +175,6 @@ object InAppUpdater {
                         }
 
                         val currentInstaller = settingsManager.getInt(getString(R.string.apk_installer_key), 1)
-                        // --- PERBAIKAN WARNING 3: Menghapus tanda !! di update.updateURL ---
                         val intent = PackageInstallerService.getIntent(this@runAutoUpdate, update.updateURL, currentInstaller)
                         ContextCompat.startForegroundService(this@runAutoUpdate, intent)
                     }
