@@ -1,21 +1,41 @@
-# Add project specific ProGuard rules here.
-# You can control the set of applied configuration files using the
-# proguardFiles setting in build.gradle.kts.
-#
-# For more details, see
-#   http://developer.android.com/guide/developing/tools/proguard.html
-
-# If your project uses WebView with JS, uncomment the following
-# and specify the fully qualified class name to the JavaScript interface
-# class:
+# =========================================================
+# --- BAWAAN ANDROID TEMPLATE ---
+# =========================================================
 #-keepclassmembers class fqcn.of.javascript.interface.for.webview {
 #   public *;
 #}
-
-# Uncomment this to preserve the line number information for
-# debugging stack traces.
 #-keepattributes SourceFile,LineNumberTable
-
-# If you keep the line number information, uncomment this to
-# hide the original source file name.
 #-renamesourcefileattribute SourceFile
+
+
+# =========================================================
+# --- ATURAN KHUSUS ADIXTREAM & CLOUDSTREAM (ANTI-CRASH) ---
+# =========================================================
+
+# 1. AMANKAN KODE KEAMANAN UTAMA KITA 
+# (Wajib agar gembok XOR & logika Premium tidak rusak saat diakses)
+-keep class com.lagradost.cloudstream3.PremiumManager { *; }
+-keep class com.lagradost.cloudstream3.utils.RepoProtector { *; }
+
+# 2. AMANKAN STRUKTUR DATA JSON & API
+# (Mencegah error saat parsing data Firebase dan data Film dari provider)
+-keepclassmembers class * {
+    @com.fasterxml.jackson.annotation.** *;
+    @com.google.gson.annotations.** *;
+}
+-keep class com.lagradost.cloudstream3.syncproviders.** { *; }
+-keep class com.lagradost.cloudstream3.responses.** { *; }
+
+# 3. AMANKAN MESIN SCRAPING & JAVASCRIPT
+# (Cloudstream butuh ini agar fitur pemutar video/ekstraktor link tetap jalan)
+-keep class org.mozilla.javascript.** { *; }
+-keep class com.lagradost.cloudstream3.extractors.** { *; }
+
+# 4. ABAIKAN PERINGATAN LIBRARY MENGGANGGU
+# (Memastikan proses "Build APK" sukses dan tidak macet di tengah jalan karena warning)
+-dontwarn okhttp3.**
+-dontwarn okio.**
+-dontwarn javax.annotation.**
+-dontwarn org.conscrypt.**
+-dontwarn org.bouncycastle.**
+-dontwarn com.fasterxml.jackson.databind.**
