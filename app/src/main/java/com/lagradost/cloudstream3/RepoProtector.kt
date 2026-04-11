@@ -6,9 +6,9 @@ import com.lagradost.cloudstream3.BuildConfig
 
 object RepoProtector {
     
-    // KUNCI SEKARANG DIAMBIL DARI BUILDCONFIG (DISUNTIKKAN OLEH GITHUB SECRETS)
-    // Tidak ada lagi teks rahasia yang ditulis manual di file ini!
-    private val XOR_KEY = BuildConfig.XOR_SECRET_KEY
+    // Merakit kembali deretan angka rahasia menjadi teks Kunci secara dinamis di memori
+    // Modder tidak akan menemukan teks kunci di dalam aplikasi
+    private val XOR_KEY = BuildConfig.XOR_SECRET_KEY_BYTES.map { it.toChar() }.joinToString("")
 
     /**
      * Fungsi untuk membuka gembok Hexadecimal + XOR kembali menjadi teks Base64
@@ -22,7 +22,7 @@ object RepoProtector {
                 encryptedBytes[i] = hexInput.substring(i * 2, i * 2 + 2).toInt(16).toByte()
             }
             
-            // 2. Lakukan operasi XOR Decrypt dengan Kunci dari BuildConfig
+            // 2. Lakukan operasi XOR Decrypt dengan Kunci yang dirakit ulang
             val keyBytes = XOR_KEY.toByteArray(StandardCharsets.UTF_8)
             val decryptedBytes = ByteArray(encryptedBytes.size)
             for (i in encryptedBytes.indices) {
@@ -37,16 +37,13 @@ object RepoProtector {
     }
 
     /**
-     * Fungsi utama yang dipanggil oleh aplikasi (misal oleh PremiumManager)
+     * Fungsi utama yang dipanggil oleh aplikasi
      */
     fun decode(encodedHex: String): String {
         return try {
             if (encodedHex.isEmpty()) return ""
             
-            // Langkah A: Buka gembok XOR untuk mendapatkan Base64-nya
             val base64String = xorDecrypt(encodedHex)
-            
-            // Langkah B: Decode Base64 menjadi URL asli
             val bytes = Base64.decode(base64String, Base64.DEFAULT)
             String(bytes, StandardCharsets.UTF_8)
         } catch (e: Exception) {
