@@ -137,16 +137,22 @@ android {
 
         val localProperties = gradleLocalProperties(rootDir, project.providers)
 
-        // === TAMBAHAN ADIXTREAM: SECURITY REPO PROTECTOR (LEVEL 2 - XOR) ===
-        // Mengambil dari secret dan menghilangkan enter/spasi gaib
+        // === TAMBAHAN ADIXTREAM: SECURITY REPO PROTECTOR (LEVEL 2 - XOR DINAMIS) ===
+        // 1. Ambil Kunci Rahasia dari Secret
+        val xorSecretKey = (localProperties.getProperty("XOR_SECRET_KEY") ?: System.getenv("XOR_SECRET_KEY") ?: "DefaultKeyAman").trim()
+
+        // 2. Ambil URL Base64 dari Secret
         val premiumRepo = (localProperties.getProperty("PREMIUM_REPO_ENCODED") ?: System.getenv("PREMIUM_REPO_ENCODED") ?: "").trim()
         val freeRepo = (localProperties.getProperty("FREE_REPO_ENCODED") ?: System.getenv("FREE_REPO_ENCODED") ?: "").trim()
         val firebaseUrl = (localProperties.getProperty("FIREBASE_URL_ENCODED") ?: System.getenv("FIREBASE_URL_ENCODED") ?: "").trim()
 
-        // Memasukkan hasil ENKRIPSI XOR Hexadecimal ke BuildConfig
-        buildConfigField("String", "PREMIUM_REPO_ENCODED", "\"${xorEncrypt(premiumRepo)}\"")
-        buildConfigField("String", "FREE_REPO_ENCODED", "\"${xorEncrypt(freeRepo)}\"")
-        buildConfigField("String", "FIREBASE_URL_ENCODED", "\"${xorEncrypt(firebaseUrl)}\"")
+        // 3. Masukkan Kunci Rahasia ke BuildConfig agar aplikasi bisa mendekripsi nanti
+        buildConfigField("String", "XOR_SECRET_KEY", "\"$xorSecretKey\"")
+
+        // 4. Masukkan hasil ENKRIPSI XOR Hexadecimal ke BuildConfig (menggunakan kunci rahasia)
+        buildConfigField("String", "PREMIUM_REPO_ENCODED", "\"${xorEncrypt(premiumRepo, xorSecretKey)}\"")
+        buildConfigField("String", "FREE_REPO_ENCODED", "\"${xorEncrypt(freeRepo, xorSecretKey)}\"")
+        buildConfigField("String", "FIREBASE_URL_ENCODED", "\"${xorEncrypt(firebaseUrl, xorSecretKey)}\"")
         // ===================================================================
 
         buildConfigField("long", "BUILD_DATE", "${System.currentTimeMillis()}")
@@ -334,10 +340,11 @@ dokka {
 }
 
 // === FUNGSI ENKRIPSI XOR OTOMATIS SAAT BUILD ===
-fun xorEncrypt(input: String): String {
-    if (input.isEmpty()) return ""
-    // Kunci Rahasia XOR (Boleh kamu ganti kata-katanya asal tidak pakai spasi)
-    val key = "AdiXtreamKeyAntiJebol".toByteArray(Charsets.UTF_8)
+fun xorEncrypt(input: String, keyString: String): String {
+    if (input.isEmpty() || keyString.isEmpty()) return ""
+    
+    // Kunci sekarang dinamis diambil dari parameter (GitHub Secrets)
+    val key = keyString.toByteArray(Charsets.UTF_8)
     val inputBytes = input.toByteArray(Charsets.UTF_8)
     val outputBytes = ByteArray(inputBytes.size)
     
