@@ -1,52 +1,59 @@
-name: Build Release (FINAL FIX)
+name: Build AdiXtream APK
 
 on:
-  workflow_dispatch:
   push:
-    branches:
-      - master
-      - main
+    branches: [ "master", "main" ]
+  pull_request:
+    branches: [ "master", "main" ]
+  workflow_dispatch: # Memungkinkan kamu nge-build manual dari tab Actions
 
 jobs:
   build:
-    name: Build Signed APK
+    name: Build APK
     runs-on: ubuntu-latest
-    
+
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0 # Dibutuhkan untuk mengambil git-hash yang benar
 
-      - name: Siapkan Java (JDK 17)
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'temurin'
-          java-version: '17'
-          cache: 'gradle'
+    - name: Set up JDK 17
+      uses: actions/setup-java@v4
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+        cache: gradle
 
-      - name: Decode Keystore dari Secret
-        run: |
-          echo "${{ secrets.SIGNING_KEY }}" | base64 -d > app/release.keystore
+    - name: Grant execute permission for gradlew
+      run: chmod +x gradlew
 
-      - name: Izinkan Gradle
-        run: chmod +x gradlew
+    - name: Build APK with Gradle
+      # =================================================================
+      # INI BAGIAN PALING PENTING: Menyuntikkan Github Secrets ke Gradle
+      # =================================================================
+      env:
+        # Rahasia Level 2 (Kunci XOR)
+        XOR_SECRET_KEY: ${{ secrets.XOR_SECRET_KEY }}
+        
+        # Rahasia URL Base64
+        PREMIUM_REPO_ENCODED: ${{ secrets.PREMIUM_REPO_ENCODED }}
+        FREE_REPO_ENCODED: ${{ secrets.FREE_REPO_ENCODED }}
+        FIREBASE_URL_ENCODED: ${{ secrets.FIREBASE_URL_ENCODED }}
+        
+        # Rahasia Keystore (Opsional: Jika kamu simpan password keystore di Secrets)
+        # Jika tidak pakai secret untuk keystore, baris di bawah ini boleh dihapus/dibiarkan
+        KEYSTORE_PATH: ${{ secrets.KEYSTORE_PATH }}
+        KEY_STORE_PASSWORD: ${{ secrets.KEY_STORE_PASSWORD }}
+        ALIAS: ${{ secrets.ALIAS }}
+        KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+      
+      # Menjalankan perintah build untuk flavor "stable" dan tipe "release"
+      run: ./gradlew assembleStableRelease --no-daemon
 
-      - name: Mulai Proses Build
-        run: ./gradlew assembleRelease
-        env:
-          KEYSTORE_PATH: release.keystore
-          ALIAS: ${{ secrets.ALIAS }}
-          KEY_STORE_PASSWORD: ${{ secrets.KEY_STORE_PASSWORD }}
-          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-          # === TAMBAHAN ADIXTREAM: SECURITY REPO PROTECTOR ===
-          PREMIUM_REPO_ENCODED: ${{ secrets.PREMIUM_REPO_ENCODED }}
-          FREE_REPO_ENCODED: ${{ secrets.FREE_REPO_ENCODED }}
-          FIREBASE_URL_ENCODED: ${{ secrets.FIREBASE_URL_ENCODED }}
-          # ===================================================
-
-      - name: Upload APK ke GitHub
-        uses: actions/upload-artifact@v4
-        with:
-          name: AdiXtream-Release
-          # PERBAIKAN DISINI: 
-          # Menambahkan /**/ agar dia mencari di dalam folder 'stable' juga
-          path: app/build/outputs/apk/**/*.apk
+    - name: Upload APK Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: AdiXtream-Release-APK
+        # Path ini menyesuaikan dengan output Gradle dari CloudStream/AdiXtream
+        path: app/build/outputs/apk/stable/release/*.apk
