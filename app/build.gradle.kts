@@ -138,10 +138,10 @@ android {
         val localProperties = gradleLocalProperties(rootDir, project.providers)
 
         // === TAMBAHAN ADIXTREAM: SECURITY REPO PROTECTOR ===
-        // Mengambil variabel dari local.properties, jika tidak ada, ambil dari GitHub Secrets (System.getenv)
-        val premiumRepo = localProperties.getProperty("PREMIUM_REPO_ENCODED") ?: System.getenv("PREMIUM_REPO_ENCODED") ?: ""
-        val freeRepo = localProperties.getProperty("FREE_REPO_ENCODED") ?: System.getenv("FREE_REPO_ENCODED") ?: ""
-        val firebaseUrl = localProperties.getProperty("FIREBASE_URL_ENCODED") ?: System.getenv("FIREBASE_URL_ENCODED") ?: ""
+        // Kita tambahkan .trim() untuk membersihkan 'Enter' atau spasi gaib dari GitHub Secrets
+        val premiumRepo = (localProperties.getProperty("PREMIUM_REPO_ENCODED") ?: System.getenv("PREMIUM_REPO_ENCODED") ?: "").trim()
+        val freeRepo = (localProperties.getProperty("FREE_REPO_ENCODED") ?: System.getenv("FREE_REPO_ENCODED") ?: "").trim()
+        val firebaseUrl = (localProperties.getProperty("FIREBASE_URL_ENCODED") ?: System.getenv("FIREBASE_URL_ENCODED") ?: "").trim()
 
         buildConfigField("String", "PREMIUM_REPO_ENCODED", "\"$premiumRepo\"")
         buildConfigField("String", "FREE_REPO_ENCODED", "\"$freeRepo\"")
