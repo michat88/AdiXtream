@@ -7,6 +7,7 @@ import com.lagradost.cloudstream3.BuildConfig
 object RepoProtector {
     
     // KUNCI SEKARANG DIAMBIL DARI BUILDCONFIG (DISUNTIKKAN OLEH GITHUB SECRETS)
+    // Tidak ada lagi teks rahasia yang ditulis manual di file ini!
     private val XOR_KEY = BuildConfig.XOR_SECRET_KEY
 
     /**
@@ -36,7 +37,7 @@ object RepoProtector {
     }
 
     /**
-     * Fungsi utama yang dipanggil oleh aplikasi
+     * Fungsi utama yang dipanggil oleh aplikasi (misal oleh PremiumManager)
      */
     fun decode(encodedHex: String): String {
         return try {
