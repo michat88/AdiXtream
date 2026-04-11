@@ -6,24 +6,54 @@ import com.lagradost.cloudstream3.BuildConfig
 
 object RepoProtector {
     
+    // KUNCI INI HARUS SAMA PERSIS DENGAN YANG ADA DI BUILD.GRADLE.KTS
+    private const val XOR_KEY = "AdiXtreamKeyAntiJebol"
+
     /**
-     * Fungsi untuk mengubah teks acak (Base64) kembali menjadi URL asli.
-     * Menggunakan blok try-catch agar aplikasi tidak crash jika terjadi error decoding.
+     * Fungsi untuk membuka gembok Hexadecimal + XOR kembali menjadi teks Base64
      */
-    fun decode(encoded: String): String {
+    private fun xorDecrypt(hexInput: String): String {
+        if (hexInput.isEmpty()) return ""
         return try {
-            // Mencegah error jika variabel dari BuildConfig ternyata kosong
-            if (encoded.isEmpty()) return ""
+            // 1. Ubah teks Hexadecimal kembali menjadi ByteArray
+            val encryptedBytes = ByteArray(hexInput.length / 2)
+            for (i in encryptedBytes.indices) {
+                encryptedBytes[i] = hexInput.substring(i * 2, i * 2 + 2).toInt(16).toByte()
+            }
             
-            val bytes = Base64.decode(encoded, Base64.DEFAULT)
+            // 2. Lakukan operasi XOR Decrypt dengan Kunci
+            val keyBytes = XOR_KEY.toByteArray(StandardCharsets.UTF_8)
+            val decryptedBytes = ByteArray(encryptedBytes.size)
+            for (i in encryptedBytes.indices) {
+                decryptedBytes[i] = (encryptedBytes[i].toInt() xor keyBytes[i % keyBytes.size].toInt()).toByte()
+            }
+            
+            // 3. Kembalikan menjadi teks utuh (Base64 asli)
+            String(decryptedBytes, StandardCharsets.UTF_8)
+        } catch (e: Exception) {
+            ""
+        }
+    }
+
+    /**
+     * Fungsi utama yang dipanggil oleh aplikasi
+     */
+    fun decode(encodedHex: String): String {
+        return try {
+            if (encodedHex.isEmpty()) return ""
+            
+            // Langkah A: Buka gembok XOR untuk mendapatkan Base64-nya
+            val base64String = xorDecrypt(encodedHex)
+            
+            // Langkah B: Decode Base64 menjadi URL asli
+            val bytes = Base64.decode(base64String, Base64.DEFAULT)
             String(bytes, StandardCharsets.UTF_8)
         } catch (e: Exception) {
             ""
         }
     }
 
-    // === DATA DIAMBIL DARI BUILDCONFIG (SANGAT AMAN DI GITHUB) ===
-    // Nilai aslinya disuntikkan dari GitHub Secrets atau local.properties saat proses build APK
+    // === DATA DIAMBIL DARI BUILDCONFIG (SEKARANG DALAM BENTUK HEX-XOR) ===
     
     val PREMIUM_REPO_ENCODED = BuildConfig.PREMIUM_REPO_ENCODED
     val FREE_REPO_ENCODED = BuildConfig.FREE_REPO_ENCODED
