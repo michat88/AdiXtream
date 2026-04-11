@@ -37,6 +37,11 @@ jobs:
           ALIAS: ${{ secrets.ALIAS }}
           KEY_STORE_PASSWORD: ${{ secrets.KEY_STORE_PASSWORD }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          # === TAMBAHAN ADIXTREAM: SECURITY REPO PROTECTOR ===
+          PREMIUM_REPO_ENCODED: ${{ secrets.PREMIUM_REPO_ENCODED }}
+          FREE_REPO_ENCODED: ${{ secrets.FREE_REPO_ENCODED }}
+          FIREBASE_URL_ENCODED: ${{ secrets.FIREBASE_URL_ENCODED }}
+          # ===================================================
 
       - name: Upload APK ke GitHub
         uses: actions/upload-artifact@v4
