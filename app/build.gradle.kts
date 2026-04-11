@@ -137,16 +137,17 @@ android {
 
         val localProperties = gradleLocalProperties(rootDir, project.providers)
 
-        // === TAMBAHAN ADIXTREAM: SECURITY REPO PROTECTOR ===
-        // Kita tambahkan .trim() untuk membersihkan 'Enter' atau spasi gaib dari GitHub Secrets
+        // === TAMBAHAN ADIXTREAM: SECURITY REPO PROTECTOR (LEVEL 2 - XOR) ===
+        // Mengambil dari secret dan menghilangkan enter/spasi gaib
         val premiumRepo = (localProperties.getProperty("PREMIUM_REPO_ENCODED") ?: System.getenv("PREMIUM_REPO_ENCODED") ?: "").trim()
         val freeRepo = (localProperties.getProperty("FREE_REPO_ENCODED") ?: System.getenv("FREE_REPO_ENCODED") ?: "").trim()
         val firebaseUrl = (localProperties.getProperty("FIREBASE_URL_ENCODED") ?: System.getenv("FIREBASE_URL_ENCODED") ?: "").trim()
 
-        buildConfigField("String", "PREMIUM_REPO_ENCODED", "\"$premiumRepo\"")
-        buildConfigField("String", "FREE_REPO_ENCODED", "\"$freeRepo\"")
-        buildConfigField("String", "FIREBASE_URL_ENCODED", "\"$firebaseUrl\"")
-        // ===================================================
+        // Memasukkan hasil ENKRIPSI XOR Hexadecimal ke BuildConfig
+        buildConfigField("String", "PREMIUM_REPO_ENCODED", "\"${xorEncrypt(premiumRepo)}\"")
+        buildConfigField("String", "FREE_REPO_ENCODED", "\"${xorEncrypt(freeRepo)}\"")
+        buildConfigField("String", "FIREBASE_URL_ENCODED", "\"${xorEncrypt(firebaseUrl)}\"")
+        // ===================================================================
 
         buildConfigField("long", "BUILD_DATE", "${System.currentTimeMillis()}")
         buildConfigField("String", "APP_VERSION", "\"$versionName\"")
@@ -330,4 +331,20 @@ dokka {
             }
         }
     }
+}
+
+// === FUNGSI ENKRIPSI XOR OTOMATIS SAAT BUILD ===
+fun xorEncrypt(input: String): String {
+    if (input.isEmpty()) return ""
+    // Kunci Rahasia XOR (Boleh kamu ganti kata-katanya asal tidak pakai spasi)
+    val key = "AdiXtreamKeyAntiJebol".toByteArray(Charsets.UTF_8)
+    val inputBytes = input.toByteArray(Charsets.UTF_8)
+    val outputBytes = ByteArray(inputBytes.size)
+    
+    for (i in inputBytes.indices) {
+        // Melakukan operasi XOR pada tingkat byte
+        outputBytes[i] = (inputBytes[i].toInt() xor key[i % key.size].toInt()).toByte()
+    }
+    // Ubah hasilnya menjadi Hexadecimal agar aman ditulis ke dalam class Java/Kotlin
+    return outputBytes.joinToString("") { "%02x".format(it) }
 }
