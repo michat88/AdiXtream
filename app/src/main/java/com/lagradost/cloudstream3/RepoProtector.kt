@@ -2,6 +2,7 @@ package com.lagradost.cloudstream3.utils
 
 import android.util.Base64
 import java.nio.charset.StandardCharsets
+import com.lagradost.cloudstream3.BuildConfig
 
 object RepoProtector {
     
@@ -11,6 +12,9 @@ object RepoProtector {
      */
     fun decode(encoded: String): String {
         return try {
+            // Mencegah error jika variabel dari BuildConfig ternyata kosong
+            if (encoded.isEmpty()) return ""
+            
             val bytes = Base64.decode(encoded, Base64.DEFAULT)
             String(bytes, StandardCharsets.UTF_8)
         } catch (e: Exception) {
@@ -18,14 +22,10 @@ object RepoProtector {
         }
     }
 
-    // === DATA URL YANG DISANDIKAN (ENCODED) ===
+    // === DATA DIAMBIL DARI BUILDCONFIG (SANGAT AMAN DI GITHUB) ===
+    // Nilai aslinya disuntikkan dari GitHub Secrets atau local.properties saat proses build APK
     
-    // Repo Premium (Amanhnb88)
-    val PREMIUM_REPO_ENCODED = "aHR0cHM6Ly9yYXcuZ2l0aHVidXNlcmNvbnRlbnQuY29tL2FtYW5obmI4OC9QcmVtaXVtX1JlcG8vYnVpbGRzL3JlcG8uanNvbg=="
-
-    // Repo Gratis (Michat88)
-    val FREE_REPO_ENCODED = "aHR0cHM6Ly9yYXcuZ2l0aHVidXNlcmNvbnRlbnQuY29tL21pY2hhdDg4L1JlcG9fR3JhdGlzL3JlZnMvaGVhZHMvYnVpbGRzL3JlcG8uanNvbg=="
-    
-    // URL Firebase AdiXtream
-    val FIREBASE_URL_ENCODED = "aHR0cHM6Ly9hZGl4dHJlYW0tcHJlbWl1bS1kZWZhdWx0LXJ0ZGIuYXNpYS1zb3V0aGVhc3QxLmZpcmViYXNlZGF0YWJhc2UuYXBwLw=="
+    val PREMIUM_REPO_ENCODED = BuildConfig.PREMIUM_REPO_ENCODED
+    val FREE_REPO_ENCODED = BuildConfig.FREE_REPO_ENCODED
+    val FIREBASE_URL_ENCODED = BuildConfig.FIREBASE_URL_ENCODED
 }
