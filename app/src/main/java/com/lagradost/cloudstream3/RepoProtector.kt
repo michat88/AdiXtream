@@ -6,14 +6,14 @@ import com.lagradost.cloudstream3.BuildConfig
 
 object RepoProtector {
     
-    // KUNCI INI HARUS SAMA PERSIS DENGAN YANG ADA DI BUILD.GRADLE.KTS
-    private const val XOR_KEY = "AdiXtreamKeyAntiJebol"
+    // KUNCI SEKARANG DIAMBIL DARI BUILDCONFIG (DISUNTIKKAN OLEH GITHUB SECRETS)
+    private val XOR_KEY = BuildConfig.XOR_SECRET_KEY
 
     /**
      * Fungsi untuk membuka gembok Hexadecimal + XOR kembali menjadi teks Base64
      */
     private fun xorDecrypt(hexInput: String): String {
-        if (hexInput.isEmpty()) return ""
+        if (hexInput.isEmpty() || XOR_KEY.isEmpty()) return ""
         return try {
             // 1. Ubah teks Hexadecimal kembali menjadi ByteArray
             val encryptedBytes = ByteArray(hexInput.length / 2)
@@ -21,7 +21,7 @@ object RepoProtector {
                 encryptedBytes[i] = hexInput.substring(i * 2, i * 2 + 2).toInt(16).toByte()
             }
             
-            // 2. Lakukan operasi XOR Decrypt dengan Kunci
+            // 2. Lakukan operasi XOR Decrypt dengan Kunci dari BuildConfig
             val keyBytes = XOR_KEY.toByteArray(StandardCharsets.UTF_8)
             val decryptedBytes = ByteArray(encryptedBytes.size)
             for (i in encryptedBytes.indices) {
