@@ -6,15 +6,24 @@ import com.lagradost.cloudstream3.BuildConfig
 
 object RepoProtector {
     
-    // KUNCI SEKARANG DIAMBIL DARI BUILDCONFIG (DISUNTIKKAN OLEH GITHUB SECRETS)
-    // Tidak ada lagi teks rahasia yang ditulis manual di file ini!
-    private val XOR_KEY = BuildConfig.XOR_SECRET_KEY
+    // KUNCI DIRAKIT SECARA DINAMIS (ANTI-MODDER)
+    // Tidak ada lagi teks rahasia di dalam file DEX/Smali
+    private val XOR_KEY: String
+        get() {
+            val builder = StringBuilder()
+            // Kita balikkan jebakan matematikanya (dikurangi 7)
+            for (obfuscatedChar in BuildConfig.OBFUSCATED_KEY) {
+                builder.append((obfuscatedChar - 7).toChar())
+            }
+            return builder.toString()
+        }
 
     /**
      * Fungsi untuk membuka gembok Hexadecimal + XOR kembali menjadi teks Base64
      */
     private fun xorDecrypt(hexInput: String): String {
-        if (hexInput.isEmpty() || XOR_KEY.isEmpty()) return ""
+        val currentKey = XOR_KEY
+        if (hexInput.isEmpty() || currentKey.isEmpty()) return ""
         return try {
             // 1. Ubah teks Hexadecimal kembali menjadi ByteArray
             val encryptedBytes = ByteArray(hexInput.length / 2)
@@ -22,8 +31,8 @@ object RepoProtector {
                 encryptedBytes[i] = hexInput.substring(i * 2, i * 2 + 2).toInt(16).toByte()
             }
             
-            // 2. Lakukan operasi XOR Decrypt dengan Kunci dari BuildConfig
-            val keyBytes = XOR_KEY.toByteArray(StandardCharsets.UTF_8)
+            // 2. Lakukan operasi XOR Decrypt dengan Kunci yang dirakit dinamis
+            val keyBytes = currentKey.toByteArray(StandardCharsets.UTF_8)
             val decryptedBytes = ByteArray(encryptedBytes.size)
             for (i in encryptedBytes.indices) {
                 decryptedBytes[i] = (encryptedBytes[i].toInt() xor keyBytes[i % keyBytes.size].toInt()).toByte()
@@ -37,7 +46,7 @@ object RepoProtector {
     }
 
     /**
-     * Fungsi utama yang dipanggil oleh aplikasi (misal oleh PremiumManager)
+     * Fungsi utama yang dipanggil oleh aplikasi
      */
     fun decode(encodedHex: String): String {
         return try {
@@ -54,8 +63,7 @@ object RepoProtector {
         }
     }
 
-    // === DATA DIAMBIL DARI BUILDCONFIG (SEKARANG DALAM BENTUK HEX-XOR) ===
-    
+    // === DATA DIAMBIL DARI BUILDCONFIG (HEX-XOR) ===
     val PREMIUM_REPO_ENCODED = BuildConfig.PREMIUM_REPO_ENCODED
     val FREE_REPO_ENCODED = BuildConfig.FREE_REPO_ENCODED
     val FIREBASE_URL_ENCODED = BuildConfig.FIREBASE_URL_ENCODED
