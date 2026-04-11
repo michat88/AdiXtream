@@ -7,32 +7,30 @@
 #-keepattributes SourceFile,LineNumberTable
 #-renamesourcefileattribute SourceFile
 
-
 # =========================================================
-# --- ATURAN KHUSUS ADIXTREAM & CLOUDSTREAM (ANTI-CRASH) ---
+# --- ATURAN FINAL ADIXTREAM (ANTI-CRASH & PLUGIN FIX) ---
 # =========================================================
 
-# 1. AMANKAN KODE KEAMANAN UTAMA KITA 
-# (Wajib agar gembok XOR & logika Premium tidak rusak saat diakses)
--keep class com.lagradost.cloudstream3.PremiumManager { *; }
--keep class com.lagradost.cloudstream3.utils.RepoProtector { *; }
+# 1. JURUS NINJA: AMANKAN SELURUH API CLOUDSTREAM UNTUK PLUGIN, 
+# TETAPI HANCURKAN/ACAK NAMA PREMIUM MANAGER & REPO PROTECTOR!
+# (Tanda seru '!' artinya mengecualikan file tersebut agar tetap diacak oleh R8)
+-keep class !com.lagradost.cloudstream3.PremiumManager, !com.lagradost.cloudstream3.utils.RepoProtector, com.lagradost.cloudstream3.** { *; }
 
-# 2. AMANKAN STRUKTUR DATA JSON & API
-# (Mencegah error saat parsing data Firebase dan data Film dari provider)
+# 2. AMANKAN LIBRARY EKSTERNAL YANG SERING DIPAKAI OLEH PLUGIN (.cs3)
+-keep class org.jsoup.** { *; }
+-keep class okhttp3.** { *; }
+-keep class com.fasterxml.jackson.** { *; }
+-keep class org.mozilla.javascript.** { *; }
+
+# 3. AMANKAN JACKSON & ANNOTASI JSON (Fix Error InAppUpdater & Campaign Popup)
+-keepattributes Signature, InnerClasses, EnclosingMethod, Exceptions
 -keepclassmembers class * {
     @com.fasterxml.jackson.annotation.** *;
     @com.google.gson.annotations.** *;
 }
--keep class com.lagradost.cloudstream3.syncproviders.** { *; }
--keep class com.lagradost.cloudstream3.responses.** { *; }
+-keep class * extends com.fasterxml.jackson.core.type.TypeReference { *; }
 
-# 3. AMANKAN MESIN SCRAPING & JAVASCRIPT
-# (Cloudstream butuh ini agar fitur pemutar video/ekstraktor link tetap jalan)
--keep class org.mozilla.javascript.** { *; }
--keep class com.lagradost.cloudstream3.extractors.** { *; }
-
-# 4. ABAIKAN PERINGATAN LIBRARY & MISSING CLASSES (FIX R8 BUILD ERROR)
-# (Memastikan proses "Build APK" sukses dan tidak macet di tengah jalan)
+# 4. ABAIKAN PERINGATAN BUILD ERROR AGAR APK SUKSES DIBUAT
 -dontwarn okhttp3.**
 -dontwarn okio.**
 -dontwarn javax.annotation.**
@@ -43,19 +41,3 @@
 -dontwarn java.beans.**
 -dontwarn javax.script.**
 -dontwarn jdk.dynalink.**
-
-# =========================================================
-# 5. AMANKAN SISTEM PLUGIN & UPDATER (FIX JACKSON/JSON PARSE ERROR)
-# =========================================================
-
-# Wajib agar Jackson tidak kehilangan informasi tipe data Generic (TypeReference error)
--keepattributes Signature, InnerClasses, EnclosingMethod, Exceptions
-
-# Wajib agar Jackson tahu cara membuat (construct) objek untuk Plugin & Updater
--keep class com.lagradost.cloudstream3.plugins.** { *; }
--keep class com.lagradost.cloudstream3.models.** { *; }
--keep class com.lagradost.cloudstream3.utils.InAppUpdater.** { *; }
--keep class com.lagradost.cloudstream3.metaproviders.** { *; }
-
-# Amankan spesifik TypeReference bawaan Jackson agar tidak diubah namanya
--keep class * extends com.fasterxml.jackson.core.type.TypeReference { *; }
