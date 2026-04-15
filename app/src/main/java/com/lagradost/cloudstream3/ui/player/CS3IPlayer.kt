@@ -1,6 +1,6 @@
 @file:Suppress("DEPRECATION")
 
-package com.lagradost.cloudstream3.ui.player
+package com.adicinemaxnew.ui.player
 
 import android.annotation.SuppressLint
 import android.content.Context
@@ -70,42 +70,42 @@ import androidx.media3.exoplayer.trackselection.TrackSelector
 import androidx.media3.extractor.mp4.FragmentedMp4Extractor
 import androidx.media3.ui.SubtitleView
 import androidx.preference.PreferenceManager
-import com.lagradost.cloudstream3.APIHolder.getApiFromNameNull
-import com.lagradost.cloudstream3.AudioFile
-import com.lagradost.cloudstream3.CloudStreamApp.Companion.getKey
-import com.lagradost.cloudstream3.CloudStreamApp.Companion.setKey
-import com.lagradost.cloudstream3.CommonActivity.activity
-import com.lagradost.cloudstream3.ErrorLoadingException
-import com.lagradost.cloudstream3.MainActivity.Companion.deleteFileOnExit
-import com.lagradost.cloudstream3.R
-import com.lagradost.cloudstream3.TvType
-import com.lagradost.cloudstream3.USER_AGENT
-import com.lagradost.cloudstream3.app
-import com.lagradost.cloudstream3.mvvm.debugAssert
-import com.lagradost.cloudstream3.mvvm.logError
-import com.lagradost.cloudstream3.mvvm.safe
-import com.lagradost.cloudstream3.ui.player.CustomDecoder.Companion.fixSubtitleAlignment
-import com.lagradost.cloudstream3.ui.player.live.LiveHelper
-import com.lagradost.cloudstream3.ui.player.live.PREFERRED_LIVE_OFFSET
-import com.lagradost.cloudstream3.ui.settings.Globals.EMULATOR
-import com.lagradost.cloudstream3.ui.settings.Globals.PHONE
-import com.lagradost.cloudstream3.ui.settings.Globals.isLayout
-import com.lagradost.cloudstream3.ui.subtitles.SaveCaptionStyle
-import com.lagradost.cloudstream3.ui.subtitles.SubtitlesFragment.Companion.applyStyle
-import com.lagradost.cloudstream3.utils.AppContextUtils.isUsingMobileData
-import com.lagradost.cloudstream3.utils.AppContextUtils.setDefaultFocus
-import com.lagradost.cloudstream3.utils.CLEARKEY_UUID
-import com.lagradost.cloudstream3.utils.Coroutines.ioSafe
-import com.lagradost.cloudstream3.utils.Coroutines.runOnMainThread
-import com.lagradost.cloudstream3.utils.DataStoreHelper.currentAccount
-import com.lagradost.cloudstream3.utils.DrmExtractorLink
-import com.lagradost.cloudstream3.utils.ExtractorLink
-import com.lagradost.cloudstream3.utils.ExtractorLinkPlayList
-import com.lagradost.cloudstream3.utils.ExtractorLinkType
-import com.lagradost.cloudstream3.utils.PLAYREADY_UUID
-import com.lagradost.cloudstream3.utils.SubtitleHelper.fromTagToLanguageName
-import com.lagradost.cloudstream3.utils.WIDEVINE_UUID
-import com.lagradost.cloudstream3.utils.videoskip.VideoSkipStamp
+import com.adicinemaxnew.APIHolder.getApiFromNameNull
+import com.adicinemaxnew.AudioFile
+import com.adicinemaxnew.CloudStreamApp.Companion.getKey
+import com.adicinemaxnew.CloudStreamApp.Companion.setKey
+import com.adicinemaxnew.CommonActivity.activity
+import com.adicinemaxnew.ErrorLoadingException
+import com.adicinemaxnew.MainActivity.Companion.deleteFileOnExit
+import com.adicinemaxnew.R
+import com.adicinemaxnew.TvType
+import com.adicinemaxnew.USER_AGENT
+import com.adicinemaxnew.app
+import com.adicinemaxnew.mvvm.debugAssert
+import com.adicinemaxnew.mvvm.logError
+import com.adicinemaxnew.mvvm.safe
+import com.adicinemaxnew.ui.player.CustomDecoder.Companion.fixSubtitleAlignment
+import com.adicinemaxnew.ui.player.live.LiveHelper
+import com.adicinemaxnew.ui.player.live.PREFERRED_LIVE_OFFSET
+import com.adicinemaxnew.ui.settings.Globals.EMULATOR
+import com.adicinemaxnew.ui.settings.Globals.PHONE
+import com.adicinemaxnew.ui.settings.Globals.isLayout
+import com.adicinemaxnew.ui.subtitles.SaveCaptionStyle
+import com.adicinemaxnew.ui.subtitles.SubtitlesFragment.Companion.applyStyle
+import com.adicinemaxnew.utils.AppContextUtils.isUsingMobileData
+import com.adicinemaxnew.utils.AppContextUtils.setDefaultFocus
+import com.adicinemaxnew.utils.CLEARKEY_UUID
+import com.adicinemaxnew.utils.Coroutines.ioSafe
+import com.adicinemaxnew.utils.Coroutines.runOnMainThread
+import com.adicinemaxnew.utils.DataStoreHelper.currentAccount
+import com.adicinemaxnew.utils.DrmExtractorLink
+import com.adicinemaxnew.utils.ExtractorLink
+import com.adicinemaxnew.utils.ExtractorLinkPlayList
+import com.adicinemaxnew.utils.ExtractorLinkType
+import com.adicinemaxnew.utils.PLAYREADY_UUID
+import com.adicinemaxnew.utils.SubtitleHelper.fromTagToLanguageName
+import com.adicinemaxnew.utils.WIDEVINE_UUID
+import com.adicinemaxnew.utils.videoskip.VideoSkipStamp
 import kotlinx.coroutines.delay
 import okhttp3.Interceptor
 import org.chromium.net.CronetEngine
@@ -1235,14 +1235,14 @@ class CS3IPlayer : IPlayer {
                             true
                         )
                         .setBufferDurationsMs(
-                            DefaultLoadControl.DEFAULT_MIN_BUFFER_MS,
+                            50000,
                             if (videoBufferMs <= 0) {
-                                DefaultLoadControl.DEFAULT_MAX_BUFFER_MS
+                                50000
                             } else {
                                 videoBufferMs.toInt()
                             },
-                            DefaultLoadControl.DEFAULT_BUFFER_FOR_PLAYBACK_MS,
-                            DefaultLoadControl.DEFAULT_BUFFER_FOR_PLAYBACK_AFTER_REBUFFER_MS
+                            250,
+                            500
                         ).build()
                 )
 
