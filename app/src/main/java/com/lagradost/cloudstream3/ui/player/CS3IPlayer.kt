@@ -643,8 +643,8 @@ class CS3IPlayer : IPlayer {
         saveData()
         if (!isAudioOnlyBackground) {
             handleEvent(CSPlayerEvent.Pause, PlayerEventSource.Player)
+            releasePlayer() // <-- KODE YANG DIAKTIFKAN
         }
-        //releasePlayer()
     }
 
     override fun onPause() {
@@ -652,8 +652,8 @@ class CS3IPlayer : IPlayer {
         saveData()
         if (!isAudioOnlyBackground) {
             handleEvent(CSPlayerEvent.Pause, PlayerEventSource.Player)
+            releasePlayer() // <-- KODE YANG DIAKTIFKAN
         }
-        //releasePlayer()
     }
 
     override fun onResume(context: Context) {
