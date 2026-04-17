@@ -987,12 +987,10 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
 
     @Suppress("DEPRECATION_ERROR")
     override fun onCreate(savedInstanceState: Bundle?) {
-        [span_3](start_span)[span_4](start_span)[span_5](start_span)// --- UPDATE DARI CLOUDSTREAM BASE (SSL FIX) ---[span_3](end_span)[span_4](end_span)[span_5](end_span)
         app.initClient(this, ignoreSSL = false)
         @OptIn(UnsafeSSL::class)
         insecureApp.initClient(this, ignoreSSL = true)
-        // ----------------------------------------------
-        
+
         // --- ADIXTREAM: MIGRASI SILENT USER OFFLINE LAMA ---
         PremiumManager.checkAndMigrateOldOfflineUser(this)
         // ---------------------------------------------------
@@ -1027,14 +1025,15 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
 
                 // === ADIXTREAM SECURITY: SAPU BERSIH PLUGIN LAMA ===
                 try {
-                    APIHolder.allProviders.clear()
+                    APIHolder.allProviders.clear() 
                     val pluginDir1 = java.io.File(this@MainActivity.filesDir, "plugins")
                     val pluginDir2 = java.io.File(this@MainActivity.filesDir, "Plugins")
-                    if (pluginDir1.exists()) pluginDir1.deleteRecursively()
+                    if (pluginDir1.exists()) pluginDir1.deleteRecursively() 
                     if (pluginDir2.exists()) pluginDir2.deleteRecursively()
                 } catch (e: Exception) { 
                     logError(e) 
                 }
+                // ===================================================
 
                 currentRepos.forEach { repo ->
                     RepositoryManager.removeRepository(this@MainActivity, repo)
@@ -1105,6 +1104,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                     mainPluginsLoadedEvent.invoke(loadSinglePlugin(this@MainActivity, currentSelected))
                     reloadHomeEvent.invoke(true)
                 }
+                // =========================================================
             }
         }
         // -----------------------------------------------------------
@@ -1572,14 +1572,17 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
             removeKey(USER_SELECTED_HOMEPAGE_API)
         }
 
+        // --- PERBAIKAN ERROR RUN DEFAULT ADIXTREAM ---
         attachBackPressedCallback("MainActivityDefault") {
             setNavigationBarColorCompat(R.attr.primaryGrayBackground)
             updateLocale()
             runDefault()
         }
-        
+  
+        // Start the download queue
         DownloadQueueManager.init(this)
 
+        // === TAMBAHAN ADIXTREAM: CEK POPUP PROMO ===
         CampaignPopupManager.checkAndShowCampaignPopup(this)
     }
 
