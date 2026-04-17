@@ -913,8 +913,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
     override fun onCreate(savedInstanceState: Bundle?) {
         // --- UPSTREAM CLOUDSTREAM SSL FIX ---
         app.initClient(this, ignoreSSL = false)
-        @OptIn(UnsafeSSL::class)
-        insecureApp.initClient(this, ignoreSSL = true)
+        // Baris insecureApp dan UnsafeSSL dihapus agar tidak terjadi error Unresolved reference pada base project AdiXtream
 
         // --- ADIXTREAM MOD: MIGRASI SILENT USER OFFLINE LAMA ---
         PremiumManager.checkAndMigrateOldOfflineUser(this)
