@@ -9,8 +9,6 @@ import android.content.SharedPreferences
 import android.content.res.ColorStateList
 import android.content.res.Configuration
 import android.graphics.Rect
-import android.graphics.drawable.GradientDrawable
-import android.net.Uri
 import android.os.Bundle
 import android.util.AttributeSet
 import android.util.Log
@@ -21,22 +19,16 @@ import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
 import android.view.WindowManager
-import android.widget.Button
 import android.widget.CheckBox
-import android.widget.EditText
 import android.widget.ImageView
 import android.widget.LinearLayout
-import android.widget.ScrollView
-import android.widget.TextView
 import android.widget.Toast
-import androidx.activity.OnBackPressedCallback
 import androidx.activity.result.ActivityResultLauncher
 import androidx.annotation.IdRes
 import androidx.annotation.MainThread
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.cardview.widget.CardView
-import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.content.edit
 import androidx.core.net.toUri
 import androidx.core.view.children
@@ -45,7 +37,6 @@ import androidx.core.view.isGone
 import androidx.core.view.isInvisible
 import androidx.core.view.isVisible
 import androidx.core.view.marginStart
-import androidx.core.view.setPadding
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.NavController
@@ -240,14 +231,13 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
         var nextSearchQuery: String? = null
 
         val afterPluginsLoadedEvent = Event<Boolean>()
-        val mainPluginsLoadedEvent = Event<Boolean>()
+        val mainPluginsLoadedEvent = Event<Boolean>() 
         val afterRepositoryLoadedEvent = Event<Boolean>()
         val bookmarksUpdatedEvent = Event<Boolean>()
         val reloadHomeEvent = Event<Boolean>()
         val reloadLibraryEvent = Event<Boolean>()
         val reloadAccountEvent = Event<Boolean>()
 
-        @Suppress("DEPRECATION_ERROR")
         fun handleAppIntentUrl(
             activity: FragmentActivity?,
             str: String?,
@@ -258,7 +248,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                 fun safeURI(uri: String) = safe { URI(uri) }
 
                 if (str != null && this != null) {
-                    // === PENANGKAP SHARE KITA PINDAH KE PALING ATAS! ===
+                    // === ADIXTREAM SHARE MOD ===
                     if (str.startsWith(APP_STRING_SHARE) || str.startsWith("adixtreamshare")) {
                         try {
                             val rawData = if (str.contains("?data=")) {
@@ -288,8 +278,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                             showToast("Gagal memuat film dari link", Toast.LENGTH_SHORT)
                             return false
                         }
-                    } 
-                    else if (str.startsWith("https://cs.repo")) {
+                    } else if (str.startsWith("https://cs.repo")) {
                         val realUrl = "https://" + str.substringAfter("?")
                         println("Repository url: $realUrl")
                         loadRepository(realUrl)
@@ -298,14 +287,8 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                         for (api in AccountManager.allApis) {
                             if (api.isValidRedirectUrl(str)) {
                                 ioSafe {
-                                    Log.i(TAG, "handleAppIntent $str")
                                     try {
                                         val isSuccessful = api.login(str)
-                                        if (isSuccessful) {
-                                            Log.i(TAG, "authenticated ${api.name}")
-                                        } else {
-                                            Log.i(TAG, "failed to authenticate ${api.name}")
-                                        }
                                         showToast(
                                             if (isSuccessful) {
                                                 txt(R.string.authenticated_user, api.name)
@@ -315,9 +298,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                                         )
                                     } catch (t: Throwable) {
                                         logError(t)
-                                        showToast(
-                                            txt(R.string.authenticated_user_fail, api.name)
-                                        )
+                                        showToast(txt(R.string.authenticated_user_fail, api.name))
                                     }
                                 }
                                 return true
@@ -325,9 +306,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                         }
                         if (str == "$APP_STRING:") {
                             ioSafe {
-                                PluginManager.___DO_NOT_CALL_FROM_A_PLUGIN_hotReloadAllLocalPlugins(
-                                    activity
-                                )
+                                PluginManager.___DO_NOT_CALL_FROM_A_PLUGIN_hotReloadAllLocalPlugins(activity)
                             }
                         }
                     } else if (safeURI(str)?.scheme == APP_STRING_REPO) {
@@ -343,10 +322,8 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                                 logError(t)
                                 query
                             }
-                        activity?.findViewById<BottomNavigationView>(R.id.nav_view)?.selectedItemId =
-                            R.id.navigation_search
-                        activity?.findViewById<NavigationRailView>(R.id.nav_rail_view)?.selectedItemId =
-                            R.id.navigation_search
+                        activity?.findViewById<BottomNavigationView>(R.id.nav_view)?.selectedItemId = R.id.navigation_search
+                        activity?.findViewById<NavigationRailView>(R.id.nav_rail_view)?.selectedItemId = R.id.navigation_search
                     } else if (safeURI(str)?.scheme == APP_STRING_PLAYER) {
                         val uri = str.toUri()
                         val name = uri.getQueryParameter("name")
@@ -354,33 +331,20 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
 
                         navigate(
                             R.id.global_to_navigation_player,
-                            GeneratorPlayer.newInstance(
-                                LinkGenerator(
-                                    listOf(BasicLink(url, name)),
-                                    extract = true,
-                                )
-                            )
+                            GeneratorPlayer.newInstance(LinkGenerator(listOf(BasicLink(url, name)), extract = true))
                         )
                     } else if (safeURI(str)?.scheme == APP_STRING_RESUME_WATCHING) {
-                        val id =
-                            str.substringAfter("$APP_STRING_RESUME_WATCHING://").toIntOrNull()
-                                ?: return false
+                        val id = str.substringAfter("$APP_STRING_RESUME_WATCHING://").toIntOrNull() ?: return false
                         ioSafe {
-                            val resumeWatchingCard =
-                                HomeViewModel.getResumeWatching()?.firstOrNull { it.id == id }
-                                    ?: return@ioSafe
-                            activity.loadSearchResult(
-                                resumeWatchingCard,
-                                START_ACTION_RESUME_LATEST
-                            )
+                            val resumeWatchingCard = HomeViewModel.getResumeWatching()?.firstOrNull { it.id == id } ?: return@ioSafe
+                            activity.loadSearchResult(resumeWatchingCard, START_ACTION_RESUME_LATEST)
                         }
                     } else if (!isWebview) {
                         if (str.startsWith(DOWNLOAD_NAVIGATE_TO)) {
                             this.navigate(R.id.navigation_downloads)
                             return true
                         } else {
-                            val apiName = extraArgs?.getString(API_NAME_EXTRA_KEY)
-                                ?.takeIf { it.isNotBlank() }
+                            val apiName = extraArgs?.getString(API_NAME_EXTRA_KEY)?.takeIf { it.isNotBlank() }
                             if (apiName != null) {
                                 loadResult(str, apiName, "")
                                 return true
@@ -403,7 +367,6 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
         fun centerView(view: View?) {
             if (view == null) return
             try {
-                Log.v(TAG, "centerView: $view")
                 val r = Rect(0, 0, 0, 0)
                 view.getDrawingRect(r)
                 val x = r.centerX()
@@ -416,7 +379,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
             }
         }
     }
-    
+
     var lastPopup: SearchResponse? = null
     fun loadPopup(result: SearchResponse, load: Boolean = true) {
         lastPopup = result
@@ -433,9 +396,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
 
         if (load) {
             viewModel.load(
-                this, result.url, result.apiName, false, if (getApiDubstatusSettings()
-                        .contains(DubStatus.Dubbed)
-                ) DubStatus.Dubbed else DubStatus.Subbed, null
+                this, result.url, result.apiName, false, if (getApiDubstatusSettings().contains(DubStatus.Dubbed)) DubStatus.Dubbed else DubStatus.Subbed, null
             )
         } else {
             viewModel.loadSmall(result)
@@ -455,8 +416,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
         updateLocale() 
         updateTheme(this) 
 
-        val navHostFragment =
-            supportFragmentManager.findFragmentById(R.id.nav_host_fragment) as NavHostFragment
+        val navHostFragment = supportFragmentManager.findFragmentById(R.id.nav_host_fragment) as NavHostFragment
         navHostFragment.navController.currentDestination?.let { updateNavBar(it) }
     }
 
@@ -506,7 +466,6 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                     navRailView.menu.findItem(R.id.navigation_downloads).isChecked = true
                     navView.menu.findItem(R.id.navigation_downloads).isChecked = true
                 }
-
                 in listOf(
                     R.id.navigation_settings,
                     R.id.navigation_subtitles,
@@ -527,7 +486,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
             }
         }
     }
-    
+
     var mSessionManager: SessionManager? = null
     private val mSessionManagerListener: SessionManagerListener<Session> by lazy { SessionManagerListenerImpl() }
 
@@ -565,18 +524,11 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
             if (isCastApiAvailable()) {
                 mSessionManager?.removeSessionManagerListener(mSessionManagerListener)
             }
-        } catch (e: Exception) {
-            logError(e)
-        }
+        } catch (e: Exception) { logError(e) }
     }
 
-    override fun dispatchKeyEvent(event: KeyEvent): Boolean =
-        CommonActivity.dispatchKeyEvent(this, event) ?: super.dispatchKeyEvent(event)
-
-    override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean =
-        CommonActivity.onKeyDown(this, keyCode, event) ?: super.onKeyDown(keyCode, event)
-
-
+    override fun dispatchKeyEvent(event: KeyEvent): Boolean = CommonActivity.dispatchKeyEvent(this, event) ?: super.dispatchKeyEvent(event)
+    override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean = CommonActivity.onKeyDown(this, keyCode, event) ?: super.onKeyDown(keyCode, event)
     override fun onUserLeaveHint() {
         super.onUserLeaveHint()
         onUserLeaveHint(this)
@@ -605,18 +557,13 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                 }
                 if (isLayout(TV)) exitProcess(0) else finish()
             }
-
         builder.show().setDefaultFocus()
     }
 
     override fun onDestroy() {
         filesToDelete.forEach { path ->
             val result = File(path).deleteRecursively()
-            if (result) {
-                Log.d(TAG, "Deleted temporary file: $path")
-            } else {
-                Log.d(TAG, "Failed to delete temporary file: $path")
-            }
+            if (result) Log.d(TAG, "Deleted temporary file: $path") else Log.d(TAG, "Failed to delete temporary file: $path")
         }
         filesToDelete = setOf()
         val broadcastIntent = Intent()
@@ -640,8 +587,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
         handleAppIntentUrl(this, str, false, intent.extras)
     }
 
-    private fun NavDestination.matchDestination(@IdRes destId: Int): Boolean =
-        hierarchy.any { it.id == destId }
+    private fun NavDestination.matchDestination(@IdRes destId: Int): Boolean = hierarchy.any { it.id == destId }
 
     private var lastNavTime = 0L
     private fun onNavDestinationSelected(item: MenuItem, navController: NavController): Boolean {
@@ -672,7 +618,6 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
             val fromView = binding?.navRailView
             if (fromView != null) {
                 fromView.nextFocusRightId = targetView
-
                 for (focusView in arrayOf(
                     R.id.navigation_downloads,
                     R.id.navigation_home,
@@ -709,18 +654,14 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
     private val pluginsLock = Mutex()
     private fun onAllPluginsLoaded(success: Boolean = false) {
         ioSafe {
-            var targetApiToLoad: String? = null
-
             pluginsLock.withLock {
                 synchronized(allProviders) {
                     try {
                         getKey<Array<SettingsGeneral.CustomSite>>(USER_PROVIDER_API)?.let { list ->
                             list.forEach { custom ->
-                                allProviders.firstOrNull { it.javaClass.simpleName == custom.parentJavaClass }
-                                    ?.let {
+                                allProviders.firstOrNull { it.javaClass.simpleName == custom.parentJavaClass }?.let {
                                         allProviders.add(
-                                            it.javaClass.getDeclaredConstructor().newInstance()
-                                                .apply {
+                                            it.javaClass.getDeclaredConstructor().newInstance().apply {
                                                     name = custom.name
                                                     lang = custom.lang
                                                     mainUrl = custom.url.trimEnd('/')
@@ -731,26 +672,10 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                         }
                         apis = allProviders.distinctBy { it.lang + it.name + it.mainUrl + it.javaClass.name }
                         APIHolder.apiMap = null
-
-                        val availableProviders = apis.filter { it.hasMainPage }
-                        val currentSelected = DataStoreHelper.currentHomePage
-
-                        if (currentSelected == null || availableProviders.none { it.name == currentSelected }) {
-                            if (availableProviders.isNotEmpty()) {
-                                targetApiToLoad = availableProviders.first().name
-                                DataStoreHelper.currentHomePage = targetApiToLoad
-                            }
-                        }
-
                     } catch (e: Exception) {
                         logError(e)
                     }
                 }
-            }
-
-            targetApiToLoad?.let { apiName ->
-                mainPluginsLoadedEvent.invoke(loadSinglePlugin(this@MainActivity, apiName))
-                reloadHomeEvent.invoke(true)
             }
         }
     }
@@ -765,6 +690,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
         syncViewModel = ViewModelProvider(this)[SyncViewModel::class.java]
         return super.onCreateView(name, context, attrs)
     }
+
     private fun hidePreviewPopupDialog() {
         bottomPreviewPopup.dismissSafe(this)
         bottomPreviewPopup = null
@@ -777,7 +703,6 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
         val ret = (bottomPreviewBinding ?: run {
             val builder: Dialog
             val layout: Int
-
             if (isLayout(PHONE)) {
                 builder = BottomSheetDialog(this)
                 layout = R.layout.bottom_resultview_preview
@@ -786,7 +711,6 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                 layout = R.layout.bottom_resultview_preview_tv
                 builder.window?.setGravity(Gravity.CENTER_VERTICAL or Gravity.END)
             }
-
             val root = layoutInflater.inflate(layout, null, false)
             val binding = BottomResultviewPreviewBinding.bind(root)
 
@@ -806,6 +730,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
     }
 
     var binding: ActivityMainBinding? = null
+
     object TvFocus {
         data class FocusTarget(
             val width: Int,
@@ -838,6 +763,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                     postDelayed({ updateFocusView(lastFocus.get(), same = false) }, 300)
                 }
             }
+            
         private val attachListener: View.OnAttachStateChangeListener =
             object : View.OnAttachStateChangeListener {
                 override fun onViewAttachedToWindow(v: View) { updateFocusView(v) }
@@ -985,14 +911,16 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
 
     @Suppress("DEPRECATION_ERROR")
     override fun onCreate(savedInstanceState: Bundle?) {
-        app.initClient(this)
-        
-        // --- ADIXTREAM: MIGRASI SILENT USER OFFLINE LAMA ---
+        // --- UPSTREAM CLOUDSTREAM SSL FIX ---
+        app.initClient(this, ignoreSSL = false)
+        @OptIn(UnsafeSSL::class)
+        insecureApp.initClient(this, ignoreSSL = true)
+
+        // --- ADIXTREAM MOD: MIGRASI SILENT USER OFFLINE LAMA ---
         PremiumManager.checkAndMigrateOldOfflineUser(this)
-        // ---------------------------------------------------
+        // -------------------------------------------------------
 
         val settingsManager = PreferenceManager.getDefaultSharedPreferences(this)
-
         setLastError(this)
 
         val settingsForProvider = SettingsJson()
@@ -1004,122 +932,15 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
         setNavigationBarColorCompat(R.attr.primaryGrayBackground)
         updateLocale()
         super.onCreate(savedInstanceState)
-
-        // --- LOGIKA REPOSITORY & UPDATE (ADIXTREAM ANTI-BUG V4 - POLLING SYSTEM) ---
-        ioSafe {
-            val isPremium = PremiumManager.isPremium(this@MainActivity)
-            val targetRepoUrl = if (isPremium) PremiumManager.PREMIUM_REPO_URL else PremiumManager.FREE_REPO_URL
-            
-            val currentRepos = RepositoryManager.getRepositories()
-            val hasTargetRepo = currentRepos.any { it.url == targetRepoUrl }
-            val hasInvalidRepos = currentRepos.any { it.url != targetRepoUrl }
-            
-            var isRepoChanged = false
-
-            if (!hasTargetRepo || hasInvalidRepos) {
-                Log.d(TAG, "Status Repo tidak sinkron. Melakukan penyesuaian otomatis...")
-
-                // === ADIXTREAM SECURITY: SAPU BERSIH PLUGIN LAMA ===
-                // Jika repo berubah (misal dari Premium kembali ke Free karena Banned),
-                // kita WAJIB menghapus file fisik plugin premium yang sudah terlanjur didownload.
-                try {
-                    APIHolder.allProviders.clear() // Kosongkan memori sementara
-                    val pluginDir1 = java.io.File(this@MainActivity.filesDir, "plugins")
-                    val pluginDir2 = java.io.File(this@MainActivity.filesDir, "Plugins")
-                    if (pluginDir1.exists()) pluginDir1.deleteRecursively() // Hapus file fisik
-                    if (pluginDir2.exists()) pluginDir2.deleteRecursively()
-                } catch (e: Exception) { 
-                    logError(e) 
-                }
-                // ===================================================
-
-                currentRepos.forEach { repo ->
-                    RepositoryManager.removeRepository(this@MainActivity, repo)
-                }
-                try {
-                    val parsedRepo = RepositoryManager.parseRepository(targetRepoUrl)
-                    if (parsedRepo != null) {
-                        val repoData = RepositoryData(parsedRepo.iconUrl, parsedRepo.name, targetRepoUrl)
-                        RepositoryManager.addRepository(repoData)
-                        isRepoChanged = true 
-                        Log.d(TAG, "Repo berhasil disinkronkan ke: $targetRepoUrl")
-                    }
-                } catch (e: Exception) { logError(e) }
-            }
-
-            // Gunakan delay dari coroutine, bukan Thread.sleep
-            kotlinx.coroutines.delay(1000)
-
-            if (lastError == null && !PluginManager.checkSafeModeFile()) {
-                if (isRepoChanged) {
-                    try {
-                        Log.d(TAG, "Mengunduh plugin dari Repo Baru...")
-                        // Download berjalan di background
-                        PluginsViewModel.downloadAll(this@MainActivity, targetRepoUrl, null)
-                        PluginManager.___DO_NOT_CALL_FROM_A_PLUGIN_loadAllOnlinePlugins(this@MainActivity)
-                        PluginManager.___DO_NOT_CALL_FROM_A_PLUGIN_loadAllLocalPlugins(this@MainActivity, false)
-                    } catch (e: Exception) { logError(e) }
-                } else {
-                    if (settingsManager.getBoolean(getString(R.string.auto_update_plugins_key), true)) {
-                        PluginManager.___DO_NOT_CALL_FROM_A_PLUGIN_updateAllOnlinePluginsAndLoadThem(this@MainActivity)
-                    } else {
-                        PluginManager.___DO_NOT_CALL_FROM_A_PLUGIN_loadAllOnlinePlugins(this@MainActivity)
-                    }
-
-                    val autoDownloadPlugin = AutoDownloadMode.getEnum(settingsManager.getInt(getString(R.string.auto_download_plugins_key), 0)) ?: AutoDownloadMode.Disable
-                    if (autoDownloadPlugin != AutoDownloadMode.Disable) {
-                        PluginManager.___DO_NOT_CALL_FROM_A_PLUGIN_downloadNotExistingPluginsAndLoad(this@MainActivity, autoDownloadPlugin)
-                    }
-                    PluginManager.___DO_NOT_CALL_FROM_A_PLUGIN_loadAllLocalPlugins(this@MainActivity, false)
-                }
-
-                // === SOLUSI FINAL: OPTIMASI POLLING COROUTINES & FILTER NSFW ===
-                val isAdultEnabled = settingsManager.getBoolean(getString(R.string.enable_nsfw_on_providers_key), false)
-
-                // Gunakan withTimeoutOrNull untuk membatasi waktu tunggu maksimal 15 detik (15000 ms)
-                kotlinx.coroutines.withTimeoutOrNull(15_000L) {
-                    // Cek terus setiap 500ms sampai ada setidaknya 1 provider valid
-                    while (APIHolder.allProviders.none { provider -> 
-                        provider.hasMainPage && (isAdultEnabled || !provider.supportedTypes.contains(com.lagradost.cloudstream3.TvType.NSFW)) 
-                    }) {
-                        kotlinx.coroutines.delay(500)
-                    }
-                }
-
-                // Ambil daftar provider yang sudah terfilter dengan aman
-                val availableProviders = APIHolder.allProviders.filter { provider ->
-                    provider.hasMainPage && (isAdultEnabled || !provider.supportedTypes.contains(com.lagradost.cloudstream3.TvType.NSFW))
-                }
-                
-                val currentSelected = DataStoreHelper.currentHomePage
-
-                // Jika daftar plugin sudah muncul, otomatis pilih urutan pertama
-                if (currentSelected == null || availableProviders.none { it.name == currentSelected }) {
-                    if (availableProviders.isNotEmpty()) {
-                        val targetApiToLoad = availableProviders.first().name
-                        DataStoreHelper.currentHomePage = targetApiToLoad
-                        Log.d(TAG, "Auto-select plugin sukses dieksekusi: $targetApiToLoad")
-                        mainPluginsLoadedEvent.invoke(loadSinglePlugin(this@MainActivity, targetApiToLoad))
-                        reloadHomeEvent.invoke(true)
-                    } else {
-                        mainPluginsLoadedEvent.invoke(false)
-                    }
-                } else {
-                    // Eksekusi jika tidak ada perubahan repo
-                    mainPluginsLoadedEvent.invoke(loadSinglePlugin(this@MainActivity, currentSelected))
-                    reloadHomeEvent.invoke(true)
-                }
-                // =========================================================
-            }
-        }
-        // -----------------------------------------------------------
-
+        
         try {
             if (isCastApiAvailable()) {
                 CastContext.getSharedInstance(this) { it.run() }
                     .addOnSuccessListener { mSessionManager = it.sessionManager }
             }
-        } catch (t: Throwable) { logError(t) }
+        } catch (t: Throwable) {
+            logError(t)
+        }
 
         window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN)
         updateTv()
@@ -1132,7 +953,6 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                 if (lastAppAutoBackup.isNotEmpty()) {
                     // ==========================================
                     // ADIXTREAM MOD: Mematikan auto-backup diam-diam saat update aplikasi.
-                    // Baris di bawah ini dijadikan komentar agar mudah dikembalikan.
                     // safe { backup(this) }
                     // ==========================================
                     safe { PluginManager.deleteAllOatFiles(this) }
@@ -1194,13 +1014,6 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
             fixSystemBarsPadding(navRailView, widthResId = R.dimen.nav_rail_view_width, padRight = false, padTop = false)
         }
 
-        // --- BYPASS SETUP AWAL ADIXTREAM ---
-        if (getKey(HAS_DONE_SETUP_KEY, false) != true) {
-             setKey(HAS_DONE_SETUP_KEY, true)
-             updateLocale() 
-        }
-        // -----------------------------------
-
         val padding = settingsManager.getInt(getString(R.string.overscan_key), 0).toPx
         binding?.homeRoot?.setPadding(padding, padding, padding, padding)
 
@@ -1210,15 +1023,9 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
 
         if (isLayout(PHONE) && isAuthEnabled(this) && noAccounts) {
             if (deviceHasPasswordPinLock(this)) {
-                // 1. Sembunyikan konten utama aplikasi dulu supaya aman
+                startBiometricAuthentication(this, R.string.biometric_authentication_title, false)
+                promptInfo?.let { prompt -> biometricPrompt?.authenticate(prompt) }
                 binding?.navHostFragment?.isInvisible = true
-                
-                // 2. Gunakan root.post untuk menunda pemunculan dialog 
-                // sampai layar aplikasi benar-benar selesai dimuat & siap
-                binding?.root?.post {
-                    startBiometricAuthentication(this@MainActivity, R.string.biometric_authentication_title, false)
-                    promptInfo?.let { prompt -> biometricPrompt?.authenticate(prompt) }
-                }
             }
         }
 
@@ -1239,7 +1046,103 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
 
         if (PluginManager.checkSafeModeFile()) {
             safe { showToast(R.string.safe_mode_file, Toast.LENGTH_LONG) }
-        } else if (lastError != null) {
+        } else if (lastError == null) {
+            
+            // === ADIXTREAM MOD: LOGIKA REPOSITORY & UPDATE (ANTI-BUG V4 - POLLING SYSTEM) ===
+            ioSafe {
+                val isPremium = PremiumManager.isPremium(this@MainActivity)
+                val targetRepoUrl = if (isPremium) PremiumManager.PREMIUM_REPO_URL else PremiumManager.FREE_REPO_URL
+                
+                val currentRepos = RepositoryManager.getRepositories()
+                val hasTargetRepo = currentRepos.any { it.url == targetRepoUrl }
+                val hasInvalidRepos = currentRepos.any { it.url != targetRepoUrl }
+                
+                var isRepoChanged = false
+
+                if (!hasTargetRepo || hasInvalidRepos) {
+                    Log.d(TAG, "Status Repo tidak sinkron. Melakukan penyesuaian otomatis...")
+
+                    try {
+                        APIHolder.allProviders.clear() 
+                        val pluginDir1 = java.io.File(this@MainActivity.filesDir, "plugins")
+                        val pluginDir2 = java.io.File(this@MainActivity.filesDir, "Plugins")
+                        if (pluginDir1.exists()) pluginDir1.deleteRecursively() 
+                        if (pluginDir2.exists()) pluginDir2.deleteRecursively()
+                    } catch (e: Exception) { 
+                        logError(e) 
+                    }
+
+                    currentRepos.forEach { repo ->
+                        RepositoryManager.removeRepository(this@MainActivity, repo)
+                    }
+                    try {
+                        val parsedRepo = RepositoryManager.parseRepository(targetRepoUrl)
+                        if (parsedRepo != null) {
+                            val repoData = RepositoryData(parsedRepo.iconUrl, parsedRepo.name, targetRepoUrl)
+                            RepositoryManager.addRepository(repoData)
+                            isRepoChanged = true 
+                            Log.d(TAG, "Repo berhasil disinkronkan ke: $targetRepoUrl")
+                        }
+                    } catch (e: Exception) { logError(e) }
+                }
+
+                kotlinx.coroutines.delay(1000)
+
+                if (isRepoChanged) {
+                    try {
+                        Log.d(TAG, "Mengunduh plugin dari Repo Baru...")
+                        PluginsViewModel.downloadAll(this@MainActivity, targetRepoUrl, null)
+                        PluginManager.___DO_NOT_CALL_FROM_A_PLUGIN_loadAllOnlinePlugins(this@MainActivity)
+                        PluginManager.___DO_NOT_CALL_FROM_A_PLUGIN_loadAllLocalPlugins(this@MainActivity, false)
+                    } catch (e: Exception) { logError(e) }
+                } else {
+                    if (settingsManager.getBoolean(getString(R.string.auto_update_plugins_key), true)) {
+                        PluginManager.___DO_NOT_CALL_FROM_A_PLUGIN_updateAllOnlinePluginsAndLoadThem(this@MainActivity)
+                    } else {
+                        PluginManager.___DO_NOT_CALL_FROM_A_PLUGIN_loadAllOnlinePlugins(this@MainActivity)
+                    }
+
+                    val autoDownloadPlugin = AutoDownloadMode.getEnum(settingsManager.getInt(getString(R.string.auto_download_plugins_key), 0)) ?: AutoDownloadMode.Disable
+                    if (autoDownloadPlugin != AutoDownloadMode.Disable) {
+                        PluginManager.___DO_NOT_CALL_FROM_A_PLUGIN_downloadNotExistingPluginsAndLoad(this@MainActivity, autoDownloadPlugin)
+                    }
+                    PluginManager.___DO_NOT_CALL_FROM_A_PLUGIN_loadAllLocalPlugins(this@MainActivity, false)
+                }
+
+                val isAdultEnabled = settingsManager.getBoolean(getString(R.string.enable_nsfw_on_providers_key), false)
+
+                kotlinx.coroutines.withTimeoutOrNull(15_000L) {
+                    while (APIHolder.allProviders.none { provider -> 
+                        provider.hasMainPage && (isAdultEnabled || !provider.supportedTypes.contains(com.lagradost.cloudstream3.TvType.NSFW)) 
+                    }) {
+                        kotlinx.coroutines.delay(500)
+                    }
+                }
+
+                val availableProviders = APIHolder.allProviders.filter { provider ->
+                    provider.hasMainPage && (isAdultEnabled || !provider.supportedTypes.contains(com.lagradost.cloudstream3.TvType.NSFW))
+                }
+                
+                val currentSelected = DataStoreHelper.currentHomePage
+
+                if (currentSelected == null || availableProviders.none { it.name == currentSelected }) {
+                    if (availableProviders.isNotEmpty()) {
+                        val targetApiToLoad = availableProviders.first().name
+                        DataStoreHelper.currentHomePage = targetApiToLoad
+                        Log.d(TAG, "Auto-select plugin sukses dieksekusi: $targetApiToLoad")
+                        mainPluginsLoadedEvent.invoke(loadSinglePlugin(this@MainActivity, targetApiToLoad))
+                        reloadHomeEvent.invoke(true)
+                    } else {
+                        mainPluginsLoadedEvent.invoke(false)
+                    }
+                } else {
+                    mainPluginsLoadedEvent.invoke(loadSinglePlugin(this@MainActivity, currentSelected))
+                    reloadHomeEvent.invoke(true)
+                }
+            }
+            // =========================================================================
+
+        } else {
             val builder: AlertDialog.Builder = AlertDialog.Builder(this)
             builder.setTitle(R.string.safe_mode_title)
             builder.setMessage(R.string.safe_mode_description)
@@ -1409,6 +1312,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                 }
             }
         }
+
         ioSafe {
             this@MainActivity.runOnUiThread {
                 libraryViewModel = ViewModelProvider(this@MainActivity)[LibraryViewModel::class.java]
@@ -1586,14 +1490,19 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
             removeKey(USER_SELECTED_HOMEPAGE_API)
         }
 
-        // --- PERBAIKAN ERROR RUN DEFAULT ADIXTREAM ---
+        // --- BYPASS SETUP AWAL ADIXTREAM ---
+        if (getKey(HAS_DONE_SETUP_KEY, false) != true) {
+             setKey(HAS_DONE_SETUP_KEY, true)
+             updateLocale() 
+        }
+        // -----------------------------------
+
         attachBackPressedCallback("MainActivityDefault") {
             setNavigationBarColorCompat(R.attr.primaryGrayBackground)
             updateLocale()
             runDefault()
         }
         
-        // Start the download queue
         DownloadQueueManager.init(this)
 
         // === TAMBAHAN ADIXTREAM: CEK POPUP PROMO ===
