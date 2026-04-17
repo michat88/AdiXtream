@@ -2,6 +2,7 @@ package com.lagradost.cloudstream3.network
 
 import android.content.Context
 import androidx.preference.PreferenceManager
+import com.lagradost.cloudstream3.Prerelease
 import com.lagradost.cloudstream3.R
 import com.lagradost.cloudstream3.USER_AGENT
 import com.lagradost.cloudstream3.mvvm.safe
@@ -15,22 +16,43 @@ import org.conscrypt.Conscrypt
 import java.io.File
 import java.security.Security
 
+// Backwards compatible constructor, mark as deprecated later
 fun Requests.initClient(context: Context) {
     this.baseClient = buildDefaultClient(context)
 }
 
+/** Only use ignoreSSL if you know what you are doing*/
+@Prerelease
+fun Requests.initClient(context: Context, ignoreSSL: Boolean = false) {
+    this.baseClient = buildDefaultClient(context, ignoreSSL)
+}
+
+// Backwards compatible constructor, mark as deprecated later
 fun buildDefaultClient(context: Context): OkHttpClient {
+    return buildDefaultClient(context, false)
+}
+
+/** Only use ignoreSSL if you know what you are doing*/
+@Prerelease
+fun buildDefaultClient(context: Context, ignoreSSL: Boolean = false): OkHttpClient {
     safe { Security.insertProviderAt(Conscrypt.newProvider(), 1) }
-    
+
     val settingsManager = PreferenceManager.getDefaultSharedPreferences(context)
     
+    // ==========================================
+    // MODIFIKASI ADIXTREAM (DIPERTAHANKAN)
     // PERBAIKAN: Ubah nilai default 0 menjadi 1 (Google DNS)
+    // ==========================================
     val dns = settingsManager.getInt(context.getString(R.string.dns_pref), 1)
     
     val baseClient = OkHttpClient.Builder()
         .followRedirects(true)
         .followSslRedirects(true)
-        .ignoreAllSSLErrors()
+        .apply {
+            if (ignoreSSL) {
+                ignoreAllSSLErrors()
+            }
+        }
         .cache(
             // Note that you need to add a ResponseInterceptor to make this 100% active.
             // The server response dictates if and when stuff should be cached.
@@ -54,11 +76,6 @@ fun buildDefaultClient(context: Context): OkHttpClient {
         .build()
     return baseClient
 }
-
-//val Request.cookies: Map<String, String>
-//    get() {
-//        return this.headers.getCookies("Cookie")
-//    }
 
 private val DEFAULT_HEADERS = mapOf("user-agent" to USER_AGENT)
 
