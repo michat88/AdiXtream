@@ -95,6 +95,7 @@ import com.lagradost.cloudstream3.mvvm.safe
 import com.lagradost.cloudstream3.mvvm.observe
 import com.lagradost.cloudstream3.mvvm.observeNullable
 import com.lagradost.cloudstream3.network.initClient
+import com.lagradost.cloudstream3.network.UnsafeSSL
 import com.lagradost.cloudstream3.plugins.PluginManager
 import com.lagradost.cloudstream3.plugins.PluginManager.___DO_NOT_CALL_FROM_A_PLUGIN_loadAllOnlinePlugins
 import com.lagradost.cloudstream3.plugins.PluginManager.loadSinglePlugin
@@ -878,7 +879,8 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
             }
 
             val wasGone = focusOutline.isGone
-            val visible = newFocus != null && newFocus.measuredHeight > 0 && newFocus.measuredWidth > 0 && newFocus.isShown && newFocus.tag != "tv_no_focus_tag"
+            val visible = newFocus != null && newFocus.measuredHeight > 0 && 
+                newFocus.measuredWidth > 0 && newFocus.isShown && newFocus.tag != "tv_no_focus_tag"
             focusOutline.isVisible = visible
 
             if (newFocus != null) {
@@ -985,7 +987,11 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
 
     @Suppress("DEPRECATION_ERROR")
     override fun onCreate(savedInstanceState: Bundle?) {
-        app.initClient(this)
+        [span_3](start_span)[span_4](start_span)[span_5](start_span)// --- UPDATE DARI CLOUDSTREAM BASE (SSL FIX) ---[span_3](end_span)[span_4](end_span)[span_5](end_span)
+        app.initClient(this, ignoreSSL = false)
+        @OptIn(UnsafeSSL::class)
+        insecureApp.initClient(this, ignoreSSL = true)
+        // ----------------------------------------------
         
         // --- ADIXTREAM: MIGRASI SILENT USER OFFLINE LAMA ---
         PremiumManager.checkAndMigrateOldOfflineUser(this)
@@ -1020,18 +1026,15 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                 Log.d(TAG, "Status Repo tidak sinkron. Melakukan penyesuaian otomatis...")
 
                 // === ADIXTREAM SECURITY: SAPU BERSIH PLUGIN LAMA ===
-                // Jika repo berubah (misal dari Premium kembali ke Free karena Banned),
-                // kita WAJIB menghapus file fisik plugin premium yang sudah terlanjur didownload.
                 try {
-                    APIHolder.allProviders.clear() // Kosongkan memori sementara
+                    APIHolder.allProviders.clear()
                     val pluginDir1 = java.io.File(this@MainActivity.filesDir, "plugins")
                     val pluginDir2 = java.io.File(this@MainActivity.filesDir, "Plugins")
-                    if (pluginDir1.exists()) pluginDir1.deleteRecursively() // Hapus file fisik
+                    if (pluginDir1.exists()) pluginDir1.deleteRecursively()
                     if (pluginDir2.exists()) pluginDir2.deleteRecursively()
                 } catch (e: Exception) { 
                     logError(e) 
                 }
-                // ===================================================
 
                 currentRepos.forEach { repo ->
                     RepositoryManager.removeRepository(this@MainActivity, repo)
@@ -1047,14 +1050,12 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                 } catch (e: Exception) { logError(e) }
             }
 
-            // Gunakan delay dari coroutine, bukan Thread.sleep
             kotlinx.coroutines.delay(1000)
 
             if (lastError == null && !PluginManager.checkSafeModeFile()) {
                 if (isRepoChanged) {
                     try {
                         Log.d(TAG, "Mengunduh plugin dari Repo Baru...")
-                        // Download berjalan di background
                         PluginsViewModel.downloadAll(this@MainActivity, targetRepoUrl, null)
                         PluginManager.___DO_NOT_CALL_FROM_A_PLUGIN_loadAllOnlinePlugins(this@MainActivity)
                         PluginManager.___DO_NOT_CALL_FROM_A_PLUGIN_loadAllLocalPlugins(this@MainActivity, false)
@@ -1076,9 +1077,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                 // === SOLUSI FINAL: OPTIMASI POLLING COROUTINES & FILTER NSFW ===
                 val isAdultEnabled = settingsManager.getBoolean(getString(R.string.enable_nsfw_on_providers_key), false)
 
-                // Gunakan withTimeoutOrNull untuk membatasi waktu tunggu maksimal 15 detik (15000 ms)
                 kotlinx.coroutines.withTimeoutOrNull(15_000L) {
-                    // Cek terus setiap 500ms sampai ada setidaknya 1 provider valid
                     while (APIHolder.allProviders.none { provider -> 
                         provider.hasMainPage && (isAdultEnabled || !provider.supportedTypes.contains(com.lagradost.cloudstream3.TvType.NSFW)) 
                     }) {
@@ -1086,14 +1085,12 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                     }
                 }
 
-                // Ambil daftar provider yang sudah terfilter dengan aman
                 val availableProviders = APIHolder.allProviders.filter { provider ->
                     provider.hasMainPage && (isAdultEnabled || !provider.supportedTypes.contains(com.lagradost.cloudstream3.TvType.NSFW))
                 }
                 
                 val currentSelected = DataStoreHelper.currentHomePage
 
-                // Jika daftar plugin sudah muncul, otomatis pilih urutan pertama
                 if (currentSelected == null || availableProviders.none { it.name == currentSelected }) {
                     if (availableProviders.isNotEmpty()) {
                         val targetApiToLoad = availableProviders.first().name
@@ -1105,11 +1102,9 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                         mainPluginsLoadedEvent.invoke(false)
                     }
                 } else {
-                    // Eksekusi jika tidak ada perubahan repo
                     mainPluginsLoadedEvent.invoke(loadSinglePlugin(this@MainActivity, currentSelected))
                     reloadHomeEvent.invoke(true)
                 }
-                // =========================================================
             }
         }
         // -----------------------------------------------------------
@@ -1130,11 +1125,6 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
             if (appVer != lastAppAutoBackup) {
                 setKey("VERSION_NAME", BuildConfig.VERSION_NAME)
                 if (lastAppAutoBackup.isNotEmpty()) {
-                    // ==========================================
-                    // ADIXTREAM MOD: Mematikan auto-backup diam-diam saat update aplikasi.
-                    // Baris di bawah ini dijadikan komentar agar mudah dikembalikan.
-                    // safe { backup(this) }
-                    // ==========================================
                     safe { PluginManager.deleteAllOatFiles(this) }
                 }
             }
@@ -1210,11 +1200,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
 
         if (isLayout(PHONE) && isAuthEnabled(this) && noAccounts) {
             if (deviceHasPasswordPinLock(this)) {
-                // 1. Sembunyikan konten utama aplikasi dulu supaya aman
                 binding?.navHostFragment?.isInvisible = true
-                
-                // 2. Gunakan root.post untuk menunda pemunculan dialog 
-                // sampai layar aplikasi benar-benar selesai dimuat & siap
                 binding?.root?.post {
                     startBiometricAuthentication(this@MainActivity, R.string.biometric_authentication_title, false)
                     promptInfo?.let { prompt -> biometricPrompt?.authenticate(prompt) }
@@ -1586,17 +1572,14 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
             removeKey(USER_SELECTED_HOMEPAGE_API)
         }
 
-        // --- PERBAIKAN ERROR RUN DEFAULT ADIXTREAM ---
         attachBackPressedCallback("MainActivityDefault") {
             setNavigationBarColorCompat(R.attr.primaryGrayBackground)
             updateLocale()
             runDefault()
         }
         
-        // Start the download queue
         DownloadQueueManager.init(this)
 
-        // === TAMBAHAN ADIXTREAM: CEK POPUP PROMO ===
         CampaignPopupManager.checkAndShowCampaignPopup(this)
     }
 
