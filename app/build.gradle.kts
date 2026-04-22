@@ -8,7 +8,7 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinJvmCompile
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.dokka)
-    alias(libs.plugins.kotlin.android)
+    // Plugin kotlin.android dihapus di sini agar sesuai dengan base Cloudstream baru
 }
 
 val javaTarget = JvmTarget.fromTarget(libs.versions.jvmTarget.get())
@@ -29,11 +29,13 @@ abstract class GenerateGitHashTask : DefaultTask() {
     @TaskAction
     fun generate() {
         val head = headFile.get().asFile
+      
         val hash = try {
             if (head.exists()) {
                 val headContent = head.readText().trim()
                 if (headContent.startsWith("ref:")) {
                     val refPath = headContent.substring(5).trim()
+                    
                     val commitFile = File(head.parentFile, refPath)
                     if (commitFile.exists()) commitFile.readText().trim() else ""
                 } else headContent 
@@ -60,12 +62,14 @@ fun getGitCommitHash(): String {
         val headFile = file("${project.rootDir}/.git/HEAD")
         if (headFile.exists()) {
             val headContent = headFile.readText().trim()
+     
             if (headContent.startsWith("ref:")) {
                 val refPath = headContent.substring(5).trim()
                 val commitFile = file("${project.rootDir}/.git/$refPath")
                 if (commitFile.exists()) commitFile.readText().trim() else ""
             } else headContent
         } else {
+         
             ""
         }.take(7)
     } catch (_: Throwable) {
@@ -91,10 +95,6 @@ android {
                 GenerateGitHashTask::outputDir
             )
         }
-    }
-
-    viewBinding {
-        enable = true
     }
 
     signingConfigs {
@@ -197,6 +197,7 @@ android {
     buildFeatures {
         buildConfig = true
         resValues = true
+        viewBinding = true // Dipindah ke sini menyesuaikan Cloudstream baru
     }
 
     packaging {
@@ -234,6 +235,9 @@ dependencies {
 
     implementation(libs.bundles.nextlib)
 
+    // Tambahan baru dari Cloudstream base
+    implementation(libs.anime.db)
+
     implementation(libs.colorpicker)
     implementation(libs.newpipeextractor)
     implementation(libs.juniversalchardet)
@@ -243,6 +247,7 @@ dependencies {
     implementation(libs.overlappingpanels)
     implementation(libs.biometric)
     
+    // Keamanan AdiXtream
     implementation("androidx.security:security-crypto:1.1.0-alpha06")
 
     implementation(libs.previewseekbar.media3)
