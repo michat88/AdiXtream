@@ -8,7 +8,6 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinJvmCompile
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.dokka)
-    // Plugin kotlin.android dihapus di sini agar sesuai dengan base Cloudstream baru
 }
 
 val javaTarget = JvmTarget.fromTarget(libs.versions.jvmTarget.get())
@@ -83,6 +82,11 @@ android {
         unitTests.isReturnDefaultValues = true
     }
 
+    // Perbaikan Error 1: Konfigurasi bahasa dipindah ke sini dengan format baru
+    androidResources {
+        localeFilters += listOf("en", "id", "in")
+    }
+
     dependenciesInfo {
         includeInApk = false
         includeInBundle = false
@@ -116,8 +120,6 @@ android {
         
         versionCode = 86
         versionName = "4.7.9"
-
-        resConfigs("en", "id", "in")
 
         resValue("string", "commit_hash", getGitCommitHash())
         resValue("bool", "is_prerelease", "false")
@@ -197,7 +199,7 @@ android {
     buildFeatures {
         buildConfig = true
         resValues = true
-        viewBinding = true // Dipindah ke sini menyesuaikan Cloudstream baru
+        viewBinding = true 
     }
 
     packaging {
@@ -235,7 +237,6 @@ dependencies {
 
     implementation(libs.bundles.nextlib)
 
-    // Tambahan baru dari Cloudstream base
     implementation(libs.anime.db)
 
     implementation(libs.colorpicker)
@@ -247,7 +248,6 @@ dependencies {
     implementation(libs.overlappingpanels)
     implementation(libs.biometric)
     
-    // Keamanan AdiXtream
     implementation("androidx.security:security-crypto:1.1.0-alpha06")
 
     implementation(libs.previewseekbar.media3)
@@ -272,7 +272,8 @@ dependencies {
 
 tasks.register<Jar>("androidSourcesJar") {
     archiveClassifier.set("sources")
-    from(android.sourceSets.getByName("main").java.srcDirs)
+    // Perbaikan Error 2: Mengganti srcDirs menjadi directories
+    from(android.sourceSets.getByName("main").java.directories)
 }
 
 tasks.register<Copy>("copyJar") {
@@ -312,7 +313,8 @@ tasks.withType<KotlinJvmCompile> {
 dokka {
     moduleName = "App"
     dokkaSourceSets {
-        main {
+        // Perbaikan Error 3: Menggunakan configureEach alih-alih main
+        configureEach {
             analysisPlatform = KotlinPlatform.JVM
             documentedVisibilities(
                 VisibilityModifier.Public,
