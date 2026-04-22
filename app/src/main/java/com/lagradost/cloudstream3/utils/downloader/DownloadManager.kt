@@ -187,8 +187,8 @@ object VideoDownloadManager {
     private val DOWNLOAD_PARTIAL_SUCCESS =
         DownloadStatus(retrySame = true, tryNext = false, success = true)
 
-    /** 10MB minimum size */
-    const val DOWNLOAD_PARTIAL_MIN_SIZE = 1_048_576L * 10L
+    /** 50MB minimum size */
+    const val DOWNLOAD_PARTIAL_MIN_SIZE = 1_048_576L * 50L
 
     /** bad config, skip all mirrors as every call to download will have the same bad config */
     private val DOWNLOAD_BAD_CONFIG =
@@ -1734,6 +1734,10 @@ object VideoDownloadManager {
         companion object {
             private fun displayNotification(context: Context, id: Int, notification: Notification) {
                 safe {
+                    if (context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)
+                        != PackageManager.PERMISSION_GRANTED
+                    ) return@safe
+
                     NotificationManagerCompat.from(context)
                         .notify(DOWNLOAD_NOTIFICATION_TAG, id, notification)
                 }
