@@ -135,7 +135,6 @@ import com.lagradost.cloudstream3.extractors.Mediafire
 import com.lagradost.cloudstream3.extractors.Megacloud
 import com.lagradost.cloudstream3.extractors.Meownime
 import com.lagradost.cloudstream3.extractors.MetaGnathTuggers
-import com.lagradost.cloudstream3.extractors.Minoplres
 import com.lagradost.cloudstream3.extractors.MixDrop
 import com.lagradost.cloudstream3.extractors.MixDropAg
 import com.lagradost.cloudstream3.extractors.MixDropBz
@@ -288,6 +287,7 @@ import com.lagradost.cloudstream3.extractors.Vidsonic
 import com.lagradost.cloudstream3.extractors.VkExtractor
 import com.lagradost.cloudstream3.extractors.Voe
 import com.lagradost.cloudstream3.extractors.Voe1
+import com.lagradost.cloudstream3.extractors.Voe2
 import com.lagradost.cloudstream3.extractors.Vtbe
 import com.lagradost.cloudstream3.extractors.Wibufile
 import com.lagradost.cloudstream3.extractors.WishembedPro
@@ -1087,7 +1087,6 @@ val extractorApis: MutableList<ExtractorApi> = arrayListOf(
     Vido(),
     Linkbox(),
     Acefile(),
-    Minoplres(), // formerly SpeedoStream
     Embedgram(),
     Mvidoo(),
     Streamplay(),
@@ -1097,6 +1096,7 @@ val extractorApis: MutableList<ExtractorApi> = arrayListOf(
     Vidmolybiz(),
     Voe(),
     Voe1(),
+    Voe2(),
     Tubeless(),
     Moviehab(),
     MoviehabNet(),
