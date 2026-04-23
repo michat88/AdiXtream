@@ -133,7 +133,6 @@ object PremiumManager {
                                 lastCheckTime = System.currentTimeMillis()
                                 Handler(Looper.getMainLooper()).post { 
                                     onResult(true, "Aktivasi Kode VIP Berhasil")
-                                    // Opsional: Kamu bisa tambah restart di sini juga jika mau VIP langsung sinkron plugin
                                 }
                             } else {
                                 Handler(Looper.getMainLooper()).post { onResult(false, "Masa aktif kode VIP ini sudah kadaluarsa!") }
@@ -184,6 +183,23 @@ object PremiumManager {
                 val days = jsonPromo.optInt("days", 0)
                 val validUntil = jsonPromo.optLong("valid_until", 0L)
 
+                // === VALIDASI SINKRONISASI ADMIN PANEL ===
+                if (status != "aktif") {
+                    Handler(Looper.getMainLooper()).post { onResult(false, "Kode Promo sedang tidak aktif!") }
+                    return@launch
+                }
+                
+                if (usedCount >= maxQuota) {
+                    Handler(Looper.getMainLooper()).post { onResult(false, "Maaf, Kuota Kode Promo ini sudah habis!") }
+                    return@launch
+                }
+                
+                if (System.currentTimeMillis() > validUntil) {
+                    Handler(Looper.getMainLooper()).post { onResult(false, "Maaf, Masa berlaku Kode Promo ini sudah habis!") }
+                    return@launch
+                }
+                // =========================================
+
                 val markPromoUrl = URL("${FIREBASE_BASE_URL}users/$deviceId/redeemed_promos/$inputCode.json")
                 val markPromoConn = markPromoUrl.openConnection() as HttpURLConnection
                 markPromoConn.requestMethod = "PUT"
@@ -192,7 +208,7 @@ object PremiumManager {
                 markPromoConn.outputStream.use { it.write("true".toByteArray(Charsets.UTF_8)) }
            
                 if (markPromoConn.responseCode != HttpURLConnection.HTTP_OK) {
-                    Handler(Looper.getMainLooper()).post { onResult(false, "Gagal! Promo sudah pernah diklaim atau kuota habis.") }
+                    Handler(Looper.getMainLooper()).post { onResult(false, "Gagal! Promo sudah pernah diklaim.") }
                     return@launch
                 }
 
@@ -224,7 +240,7 @@ object PremiumManager {
 
                 val newExpiredTimestamp = baseTimestamp + (days * 24L * 60L * 60L * 1000L)
 
-                // FIX: Tambahkan status aktif dan account_type agar Admin & Sync mengenalinya sebagai VIP
+                // FIX: Update status menjadi aktif dan tipe akun vip
                 val updateUserUrl = URL("${FIREBASE_BASE_URL}users/$deviceId.json")
                 val updateUserConn = updateUserUrl.openConnection() as HttpURLConnection
                 updateUserConn.requestMethod = "PATCH"
@@ -232,8 +248,8 @@ object PremiumManager {
                 updateUserConn.doOutput = true
                 
                 val userPatch = JSONObject().apply {
-                    put("status", "aktif") // <-- FIX: Wajib kirim status
-                    put("account_type", "vip") // <-- FIX: Wajib kirim tipe akun
+                    put("status", "aktif")
+                    put("account_type", "vip")
                     put("expired_at", newExpiredTimestamp)
                     put("last_update", "Redeemed Promo: $inputCode")
                 }.toString()
