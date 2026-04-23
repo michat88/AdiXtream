@@ -60,7 +60,7 @@ object PremiumManager {
             securePrefs.edit()
                 .putBoolean(PREF_IS_PREMIUM, true)
                 .putLong(PREF_EXPIRY_DATE, oldExpiryDate)
-                .apply()
+                .commit() // FIX AUDIT: Pastikan data tersimpan sebelum lanjut
 
             oldPrefs.edit()
                 .remove(PREF_IS_PREMIUM)
@@ -80,17 +80,12 @@ object PremiumManager {
                     val jsonPayload = JSONObject().apply {
                         put("status", "aktif")
                         put("expired_at", oldExpiryDate)
-                        put("last_update", "Migrasi Otomatis dari Aplikasi Lama")
+                        put("last_update", "Migrasi Otomatis")
                     }.toString()
 
-                    connection.outputStream.use { os ->
-                        val input = jsonPayload.toByteArray(Charsets.UTF_8)
-                        os.write(input, 0, input.size)
-                    }
+                    connection.outputStream.use { it.write(jsonPayload.toByteArray(Charsets.UTF_8)) }
                     val res = connection.responseCode
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                }
+                } catch (e: Exception) { }
             }
         }
     }
@@ -108,11 +103,9 @@ object PremiumManager {
                 val connection = url.openConnection() as HttpURLConnection
                 connection.requestMethod = "GET"
                 connection.connectTimeout = 5000 
-                connection.readTimeout = 5000
 
                 if (connection.responseCode == HttpURLConnection.HTTP_OK) {
                     val response = connection.inputStream.bufferedReader().use { it.readText() }
-                    
                     if (response != "null") {
                         val jsonResponse = JSONObject(response)
                         val dbStatus = jsonResponse.optString("status", "")
@@ -120,7 +113,7 @@ object PremiumManager {
                         val dbExpired = jsonResponse.optLong("expired_at", 0L)
 
                         if (dbStatus == "banned") {
-                            Handler(Looper.getMainLooper()).post { onResult(false, "Device ini telah di-banned oleh Admin!") }
+                            Handler(Looper.getMainLooper()).post { onResult(false, "Device ini telah di-banned!") }
                             return@launch
                         }
 
@@ -130,24 +123,22 @@ object PremiumManager {
                                 securePrefs.edit()
                                     .putBoolean(PREF_IS_PREMIUM, true)
                                     .putLong(PREF_EXPIRY_DATE, dbExpired)
-                                    .apply() 
+                                    .commit() // FIX AUDIT
                                 
                                 lastCheckTime = System.currentTimeMillis()
-                                Handler(Looper.getMainLooper()).post { onResult(true, "Aktivasi Kode VIP Berhasil") }
+                                Handler(Looper.getMainLooper()).post { onResult(true, "Aktivasi Berhasil") }
                             } else {
-                                Handler(Looper.getMainLooper()).post { onResult(false, "Masa aktif kode VIP ini sudah kadaluarsa!") }
+                                Handler(Looper.getMainLooper()).post { onResult(false, "Masa aktif kadaluarsa!") }
                             }
                         } else {
-                            Handler(Looper.getMainLooper()).post { onResult(false, "Kode VIP tidak valid / bukan milik Device ini!") }
+                            Handler(Looper.getMainLooper()).post { onResult(false, "Kode VIP tidak valid!") }
                         }
                     } else {
-                        Handler(Looper.getMainLooper()).post { onResult(false, "Device belum terdaftar. Silakan beli akses VIP ke Admin.") }
+                        Handler(Looper.getMainLooper()).post { onResult(false, "Device belum terdaftar.") }
                     }
-                } else {
-                    Handler(Looper.getMainLooper()).post { onResult(false, "Gagal menghubungi Server (Error ${connection.responseCode})") }
                 }
             } catch (e: Exception) {
-                Handler(Looper.getMainLooper()).post { onResult(false, "Koneksi Internet Error / Timeout") }
+                Handler(Looper.getMainLooper()).post { onResult(false, "Kesalahan Jaringan") }
             }
         }
     }
@@ -155,104 +146,80 @@ object PremiumManager {
     fun activatePromoWithCode(context: Context, code: String, deviceId: String, onResult: (Boolean, String) -> Unit) {
         val inputCode = code.trim().uppercase()
         if (inputCode.isEmpty()) {
-            onResult(false, "Kode Promo tidak boleh kosong!")
+            onResult(false, "Kode Promo kosong!")
             return
         }
 
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                // 1. CEK PROMO EKSIS ATAU TIDAK
+                // 1. Ambil data promo
                 val promoUrl = URL("${FIREBASE_BASE_URL}promo_codes/$inputCode.json")
                 val promoConn = promoUrl.openConnection() as HttpURLConnection
                 promoConn.requestMethod = "GET"
-                promoConn.connectTimeout = 5000 
-                promoConn.readTimeout = 5000
 
                 if (promoConn.responseCode != HttpURLConnection.HTTP_OK) {
-                    Handler(Looper.getMainLooper()).post { onResult(false, "Gagal menghubungi Server Promo.") }
+                    Handler(Looper.getMainLooper()).post { onResult(false, "Server Promo sibuk.") }
                     return@launch
                 }
 
-                val promoResponse = promoConn.inputStream.bufferedReader().use { it.readText() }
-                if (promoResponse == "null") {
+                val promoRes = promoConn.inputStream.bufferedReader().use { it.readText() }
+                if (promoRes == "null") {
                     Handler(Looper.getMainLooper()).post { onResult(false, "Kode Promo tidak ditemukan!") }
                     return@launch
                 }
 
-                val jsonPromo = JSONObject(promoResponse)
-                val status = jsonPromo.optString("status", "")
-                val maxQuota = jsonPromo.optInt("max_quota", 0)
-                val usedCount = jsonPromo.optInt("used_count", 0)
-                val days = jsonPromo.optInt("days", 0)
-                val validUntil = jsonPromo.optLong("valid_until", 0L)
-
-                // 2. VALIDASI LOKAL (SESUAI RULES)
-                if (status != "aktif") {
-                    Handler(Looper.getMainLooper()).post { onResult(false, "Kode Promo sedang tidak aktif!") }
+                val jsonPromo = JSONObject(promoRes)
+                if (jsonPromo.optString("status") != "aktif") {
+                    Handler(Looper.getMainLooper()).post { onResult(false, "Promo tidak aktif!") }
                     return@launch
                 }
-                if (usedCount >= maxQuota) {
-                    Handler(Looper.getMainLooper()).post { onResult(false, "Maaf, Kuota Kode Promo ini sudah habis!") }
+                if (jsonPromo.optInt("used_count") >= jsonPromo.optInt("max_quota")) {
+                    Handler(Looper.getMainLooper()).post { onResult(false, "Kuota promo habis!") }
                     return@launch
                 }
-                if (System.currentTimeMillis() > validUntil) {
-                    Handler(Looper.getMainLooper()).post { onResult(false, "Maaf, Masa berlaku Kode Promo ini sudah habis!") }
+                if (System.currentTimeMillis() > jsonPromo.optLong("valid_until")) {
+                    Handler(Looper.getMainLooper()).post { onResult(false, "Promo sudah kadaluarsa!") }
                     return@launch
                 }
 
-                // 3. TANDAI PROMO DIPAKAI
-                val markPromoUrl = URL("${FIREBASE_BASE_URL}users/$deviceId/redeemed_promos/$inputCode.json")
-                val markPromoConn = markPromoUrl.openConnection() as HttpURLConnection
-                markPromoConn.requestMethod = "PUT"
-                markPromoConn.setRequestProperty("Content-Type", "application/json")
-                markPromoConn.doOutput = true
-                markPromoConn.outputStream.use { it.write("true".toByteArray(Charsets.UTF_8)) }
+                // 2. Tandai Promo Digunakan (Validasi atomik oleh Firebase Rules)
+                val markUrl = URL("${FIREBASE_BASE_URL}users/$deviceId/redeemed_promos/$inputCode.json")
+                val markConn = markUrl.openConnection() as HttpURLConnection
+                markConn.requestMethod = "PUT"
+                markConn.setRequestProperty("Content-Type", "application/json")
+                markConn.doOutput = true
+                markConn.outputStream.use { it.write("true".toByteArray(Charsets.UTF_8)) }
            
-                if (markPromoConn.responseCode != HttpURLConnection.HTTP_OK) {
+                if (markConn.responseCode != HttpURLConnection.HTTP_OK) {
                     Handler(Looper.getMainLooper()).post { onResult(false, "Gagal! Promo sudah pernah diklaim.") }
                     return@launch
                 }
 
-                // 4. POTONG KUOTA PROMO
+                // 3. Potong kuota di database
                 val updatePromoUrl = URL("${FIREBASE_BASE_URL}promo_codes/$inputCode.json")
                 val updatePromoConn = updatePromoUrl.openConnection() as HttpURLConnection
                 updatePromoConn.requestMethod = "POST"
                 updatePromoConn.setRequestProperty("X-HTTP-Method-Override", "PATCH")
                 updatePromoConn.setRequestProperty("Content-Type", "application/json")
                 updatePromoConn.doOutput = true
-                
-                val promoPatch = JSONObject().apply { 
-                    put("used_count", usedCount + 1)
-                }.toString()
-   
+                val promoPatch = JSONObject().apply { put("used_count", jsonPromo.optInt("used_count") + 1) }.toString()
                 updatePromoConn.outputStream.use { it.write(promoPatch.toByteArray(Charsets.UTF_8)) }
-                
-                val promoUpdateRes = updatePromoConn.responseCode
-                if (promoUpdateRes != HttpURLConnection.HTTP_OK) {
-                    Handler(Looper.getMainLooper()).post { onResult(false, "Gagal memotong kuota promo (Error: $promoUpdateRes)") }
-                    return@launch
-                }
+                val pRes = updatePromoConn.responseCode
 
-                // 5. AMBIL EXPIRY DATE SAAT INI
+                // 4. Hitung masa aktif baru
                 val userUrl = URL("${FIREBASE_BASE_URL}users/$deviceId.json")
                 val userConn = userUrl.openConnection() as HttpURLConnection
-                userConn.requestMethod = "GET"
                 var baseTimestamp = System.currentTimeMillis()
-                
                 if (userConn.responseCode == HttpURLConnection.HTTP_OK) {
                      val userRes = userConn.inputStream.bufferedReader().use { it.readText() }
                      if (userRes != "null") {
-                         val jsonUser = JSONObject(userRes)
-                         val dbExpired = jsonUser.optLong("expired_at", 0L)
-                         if (dbExpired > baseTimestamp) {
-                             baseTimestamp = dbExpired 
-                         }
+                         val dbExp = JSONObject(userRes).optLong("expired_at", 0L)
+                         if (dbExp > baseTimestamp) baseTimestamp = dbExp 
                      }
                 }
+                val newExpiredTimestamp = baseTimestamp + (jsonPromo.optInt("days") * 24L * 60L * 60L * 1000L)
 
-                val newExpiredTimestamp = baseTimestamp + (days * 24L * 60L * 60L * 1000L)
-
-                // 6. UPDATE EXPIRY DATE USER (TANPA MENGIRIM STATUS/ACCOUNT_TYPE AGAR LOLOS RULES)
+                // 5. Update user (SESUAI RULES: Tanpa status/account_type)
                 val updateUserUrl = URL("${FIREBASE_BASE_URL}users/$deviceId.json")
                 val updateUserConn = updateUserUrl.openConnection() as HttpURLConnection
                 updateUserConn.requestMethod = "POST"
@@ -270,27 +237,25 @@ object PremiumManager {
                 val finalUserRes = updateUserConn.responseCode
                 if (finalUserRes == HttpURLConnection.HTTP_OK) {
                     val securePrefs = getSecurePrefs(context)
+                    // FIX AUDIT: Ganti .apply() ke .commit() karena setelah ini ada exit(0)
                     securePrefs.edit()
                         .putBoolean(PREF_IS_PREMIUM, true)
                         .putLong(PREF_EXPIRY_DATE, newExpiredTimestamp)
-                        .apply() 
+                        .commit() 
 
                     lastCheckTime = System.currentTimeMillis()
                     
-                    // RESTART OTOMATIS AGAR UI REFRESH
                     Handler(Looper.getMainLooper()).post { 
-                        Toast.makeText(context, "Selamat! Promo $days Hari Berhasil Diklaim.", Toast.LENGTH_LONG).show()
+                        Toast.makeText(context, "Selamat! Promo Berhasil Diklaim.", Toast.LENGTH_LONG).show()
                         val intent = context.packageManager.getLaunchIntentForPackage(context.packageName)
-                        val mainIntent = Intent.makeRestartActivityTask(intent?.component)
-                        context.startActivity(mainIntent)
+                        context.startActivity(Intent.makeRestartActivityTask(intent?.component))
                         Runtime.getRuntime().exit(0)
                     }
                 } else {
-                    Handler(Looper.getMainLooper()).post { onResult(false, "Gagal sinkronisasi user! (Error: $finalUserRes)") }
+                    Handler(Looper.getMainLooper()).post { onResult(false, "Gagal Sinkronisasi User (Error $finalUserRes)") }
                 }
-                
             } catch (e: Exception) {
-                Handler(Looper.getMainLooper()).post { onResult(false, "Koneksi Internet Error / Timeout: ${e.message}") }
+                Handler(Looper.getMainLooper()).post { onResult(false, "Timeout/Kesalahan Jaringan") }
             }
         }
     }
@@ -305,7 +270,6 @@ object PremiumManager {
                 deactivatePremium(context) 
                 return false
             }
-
             if (System.currentTimeMillis() - lastCheckTime > 5 * 60 * 1000) {
                 lastCheckTime = System.currentTimeMillis()
                 checkAndSyncWithServer(context, getDeviceId(context))
@@ -320,7 +284,7 @@ object PremiumManager {
         securePrefs.edit()
             .putBoolean(PREF_IS_PREMIUM, false)
             .putLong(PREF_EXPIRY_DATE, 0)
-            .apply() 
+            .commit() // FIX AUDIT: Selalu gunakan commit jika ada risiko force exit
     }
     
     fun getExpiryDateString(context: Context): String {
@@ -334,20 +298,14 @@ object PremiumManager {
             try {
                 val url = URL("${FIREBASE_BASE_URL}users/$deviceId.json")
                 val connection = url.openConnection() as HttpURLConnection
-                connection.requestMethod = "GET"
-                connection.connectTimeout = 5000 
-                connection.readTimeout = 5000
-
                 if (connection.responseCode == HttpURLConnection.HTTP_OK) {
                     val response = connection.inputStream.bufferedReader().use { it.readText() }
-                    
                     if (response == "null") {
                         registerUserToServer(context, deviceId)
                     } else {
-                        val jsonResponse = JSONObject(response)
-                        val dbStatus = jsonResponse.optString("status", "")
-                        val dbExpired = jsonResponse.optLong("expired_at", 0L)
-
+                        val json = JSONObject(response)
+                        val dbStatus = json.optString("status", "")
+                        val dbExpired = json.optLong("expired_at", 0L)
                         val securePrefs = getSecurePrefs(context)
                         val wasPremium = securePrefs.getBoolean(PREF_IS_PREMIUM, false)
                         
@@ -358,11 +316,10 @@ object PremiumManager {
                             if (wasPremium) {
                                 deactivatePremium(context) 
                                 Handler(Looper.getMainLooper()).post {
-                                    val pesan = if (isBanned) "⛔ AKSES PREMIUM DICABUT OLEH ADMIN!" else "⚠️ Masa Aktif Premium Habis."
+                                    val pesan = if (isBanned) "⛔ AKSES DICABUT ADMIN!" else "⚠️ Masa Aktif Habis."
                                     Toast.makeText(context, pesan, Toast.LENGTH_LONG).show()
                                     val intent = context.packageManager.getLaunchIntentForPackage(context.packageName)
-                                    val mainIntent = Intent.makeRestartActivityTask(intent?.component)
-                                    context.startActivity(mainIntent)
+                                    context.startActivity(Intent.makeRestartActivityTask(intent?.component))
                                     Runtime.getRuntime().exit(0)
                                 }
                             }
@@ -384,23 +341,14 @@ object PremiumManager {
             connection.setRequestProperty("Content-Type", "application/json")
             connection.doOutput = true
             
-            // Di sini "status" AMAN dikirim karena hanya dieksekusi kalau user belum pernah terdaftar (sesuai rules)
+            // Register awal: Kirim status aktif sesuai Firebase Rules
             val jsonPayload = JSONObject().apply {
                 put("status", "aktif")
-                put("last_update", "Auto-Sync from Android App")
+                put("last_update", "Auto-Registration")
             }.toString()
             
-            connection.outputStream.use { os ->
-                val input = jsonPayload.toByteArray(Charsets.UTF_8)
-                os.write(input, 0, input.size)
-            }
-            
-            val responseCode = connection.responseCode
-            if (responseCode != HttpURLConnection.HTTP_OK) {
-                println("PremiumManager: Registrasi awal gagal dengan kode $responseCode")
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
+            connection.outputStream.use { it.write(jsonPayload.toByteArray(Charsets.UTF_8)) }
+            val res = connection.responseCode
+        } catch (e: Exception) { }
     }
 }
