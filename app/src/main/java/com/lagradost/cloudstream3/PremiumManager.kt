@@ -72,7 +72,6 @@ object PremiumManager {
                 try {
                     val url = URL("${FIREBASE_BASE_URL}users/$deviceId.json")
                     val connection = url.openConnection() as HttpURLConnection
-                    // FIX: Gunakan POST dengan Override PATCH agar stabil di semua Android
                     connection.requestMethod = "POST"
                     connection.setRequestProperty("X-HTTP-Method-Override", "PATCH")
                     connection.setRequestProperty("Content-Type", "application/json")
@@ -88,8 +87,6 @@ object PremiumManager {
                         val input = jsonPayload.toByteArray(Charsets.UTF_8)
                         os.write(input, 0, input.size)
                     }
-                    
-                    // FIX: Wajib panggil responseCode agar request benar-benar dikirim!
                     val res = connection.responseCode
                 } catch (e: Exception) {
                     e.printStackTrace()
@@ -136,9 +133,7 @@ object PremiumManager {
                                     .apply() 
                                 
                                 lastCheckTime = System.currentTimeMillis()
-                                Handler(Looper.getMainLooper()).post { 
-                                    onResult(true, "Aktivasi Kode VIP Berhasil")
-                                }
+                                Handler(Looper.getMainLooper()).post { onResult(true, "Aktivasi Kode VIP Berhasil") }
                             } else {
                                 Handler(Looper.getMainLooper()).post { onResult(false, "Masa aktif kode VIP ini sudah kadaluarsa!") }
                             }
@@ -148,6 +143,8 @@ object PremiumManager {
                     } else {
                         Handler(Looper.getMainLooper()).post { onResult(false, "Device belum terdaftar. Silakan beli akses VIP ke Admin.") }
                     }
+                } else {
+                    Handler(Looper.getMainLooper()).post { onResult(false, "Gagal menghubungi Server (Error ${connection.responseCode})") }
                 }
             } catch (e: Exception) {
                 Handler(Looper.getMainLooper()).post { onResult(false, "Koneksi Internet Error / Timeout") }
@@ -164,6 +161,7 @@ object PremiumManager {
 
         CoroutineScope(Dispatchers.IO).launch {
             try {
+                // 1. CEK PROMO EKSIS ATAU TIDAK
                 val promoUrl = URL("${FIREBASE_BASE_URL}promo_codes/$inputCode.json")
                 val promoConn = promoUrl.openConnection() as HttpURLConnection
                 promoConn.requestMethod = "GET"
@@ -188,7 +186,7 @@ object PremiumManager {
                 val days = jsonPromo.optInt("days", 0)
                 val validUntil = jsonPromo.optLong("valid_until", 0L)
 
-                // === VALIDASI SINKRONISASI ADMIN PANEL ===
+                // 2. VALIDASI LOKAL (SESUAI RULES)
                 if (status != "aktif") {
                     Handler(Looper.getMainLooper()).post { onResult(false, "Kode Promo sedang tidak aktif!") }
                     return@launch
@@ -201,9 +199,8 @@ object PremiumManager {
                     Handler(Looper.getMainLooper()).post { onResult(false, "Maaf, Masa berlaku Kode Promo ini sudah habis!") }
                     return@launch
                 }
-                // =========================================
 
-                // 1. Tandai Promo Digunakan di Akun User
+                // 3. TANDAI PROMO DIPAKAI
                 val markPromoUrl = URL("${FIREBASE_BASE_URL}users/$deviceId/redeemed_promos/$inputCode.json")
                 val markPromoConn = markPromoUrl.openConnection() as HttpURLConnection
                 markPromoConn.requestMethod = "PUT"
@@ -216,10 +213,9 @@ object PremiumManager {
                     return@launch
                 }
 
-                // 2. Potong Kuota di Database Promo
+                // 4. POTONG KUOTA PROMO
                 val updatePromoUrl = URL("${FIREBASE_BASE_URL}promo_codes/$inputCode.json")
                 val updatePromoConn = updatePromoUrl.openConnection() as HttpURLConnection
-                // FIX: Gunakan POST dengan Override PATCH + Panggil Response Code
                 updatePromoConn.requestMethod = "POST"
                 updatePromoConn.setRequestProperty("X-HTTP-Method-Override", "PATCH")
                 updatePromoConn.setRequestProperty("Content-Type", "application/json")
@@ -231,14 +227,13 @@ object PremiumManager {
    
                 updatePromoConn.outputStream.use { it.write(promoPatch.toByteArray(Charsets.UTF_8)) }
                 
-                // FIX: Ini sangat wajib agar koneksi pool tidak menggantung!
                 val promoUpdateRes = updatePromoConn.responseCode
                 if (promoUpdateRes != HttpURLConnection.HTTP_OK) {
                     Handler(Looper.getMainLooper()).post { onResult(false, "Gagal memotong kuota promo (Error: $promoUpdateRes)") }
                     return@launch
                 }
-                
-                // 3. Ambil Expiry Date User Saat Ini
+
+                // 5. AMBIL EXPIRY DATE SAAT INI
                 val userUrl = URL("${FIREBASE_BASE_URL}users/$deviceId.json")
                 val userConn = userUrl.openConnection() as HttpURLConnection
                 userConn.requestMethod = "GET"
@@ -249,24 +244,23 @@ object PremiumManager {
                      if (userRes != "null") {
                          val jsonUser = JSONObject(userRes)
                          val dbExpired = jsonUser.optLong("expired_at", 0L)
-                         if (dbExpired > baseTimestamp) baseTimestamp = dbExpired 
+                         if (dbExpired > baseTimestamp) {
+                             baseTimestamp = dbExpired 
+                         }
                      }
                 }
 
                 val newExpiredTimestamp = baseTimestamp + (days * 24L * 60L * 60L * 1000L)
 
-                // 4. Update Status User menjadi Aktif & VIP
+                // 6. UPDATE EXPIRY DATE USER (TANPA MENGIRIM STATUS/ACCOUNT_TYPE AGAR LOLOS RULES)
                 val updateUserUrl = URL("${FIREBASE_BASE_URL}users/$deviceId.json")
                 val updateUserConn = updateUserUrl.openConnection() as HttpURLConnection
-                // FIX: Gunakan POST dengan Override PATCH 
                 updateUserConn.requestMethod = "POST"
                 updateUserConn.setRequestProperty("X-HTTP-Method-Override", "PATCH")
                 updateUserConn.setRequestProperty("Content-Type", "application/json")
                 updateUserConn.doOutput = true
                 
                 val userPatch = JSONObject().apply {
-                    put("status", "aktif")
-                    put("account_type", "vip")
                     put("expired_at", newExpiredTimestamp)
                     put("last_update", "Redeemed Promo: $inputCode")
                 }.toString()
@@ -283,7 +277,7 @@ object PremiumManager {
 
                     lastCheckTime = System.currentTimeMillis()
                     
-                    // Force Restart UI & Load Plugins
+                    // RESTART OTOMATIS AGAR UI REFRESH
                     Handler(Looper.getMainLooper()).post { 
                         Toast.makeText(context, "Selamat! Promo $days Hari Berhasil Diklaim.", Toast.LENGTH_LONG).show()
                         val intent = context.packageManager.getLaunchIntentForPackage(context.packageName)
@@ -292,7 +286,6 @@ object PremiumManager {
                         Runtime.getRuntime().exit(0)
                     }
                 } else {
-                    // FIX: Tampilkan error code spesifik agar mudah dilacak jika terjadi lagi
                     Handler(Looper.getMainLooper()).post { onResult(false, "Gagal sinkronisasi user! (Error: $finalUserRes)") }
                 }
                 
@@ -386,12 +379,12 @@ object PremiumManager {
         try {
             val url = URL("${FIREBASE_BASE_URL}users/$deviceId.json")
             val connection = url.openConnection() as HttpURLConnection
-            // FIX: Gunakan POST dengan Override PATCH 
             connection.requestMethod = "POST"
             connection.setRequestProperty("X-HTTP-Method-Override", "PATCH")
             connection.setRequestProperty("Content-Type", "application/json")
             connection.doOutput = true
             
+            // Di sini "status" AMAN dikirim karena hanya dieksekusi kalau user belum pernah terdaftar (sesuai rules)
             val jsonPayload = JSONObject().apply {
                 put("status", "aktif")
                 put("last_update", "Auto-Sync from Android App")
