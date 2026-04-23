@@ -36,9 +36,6 @@ object PremiumManager {
         return abs(androidId.hashCode()).toString().take(8)
     }
 
-    // ==========================================================
-    // FUNGSI KHUSUS: ENCRYPTED SHARED PREFERENCES (ANTI-HACK)
-    // ==========================================================
     private fun getSecurePrefs(context: Context): SharedPreferences {
         val masterKey = MasterKey.Builder(context)
             .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
@@ -53,32 +50,23 @@ object PremiumManager {
         )
     }
 
-    // ==========================================================
-    // FUNGSI MIGRASI: MENYELAMATKAN DATA DARI APLIKASI VERSI LAMA
-    // ==========================================================
     fun checkAndMigrateOldOfflineUser(context: Context) {
         val oldPrefs = PreferenceManager.getDefaultSharedPreferences(context)
         val wasPremium = oldPrefs.getBoolean(PREF_IS_PREMIUM, false)
         val oldExpiryDate = oldPrefs.getLong(PREF_EXPIRY_DATE, 0L)
 
-        // 1. Cek apakah user dulunya Premium dan masa aktifnya belum habis
         if (wasPremium && oldExpiryDate > System.currentTimeMillis()) {
-            
-            // 2. PINDAHKAN LANGSUNG KE BRANKAS BAJA! (Tanpa nunggu Firebase)
-            // Ini menjamin user langsung terdeteksi sebagai VIP saat aplikasi baru dibuka
             val securePrefs = getSecurePrefs(context)
             securePrefs.edit()
                 .putBoolean(PREF_IS_PREMIUM, true)
                 .putLong(PREF_EXPIRY_DATE, oldExpiryDate)
                 .apply()
 
-            // 3. Hapus data di brankas lama agar migrasi tidak jalan terus-menerus
             oldPrefs.edit()
                 .remove(PREF_IS_PREMIUM)
                 .remove(PREF_EXPIRY_DATE)
                 .apply()
 
-            // 4. Laporkan ke Firebase di background (Tanpa mengirim account_type)
             val deviceId = getDeviceId(context)
             CoroutineScope(Dispatchers.IO).launch {
                 try {
@@ -98,12 +86,6 @@ object PremiumManager {
                         val input = jsonPayload.toByteArray(Charsets.UTF_8)
                         os.write(input, 0, input.size)
                     }
-
-                    if (connection.responseCode == HttpURLConnection.HTTP_OK) {
-                        println("AdiXtream: Migrasi sukses untuk user lama $deviceId")
-                    } else {
-                        println("AdiXtream: Gagal lapor migrasi ke Firebase, ditolak oleh Rules.")
-                    }
                 } catch (e: Exception) {
                     e.printStackTrace()
                 }
@@ -111,9 +93,6 @@ object PremiumManager {
         }
     }
 
-    // ==========================================================
-    // FUNGSI 1: AKTIVASI KODE VIP PERSONAL
-    // ==========================================================
     fun activatePremiumWithCode(context: Context, code: String, deviceId: String, onResult: (Boolean, String) -> Unit) {
         val inputCode = code.trim().uppercase()
         if (inputCode.isEmpty()) {
@@ -152,7 +131,10 @@ object PremiumManager {
                                     .apply() 
                                 
                                 lastCheckTime = System.currentTimeMillis()
-                                Handler(Looper.getMainLooper()).post { onResult(true, "Aktivasi Kode VIP Berhasil") }
+                                Handler(Looper.getMainLooper()).post { 
+                                    onResult(true, "Aktivasi Kode VIP Berhasil")
+                                    // Opsional: Kamu bisa tambah restart di sini juga jika mau VIP langsung sinkron plugin
+                                }
                             } else {
                                 Handler(Looper.getMainLooper()).post { onResult(false, "Masa aktif kode VIP ini sudah kadaluarsa!") }
                             }
@@ -162,8 +144,6 @@ object PremiumManager {
                     } else {
                         Handler(Looper.getMainLooper()).post { onResult(false, "Device belum terdaftar. Silakan beli akses VIP ke Admin.") }
                     }
-                } else {
-                    Handler(Looper.getMainLooper()).post { onResult(false, "Gagal menghubungi Server (Error ${connection.responseCode})") }
                 }
             } catch (e: Exception) {
                 Handler(Looper.getMainLooper()).post { onResult(false, "Koneksi Internet Error / Timeout") }
@@ -171,9 +151,6 @@ object PremiumManager {
         }
     }
 
-    // ==========================================================
-    // FUNGSI 2: AKTIVASI KODE PROMO UMUM (SUDAH ANTI RACE-CONDITION)
-    // ==========================================================
     fun activatePromoWithCode(context: Context, code: String, deviceId: String, onResult: (Boolean, String) -> Unit) {
         val inputCode = code.trim().uppercase()
         if (inputCode.isEmpty()) {
@@ -213,9 +190,9 @@ object PremiumManager {
                 markPromoConn.setRequestProperty("Content-Type", "application/json")
                 markPromoConn.doOutput = true
                 markPromoConn.outputStream.use { it.write("true".toByteArray(Charsets.UTF_8)) }
-                
+           
                 if (markPromoConn.responseCode != HttpURLConnection.HTTP_OK) {
-                    Handler(Looper.getMainLooper()).post { onResult(false, "Gagal! Promo sudah pernah diklaim, habis kuota, atau kadaluarsa.") }
+                    Handler(Looper.getMainLooper()).post { onResult(false, "Gagal! Promo sudah pernah diklaim atau kuota habis.") }
                     return@launch
                 }
 
@@ -227,19 +204,10 @@ object PremiumManager {
                 
                 val promoPatch = JSONObject().apply { 
                     put("used_count", usedCount + 1)
-                    put("days", days)
-                    put("max_quota", maxQuota)
-                    put("valid_until", validUntil)
-                    put("status", status)
                 }.toString()
-                
+   
                 updatePromoConn.outputStream.use { it.write(promoPatch.toByteArray(Charsets.UTF_8)) }
                 
-                if (updatePromoConn.responseCode != HttpURLConnection.HTTP_OK) {
-                    Handler(Looper.getMainLooper()).post { onResult(false, "Gagal sinkronisasi kuota promo. Coba lagi.") }
-                    return@launch
-                }
-
                 val userUrl = URL("${FIREBASE_BASE_URL}users/$deviceId.json")
                 val userConn = userUrl.openConnection() as HttpURLConnection
                 userConn.requestMethod = "GET"
@@ -250,14 +218,13 @@ object PremiumManager {
                      if (userRes != "null") {
                          val jsonUser = JSONObject(userRes)
                          val dbExpired = jsonUser.optLong("expired_at", 0L)
-                         if (dbExpired > baseTimestamp) {
-                             baseTimestamp = dbExpired 
-                         }
+                         if (dbExpired > baseTimestamp) baseTimestamp = dbExpired 
                      }
                 }
 
                 val newExpiredTimestamp = baseTimestamp + (days * 24L * 60L * 60L * 1000L)
 
+                // FIX: Tambahkan status aktif dan account_type agar Admin & Sync mengenalinya sebagai VIP
                 val updateUserUrl = URL("${FIREBASE_BASE_URL}users/$deviceId.json")
                 val updateUserConn = updateUserUrl.openConnection() as HttpURLConnection
                 updateUserConn.requestMethod = "PATCH"
@@ -265,25 +232,34 @@ object PremiumManager {
                 updateUserConn.doOutput = true
                 
                 val userPatch = JSONObject().apply {
+                    put("status", "aktif") // <-- FIX: Wajib kirim status
+                    put("account_type", "vip") // <-- FIX: Wajib kirim tipe akun
                     put("expired_at", newExpiredTimestamp)
                     put("last_update", "Redeemed Promo: $inputCode")
                 }.toString()
                 
                 updateUserConn.outputStream.use { it.write(userPatch.toByteArray(Charsets.UTF_8)) }
                 
-                if (updateUserConn.responseCode != HttpURLConnection.HTTP_OK) {
-                    Handler(Looper.getMainLooper()).post { onResult(false, "Gagal mengupdate masa aktif di server!") }
-                    return@launch
+                if (updateUserConn.responseCode == HttpURLConnection.HTTP_OK) {
+                    val securePrefs = getSecurePrefs(context)
+                    securePrefs.edit()
+                        .putBoolean(PREF_IS_PREMIUM, true)
+                        .putLong(PREF_EXPIRY_DATE, newExpiredTimestamp)
+                        .apply() 
+
+                    lastCheckTime = System.currentTimeMillis()
+                    
+                    // FIX: FORCE RESTART agar MainActivity memicu download Plugin Premium & refresh UI
+                    Handler(Looper.getMainLooper()).post { 
+                        Toast.makeText(context, "Selamat! Promo $days Hari Berhasil Diklaim.", Toast.LENGTH_LONG).show()
+                        val intent = context.packageManager.getLaunchIntentForPackage(context.packageName)
+                        val mainIntent = Intent.makeRestartActivityTask(intent?.component)
+                        context.startActivity(mainIntent)
+                        Runtime.getRuntime().exit(0)
+                    }
+                } else {
+                    Handler(Looper.getMainLooper()).post { onResult(false, "Gagal sinkronisasi ke server!") }
                 }
-
-                val securePrefs = getSecurePrefs(context)
-                securePrefs.edit()
-                    .putBoolean(PREF_IS_PREMIUM, true)
-                    .putLong(PREF_EXPIRY_DATE, newExpiredTimestamp)
-                    .apply() 
-
-                lastCheckTime = System.currentTimeMillis()
-                Handler(Looper.getMainLooper()).post { onResult(true, "Selamat! Promo $days Hari Berhasil Diklaim.") }
                 
             } catch (e: Exception) {
                 Handler(Looper.getMainLooper()).post { onResult(false, "Koneksi Internet Error / Timeout") }
@@ -291,9 +267,6 @@ object PremiumManager {
         }
     }
 
-    // ==========================================================
-    // FUNGSI 3: CEK STATUS PREMIUM
-    // ==========================================================
     fun isPremium(context: Context): Boolean {
         val securePrefs = getSecurePrefs(context)
         val isPremium = securePrefs.getBoolean(PREF_IS_PREMIUM, false)
@@ -325,12 +298,9 @@ object PremiumManager {
     fun getExpiryDateString(context: Context): String {
         val securePrefs = getSecurePrefs(context)
         val date = securePrefs.getLong(PREF_EXPIRY_DATE, 0)
-        return if (date == 0L) "Non-Premium" else SimpleDateFormat("dd MMM yyyy", Locale.getDefault()).format(Date(date))
+        return if (date == 0L) "Gratis" else "Aktif s/d " + SimpleDateFormat("dd MMM yyyy", Locale.getDefault()).format(Date(date))
     }
     
-    // ==========================================================
-    // FUNGSI 4: SINKRONISASI KEAMANAN (BACKGROUND)
-    // ==========================================================
     private fun checkAndSyncWithServer(context: Context, deviceId: String) {
         CoroutineScope(Dispatchers.IO).launch {
             try {
@@ -373,15 +343,10 @@ object PremiumManager {
                         }
                     }
                 }
-            } catch (e: Exception) {
-                // Abaikan error jaringan saat sinkronisasi
-            }
+            } catch (e: Exception) { }
         }
     }
 
-    // ==========================================================
-    // FUNGSI 5: DAFTARKAN DEVICE ID BARU
-    // ==========================================================
     private fun registerUserToServer(context: Context, deviceId: String) {
         try {
             val url = URL("${FIREBASE_BASE_URL}users/$deviceId.json")
@@ -398,11 +363,6 @@ object PremiumManager {
             connection.outputStream.use { os ->
                 val input = jsonPayload.toByteArray(Charsets.UTF_8)
                 os.write(input, 0, input.size)
-            }
-            
-            val responseCode = connection.responseCode
-            if (responseCode != HttpURLConnection.HTTP_OK) {
-                println("PremiumManager: Registrasi awal gagal dengan kode $responseCode")
             }
         } catch (e: Exception) {
             e.printStackTrace()
