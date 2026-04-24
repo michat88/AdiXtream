@@ -38,9 +38,12 @@ object PremiumDialogManager {
         // ADIXTREAM MOD: MANTRA PEMBEKU LAYAR TV
         // ==========================================
         val mainLayout = object : LinearLayout(activity) {
+            // Memblokir paksa request scroll dari layout utama
             override fun requestRectangleOnScreen(rect: android.graphics.Rect?, immediate: Boolean): Boolean {
                 return if (isTv) false else super.requestRectangleOnScreen(rect, immediate)
             }
+            
+            // PERBAIKAN ERROR: child menggunakan View, rectangle menggunakan Rect?
             override fun requestChildRectangleOnScreen(child: View, rectangle: android.graphics.Rect?, immediate: Boolean): Boolean {
                 return if (isTv) false else super.requestChildRectangleOnScreen(child, rectangle, immediate)
             }
@@ -71,7 +74,7 @@ object PremiumDialogManager {
 
         // Ikon dan Teks
         val icon = TextView(activity).apply {
-            text = "🍿" 
+            text = "🍿" // Popcorn
             textSize = if (isTv) 40f else 50f
             gravity = Gravity.CENTER
             setPadding(0, 0, 0, 10)
@@ -89,14 +92,14 @@ object PremiumDialogManager {
         val subTitle = TextView(activity).apply {
             text = "Fitur ini terkunci.\nSilakan hubungi admin untuk\nberlangganan."
             textSize = 14f
-            setTextColor(android.graphics.Color.parseColor("#B3B3B3")) 
+            setTextColor(android.graphics.Color.parseColor("#B3B3B3")) // Abu Netflix
             gravity = Gravity.CENTER
             setPadding(0, 0, 0, if(isTv) 15 else 30)
         }
 
         // Kotak Harga Netflix
         val priceBoxBg = android.graphics.drawable.GradientDrawable().apply {
-            setColor(android.graphics.Color.parseColor("#222222")) 
+            setColor(android.graphics.Color.parseColor("#222222")) // Dark grey solid
             cornerRadius = 8f.toPx
         }
         val priceLayout = LinearLayout(activity).apply {
@@ -120,7 +123,7 @@ object PremiumDialogManager {
                 val t2 = TextView(activity).apply {
                     text = price
                     textSize = 15f
-                    setTextColor(android.graphics.Color.parseColor("#E50914")) 
+                    setTextColor(android.graphics.Color.parseColor("#E50914")) // Merah Netflix
                     typeface = android.graphics.Typeface.DEFAULT_BOLD
                     layoutParams = LinearLayout.LayoutParams(0, -2, 1f)
                     gravity = Gravity.END
@@ -169,12 +172,16 @@ object PremiumDialogManager {
             orientation = LinearLayout.VERTICAL
             setPadding(20, 20, 20, 20)
             background = idBackground
+            
+            // Simetris 30px
             layoutParams = LinearLayout.LayoutParams(-1, -2).apply { 
                 setMargins(30.toPx, 0, 30.toPx, if(isTv) 15 else 30) 
             }
+            
             isFocusable = true 
             isClickable = true
             
+            // Animasi untuk TV/HP
             applyModernButtonEffects(this, isTv, scaleOnTv = 1.05f)
             
             setOnClickListener {
@@ -218,55 +225,43 @@ object PremiumDialogManager {
             setPadding(20, 30, 20, 30)
             textSize = 16f
             setSingleLine()
+            
             background = inputBg
+            
+            // Simetris 30px
             layoutParams = LinearLayout.LayoutParams(-1, -2).apply { 
                 setMargins(30.toPx, 0, 30.toPx, if(isTv) 15 else 30) 
             }
+            
             isFocusable = true 
             isFocusableInTouchMode = true
+            
+            // Animasi untuk TV/HP
             applyModernButtonEffects(this, isTv, scaleOnTv = 1.02f)
         }
 
-        // ==========================================
-        // TOMBOL 1: UNLOCK VIP (MERAH NETFLIX)
-        // ==========================================
-        val btnUnlockBg = android.graphics.drawable.GradientDrawable().apply {
+        // Tombol Unlock Merah Netflix
+        val btnBackground = android.graphics.drawable.GradientDrawable().apply {
             setColor(android.graphics.Color.parseColor("#E50914"))
             cornerRadius = 4f.toPx 
         }
 
         val btnUnlock = Button(activity).apply {
-            text = "UNLOCK VIP"
+            text = "UNLOCK NOW"
             textSize = 16f
-            background = btnUnlockBg 
+            
+            background = btnBackground 
+            
             setTextColor(android.graphics.Color.WHITE)
             typeface = android.graphics.Typeface.DEFAULT_BOLD
             layoutParams = LinearLayout.LayoutParams(-1, 55.toPx).apply { 
-                setMargins(30.toPx, 0, 30.toPx, 10) 
-            }
-            applyModernButtonEffects(this, isTv, scaleOnTv = 1.05f)
-        }
-
-        // ==========================================
-        // TOMBOL 2: KLAIM PROMO (BIRU)
-        // ==========================================
-        val btnPromoBg = android.graphics.drawable.GradientDrawable().apply {
-            setColor(android.graphics.Color.parseColor("#3B82F6")) // Biru elegan
-            cornerRadius = 4f.toPx 
-        }
-
-        val btnKlaimPromo = Button(activity).apply {
-            text = "KLAIM PROMO"
-            textSize = 16f
-            background = btnPromoBg 
-            setTextColor(android.graphics.Color.WHITE)
-            typeface = android.graphics.Typeface.DEFAULT_BOLD
-            layoutParams = LinearLayout.LayoutParams(-1, 55.toPx).apply { 
+                // Simetris 30px
                 setMargins(30.toPx, 0, 30.toPx, 20) 
             }
+            
             applyModernButtonEffects(this, isTv, scaleOnTv = 1.05f)
         }
-
+        
         // Tombol Telegram 
         val telBackground = android.graphics.drawable.GradientDrawable().apply { 
             setColor(android.graphics.Color.TRANSPARENT); cornerRadius = 16f.toPx 
@@ -276,9 +271,12 @@ object PremiumDialogManager {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER
             setPadding(20, 10, 20, 10)
+            
             background = telBackground 
+            
             applyModernButtonEffects(this, isTv, scaleOnTv = 1.05f)
             
+            // PENANGANAN KHUSUS TV UNTUK TELEGRAM
             setOnClickListener {
                 if (isTv) {
                     Toast.makeText(activity, "Gunakan HP Anda untuk menghubungi Admin via Telegram: @michat88", Toast.LENGTH_LONG).show()
@@ -298,9 +296,7 @@ object PremiumDialogManager {
         btnAdminRow.addView(textAdmin)
         btnAdminRow.addView(iconAdmin)
 
-        // ==========================================
-        // LOGIKA KLIk: UNLOCK VIP
-        // ==========================================
+        // Logika Klik Unlock (ONLINE SYSTEM)
         btnUnlock.setOnClickListener {
             val code = inputCode.text.toString().trim().uppercase()
             if (code.isEmpty()) {
@@ -308,18 +304,14 @@ object PremiumDialogManager {
                 return@setOnClickListener
             }
             
-            // Kunci UI (Loading State)
-            btnUnlock.text = "⏳ MEMVERIFIKASI..."
+            // Ubah teks tombol jadi proses loading
+            btnUnlock.text = "MEMVERIFIKASI..."
             btnUnlock.isEnabled = false
-            btnKlaimPromo.isEnabled = false
-            inputCode.isEnabled = false
 
             PremiumManager.activatePremiumWithCode(activity, code, deviceIdVal) { isSuccess, message ->
-                // Buka UI
+                // Kembalikan tombol seperti semula setelah server menjawab
                 btnUnlock.isEnabled = true
-                btnKlaimPromo.isEnabled = true
-                inputCode.isEnabled = true
-                btnUnlock.text = "UNLOCK VIP"
+                btnUnlock.text = "UNLOCK NOW"
                 
                 if (isSuccess) {
                     (btnUnlock.tag as? Dialog)?.dismiss()
@@ -344,35 +336,6 @@ object PremiumDialogManager {
             }
         }
 
-        // ==========================================
-        // LOGIKA KLIK: KLAIM PROMO (UX IMPROVED)
-        // ==========================================
-        btnKlaimPromo.setOnClickListener {
-            val code = inputCode.text.toString().trim().uppercase()
-            if (code.isEmpty()) {
-                Toast.makeText(activity, "Masukkan kode promo terlebih dahulu!", Toast.LENGTH_SHORT).show()
-                return@setOnClickListener
-            }
-
-            // Kunci UI (Loading State Promo)
-            btnKlaimPromo.text = "⏳ MEMPROSES..."
-            btnKlaimPromo.isEnabled = false
-            btnUnlock.isEnabled = false
-            inputCode.isEnabled = false
-
-            PremiumManager.activatePromoWithCode(activity, code, deviceIdVal) { isSuccess, message ->
-                if (!isSuccess) {
-                    // Jika GAGAL, buka kunci UI agar user bisa coba lagi
-                    btnKlaimPromo.isEnabled = true
-                    btnUnlock.isEnabled = true
-                    inputCode.isEnabled = true
-                    btnKlaimPromo.text = "KLAIM PROMO"
-                    Toast.makeText(activity, "⛔ $message", Toast.LENGTH_LONG).show()
-                }
-                // Jika SUKSES, biarkan terkunci karena aplikasi akan merestart otomatis
-            }
-        }
-
         // Menyusun View ke Panels
         if (isTv) {
             leftPanel.addView(icon)
@@ -387,7 +350,6 @@ object PremiumDialogManager {
             rightPanel.addView(idContainer)
             rightPanel.addView(inputCode)
             rightPanel.addView(btnUnlock)
-            rightPanel.addView(btnKlaimPromo)
 
             mainLayout.addView(leftPanel)
             mainLayout.addView(rightPanel)
@@ -402,10 +364,10 @@ object PremiumDialogManager {
             mainLayout.addView(idContainer)
             mainLayout.addView(inputCode)
             mainLayout.addView(btnUnlock)
-            mainLayout.addView(btnKlaimPromo)
             mainLayout.addView(btnAdminRow)
         }
 
+        // Membuat Dialog murni (tanpa embel-embel ScrollView bawaan AlertDialog)
         val dialog = Dialog(activity, android.R.style.Theme_DeviceDefault_Dialog_NoActionBar)
         dialog.window?.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT))
         
@@ -423,6 +385,7 @@ object PremiumDialogManager {
         dialog.setOnShowListener {
             val displayMetrics = activity.resources.displayMetrics
             val width = (displayMetrics.widthPixels * 0.90).toInt() 
+            // Untuk TV, paksa juga height-nya agar tidak melebihi layar yang memicu scroll OS
             val height = if (isTv) (displayMetrics.heightPixels * 0.90).toInt() else ViewGroup.LayoutParams.WRAP_CONTENT
             dialog.window?.setLayout(width, height)
         }
