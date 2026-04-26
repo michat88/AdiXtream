@@ -295,45 +295,52 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
         } else {
             "Gagal Memuat"
         }
-        // Ambil Device ID
         val deviceId = context?.let { PremiumManager.getDeviceId(it) } ?: "-"
 
         context?.let { ctx ->
             val isTvMode = isLayout(TV)
 
-            // --- A1. STATUS LANGGANAN & ID KHUSUS TV ---
-            if (isTvMode) {
-                val profileParent = binding.settingsProfileText.parent as? ViewGroup
-                profileParent?.let { pParent ->
-                    val tvTag = "status_tv_tag"
-                    if (pParent.findViewWithTag<TextView>(tvTag) == null) {
-                        val tvStatus = TextView(ctx).apply {
-                            tag = tvTag
-                            // Tampilkan ID sejajar dengan Status di TV
-                            text = "ID: $deviceId   •   Status: $premiumStatus"
-                            textSize = 13f 
-                            setTextColor(Color.parseColor("#94a3b8"))
-                            setTypeface(null, Typeface.BOLD)
-                            gravity = Gravity.END or Gravity.CENTER_VERTICAL
+            // --- A1. SUNTIK TEKS DI SEBELAH PROFIL "DEFAULT" (TV & HP) ---
+            val profileParent = binding.settingsProfileText.parent as? ViewGroup
+            profileParent?.let { pParent ->
+                val topTag = "status_tv_tag"
+                if (pParent.findViewWithTag<TextView>(topTag) == null) {
+                    val tvTopRight = TextView(ctx).apply {
+                        tag = topTag
+                        // Teks beda untuk TV dan HP
+                        text = if (isTvMode) "ID: $deviceId   •   Status: $premiumStatus" else "ID: $deviceId 📋"
+                        textSize = if (isTvMode) 13f else 12f 
+                        setTextColor(Color.parseColor("#94a3b8"))
+                        setTypeface(null, Typeface.BOLD)
+                        gravity = Gravity.END or Gravity.CENTER_VERTICAL
+
+                        // Fitur Copy Khusus HP
+                        if (!isTvMode) {
+                            setOnClickListener {
+                                val clipboard = ctx.getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+                                val clip = android.content.ClipData.newPlainText("Device ID", deviceId)
+                                clipboard.setPrimaryClip(clip)
+                                Toast.makeText(ctx, "Device ID ($deviceId) berhasil disalin!", Toast.LENGTH_SHORT).show()
+                            }
                         }
-                        
-                        if (pParent is ConstraintLayout) {
-                            tvStatus.id = View.generateViewId()
-                            pParent.addView(tvStatus)
-                            val set = ConstraintSet()
-                            set.clone(pParent)
-                            set.connect(tvStatus.id, ConstraintSet.END, ConstraintSet.PARENT_ID, ConstraintSet.END, 32.toPx)
-                            set.connect(tvStatus.id, ConstraintSet.TOP, binding.settingsProfileText.id, ConstraintSet.TOP)
-                            set.connect(tvStatus.id, ConstraintSet.BOTTOM, binding.settingsProfileText.id, ConstraintSet.BOTTOM)
-                            set.applyTo(pParent)
-                        } else {
-                            binding.settingsProfileText.text = "${binding.settingsProfileText.text}   •   ID: $deviceId   •   $premiumStatus"
-                        }
+                    }
+                    
+                    if (pParent is ConstraintLayout) {
+                        tvTopRight.id = View.generateViewId()
+                        pParent.addView(tvTopRight)
+                        val set = ConstraintSet()
+                        set.clone(pParent)
+                        set.connect(tvTopRight.id, ConstraintSet.END, ConstraintSet.PARENT_ID, ConstraintSet.END, 32.toPx)
+                        set.connect(tvTopRight.id, ConstraintSet.TOP, binding.settingsProfileText.id, ConstraintSet.TOP)
+                        set.connect(tvTopRight.id, ConstraintSet.BOTTOM, binding.settingsProfileText.id, ConstraintSet.BOTTOM)
+                        set.applyTo(pParent)
+                    } else {
+                        binding.settingsProfileText.text = "${binding.settingsProfileText.text}   •   ID: $deviceId" + (if (isTvMode) "   •   $premiumStatus" else " 📋")
                     }
                 }
             }
 
-            // --- A2. STATUS LANGGANAN & ID KHUSUS HP ---
+            // --- A2. STATUS LANGGANAN DI BAWAH (KHUSUS HP) ---
             val versionParent = binding.appVersionInfo.parent as? ViewGroup
             versionParent?.let { parent ->
                 if (!isTvMode) {
@@ -353,16 +360,8 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
                         val index = parent.indexOfChild(binding.appVersionInfo)
                         parent.addView(statusView, index + 1)
                     }
-                    // Tampilkan ID dan Status bertingkat di HP
-                    statusView.text = "Device ID: $deviceId (Tap untuk copy)\nStatus Langganan: $premiumStatus"
-                    
-                    // Fitur Tap untuk Copy di HP
-                    statusView.setOnClickListener {
-                        val clipboard = ctx.getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
-                        val clip = android.content.ClipData.newPlainText("Device ID", deviceId)
-                        clipboard.setPrimaryClip(clip)
-                        Toast.makeText(ctx, "Device ID ($deviceId) berhasil disalin!", Toast.LENGTH_SHORT).show()
-                    }
+                    // Hanya menampilkan Status Langganan (Device ID sudah pindah ke atas)
+                    statusView.text = "Status Langganan: $premiumStatus"
                 }
 
                 // --- B. Tombol KODE PROMO (Gaya Netflix) ---
