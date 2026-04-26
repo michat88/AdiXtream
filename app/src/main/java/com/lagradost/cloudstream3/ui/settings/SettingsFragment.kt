@@ -33,7 +33,6 @@ import com.lagradost.cloudstream3.utils.ImageLoader.loadImage
 import com.lagradost.cloudstream3.utils.UIHelper.clipboardHelper
 import com.lagradost.cloudstream3.utils.UIHelper.fixSystemBarsPadding
 import com.lagradost.cloudstream3.utils.UIHelper.navigate
-import com.lagradost.cloudstream3.utils.UIHelper.toPx
 import com.lagradost.cloudstream3.utils.getImageFromDrawable
 import com.lagradost.cloudstream3.utils.txt
 import com.lagradost.cloudstream3.utils.GitInfo.currentCommitHash 
@@ -64,6 +63,7 @@ import android.content.res.ColorStateList
 import android.graphics.drawable.StateListDrawable
 import android.text.InputFilter
 import android.widget.FrameLayout
+import com.lagradost.cloudstream3.utils.UIHelper.toPx
 // ----------------------------------------------
 
 class SettingsFragment : BaseFragment<MainSettingsBinding>(
@@ -295,7 +295,7 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
         } else {
             "Gagal Memuat"
         }
-        [span_3](start_span)// Ambil Device ID[span_3](end_span)
+        // Ambil Device ID
         val deviceId = context?.let { PremiumManager.getDeviceId(it) } ?: "-"
 
         context?.let { ctx ->
@@ -309,7 +309,7 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
                     if (pParent.findViewWithTag<TextView>(tvTag) == null) {
                         val tvStatus = TextView(ctx).apply {
                             tag = tvTag
-                            [span_4](start_span)// Tampilkan ID sejajar dengan Status di TV[span_4](end_span)
+                            // Tampilkan ID sejajar dengan Status di TV
                             text = "ID: $deviceId   •   Status: $premiumStatus"
                             textSize = 13f 
                             setTextColor(Color.parseColor("#94a3b8"))
@@ -353,10 +353,10 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
                         val index = parent.indexOfChild(binding.appVersionInfo)
                         parent.addView(statusView, index + 1)
                     }
-                    [span_5](start_span)// Tampilkan ID dan Status bertingkat di HP[span_5](end_span)
+                    // Tampilkan ID dan Status bertingkat di HP
                     statusView.text = "Device ID: $deviceId (Tap untuk copy)\nStatus Langganan: $premiumStatus"
                     
-                    [span_6](start_span)[span_7](start_span)// Fitur Tap untuk Copy di HP[span_6](end_span)[span_7](end_span)
+                    // Fitur Tap untuk Copy di HP
                     statusView.setOnClickListener {
                         val clipboard = ctx.getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
                         val clip = android.content.ClipData.newPlainText("Device ID", deviceId)
@@ -437,6 +437,8 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
                             .setView(inputContainer) 
                             .setPositiveButton("Klaim") { _, _ ->
                                 val code = input.text.toString()
+                                Toast.makeText(ctx, "Memeriksa kode...", Toast.LENGTH_SHORT).show()
+                                
                                 PremiumManager.activatePromoWithCode(ctx, code, deviceId) { success, msg ->
                                     Toast.makeText(ctx, msg, Toast.LENGTH_LONG).show()
                                     if (success) {
