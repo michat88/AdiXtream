@@ -307,14 +307,13 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
                 if (pParent.findViewWithTag<TextView>(topTag) == null) {
                     val tvTopRight = TextView(ctx).apply {
                         tag = topTag
-                        // Teks beda untuk TV dan HP
-                        text = if (isTvMode) "ID: $deviceId   •   Status: $premiumStatus" else "ID: $deviceId 📋"
+                        // Ikon dihilangkan, teks tetap polos
+                        text = if (isTvMode) "ID: $deviceId   •   Status: $premiumStatus" else "ID: $deviceId"
                         textSize = if (isTvMode) 13f else 12f 
                         setTextColor(Color.parseColor("#94a3b8"))
                         setTypeface(null, Typeface.BOLD)
                         gravity = Gravity.END or Gravity.CENTER_VERTICAL
 
-                        // Fitur Copy Khusus HP
                         if (!isTvMode) {
                             setOnClickListener {
                                 val clipboard = ctx.getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
@@ -335,7 +334,19 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
                         set.connect(tvTopRight.id, ConstraintSet.BOTTOM, binding.settingsProfileText.id, ConstraintSet.BOTTOM)
                         set.applyTo(pParent)
                     } else {
-                        binding.settingsProfileText.text = "${binding.settingsProfileText.text}   •   ID: $deviceId" + (if (isTvMode) "   •   $premiumStatus" else " 📋")
+                        // Jika parent bukan ConstraintLayout (biasanya di HP)
+                        binding.settingsProfileText.text = "${binding.settingsProfileText.text}   •   ID: $deviceId" + (if (isTvMode) "   •   $premiumStatus" else "")
+                        
+                        // FIX: Memastikan teks profil di HP bisa di-tap untuk menyalin ID
+                        if (!isTvMode) {
+                            binding.settingsProfileText.isClickable = true
+                            binding.settingsProfileText.setOnClickListener {
+                                val clipboard = ctx.getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+                                val clip = android.content.ClipData.newPlainText("Device ID", deviceId)
+                                clipboard.setPrimaryClip(clip)
+                                Toast.makeText(ctx, "Device ID ($deviceId) berhasil disalin!", Toast.LENGTH_SHORT).show()
+                            }
+                        }
                     }
                 }
             }
@@ -360,7 +371,7 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
                         val index = parent.indexOfChild(binding.appVersionInfo)
                         parent.addView(statusView, index + 1)
                     }
-                    // Hanya menampilkan Status Langganan (Device ID sudah pindah ke atas)
+                    // Hanya menampilkan Status Langganan
                     statusView.text = "Status Langganan: $premiumStatus"
                 }
 
@@ -436,8 +447,6 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
                             .setView(inputContainer) 
                             .setPositiveButton("Klaim") { _, _ ->
                                 val code = input.text.toString()
-                                Toast.makeText(ctx, "Memeriksa kode...", Toast.LENGTH_SHORT).show()
-                                
                                 PremiumManager.activatePromoWithCode(ctx, code, deviceId) { success, msg ->
                                     Toast.makeText(ctx, msg, Toast.LENGTH_LONG).show()
                                     if (success) {
