@@ -50,6 +50,19 @@ object PremiumManager {
         )
     }
 
+    // FITUR BARU: Pendeteksi Jam HP yang Salah
+    private fun validateDeviceTime(context: Context, serverTime: Long) {
+        val localTime = System.currentTimeMillis()
+        val difference = abs(serverTime - localTime)
+        
+        // Jika selisih waktu HP dan Server lebih dari 1 hari (24 jam)
+        if (difference > 24L * 60L * 60L * 1000L) {
+            Handler(Looper.getMainLooper()).post {
+                Toast.makeText(context, "⚠️ Peringatan: Tanggal/Jam HP Anda tidak akurat! Harap ubah ke Waktu Otomatis di Pengaturan HP.", Toast.LENGTH_LONG).show()
+            }
+        }
+    }
+
     fun checkAndMigrateOldOfflineUser(context: Context) {
         val oldPrefs = PreferenceManager.getDefaultSharedPreferences(context)
         val wasPremium = oldPrefs.getBoolean(PREF_IS_PREMIUM, false)
@@ -80,7 +93,6 @@ object PremiumManager {
                     val jsonPayload = JSONObject().apply {
                         put("status", "aktif")
                         put("expired_at", oldExpiryDate)
-                        // FIX: Gunakan Long (angka) agar React Native bisa membacanya
                         put("last_update", System.currentTimeMillis())
                     }.toString()
 
@@ -119,8 +131,10 @@ object PremiumManager {
                         }
 
                         if (dbCode == inputCode) {
-                            // FIX: Ambil waktu server untuk mencegah hack jam HP dimundurkan
                             val serverTime = if (connection.date > 0) connection.date else System.currentTimeMillis()
+                            
+                            // Eksekusi peringatan jika jam HP ngawur
+                            if (connection.date > 0) validateDeviceTime(context, serverTime)
 
                             if (serverTime < dbExpired) {
                                 val securePrefs = getSecurePrefs(context)
@@ -156,7 +170,6 @@ object PremiumManager {
 
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                // 1. Ambil data promo
                 val promoUrl = URL("${FIREBASE_BASE_URL}promo_codes/$inputCode.json")
                 val promoConn = promoUrl.openConnection() as HttpURLConnection
                 promoConn.requestMethod = "GET"
@@ -175,8 +188,10 @@ object PremiumManager {
                 val jsonPromo = JSONObject(promoRes)
                 val promoValidUntil = jsonPromo.optLong("valid_until")
                 
-                // FIX: Curi waktu dari server internet agar kebal terhadap HP dengan tahun 1970/2099
                 val serverTime = if (promoConn.date > 0) promoConn.date else System.currentTimeMillis()
+                
+                // Eksekusi peringatan jika jam HP ngawur
+                if (promoConn.date > 0) validateDeviceTime(context, serverTime)
 
                 if (jsonPromo.optString("status") != "aktif") {
                     Handler(Looper.getMainLooper()).post { onResult(false, "Promo tidak aktif!") }
@@ -191,7 +206,6 @@ object PremiumManager {
                     return@launch
                 }
 
-                // 2. Tandai Promo Digunakan
                 val markUrl = URL("${FIREBASE_BASE_URL}users/$deviceId/redeemed_promos/$inputCode.json")
                 val markConn = markUrl.openConnection() as HttpURLConnection
                 markConn.requestMethod = "PUT"
@@ -204,7 +218,6 @@ object PremiumManager {
                     return@launch
                 }
 
-                // 3. Potong kuota di database
                 val updatePromoUrl = URL("${FIREBASE_BASE_URL}promo_codes/$inputCode.json")
                 val updatePromoConn = updatePromoUrl.openConnection() as HttpURLConnection
                 updatePromoConn.requestMethod = "POST"
@@ -215,7 +228,6 @@ object PremiumManager {
                 updatePromoConn.outputStream.use { it.write(promoPatch.toByteArray(Charsets.UTF_8)) }
                 updatePromoConn.responseCode
 
-                // 4. Hitung masa aktif baru (Berdasarkan Waktu Server)
                 val userUrl = URL("${FIREBASE_BASE_URL}users/$deviceId.json")
                 val userConn = userUrl.openConnection() as HttpURLConnection
                 var baseTimestamp = if (userConn.date > 0) userConn.date else System.currentTimeMillis()
@@ -230,7 +242,6 @@ object PremiumManager {
                 
                 val newExpiredTimestamp = baseTimestamp + (jsonPromo.optInt("days") * 24L * 60L * 60L * 1000L)
 
-                // 5. Update user
                 val updateUserUrl = URL("${FIREBASE_BASE_URL}users/$deviceId.json")
                 val updateUserConn = updateUserUrl.openConnection() as HttpURLConnection
                 updateUserConn.requestMethod = "POST"
@@ -240,7 +251,6 @@ object PremiumManager {
                 
                 val userPatch = JSONObject().apply {
                     put("expired_at", newExpiredTimestamp)
-                    // FIX: Kirim data berupa angka (bukan teks) agar React Native tidak error
                     put("last_update", serverTime) 
                 }.toString()
                 
@@ -263,7 +273,7 @@ object PremiumManager {
                         Runtime.getRuntime().exit(0)
                     }
                 } else {
-                    Handler(Looper.getMainLooper()).post { onResult(false, "Gagal Sinkronisasi User (Error $finalUserRes)") }
+                    Handler(Looper.getMainLooper()).post { onResult(false, "Gagal Sinkronisasi User") }
                 }
             } catch (e: Exception) {
                 Handler(Looper.getMainLooper()).post { onResult(false, "Timeout/Kesalahan Jaringan") }
@@ -277,12 +287,10 @@ object PremiumManager {
         val expiryDate = securePrefs.getLong(PREF_EXPIRY_DATE, 0)
         
         if (isPremium) {
-            // Cek lokal sementara
             if (System.currentTimeMillis() > expiryDate) {
                 deactivatePremium(context) 
                 return false
             }
-            // Cek silang dengan server tiap 5 menit untuk memastikan tidak ada hack jam
             if (System.currentTimeMillis() - lastCheckTime > 5 * 60 * 1000) {
                 checkAndSyncWithServer(context, getDeviceId(context))
             }
@@ -319,8 +327,11 @@ object PremiumManager {
                         val dbStatus = json.optString("status", "")
                         val dbExpired = json.optLong("expired_at", 0L)
                         
-                        // FIX: Validasi masa kadaluwarsa pakai jam server
                         val serverTime = if (connection.date > 0) connection.date else System.currentTimeMillis()
+                        
+                        // Eksekusi peringatan jika jam HP ngawur saat sinkronisasi background
+                        if (connection.date > 0) validateDeviceTime(context, serverTime)
+
                         val securePrefs = getSecurePrefs(context)
                         val wasPremium = securePrefs.getBoolean(PREF_IS_PREMIUM, false)
                         
@@ -357,12 +368,13 @@ object PremiumManager {
             connection.setRequestProperty("Content-Type", "application/json")
             connection.doOutput = true
             
-            // Ambil waktu server
             val serverTime = if (connection.date > 0) connection.date else System.currentTimeMillis()
+            
+            // Eksekusi peringatan jika jam HP ngawur saat pertama kali daftar
+            if (connection.date > 0) validateDeviceTime(context, serverTime)
 
             val jsonPayload = JSONObject().apply {
                 put("status", "aktif")
-                // FIX: Menambahkan "created_at" agar data terdaftar tampil di dashboard Admin
                 put("created_at", serverTime)
                 put("last_update", serverTime)
             }.toString()
