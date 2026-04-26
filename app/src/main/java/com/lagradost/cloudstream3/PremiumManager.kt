@@ -60,7 +60,7 @@ object PremiumManager {
             securePrefs.edit()
                 .putBoolean(PREF_IS_PREMIUM, true)
                 .putLong(PREF_EXPIRY_DATE, oldExpiryDate)
-                .commit() // FIX AUDIT: Pastikan data tersimpan sebelum lanjut
+                .commit() 
 
             oldPrefs.edit()
                 .remove(PREF_IS_PREMIUM)
@@ -80,11 +80,12 @@ object PremiumManager {
                     val jsonPayload = JSONObject().apply {
                         put("status", "aktif")
                         put("expired_at", oldExpiryDate)
-                        put("last_update", "Migrasi Otomatis")
+                        // FIX: Gunakan Long (angka) agar React Native bisa membacanya
+                        put("last_update", System.currentTimeMillis())
                     }.toString()
 
                     connection.outputStream.use { it.write(jsonPayload.toByteArray(Charsets.UTF_8)) }
-                    val res = connection.responseCode
+                    connection.responseCode
                 } catch (e: Exception) { }
             }
         }
@@ -118,14 +119,17 @@ object PremiumManager {
                         }
 
                         if (dbCode == inputCode) {
-                            if (System.currentTimeMillis() < dbExpired) {
+                            // FIX: Ambil waktu server untuk mencegah hack jam HP dimundurkan
+                            val serverTime = if (connection.date > 0) connection.date else System.currentTimeMillis()
+
+                            if (serverTime < dbExpired) {
                                 val securePrefs = getSecurePrefs(context)
                                 securePrefs.edit()
                                     .putBoolean(PREF_IS_PREMIUM, true)
                                     .putLong(PREF_EXPIRY_DATE, dbExpired)
-                                    .commit() // FIX AUDIT
+                                    .commit()
                                 
-                                lastCheckTime = System.currentTimeMillis()
+                                lastCheckTime = serverTime
                                 Handler(Looper.getMainLooper()).post { onResult(true, "Aktivasi Berhasil") }
                             } else {
                                 Handler(Looper.getMainLooper()).post { onResult(false, "Masa aktif kadaluarsa!") }
@@ -169,6 +173,11 @@ object PremiumManager {
                 }
 
                 val jsonPromo = JSONObject(promoRes)
+                val promoValidUntil = jsonPromo.optLong("valid_until")
+                
+                // FIX: Curi waktu dari server internet agar kebal terhadap HP dengan tahun 1970/2099
+                val serverTime = if (promoConn.date > 0) promoConn.date else System.currentTimeMillis()
+
                 if (jsonPromo.optString("status") != "aktif") {
                     Handler(Looper.getMainLooper()).post { onResult(false, "Promo tidak aktif!") }
                     return@launch
@@ -177,19 +186,19 @@ object PremiumManager {
                     Handler(Looper.getMainLooper()).post { onResult(false, "Kuota promo habis!") }
                     return@launch
                 }
-                if (System.currentTimeMillis() > jsonPromo.optLong("valid_until")) {
+                if (serverTime > promoValidUntil) {
                     Handler(Looper.getMainLooper()).post { onResult(false, "Promo sudah kadaluarsa!") }
                     return@launch
                 }
 
-                // 2. Tandai Promo Digunakan (Validasi atomik oleh Firebase Rules)
+                // 2. Tandai Promo Digunakan
                 val markUrl = URL("${FIREBASE_BASE_URL}users/$deviceId/redeemed_promos/$inputCode.json")
                 val markConn = markUrl.openConnection() as HttpURLConnection
                 markConn.requestMethod = "PUT"
                 markConn.setRequestProperty("Content-Type", "application/json")
                 markConn.doOutput = true
                 markConn.outputStream.use { it.write("true".toByteArray(Charsets.UTF_8)) }
-           
+
                 if (markConn.responseCode != HttpURLConnection.HTTP_OK) {
                     Handler(Looper.getMainLooper()).post { onResult(false, "Gagal! Promo sudah pernah diklaim.") }
                     return@launch
@@ -204,12 +213,13 @@ object PremiumManager {
                 updatePromoConn.doOutput = true
                 val promoPatch = JSONObject().apply { put("used_count", jsonPromo.optInt("used_count") + 1) }.toString()
                 updatePromoConn.outputStream.use { it.write(promoPatch.toByteArray(Charsets.UTF_8)) }
-                val pRes = updatePromoConn.responseCode
+                updatePromoConn.responseCode
 
-                // 4. Hitung masa aktif baru
+                // 4. Hitung masa aktif baru (Berdasarkan Waktu Server)
                 val userUrl = URL("${FIREBASE_BASE_URL}users/$deviceId.json")
                 val userConn = userUrl.openConnection() as HttpURLConnection
-                var baseTimestamp = System.currentTimeMillis()
+                var baseTimestamp = if (userConn.date > 0) userConn.date else System.currentTimeMillis()
+
                 if (userConn.responseCode == HttpURLConnection.HTTP_OK) {
                      val userRes = userConn.inputStream.bufferedReader().use { it.readText() }
                      if (userRes != "null") {
@@ -217,9 +227,10 @@ object PremiumManager {
                          if (dbExp > baseTimestamp) baseTimestamp = dbExp 
                      }
                 }
+                
                 val newExpiredTimestamp = baseTimestamp + (jsonPromo.optInt("days") * 24L * 60L * 60L * 1000L)
 
-                // 5. Update user (SESUAI RULES: Tanpa status/account_type)
+                // 5. Update user
                 val updateUserUrl = URL("${FIREBASE_BASE_URL}users/$deviceId.json")
                 val updateUserConn = updateUserUrl.openConnection() as HttpURLConnection
                 updateUserConn.requestMethod = "POST"
@@ -229,7 +240,8 @@ object PremiumManager {
                 
                 val userPatch = JSONObject().apply {
                     put("expired_at", newExpiredTimestamp)
-                    put("last_update", "Redeemed Promo: $inputCode")
+                    // FIX: Kirim data berupa angka (bukan teks) agar React Native tidak error
+                    put("last_update", serverTime) 
                 }.toString()
                 
                 updateUserConn.outputStream.use { it.write(userPatch.toByteArray(Charsets.UTF_8)) }
@@ -237,13 +249,12 @@ object PremiumManager {
                 val finalUserRes = updateUserConn.responseCode
                 if (finalUserRes == HttpURLConnection.HTTP_OK) {
                     val securePrefs = getSecurePrefs(context)
-                    // FIX AUDIT: Ganti .apply() ke .commit() karena setelah ini ada exit(0)
                     securePrefs.edit()
                         .putBoolean(PREF_IS_PREMIUM, true)
                         .putLong(PREF_EXPIRY_DATE, newExpiredTimestamp)
                         .commit() 
 
-                    lastCheckTime = System.currentTimeMillis()
+                    lastCheckTime = serverTime
                     
                     Handler(Looper.getMainLooper()).post { 
                         Toast.makeText(context, "Selamat! Promo Berhasil Diklaim.", Toast.LENGTH_LONG).show()
@@ -266,12 +277,13 @@ object PremiumManager {
         val expiryDate = securePrefs.getLong(PREF_EXPIRY_DATE, 0)
         
         if (isPremium) {
+            // Cek lokal sementara
             if (System.currentTimeMillis() > expiryDate) {
                 deactivatePremium(context) 
                 return false
             }
+            // Cek silang dengan server tiap 5 menit untuk memastikan tidak ada hack jam
             if (System.currentTimeMillis() - lastCheckTime > 5 * 60 * 1000) {
-                lastCheckTime = System.currentTimeMillis()
                 checkAndSyncWithServer(context, getDeviceId(context))
             }
             return true
@@ -284,7 +296,7 @@ object PremiumManager {
         securePrefs.edit()
             .putBoolean(PREF_IS_PREMIUM, false)
             .putLong(PREF_EXPIRY_DATE, 0)
-            .commit() // FIX AUDIT: Selalu gunakan commit jika ada risiko force exit
+            .commit() 
     }
     
     fun getExpiryDateString(context: Context): String {
@@ -306,11 +318,14 @@ object PremiumManager {
                         val json = JSONObject(response)
                         val dbStatus = json.optString("status", "")
                         val dbExpired = json.optLong("expired_at", 0L)
+                        
+                        // FIX: Validasi masa kadaluwarsa pakai jam server
+                        val serverTime = if (connection.date > 0) connection.date else System.currentTimeMillis()
                         val securePrefs = getSecurePrefs(context)
                         val wasPremium = securePrefs.getBoolean(PREF_IS_PREMIUM, false)
                         
                         val isBanned = dbStatus == "banned"
-                        val isExpired = dbStatus == "aktif" && dbExpired > 0L && System.currentTimeMillis() > dbExpired
+                        val isExpired = dbStatus == "aktif" && dbExpired > 0L && serverTime > dbExpired
                        
                         if (isBanned || isExpired) {
                             if (wasPremium) {
@@ -325,6 +340,7 @@ object PremiumManager {
                             }
                         } else if (dbStatus == "aktif" && dbExpired > 0L) {
                             securePrefs.edit().putLong(PREF_EXPIRY_DATE, dbExpired).apply()
+                            lastCheckTime = serverTime
                         }
                     }
                 }
@@ -341,14 +357,18 @@ object PremiumManager {
             connection.setRequestProperty("Content-Type", "application/json")
             connection.doOutput = true
             
-            // Register awal: Kirim status aktif sesuai Firebase Rules
+            // Ambil waktu server
+            val serverTime = if (connection.date > 0) connection.date else System.currentTimeMillis()
+
             val jsonPayload = JSONObject().apply {
                 put("status", "aktif")
-                put("last_update", "Auto-Registration")
+                // FIX: Menambahkan "created_at" agar data terdaftar tampil di dashboard Admin
+                put("created_at", serverTime)
+                put("last_update", serverTime)
             }.toString()
             
             connection.outputStream.use { it.write(jsonPayload.toByteArray(Charsets.UTF_8)) }
-            val res = connection.responseCode
+            connection.responseCode
         } catch (e: Exception) { }
     }
 }
