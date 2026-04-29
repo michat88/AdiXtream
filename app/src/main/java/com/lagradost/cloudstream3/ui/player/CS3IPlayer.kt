@@ -663,14 +663,9 @@ class CS3IPlayer : IPlayer {
         Log.i(TAG, "onResume")
         isAudioOnlyBackground = false
         
-        if (exoPlayer == null) {
-            reloadPlayer(context)
-        } else {
-            // Membangunkan kembali player jika statusnya IDLE setelah di-minimize
-            if (exoPlayer?.playbackState == Player.STATE_IDLE) {
-                exoPlayer?.prepare()
-            }
-        }
+        // PERBAIKAN PAMUNGKAS: Paksa muat ulang penuh pemutar agar UI dan Player 100% tersinkron
+        // Karena posisi terakhir sudah disimpan di saveData() saat onPause, video akan lanjut di titik terakhir.
+        reloadPlayer(context)
     }
 
     override fun release() {
@@ -1251,6 +1246,8 @@ class CS3IPlayer : IPlayer {
                 .setSeekParameters(SeekParameters(toleranceBeforeUs, toleranceAfterUs))
                 .setLoadControl(
                     DefaultLoadControl.Builder()
+                        // TAMBAHAN PAMUNGKAS: Paksa utamakan waktu putar daripada ukuran file yang didownload
+                        .setPrioritizeTimeOverSizeThresholds(true)
                         .setTargetBufferBytes(
                             if (cacheSize <= 0) {
                                 DefaultLoadControl.DEFAULT_TARGET_BUFFER_BYTES
@@ -1269,9 +1266,9 @@ class CS3IPlayer : IPlayer {
                             } else {
                                 videoBufferMs.toInt()
                             },
-                            // Waktu buffer minimum diperkecil agar video cepat dimulai (0.5s)
+                            // Waktu minimum agar cepat main 0.5 detik
                             500,
-                            // Waktu buffer setelah re-buffering (1.5s)
+                            // Waktu rebuffering 1.5 detik
                             1500
                         ).build()
                 )
