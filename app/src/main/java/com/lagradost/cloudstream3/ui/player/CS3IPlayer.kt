@@ -790,7 +790,9 @@ class CS3IPlayer : IPlayer {
                 CronetEngine.Builder(context)
                     .enableBrotli(true)
                     .enableHttp2(true)
-                    .enableQuic(true)
+                    // MATIKAN QUIC DI SINI:
+                    // Jika QUIC dibatasi oleh ISP atau tidak stabil, ini akan menjadi penyelamat
+                    .enableQuic(false)
                     .setStoragePath(cacheDirectory.absolutePath)
                     .setLibraryLoader(null)
                     .enableHttpCache(CronetEngine.Builder.HTTP_CACHE_DISK, diskCacheSize)
