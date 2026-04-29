@@ -122,14 +122,12 @@ const val TAG = "CS3ExoPlayer"
 const val PREFERRED_AUDIO_LANGUAGE_KEY = "preferred_audio_language"
 
 /** toleranceBeforeUs – The maximum time that the actual position seeked to may precede the
- * requested seek position, in microseconds.
- * Must be non-negative. */
+ * requested seek position, in microseconds. Must be non-negative. */
 const val toleranceBeforeUs = 300_000L
 
 /**
  * toleranceAfterUs – The maximum time that the actual position seeked to may exceed the requested
- * seek position, in microseconds.
- * Must be non-negative.
+ * seek position, in microseconds. Must be non-negative.
  */
 const val toleranceAfterUs = 300_000L
 
@@ -660,12 +658,9 @@ class CS3IPlayer : IPlayer {
     }
 
     override fun onResume(context: Context) {
-        Log.i(TAG, "onResume")
         isAudioOnlyBackground = false
-        
-        // PERBAIKAN PAMUNGKAS: Paksa muat ulang penuh pemutar agar UI dan Player 100% tersinkron
-        // Karena posisi terakhir sudah disimpan di saveData() saat onPause, video akan lanjut di titik terakhir.
-        reloadPlayer(context)
+        if (exoPlayer == null)
+            reloadPlayer(context)
     }
 
     override fun release() {
@@ -790,9 +785,7 @@ class CS3IPlayer : IPlayer {
                 CronetEngine.Builder(context)
                     .enableBrotli(true)
                     .enableHttp2(true)
-                    // MATIKAN QUIC DI SINI:
-                    // Jika QUIC dibatasi oleh ISP atau tidak stabil, ini akan menjadi penyelamat
-                    .enableQuic(false)
+                    .enableQuic(true)
                     .setStoragePath(cacheDirectory.absolutePath)
                     .setLibraryLoader(null)
                     .enableHttpCache(CronetEngine.Builder.HTTP_CACHE_DISK, diskCacheSize)
@@ -1248,8 +1241,6 @@ class CS3IPlayer : IPlayer {
                 .setSeekParameters(SeekParameters(toleranceBeforeUs, toleranceAfterUs))
                 .setLoadControl(
                     DefaultLoadControl.Builder()
-                        // TAMBAHAN PAMUNGKAS: Paksa utamakan waktu putar daripada ukuran file yang didownload
-                        .setPrioritizeTimeOverSizeThresholds(true)
                         .setTargetBufferBytes(
                             if (cacheSize <= 0) {
                                 DefaultLoadControl.DEFAULT_TARGET_BUFFER_BYTES
@@ -1268,10 +1259,8 @@ class CS3IPlayer : IPlayer {
                             } else {
                                 videoBufferMs.toInt()
                             },
-                            // Waktu minimum agar cepat main 0.5 detik
-                            500,
-                            // Waktu rebuffering 1.5 detik
-                            1500
+                            DefaultLoadControl.DEFAULT_BUFFER_FOR_PLAYBACK_MS,
+                            DefaultLoadControl.DEFAULT_BUFFER_FOR_PLAYBACK_AFTER_REBUFFER_MS
                         ).build()
                 )
 
@@ -1489,7 +1478,8 @@ class CS3IPlayer : IPlayer {
                             tracks.groups.filter { it.type == TRACK_TYPE_TEXT }.getFormats()
                                 .mapNotNull { (format, _) ->
                                     // Filter out non subs, already used subs and subs without languages
-                                    if (format.id == null || format.language == null ||
+                                    if (format.id == null ||
+                                        format.language == null ||
                                         format.language?.startsWith("-") == true
                                     ) return@mapNotNull null
 
