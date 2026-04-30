@@ -272,10 +272,7 @@ open class ResultFragmentPhone : BaseFragment<FragmentResultSwipeBinding>(
                 } ?: run {
                 false
             }
-        //result_trailer_thumbnail?.setImageBitmap(result_poster_background?.drawable?.toBitmap())
 
-
-        // result_trailer_loading?.isVisible = isSuccess
         val turnVis = !isSuccess && !isFullScreenPlayer
         resultBinding?.apply {
             // If we load a trailer, then cancel the big logo and only show the small title
@@ -306,22 +303,10 @@ open class ResultFragmentPhone : BaseFragment<FragmentResultSwipeBinding>(
             } else {
                 ViewGroup.FOCUS_BLOCK_DESCENDANTS
             }
-            binding.resultFullscreenHolder.isVisible = !isSuccess && isFullScreenPlayer
+            
+            // FIX: Tambahkan `?` di sini agar compiler tahu kita menggunakan property binding dari kelas parent yang sifatnya nullable
+            binding?.resultFullscreenHolder?.isVisible = !isSuccess && isFullScreenPlayer
         }
-        //player_view?.apply {
-        //alpha = 0.0f
-        //ObjectAnimator.ofFloat(player_view, "alpha", 1f).apply {
-        //    duration = 200
-        //    start()
-        //}
-
-        //val fadeIn: Animation = AlphaAnimation(0.0f, 1f).apply {
-        //    interpolator = DecelerateInterpolator()
-        //    duration = 2000
-        //    fillAfter = true
-        //}
-        //startAnimation(fadeIn)
-        //}
     }
 
     private fun setTrailers(trailers: List<Pair<ExtractorLink, String>>?) {
@@ -369,13 +354,15 @@ open class ResultFragmentPhone : BaseFragment<FragmentResultSwipeBinding>(
 
     private fun setUrl(url: String?) {
         if (url == null) {
-            binding.resultOpenInBrowser.isVisible = false
+            // FIX: Tambahkan `?` di sini
+            binding?.resultOpenInBrowser?.isVisible = false
             return
         }
 
         val valid = url.startsWith("http")
 
-        binding.resultOpenInBrowser.apply {
+        // FIX: Tambahkan `?` di sini
+        binding?.resultOpenInBrowser?.apply {
             isVisible = valid
             setOnClickListener {
                 context?.openBrowser(url)
@@ -508,25 +495,6 @@ open class ResultFragmentPhone : BaseFragment<FragmentResultSwipeBinding>(
                 nextLeft = FOCUS_SELF,
                 nextRight = FOCUS_SELF
             )
-            /*resultCastItems.layoutManager = object : LinearListLayout(view.context) {
-                override fun onRequestChildFocus(
-                    parent: RecyclerView,
-                    state: RecyclerView.State,
-                    child: View,
-                    focused: View?
-                ): Boolean {
-                    // Make the cast always focus the first visible item when focused
-                    // from somewhere else. Otherwise, it jumps to the last item.
-                    return if (parent.focusedChild == null) {
-                        scrollToPosition(this.findFirstCompletelyVisibleItemPosition())
-                        true
-                    } else {
-                        super.onRequestChildFocus(parent, state, child, focused)
-                    }
-                }
-            }.apply {
-                this.orientation = RecyclerView.HORIZONTAL
-            }*/
             resultCastItems.setRecycledViewPool(ActorAdaptor.sharedPool)
             resultCastItems.adapter = ActorAdaptor()
             resultEpisodes.setRecycledViewPool(EpisodeAdapter.sharedPool)
@@ -608,18 +576,6 @@ open class ResultFragmentPhone : BaseFragment<FragmentResultSwipeBinding>(
                 } else resultOverlappingPanels.closePanels()
             }
 
-            /*
-            resultMiniSync.setRecycledViewPool(ImageAdapter.sharedPool)
-            resultMiniSync.adapter = ImageAdapter(
-                nextFocusDown = R.id.result_sync_set_score,
-                clickCallback = { action ->
-                    if (action == IMAGE_CLICK || action == IMAGE_LONG_CLICK) {
-                        if (resultOverlappingPanels.getSelectedPanel().ordinal == 1) {
-                            resultOverlappingPanels.openStartPanel()
-                        } else resultOverlappingPanels.closePanels()
-                    }
-                })
-            */
             resultSubscribe.setOnClickListener {
                 viewModel.toggleSubscriptionStatus(context) { newStatus: Boolean? ->
                     if (newStatus == null) return@toggleSubscriptionStatus
@@ -681,10 +637,6 @@ open class ResultFragmentPhone : BaseFragment<FragmentResultSwipeBinding>(
                             }.addOnCompleteListener {
                                 isGone = !it.isSuccessful
                             }
-                            // this shit leaks for some reason
-                            //castContext.addCastStateListener { state ->
-                            //    media_route_button?.isGone = state == CastState.NO_DEVICES_AVAILABLE
-                            //}
                         } catch (e: Exception) {
                             logError(e)
                         }
@@ -713,18 +665,6 @@ open class ResultFragmentPhone : BaseFragment<FragmentResultSwipeBinding>(
                     }
             }
         }
-
-
-        /*
-        result_bookmark_button?.setOnClickListener {
-            it.popupMenuNoIcons(
-                items = WatchType.values()
-                    .map { watchType -> Pair(watchType.internalId, watchType.stringRes) },
-                //.map { watchType -> Triple(watchType.internalId, watchType.iconRes, watchType.stringRes) },
-            ) {
-                viewModel.updateWatchStatus(WatchType.fromInternalId(this.itemId))
-            }
-        }*/
 
         observeNullable(viewModel.resumeWatching) { resume ->
             resultBinding?.apply {
@@ -1427,8 +1367,6 @@ open class ResultFragmentPhone : BaseFragment<FragmentResultSwipeBinding>(
             }
         }
 
-//        val preferDub = context?.getApiDubstatusSettings()?.all { it == DubStatus.Dubbed } == true
-
         observe(viewModel.dubSubSelections) { range ->
             resultBinding?.resultDubSelect?.setOnClickListener { view ->
                 view?.context?.let { ctx ->
@@ -1483,13 +1421,6 @@ open class ResultFragmentPhone : BaseFragment<FragmentResultSwipeBinding>(
                         {}) { itemId ->
                         viewModel.changeSeason(names[itemId].first)
                     }
-
-
-                    //view.popupMenuNoIconsAndNoStringRes(names.mapIndexed { index, (_, name) ->
-                    //    index to name
-                    //}) {
-                    //    viewModel.changeSeason(names[itemId].first)
-                    //}
                 }
             }
         }
@@ -1527,7 +1458,8 @@ open class ResultFragmentPhone : BaseFragment<FragmentResultSwipeBinding>(
             }
         }
 
-        binding.apply {
+        // FIX: Tambahkan `?` di sini agar pemanggilannya aman dari null
+        binding?.apply {
             resultRecommendationsBtt.isGone = isInvalid
             resultRecommendationsBtt.setOnClickListener {
                 val nextFocusDown = if (resultOverlappingPanels.getSelectedPanel().ordinal == 1) {
