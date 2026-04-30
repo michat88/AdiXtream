@@ -191,7 +191,6 @@ android {
     }
 
     lint {
-        abortOnError = false
         checkReleaseBuilds = false
         disable.add("MissingTranslation")
     }
