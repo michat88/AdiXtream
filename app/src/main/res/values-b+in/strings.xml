@@ -632,6 +632,7 @@
     <string name="show">Tampilkan</string>
     <string name="audio_singular">Audio</string>
     <string name="podcast_singular">Podcast</string>
+    <string name="video_singular">Video</string>
     <string name="encoding_error">Pengkodean error</string>
     <string name="unsupported_error">Error yang tidak didukung</string>
     <string name="player_load_one_subtitle_online">Muat yang pertama tersedia</string>
