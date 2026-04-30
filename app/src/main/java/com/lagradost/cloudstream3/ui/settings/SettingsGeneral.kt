@@ -8,6 +8,7 @@ import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.edit
 import androidx.core.os.ConfigurationCompat
+import androidx.fragment.app.Fragment
 import androidx.preference.PreferenceManager
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.APIHolder.allProviders
@@ -91,14 +92,21 @@ class SettingsGeneral : BasePreferenceFragmentCompat() {
         val lang: String,
     )
 
-    private val pathPicker = getChooseFolderLauncher { uri, path ->
-        val context = context ?: CloudStreamApp.context ?: return@getChooseFolderLauncher
-        (path ?: uri.toString()).let {
+    companion object {
+        fun Fragment.pickDownloadPath(uri: Uri?, path: String?) {
+            if (uri == null) return
+
+            val context = context ?: CloudStreamApp.context ?: return
+            val visual = path ?: uri.toString()
             PreferenceManager.getDefaultSharedPreferences(context).edit {
                 putString(getString(R.string.download_path_key), uri.toString())
-                putString(getString(R.string.download_path_key_visual), it)
+                putString(context.getString(R.string.download_path_key_visual), visual)
             }
         }
+    }
+
+    private val pathPicker = getChooseFolderLauncher { uri, path ->
+        pickDownloadPath(uri, path)
     }
 
     override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
@@ -256,7 +264,7 @@ class SettingsGeneral : BasePreferenceFragmentCompat() {
             val prefNames = resources.getStringArray(R.array.dns_pref)
             val prefValues = resources.getIntArray(R.array.dns_pref_values)
 
-            // PERBAIKAN: Mengubah nilai default dari 0 menjadi 1 (Google DNS)
+            // PERBAIKAN (MOD ADIXTREAM): Mengubah nilai default dari 0 menjadi 1 (Google DNS)
             val currentDns =
                 settingsManager.getInt(getString(R.string.dns_pref), 1)
 
@@ -338,7 +346,7 @@ class SettingsGeneral : BasePreferenceFragmentCompat() {
 
         try {
             getPref(R.string.benene_count)?.let { pref ->
-                // Mengubah teks ringkasan (summary) di bawah judul tombol
+                // MODIFIKASI ADIXTREAM: Mengubah teks ringkasan (summary) di bawah judul tombol
                 pref.summary = "Dukung saya melalui Saweria" 
 
                 pref.setOnPreferenceClickListener {
