@@ -39,7 +39,6 @@ import androidx.preference.PreferenceManager
 import androidx.recyclerview.widget.SimpleItemAnimator
 import com.google.android.material.button.MaterialButton
 import com.lagradost.cloudstream3.CommonActivity.keyEventListener
-import com.lagradost.cloudstream3.CommonActivity.playerEventListener
 import com.lagradost.cloudstream3.LoadResponse
 import com.lagradost.cloudstream3.R
 import com.lagradost.cloudstream3.databinding.FragmentPlayerBinding
@@ -447,14 +446,14 @@ open class FullScreenPlayer : AbstractPlayerFragment<FragmentPlayerBinding>(
     }
 
     private fun setupKeyEventListener() {
-        keyEventListener = { eventNav ->
-            val (event, hasNavigated) = eventNav
+        keyEventListener = { (event, hasNavigated) ->
             when {
                 event == null -> false
                 event.action == KeyEvent.ACTION_DOWN &&
                         (event.keyCode == KeyEvent.KEYCODE_VOLUME_UP ||
                                 event.keyCode == KeyEvent.KEYCODE_VOLUME_DOWN) ->
                     playerHostView?.handleVolumeKey(event.keyCode) ?: false
+
                 player.isActive() -> handleKeyEvent(event, hasNavigated)
                 else -> false
             }
@@ -683,13 +682,6 @@ open class FullScreenPlayer : AbstractPlayerFragment<FragmentPlayerBinding>(
             selectSpeedDialog = null
         }
 
-        // if (isLayout(PHONE)) {
-        //    val builder =
-        //        BottomSheetDialog(act, R.style.AlertDialogCustom)
-        //    builder.setContentView(binding.root)
-        //    builder.setOnDismissListener(dismiss)
-        //    builder.show()
-        //} else {
         val builder =
             AlertDialog.Builder(act, R.style.AlertDialogCustom)
                 .setView(binding.root)
@@ -697,7 +689,6 @@ open class FullScreenPlayer : AbstractPlayerFragment<FragmentPlayerBinding>(
         val dialog = builder.create()
         this.selectSpeedDialog = dialog
         dialog.show()
-        //}
     }
 
     private fun onClickChange() {
@@ -738,8 +729,6 @@ open class FullScreenPlayer : AbstractPlayerFragment<FragmentPlayerBinding>(
 
             if (hasEpisodes)
                 playerEpisodesButton.startAnimation(fadeAnimation)
-            // player_media_route_button?.startAnimation(fadeAnimation)
-            // video_bar.startAnimation(fadeAnimation)
 
             // TITLE
             playerVideoTitleRez.startAnimation(fadeAnimation)
@@ -749,7 +738,6 @@ open class FullScreenPlayer : AbstractPlayerFragment<FragmentPlayerBinding>(
             playerTopHolder.startAnimation(fadeAnimation)
             // BOTTOM
             playerLockHolder.startAnimation(fadeAnimation)
-            // player_go_back_holder?.startAnimation(fadeAnimation)
             shadowOverlay.isVisible = true
             shadowOverlay.startAnimation(fadeAnimation)
         }
@@ -772,7 +760,6 @@ open class FullScreenPlayer : AbstractPlayerFragment<FragmentPlayerBinding>(
             playerVideoBar.isGone = isGone
 
             playerPausePlay.isGone = isGone
-            // player_buffering?.isGone = isGone
             playerTopHolder.isGone = isGone
             val showPlayerEpisodes = !isGone && isThereEpisodes()
             playerEpisodesButtonRoot.isVisible = showPlayerEpisodes
@@ -782,7 +769,6 @@ open class FullScreenPlayer : AbstractPlayerFragment<FragmentPlayerBinding>(
             playerEpisodeFiller.isGone = isGone
             playerCenterMenu.isGone = isGone
             playerLock.isGone = !isShowing
-            // player_media_route_button?.isClickable = !isGone
             playerGoBackHolder.isGone = isGone
             playerSourcesBtt.isGone = isGone
             playerSkipEpisode.isClickable = !isGone
@@ -1046,7 +1032,7 @@ open class FullScreenPlayer : AbstractPlayerFragment<FragmentPlayerBinding>(
                 }
             }
 
-            // INI BAGIAN YANG SUDAH KITA AKTIFKAN KEMBALI
+            // BAGIAN INI YANG KITA AKTIFKAN UNTUK TOMBOL BACK
             KeyEvent.KEYCODE_BACK -> {
                 activity?.popCurrentPage("FullScreenPlayer")
                 return true
@@ -1089,7 +1075,8 @@ open class FullScreenPlayer : AbstractPlayerFragment<FragmentPlayerBinding>(
     override fun onBindingCreated(binding: FragmentPlayerBinding, savedInstanceState: Bundle?) {
         // Set up playerBinding before super initializes the player
         // (brightness overlay is now injected by PlayerView.initialize())
-        playerBinding = PlayerCustomLayoutBinding.bind(binding.root.findViewById(R.id.player_holder))
+        playerBinding =
+            PlayerCustomLayoutBinding.bind(binding.root.findViewById(R.id.player_holder))
 
         super.onBindingCreated(binding, savedInstanceState)
 
@@ -1107,81 +1094,6 @@ open class FullScreenPlayer : AbstractPlayerFragment<FragmentPlayerBinding>(
             subtitleDelay = it
         }
 
-        // handle tv controls
-        playerEventListener = { eventType ->
-            when (eventType) {
-                PlayerEventType.Lock -> {
-                    toggleLock()
-                }
-
-                PlayerEventType.NextEpisode -> {
-                    player.handleEvent(CSPlayerEvent.NextEpisode)
-                }
-
-                PlayerEventType.Pause -> {
-                    player.handleEvent(CSPlayerEvent.Pause)
-                }
-
-                PlayerEventType.PlayPauseToggle -> {
-                    player.handleEvent(CSPlayerEvent.PlayPauseToggle)
-                }
-
-                PlayerEventType.Play -> {
-                    player.handleEvent(CSPlayerEvent.Play)
-                }
-
-                PlayerEventType.SkipCurrentChapter -> {
-                    player.handleEvent(CSPlayerEvent.SkipCurrentChapter)
-                }
-
-                PlayerEventType.Resize -> {
-                    nextResize()
-                }
-
-                PlayerEventType.PrevEpisode -> {
-                    player.handleEvent(CSPlayerEvent.PrevEpisode)
-                }
-
-                PlayerEventType.SeekForward -> {
-                    player.handleEvent(CSPlayerEvent.SeekForward)
-                }
-
-                PlayerEventType.ShowSpeed -> {
-                    showSpeedDialog()
-                }
-
-                PlayerEventType.SeekBack -> {
-                    player.handleEvent(CSPlayerEvent.SeekBack)
-                }
-
-                PlayerEventType.Restart -> {
-                    player.handleEvent(CSPlayerEvent.Restart)
-                }
-
-                PlayerEventType.ToggleMute -> {
-                    player.handleEvent(CSPlayerEvent.ToggleMute)
-                }
-
-                PlayerEventType.ToggleHide -> {
-                    onClickChange()
-                }
-
-                PlayerEventType.ShowMirrors -> {
-                    showMirrorsDialogue()
-                }
-
-                PlayerEventType.SearchSubtitlesOnline -> {
-                    if (subsProvidersIsActive) {
-                        openOnlineSubPicker(view.context, null) {}
-                    }
-                }
-
-                PlayerEventType.SkipOp -> {
-                    skipOp()
-                }
-            }
-        }
-
         // handle tv controls directly based on player state
         setupKeyEventListener()
 
@@ -1193,12 +1105,14 @@ open class FullScreenPlayer : AbstractPlayerFragment<FragmentPlayerBinding>(
                     settingsManager.getInt(
                         ctx.getString(R.string.android_tv_interface_off_seek_key),
                         10
-                    ).toLong() * 1000L
+                    )
+                        .toLong() * 1000L
                 androidTVInterfaceOnSeekTime =
                     settingsManager.getInt(
                         ctx.getString(R.string.android_tv_interface_on_seek_key),
                         10
-                    ).toLong() * 1000L
+                    )
+                        .toLong() * 1000L
 
                 playBackSpeedEnabled = settingsManager.getBoolean(
                     ctx.getString(R.string.playback_speed_enabled_key),
@@ -1224,8 +1138,9 @@ open class FullScreenPlayer : AbstractPlayerFragment<FragmentPlayerBinding>(
                 else QualityDataHelper.QualityProfileType.WiFi
 
                 currentQualityProfile =
-                    profiles.firstOrNull { it.types.contains(type) }?.id ?: profiles.firstOrNull()?.id
-                            ?: currentQualityProfile
+                    profiles.firstOrNull { it.types.contains(type) }?.id
+                        ?: profiles.firstOrNull()?.id
+                                ?: currentQualityProfile
             }
             playerBinding?.apply {
                 playerSpeedBtt.isVisible = playBackSpeedEnabled
