@@ -1032,7 +1032,7 @@ open class FullScreenPlayer : AbstractPlayerFragment<FragmentPlayerBinding>(
                 }
             }
 
-            // BAGIAN INI YANG KITA AKTIFKAN UNTUK TOMBOL BACK
+            // BAGIAN INI YANG KITA AKTIFKAN UNTUK TOMBOL BACK HP
             KeyEvent.KEYCODE_BACK -> {
                 activity?.popCurrentPage("FullScreenPlayer")
                 return true
