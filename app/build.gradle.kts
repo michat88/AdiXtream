@@ -98,25 +98,13 @@ android {
     }
 
     signingConfigs {
-        // Konfigurasi release milik AdiXtream
+        // Konfigurasi release milik AdiXtream (Prerelease sudah dihapus)
         create("release") {
             val envKeystorePath = System.getenv("KEYSTORE_PATH")
             storeFile = if (envKeystorePath != null) file(envKeystorePath) else file("keystore.jks")
             storePassword = System.getenv("KEY_STORE_PASSWORD") ?: "161105"
             keyAlias = System.getenv("ALIAS") ?: "adixtream"
             keyPassword = System.getenv("KEY_PASSWORD") ?: "161105"
-        }
-        
-        // Konfigurasi prerelease milik Cloudstream (Tetap dipertahankan untuk struktur)
-        if (System.getenv("SIGNING_KEY_ALIAS") != null) {
-            create("prerelease") {
-                val tmpFilePath = System.getProperty("user.home") + "/work/_temp/keystore/"
-                val prereleaseStoreFile: File? = File(tmpFilePath).listFiles()?.first()
-                storeFile = prereleaseStoreFile?.let { file(it) }
-                storePassword = System.getenv("SIGNING_STORE_PASSWORD")
-                keyAlias = System.getenv("SIGNING_KEY_ALIAS")
-                keyPassword = System.getenv("SIGNING_KEY_PASSWORD")
-            }
         }
     }
 
@@ -186,18 +174,7 @@ android {
             dimension = "state"
             resValue("bool", "is_prerelease", "false") // Modifikasi AdiXtream
         }
-        // Flavor prerelease dipertahankan dari struktur asli Cloudstream
-        create("prerelease") {
-            dimension = "state"
-            applicationIdSuffix = ".prerelease"
-            if (signingConfigs.names.contains("prerelease")) {
-                signingConfig = signingConfigs.getByName("prerelease")
-            } else {
-                logger.warn("No prerelease signing config!")
-            }
-            versionNameSuffix = "-PRE"
-            versionCode = (System.currentTimeMillis() / 60000).toInt()
-        }
+        // Flavor prerelease dihapus sepenuhnya dari sini
     }
 
     compileOptions {
@@ -341,7 +318,6 @@ dokka {
     dokkaSourceSets {
         // Perbaikan Error 3 (AdiXtream): Menggunakan configureEach alih-alih main
         configureEach {
-            suppress = name != "prereleaseDebug" // Diambil dari struktur Cloudstream
             analysisPlatform = KotlinPlatform.JVM
             displayName = "JVM"
             documentedVisibilities(
