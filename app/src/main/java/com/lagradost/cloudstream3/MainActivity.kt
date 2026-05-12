@@ -195,6 +195,7 @@ import com.lagradost.cloudstream3.plugins.RepositoryManager
 import com.lagradost.cloudstream3.ui.settings.extensions.PluginsViewModel
 import com.lagradost.cloudstream3.ui.settings.extensions.RepositoryData
 import com.lagradost.cloudstream3.PremiumManager
+import kotlinx.coroutines.Job
 // -----------------------
 
 class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCallback {
@@ -329,9 +330,16 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                         val name = uri.getQueryParameter("name")
                         val url = URLDecoder.decode(uri.authority, "UTF-8")
 
+                        // UPSTREAM CLOUDSTREAM UPDATE: Penambahan ID & Parameter 0
                         navigate(
                             R.id.global_to_navigation_player,
-                            GeneratorPlayer.newInstance(LinkGenerator(listOf(BasicLink(url, name)), extract = true))
+                            GeneratorPlayer.newInstance(
+                                LinkGenerator(
+                                    listOf(BasicLink(url, name)),
+                                    extract = true,
+                                    id = url.hashCode()
+                                ), 0
+                            )
                         )
                     } else if (safeURI(str)?.scheme == APP_STRING_RESUME_WATCHING) {
                         val id = str.substringAfter("$APP_STRING_RESUME_WATCHING://").toIntOrNull() ?: return false
@@ -381,6 +389,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
     }
 
     var lastPopup: SearchResponse? = null
+    var lastPopupJob: Job? = null
     fun loadPopup(result: SearchResponse, load: Boolean = true) {
         lastPopup = result
         val syncName = syncViewModel.syncName(result.apiName)
@@ -394,8 +403,9 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
             syncViewModel.clear()
         }
 
+        lastPopupJob?.cancel()
         if (load) {
-            viewModel.load(
+            lastPopupJob = viewModel.load(
                 this, result.url, result.apiName, false, if (getApiDubstatusSettings().contains(DubStatus.Dubbed)) DubStatus.Dubbed else DubStatus.Subbed, null
             )
         } else {
@@ -456,13 +466,21 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
             navView.isVisible = isNavVisible && !isLandscape()
             navHostFragment.apply {
                 val marginPx = resources.getDimensionPixelSize(R.dimen.nav_rail_view_width)
-                layoutParams = (navHostFragment.layoutParams as ViewGroup.MarginLayoutParams).apply {
-                    marginStart = if (isNavVisible && isLandscape() && isLayout(TV or EMULATOR)) marginPx else 0
-                }
+                // UPSTREAM CLOUDSTREAM UPDATE: Reformat layoutParams
+                layoutParams =
+                    (navHostFragment.layoutParams as ViewGroup.MarginLayoutParams).apply {
+                        marginStart =
+                            if (isNavVisible && isLandscape() && isLayout(TV or EMULATOR)) marginPx else 0
+                    }
             }
 
             when (destination.id) {
-                in listOf(R.id.navigation_downloads, R.id.navigation_download_child, R.id.navigation_download_queue) -> {
+                // UPSTREAM CLOUDSTREAM UPDATE: Reformat ListOf
+                in listOf(
+                    R.id.navigation_downloads,
+                    R.id.navigation_download_child,
+                    R.id.navigation_download_queue
+                ) -> {
                     navRailView.menu.findItem(R.id.navigation_downloads).isChecked = true
                     navView.menu.findItem(R.id.navigation_downloads).isChecked = true
                 }
@@ -667,7 +685,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                                                     mainUrl = custom.url.trimEnd('/')
                                                     canBeOverridden = false
                                                 })
-                                    }
+                                   }
                             }
                         }
                         apis = allProviders.distinctBy { it.lang + it.name + it.mainUrl + it.javaClass.name }
@@ -693,6 +711,8 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
 
     private fun hidePreviewPopupDialog() {
         bottomPreviewPopup.dismissSafe(this)
+        lastPopupJob?.cancel()
+        lastPopupJob = null
         bottomPreviewPopup = null
         bottomPreviewBinding = null
     }
@@ -711,6 +731,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                 layout = R.layout.bottom_resultview_preview_tv
                 builder.window?.setGravity(Gravity.CENTER_VERTICAL or Gravity.END)
             }
+         
             val root = layoutInflater.inflate(layout, null, false)
             val binding = BottomResultviewPreviewBinding.bind(root)
 
@@ -950,10 +971,8 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
             if (appVer != lastAppAutoBackup) {
                 setKey("VERSION_NAME", BuildConfig.VERSION_NAME)
                 if (lastAppAutoBackup.isNotEmpty()) {
-                    // ==========================================
                     // ADIXTREAM MOD: Mematikan auto-backup diam-diam saat update aplikasi.
                     // safe { backup(this) }
-                    // ==========================================
                     safe { PluginManager.deleteAllOatFiles(this) }
                 }
             }
@@ -1046,7 +1065,6 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
         if (PluginManager.checkSafeModeFile()) {
             safe { showToast(R.string.safe_mode_file, Toast.LENGTH_LONG) }
         } else if (lastError == null) {
-            
             // === ADIXTREAM MOD: LOGIKA REPOSITORY & UPDATE (ANTI-BUG V4 - POLLING SYSTEM) ===
             ioSafe {
                 val isPremium = PremiumManager.isPremium(this@MainActivity)
@@ -1139,8 +1157,6 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                     reloadHomeEvent.invoke(true)
                 }
             }
-            // =========================================================================
-
         } else {
             val builder: AlertDialog.Builder = AlertDialog.Builder(this)
             builder.setTitle(R.string.safe_mode_title)
@@ -1343,7 +1359,6 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
         val navController = navHostFragment.navController
 
         navController.addOnDestinationChangedListener { _: NavController, navDestination: NavDestination, bundle: Bundle? ->
-            
             // --- SECURITY GUARD ADIXTREAM (ON CHANGE) ---
             if (navDestination.id == R.id.navigation_settings_extensions || navDestination.id == R.id.navigation_settings_plugins) {
                 if (!PremiumManager.isPremium(this@MainActivity)) {
@@ -1442,78 +1457,4 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                     for (child in children) {
                         child.findViewById<RecyclerView?>(R.id.page_recyclerview)?.smoothScrollToPosition(0)
                     }
-                } catch (_: Exception) {}
-                return@setOnLongClickListener true
-            }
-            view?.findViewById<View?>(R.id.navigation_search)?.setOnLongClickListener {
-                for (recyclerId in arrayOf(R.id.search_master_recycler, R.id.search_autofit_results, R.id.search_history_recycler)) {
-                    val recycler = binding?.root?.findViewById<RecyclerView?>(recyclerId) ?: return@setOnLongClickListener false
-                    recycler.smoothScrollToPosition(0)
                 }
-                return@setOnLongClickListener true
-            }
-            view?.findViewById<View?>(R.id.navigation_downloads)?.setOnLongClickListener {
-                val recycler: RecyclerView? = binding?.root?.findViewById(R.id.download_list) ?: binding?.root?.findViewById(R.id.download_child_list)
-                recycler?.smoothScrollToPosition(0)
-                return@setOnLongClickListener recycler != null
-            }
-        }
-
-        loadCache()
-        updateHasTrailers()
-        if (!checkWrite()) {
-            requestRW()
-            if (checkWrite()) return
-        }
-        
-        handleAppIntent(intent)
-        ioSafe { runAutoUpdate() }
-        FcastManager().init(this, false)
-        APIRepository.dubStatusActive = getApiDubstatusSettings()
-
-        try {
-            loadCache()
-            File(filesDir, "exoplayer").deleteRecursively()
-            deleteFileOnExit(File(cacheDir, "exoplayer"))
-        } catch (e: Exception) { logError(e) }
-
-        ioSafe { migrateResumeWatching() }
-
-        main {
-            val channelId = TvChannelUtils.getChannelId(this@MainActivity, getString(R.string.app_name))
-            if (channelId == null) TvChannelUtils.createTvChannel(this@MainActivity)
-        }
-
-        getKey<String>(USER_SELECTED_HOMEPAGE_API)?.let { homepage ->
-            DataStoreHelper.currentHomePage = homepage
-            removeKey(USER_SELECTED_HOMEPAGE_API)
-        }
-
-        // --- BYPASS SETUP AWAL ADIXTREAM ---
-        if (getKey(HAS_DONE_SETUP_KEY, false) != true) {
-             setKey(HAS_DONE_SETUP_KEY, true)
-             updateLocale() 
-        }
-        // -----------------------------------
-
-        attachBackPressedCallback("MainActivityDefault") {
-            setNavigationBarColorCompat(R.attr.primaryGrayBackground)
-            updateLocale()
-            runDefault()
-        }
-        
-        DownloadQueueManager.init(this)
-
-        // === TAMBAHAN ADIXTREAM: CEK POPUP PROMO ===
-        CampaignPopupManager.checkAndShowCampaignPopup(this)
-    }
-
-    override fun onAuthenticationSuccess() { binding?.navHostFragment?.isInvisible = false }
-    override fun onAuthenticationError() { finish() }
-    
-    suspend fun checkGithubConnectivity(): Boolean {
-        return try {
-            app.get("https://raw.githubusercontent.com/recloudstream/.github/master/connectivitycheck", timeout = 5).text.trim() == "ok"
-        } catch (t: Throwable) { false }
-    }
-}
