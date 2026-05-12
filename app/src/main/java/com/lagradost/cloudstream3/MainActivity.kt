@@ -1457,4 +1457,78 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                     for (child in children) {
                         child.findViewById<RecyclerView?>(R.id.page_recyclerview)?.smoothScrollToPosition(0)
                     }
+                } catch (_: Exception) {}
+                return@setOnLongClickListener true
+            }
+            view?.findViewById<View?>(R.id.navigation_search)?.setOnLongClickListener {
+                for (recyclerId in arrayOf(R.id.search_master_recycler, R.id.search_autofit_results, R.id.search_history_recycler)) {
+                    val recycler = binding?.root?.findViewById<RecyclerView?>(recyclerId) ?: return@setOnLongClickListener false
+                    recycler.smoothScrollToPosition(0)
                 }
+                return@setOnLongClickListener true
+            }
+            view?.findViewById<View?>(R.id.navigation_downloads)?.setOnLongClickListener {
+                val recycler: RecyclerView? = binding?.root?.findViewById(R.id.download_list) ?: binding?.root?.findViewById(R.id.download_child_list)
+                recycler?.smoothScrollToPosition(0)
+                return@setOnLongClickListener recycler != null
+            }
+        }
+
+        loadCache()
+        updateHasTrailers()
+        if (!checkWrite()) {
+            requestRW()
+            if (checkWrite()) return
+        }
+        
+        handleAppIntent(intent)
+        ioSafe { runAutoUpdate() }
+        FcastManager().init(this, false)
+        APIRepository.dubStatusActive = getApiDubstatusSettings()
+
+        try {
+            loadCache()
+            File(filesDir, "exoplayer").deleteRecursively()
+            deleteFileOnExit(File(cacheDir, "exoplayer"))
+        } catch (e: Exception) { logError(e) }
+
+        ioSafe { migrateResumeWatching() }
+
+        main {
+            val channelId = TvChannelUtils.getChannelId(this@MainActivity, getString(R.string.app_name))
+            if (channelId == null) TvChannelUtils.createTvChannel(this@MainActivity)
+        }
+
+        getKey<String>(USER_SELECTED_HOMEPAGE_API)?.let { homepage ->
+            DataStoreHelper.currentHomePage = homepage
+            removeKey(USER_SELECTED_HOMEPAGE_API)
+        }
+
+        // --- BYPASS SETUP AWAL ADIXTREAM ---
+        if (getKey(HAS_DONE_SETUP_KEY, false) != true) {
+             setKey(HAS_DONE_SETUP_KEY, true)
+             updateLocale() 
+        }
+        // -----------------------------------
+
+        attachBackPressedCallback("MainActivityDefault") {
+            setNavigationBarColorCompat(R.attr.primaryGrayBackground)
+            updateLocale()
+            runDefault()
+        }
+        
+        DownloadQueueManager.init(this)
+
+        // === TAMBAHAN ADIXTREAM: CEK POPUP PROMO ===
+        CampaignPopupManager.checkAndShowCampaignPopup(this)
+    }
+
+    override fun onAuthenticationSuccess() { binding?.navHostFragment?.isInvisible = false }
+    override fun onAuthenticationError() { finish() }
+    
+    suspend fun checkGithubConnectivity(): Boolean {
+        return try {
+            app.get("https://raw.githubusercontent.com/recloudstream/.github/master/connectivitycheck", timeout = 5).text.trim() == "ok"
+        } catch (t: Throwable) { false }
+    }
+}
