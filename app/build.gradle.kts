@@ -114,8 +114,8 @@ android {
         applicationId = "com.adixtream.app"
         minSdk = libs.versions.minSdk.get().toInt()
         targetSdk = libs.versions.targetSdk.get().toInt()
-        versionCode = 87
-        versionName = "4.8.0"
+        versionCode = 88
+        versionName = "4.8.1"
 
         manifestPlaceholders["target_sdk_version"] = libs.versions.targetSdk.get()
 
