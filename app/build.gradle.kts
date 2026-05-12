@@ -12,7 +12,6 @@ plugins {
 
 val javaTarget = JvmTarget.fromTarget(libs.versions.jvmTarget.get())
 
-// === TUGAS PEMBUAT GIT-HASH.TXT ===
 abstract class GenerateGitHashTask : DefaultTask() {
     @get:InputFile
     @get:PathSensitive(PathSensitivity.RELATIVE)
@@ -28,13 +27,11 @@ abstract class GenerateGitHashTask : DefaultTask() {
     @TaskAction
     fun generate() {
         val head = headFile.get().asFile
-      
         val hash = try {
             if (head.exists()) {
                 val headContent = head.readText().trim()
                 if (headContent.startsWith("ref:")) {
                     val refPath = headContent.substring(5).trim()
-                    
                     val commitFile = File(head.parentFile, refPath)
                     if (commitFile.exists()) commitFile.readText().trim() else ""
                 } else headContent 
@@ -56,19 +53,18 @@ val generateGitHash = tasks.register<GenerateGitHashTask>("generateGitHash") {
     outputDir.set(layout.buildDirectory.dir("generated/git"))
 }
 
+// Fungsi khusus AdiXtream untuk mengambil hash saat build konfigurasi
 fun getGitCommitHash(): String {
     return try {
         val headFile = file("${project.rootDir}/.git/HEAD")
         if (headFile.exists()) {
             val headContent = headFile.readText().trim()
-     
             if (headContent.startsWith("ref:")) {
                 val refPath = headContent.substring(5).trim()
                 val commitFile = file("${project.rootDir}/.git/$refPath")
                 if (commitFile.exists()) commitFile.readText().trim() else ""
             } else headContent
         } else {
-         
             ""
         }.take(7)
     } catch (_: Throwable) {
@@ -82,7 +78,7 @@ android {
         unitTests.isReturnDefaultValues = true
     }
 
-    // Perbaikan Error 1: Konfigurasi bahasa dipindah ke sini dengan format baru
+    // Perbaikan Error 1 (AdiXtream): Konfigurasi bahasa dipindah ke sini
     androidResources {
         localeFilters += listOf("en", "id", "in")
     }
@@ -102,12 +98,25 @@ android {
     }
 
     signingConfigs {
+        // Konfigurasi release milik AdiXtream
         create("release") {
             val envKeystorePath = System.getenv("KEYSTORE_PATH")
             storeFile = if (envKeystorePath != null) file(envKeystorePath) else file("keystore.jks")
             storePassword = System.getenv("KEY_STORE_PASSWORD") ?: "161105"
             keyAlias = System.getenv("ALIAS") ?: "adixtream"
             keyPassword = System.getenv("KEY_PASSWORD") ?: "161105"
+        }
+        
+        // Konfigurasi prerelease milik Cloudstream (Tetap dipertahankan untuk struktur)
+        if (System.getenv("SIGNING_KEY_ALIAS") != null) {
+            create("prerelease") {
+                val tmpFilePath = System.getProperty("user.home") + "/work/_temp/keystore/"
+                val prereleaseStoreFile: File? = File(tmpFilePath).listFiles()?.first()
+                storeFile = prereleaseStoreFile?.let { file(it) }
+                storePassword = System.getenv("SIGNING_STORE_PASSWORD")
+                keyAlias = System.getenv("SIGNING_KEY_ALIAS")
+                keyPassword = System.getenv("SIGNING_KEY_PASSWORD")
+            }
         }
     }
 
@@ -117,16 +126,16 @@ android {
         applicationId = "com.adixtream.app"
         minSdk = libs.versions.minSdk.get().toInt()
         targetSdk = libs.versions.targetSdk.get().toInt()
-        
         versionCode = 87
         versionName = "4.8.0"
 
+        manifestPlaceholders["target_sdk_version"] = libs.versions.targetSdk.get()
+
+        // Resource kustom AdiXtream
         resValue("string", "commit_hash", getGitCommitHash())
         resValue("bool", "is_prerelease", "false")
         resValue("string", "app_name", "AdiXtream")
         resValue("color", "blackBoarder", "#FF000000")
-
-        manifestPlaceholders["target_sdk_version"] = libs.versions.targetSdk.get()
 
         val localProperties = gradleLocalProperties(rootDir, project.providers)
 
@@ -139,8 +148,8 @@ android {
 
         // --- TEKNIK JEBAKAN: Pecah Kunci jadi Array Angka + 7 ---
         val obfuscatedKeyArray = xorSecretKey.map { it.code + 7 }.joinToString(", ")
+       
         buildConfigField("int[]", "OBFUSCATED_KEY", "new int[]{$obfuscatedKeyArray}")
-
         buildConfigField("String", "PREMIUM_REPO_ENCODED", "\"${xorEncrypt(premiumRepo, xorSecretKey)}\"")
         buildConfigField("String", "FREE_REPO_ENCODED", "\"${xorEncrypt(freeRepo, xorSecretKey)}\"")
         buildConfigField("String", "FIREBASE_URL_ENCODED", "\"${xorEncrypt(firebaseUrl, xorSecretKey)}\"")
@@ -149,9 +158,10 @@ android {
         buildConfigField("long", "BUILD_DATE", "${System.currentTimeMillis()}")
         buildConfigField("String", "APP_VERSION", "\"$versionName\"")
         
+        // Konfigurasi spesifik AdiXtream
         buildConfigField("String", "SIMKL_CLIENT_ID", "\"db13c9a72e036f717c3a85b13cdeb31fa884c8f4991e43695f7b6477374e35b8\"")
         buildConfigField("String", "SIMKL_CLIENT_SECRET", "\"d8cf8e1b79bae9b2f77f0347d6384a62f1a8d802abdd73d9aa52bf6a848532ba\"")
-        
+
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
@@ -174,7 +184,19 @@ android {
     productFlavors {
         create("stable") {
             dimension = "state"
-            resValue("bool", "is_prerelease", "false")
+            resValue("bool", "is_prerelease", "false") // Modifikasi AdiXtream
+        }
+        // Flavor prerelease dipertahankan dari struktur asli Cloudstream
+        create("prerelease") {
+            dimension = "state"
+            applicationIdSuffix = ".prerelease"
+            if (signingConfigs.names.contains("prerelease")) {
+                signingConfig = signingConfigs.getByName("prerelease")
+            } else {
+                logger.warn("No prerelease signing config!")
+            }
+            versionNameSuffix = "-PRE"
+            versionCode = (System.currentTimeMillis() / 60000).toInt()
         }
     }
 
@@ -192,12 +214,12 @@ android {
 
     lint {
         checkReleaseBuilds = false
-        disable.add("MissingTranslation")
+        disable.add("MissingTranslation") // Modifikasi AdiXtream
     }
 
     buildFeatures {
         buildConfig = true
-        resValues = true
+        resValues = true // Modifikasi AdiXtream
         viewBinding = true 
     }
 
@@ -220,10 +242,12 @@ dependencies {
 
     implementation(libs.core.ktx)
     implementation(libs.activity.ktx)
+    implementation(libs.annotation)
     implementation(libs.appcompat)
     implementation(libs.fragment.ktx)
     implementation(libs.bundles.lifecycle)
     implementation(libs.bundles.navigation)
+    implementation(libs.kotlinx.collections.immutable)
 
     implementation(libs.preference.ktx)
     implementation(libs.material)
@@ -241,12 +265,14 @@ dependencies {
     implementation(libs.colorpicker)
     implementation(libs.newpipeextractor)
     implementation(libs.juniversalchardet)
+
     implementation(libs.shimmer)
     implementation(libs.palette.ktx)
     implementation(libs.tvprovider)
     implementation(libs.overlappingpanels)
     implementation(libs.biometric)
     
+    // Keamanan ekstra AdiXtream
     implementation("androidx.security:security-crypto:1.1.0-alpha06")
 
     implementation(libs.previewseekbar.media3)
@@ -254,12 +280,13 @@ dependencies {
 
     implementation(libs.jsoup)
     implementation(libs.rhino)
-    implementation(libs.zipline)
     implementation(libs.fuzzywuzzy)
     implementation(libs.safefile)
+    
     coreLibraryDesugaring(libs.desugar.jdk.libs.nio)
     implementation(libs.conscrypt.android)
     implementation(libs.jackson.module.kotlin)
+    implementation(libs.zipline)
 
     implementation(libs.torrentserver)
 
@@ -271,7 +298,7 @@ dependencies {
 
 tasks.register<Jar>("androidSourcesJar") {
     archiveClassifier.set("sources")
-    // Perbaikan Error 2: Mengganti srcDirs menjadi directories
+    // Perbaikan Error 2 (AdiXtream): Mengganti srcDirs menjadi directories
     from(android.sourceSets.getByName("main").java.directories)
 }
 
@@ -301,26 +328,30 @@ tasks.withType<KotlinJvmCompile> {
     compilerOptions {
         jvmTarget.set(javaTarget)
         jvmDefault.set(JvmDefaultMode.ENABLE)
+        freeCompilerArgs.add("-Xannotation-default-target=param-property")
         optIn.addAll(
             "com.lagradost.cloudstream3.InternalAPI",
             "com.lagradost.cloudstream3.Prerelease"
         )
-        freeCompilerArgs.add("-Xannotation-default-target=param-property")
     }
 }
 
 dokka {
     moduleName = "App"
     dokkaSourceSets {
-        // Perbaikan Error 3: Menggunakan configureEach alih-alih main
+        // Perbaikan Error 3 (AdiXtream): Menggunakan configureEach alih-alih main
         configureEach {
+            suppress = name != "prereleaseDebug" // Diambil dari struktur Cloudstream
             analysisPlatform = KotlinPlatform.JVM
+            displayName = "JVM"
             documentedVisibilities(
                 VisibilityModifier.Public,
                 VisibilityModifier.Protected
             )
+            
             sourceLink {
                 localDirectory = file("..")
+                // Menggunakan repo AdiXtream
                 remoteUrl("https://github.com/michat88/AdiXtream/tree/master")
                 remoteLineSuffix = "#L"
             }
@@ -328,7 +359,7 @@ dokka {
     }
 }
 
-// === FUNGSI ENKRIPSI XOR OTOMATIS SAAT BUILD ===
+// === FUNGSI ENKRIPSI XOR OTOMATIS SAAT BUILD (AdiXtream) ===
 fun xorEncrypt(input: String, keyString: String): String {
     if (input.isEmpty() || keyString.isEmpty()) return ""
     
