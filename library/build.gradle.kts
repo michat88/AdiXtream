@@ -46,10 +46,14 @@ kotlin {
 
     sourceSets {
         all {
-            languageSettings.optIn("com.lagradost.cloudstream3.Prerelease")
+            languageSettings {
+                optIn("com.lagradost.cloudstream3.InternalAPI")
+                optIn("com.lagradost.cloudstream3.Prerelease")
+            }
         }
 
         commonMain.dependencies {
+            implementation(libs.annotation) // Annotations
             implementation(libs.nicehttp) // HTTP Lib
             implementation(libs.jackson.module.kotlin) // JSON Parser
             implementation(libs.kotlinx.coroutines.core)
@@ -73,14 +77,6 @@ buildkonfig {
     exposeObjectWithName = "BuildConfig"
 
     defaultConfigs {
-        val isDebug = kotlin.runCatching { extra.get("isDebug") }.getOrNull() == true
-        if (isDebug) {
-            logger.quiet("Compiling library with debug flag")
-        } else {
-            logger.quiet("Compiling library with release flag")
-        }
-        buildConfigField(FieldSpec.Type.BOOLEAN, "DEBUG", isDebug.toString())
-
         // Reads local.properties
         val localProperties = gradleLocalProperties(rootDir, project.providers)
         buildConfigField(
