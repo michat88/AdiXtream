@@ -25,6 +25,7 @@ import android.widget.ProgressBar
 import android.widget.RelativeLayout
 import android.widget.TextView
 import android.widget.Toast
+import androidx.annotation.MainThread
 import androidx.annotation.OptIn
 import androidx.core.view.isGone
 import androidx.core.view.isInvisible
@@ -374,7 +375,8 @@ class PlayerView @JvmOverloads constructor(
             exoFfwdText?.text = context.getString(R.string.ffw_text_regular_format).format(seekSecs)
 
             playerPausePlay?.setOnClickListener {
-                if (currentPlayerStatus == CSPlayerLoading.IsEnded) {
+                scheduleAutoHide()
+                if (currentPlayerStatus == CSPlayerLoading.IsEnded && isLayout(PHONE)) {
                     player.handleEvent(CSPlayerEvent.Restart, PlayerEventSource.UI)
                 } else {
                     player.handleEvent(CSPlayerEvent.PlayPauseToggle, PlayerEventSource.UI)
@@ -618,9 +620,10 @@ class PlayerView @JvmOverloads constructor(
 
     /** Error handling */
 
+    @MainThread
     fun playerError(exception: Throwable) {
-        fun showErrorToast(message: String, gotoNext: Boolean = false) {
-            if (gotoNext && callbacks?.hasNextMirror() == true) {
+        fun showErrorToast(message: String) {
+            if (callbacks?.hasNextMirror() == true) {
                 showToast(message, Toast.LENGTH_SHORT)
                 callbacks?.nextMirror()
             } else {
@@ -642,7 +645,7 @@ class PlayerView @JvmOverloads constructor(
                     PlaybackException.ERROR_CODE_IO_READ_POSITION_OUT_OF_RANGE,
                     PlaybackException.ERROR_CODE_IO_UNSPECIFIED,
                     PlaybackException.ERROR_CODE_PARSING_CONTAINER_UNSUPPORTED ->
-                        showErrorToast("${context.getString(R.string.source_error)}\n$errorName ($code)\n$msg", gotoNext = true)
+                        showErrorToast("${context.getString(R.string.source_error)}\n$errorName ($code)\n$msg")
 
                     PlaybackException.ERROR_CODE_REMOTE_ERROR,
                     PlaybackException.ERROR_CODE_IO_BAD_HTTP_STATUS,
@@ -650,7 +653,7 @@ class PlayerView @JvmOverloads constructor(
                     PlaybackException.ERROR_CODE_IO_NETWORK_CONNECTION_FAILED,
                     PlaybackException.ERROR_CODE_IO_NETWORK_CONNECTION_TIMEOUT,
                     PlaybackException.ERROR_CODE_IO_INVALID_HTTP_CONTENT_TYPE ->
-                        showErrorToast("${context.getString(R.string.remote_error)}\n$errorName ($code)\n$msg", gotoNext = true)
+                        showErrorToast("${context.getString(R.string.remote_error)}\n$errorName ($code)\n$msg")
 
                     PlaybackErrorEvent.ERROR_AUDIO_TRACK_INIT_FAILED,
                     PlaybackErrorEvent.ERROR_AUDIO_TRACK_OTHER,
@@ -658,43 +661,31 @@ class PlayerView @JvmOverloads constructor(
                     PlaybackException.ERROR_CODE_AUDIO_TRACK_WRITE_FAILED,
                     PlaybackException.ERROR_CODE_DECODER_INIT_FAILED,
                     PlaybackException.ERROR_CODE_DECODER_QUERY_FAILED ->
-                        showErrorToast("${context.getString(R.string.render_error)}\n$errorName ($code)\n$msg", gotoNext = true)
+                        showErrorToast("${context.getString(R.string.render_error)}\n$errorName ($code)\n$msg")
 
                     PlaybackException.ERROR_CODE_DECODING_FORMAT_UNSUPPORTED,
                     PlaybackException.ERROR_CODE_DECODING_FORMAT_EXCEEDS_CAPABILITIES ->
-                        showErrorToast("${context.getString(R.string.unsupported_error)}\n$errorName ($code)\n$msg", gotoNext = true)
+                        showErrorToast("${context.getString(R.string.unsupported_error)}\n$errorName ($code)\n$msg")
 
                     PlaybackException.ERROR_CODE_PARSING_CONTAINER_MALFORMED,
                     PlaybackException.ERROR_CODE_PARSING_MANIFEST_MALFORMED ->
-                        showErrorToast("${context.getString(R.string.encoding_error)}\n$errorName ($code)\n$msg", gotoNext = true)
+                        showErrorToast("${context.getString(R.string.encoding_error)}\n$errorName ($code)\n$msg")
 
                     else ->
-                        showErrorToast("${context.getString(R.string.unexpected_error)}\n$errorName ($code)\n$msg", gotoNext = false)
+                        showErrorToast("${context.getString(R.string.unexpected_error)}\n$errorName ($code)\n$msg")
                 }
             }
 
-            is InvalidFileException ->
-                showErrorToast("${context.getString(R.string.source_error)}\n${exception.message}", gotoNext = true)
-
-            is SocketTimeoutException -> {
-                /**
-                 * Ensures this is run on the UI thread to prevent issues
-                 * caused by SocketTimeoutException in torrents. Running
-                 * on another thread can break player interactions or
-                 * prevent switching to the next source.
-                 */
-                (context as? Activity)?.runOnUiThread {
-                    showErrorToast("${context.getString(R.string.remote_error)}\n${exception.message}", gotoNext = true)
-                }
-            }
+            is SocketTimeoutException ->
+                showErrorToast("${context.getString(R.string.remote_error)}\n${exception.message}")
 
             is ErrorLoadingException ->
-                exception.message?.let { showErrorToast(it, gotoNext = true) }
-                    ?: showErrorToast(exception.toString(), gotoNext = true)
+                exception.message?.let { showErrorToast(it) }
+                    ?: showErrorToast(exception.toString())
 
             else ->
-                exception.message?.let { showErrorToast(it, gotoNext = false) }
-                    ?: showErrorToast(exception.toString(), gotoNext = false)
+                exception.message?.let { showErrorToast(it) }
+                    ?: showErrorToast(exception.toString())
         }
     }
 
@@ -733,8 +724,7 @@ class PlayerView @JvmOverloads constructor(
         if (isLayout(TV or EMULATOR)) return ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
         return if (autoPlayerRotateEnabled && isVerticalOrientation)
             ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT
-        else
-            ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
+        else ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
     }
 
     /** Event dispatch */
@@ -745,6 +735,7 @@ class PlayerView @JvmOverloads constructor(
      * and returning early WON'T stop it from changing in e.g. the player time
      * or pause status.
      */
+    @MainThread
     fun mainCallback(event: PlayerEvent) {
         // We don't want to spam DownloadEvent.
         if (event !is DownloadEvent) Log.i(TAG, "Handle event: $event")
@@ -765,11 +756,7 @@ class PlayerView @JvmOverloads constructor(
             is TimestampInvokedEvent -> callbacks?.onTimestamp(event.timestamp)
             is TracksChangedEvent -> callbacks?.onTracksInfoChanged()
             is EmbeddedSubtitlesFetchedEvent -> callbacks?.embeddedSubtitlesFetched(event.tracks)
-            is ErrorEvent -> {
-                val cb = callbacks
-                if (cb != null) cb.playerError(event.error)
-                else playerError(event.error)
-            }
+            is ErrorEvent -> callbacks?.playerError(event.error) ?: playerError(event.error)
             is RequestAudioFocusEvent -> requestAudioFocus()
             is EpisodeSeekEvent -> when (event.offset) {
                 -1 -> callbacks?.prevEpisode()
