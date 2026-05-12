@@ -762,7 +762,5 @@
         <item quantity="other">%d downloads queued</item>
     </plurals>
     <string name="player_is_live">Live</string>
-    
-    <string name="legal_notice_text">All legal issues regarding content accessed through this application should be directed directly to the relevant providers and file hosts.\n\nAdiXtream comes with a built-in custom repository for extension plugins to access various third-party websites. However, AdiXtream does not host, upload, or manage any media, videos, or movies found through these extensions. This application purely serves as a client and aggregator that scrapes data from publicly accessible websites.\n\nWe ask for your discretion to ensure that the use of this application and its built-in plugins complies with the regulations applicable in your region. By using AdiXtream, you understand that all risks of use are your personal responsibility.</string>
 
 </resources>
