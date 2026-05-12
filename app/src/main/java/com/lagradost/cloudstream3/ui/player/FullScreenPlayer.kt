@@ -75,7 +75,6 @@ open class FullScreenPlayer : AbstractPlayerFragment<FragmentPlayerBinding>(
     BindingCreator.Bind(FragmentPlayerBinding::bind)
 ) {
     override fun pickLayout(): Int = R.layout.fragment_player
-   
     protected open var lockRotation = true
     protected var playerBinding: PlayerCustomLayoutBinding? = null
 
@@ -125,8 +124,7 @@ open class FullScreenPlayer : AbstractPlayerFragment<FragmentPlayerBinding>(
      * The reason for this setter is to fix a bug with the titlecard popup, as we want it to autohide
      * when pressing back.
      *
-     * Note that we move the call to autoHide after field assignment with prevField to avoid inf recursion.
-     */
+     * Note that we move the call to autoHide after field assignment with prevField to avoid inf recursion. */
     protected var selectSourceDialog: Dialog? = null
         set(value) {
             val prevField = field
@@ -151,7 +149,6 @@ open class FullScreenPlayer : AbstractPlayerFragment<FragmentPlayerBinding>(
                 autoHide()
             }
         }
-  
     protected var selectSubtitlesDialog: Dialog? = null
         set(value) {
             val prevField = field
@@ -290,7 +287,7 @@ open class FullScreenPlayer : AbstractPlayerFragment<FragmentPlayerBinding>(
 
         val titleMove = if (isShowing) 0f else -50.toPx.toFloat()
         playerBinding?.playerVideoTitleHolder?.let {
-             ObjectAnimator.ofFloat(it, "translationY", titleMove).apply {
+            ObjectAnimator.ofFloat(it, "translationY", titleMove).apply {
                 duration = 200
                 start()
             }
@@ -682,6 +679,13 @@ open class FullScreenPlayer : AbstractPlayerFragment<FragmentPlayerBinding>(
             selectSpeedDialog = null
         }
 
+        // if (isLayout(PHONE)) {
+        //    val builder =
+        //        BottomSheetDialog(act, R.style.AlertDialogCustom)
+        //    builder.setContentView(binding.root)
+        //    builder.setOnDismissListener(dismiss)
+        //    builder.show()
+        //} else {
         val builder =
             AlertDialog.Builder(act, R.style.AlertDialogCustom)
                 .setView(binding.root)
@@ -689,6 +693,7 @@ open class FullScreenPlayer : AbstractPlayerFragment<FragmentPlayerBinding>(
         val dialog = builder.create()
         this.selectSpeedDialog = dialog
         dialog.show()
+        //}
     }
 
     private fun onClickChange() {
@@ -729,6 +734,8 @@ open class FullScreenPlayer : AbstractPlayerFragment<FragmentPlayerBinding>(
 
             if (hasEpisodes)
                 playerEpisodesButton.startAnimation(fadeAnimation)
+            // player_media_route_button?.startAnimation(fadeAnimation)
+            // video_bar.startAnimation(fadeAnimation)
 
             // TITLE
             playerVideoTitleRez.startAnimation(fadeAnimation)
@@ -738,6 +745,7 @@ open class FullScreenPlayer : AbstractPlayerFragment<FragmentPlayerBinding>(
             playerTopHolder.startAnimation(fadeAnimation)
             // BOTTOM
             playerLockHolder.startAnimation(fadeAnimation)
+            // player_go_back_holder?.startAnimation(fadeAnimation)
             shadowOverlay.isVisible = true
             shadowOverlay.startAnimation(fadeAnimation)
         }
@@ -755,22 +763,23 @@ open class FullScreenPlayer : AbstractPlayerFragment<FragmentPlayerBinding>(
             }
         }
         playerBinding?.apply {
-
             playerLockHolder.isGone = isGone
             playerVideoBar.isGone = isGone
 
-            playerPausePlay.isGone = isGone
+            playerPausePlayHolderHolder.isGone =
+                isGone || currentPlayerStatus == CSPlayerLoading.IsBuffering
             playerTopHolder.isGone = isGone
             val showPlayerEpisodes = !isGone && isThereEpisodes()
             playerEpisodesButtonRoot.isVisible = showPlayerEpisodes
             playerEpisodesButton.isVisible = showPlayerEpisodes
             playerVideoTitleHolder.isGone = togglePlayerTitleGone
-            playerVideoTitleRez.isGone = isGone
+            playerVideoTitleRez.isGone = isGone || playerVideoTitleRez.text.isBlank()
             playerEpisodeFiller.isGone = isGone
             playerCenterMenu.isGone = isGone
             playerLock.isGone = !isShowing
             playerGoBackHolder.isGone = isGone
             playerSourcesBtt.isGone = isGone
+            shadowOverlay.isGone = isGone
             playerSkipEpisode.isClickable = !isGone
         }
     }
@@ -998,6 +1007,7 @@ open class FullScreenPlayer : AbstractPlayerFragment<FragmentPlayerBinding>(
                 }
                 toggleEpisodesOverlay(true)
             }
+            else -> return null // Avoid capturing all input
         }
         return true
     }
@@ -1032,11 +1042,14 @@ open class FullScreenPlayer : AbstractPlayerFragment<FragmentPlayerBinding>(
                 }
             }
 
-            // BAGIAN INI YANG KITA AKTIFKAN UNTUK TOMBOL BACK HP
-            KeyEvent.KEYCODE_BACK -> {
-                activity?.popCurrentPage("FullScreenPlayer")
-                return true
-            }
+            // netflix capture back and hide ~monke
+            // This is removed due to inconsistent behavior on A36 vs A22, see https://github.com/recloudstream/cloudstream/issues/1804
+            /*KeyEvent.KEYCODE_BACK -> {
+                if (isShowing && isLayout(TV or EMULATOR)) {
+                    onClickChange()
+                    return true
+                }
+            }*/
         }
 
         return false
@@ -1178,15 +1191,6 @@ open class FullScreenPlayer : AbstractPlayerFragment<FragmentPlayerBinding>(
                         text.isSelected = true
                         text.isVisible = true
                     }
-                }
-            }
-
-            playerPausePlay.setOnClickListener {
-                autoHide()
-                if (currentPlayerStatus == CSPlayerLoading.IsEnded && isLayout(PHONE)) {
-                    player.handleEvent(CSPlayerEvent.Restart)
-                } else {
-                    player.handleEvent(CSPlayerEvent.PlayPauseToggle)
                 }
             }
 
