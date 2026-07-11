@@ -3,7 +3,6 @@ package com.lagradost.cloudstream3.syncproviders.providers
 import androidx.annotation.StringRes
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.APIHolder
-import com.lagradost.cloudstream3.BuildConfig
 import com.lagradost.cloudstream3.CloudStreamApp.Companion.getKey
 import com.lagradost.cloudstream3.CloudStreamApp.Companion.setKey
 import com.lagradost.cloudstream3.R
@@ -37,7 +36,9 @@ class MALApi : SyncAPI() {
     override var name = "MAL"
     override val idPrefix = "mal"
 
-    private val key = BuildConfig.MAL_KEY
+    // --- MODIFIKASI ADIXTREAM (DIPERTAHANKAN): Client ID hardcoded ---
+    val key = "c4530aae80910ab29dab91a963664e64"
+
     private val apiUrl = "https://api.myanimelist.net"
     override val hasOAuth2 = true
     override val redirectUrlIdentifier: String? = "mallogin"
@@ -104,6 +105,7 @@ class MALApi : SyncAPI() {
 
     override suspend fun search(auth: AuthData?, query: String): List<SyncAPI.SyncSearchResult>? {
         val auth = auth?.token?.accessToken ?: return null
+        // PERBAIKAN: pakai $query bukan $name (bug search MAL)
         val url = "$apiUrl/v2/anime?q=$query&limit=$MAL_MAX_SEARCH_LIMIT"
         val res = app.get(
             url, headers = mapOf(
