@@ -8,11 +8,13 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinJvmCompile
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.dokka)
+    alias(libs.plugins.kotlin.serialization)
 }
 
 val javaTarget = JvmTarget.fromTarget(libs.versions.jvmTarget.get())
 
 abstract class GenerateGitHashTask : DefaultTask() {
+
     @get:InputFile
     @get:PathSensitive(PathSensitivity.RELATIVE)
     abstract val headFile: RegularFileProperty
@@ -27,18 +29,20 @@ abstract class GenerateGitHashTask : DefaultTask() {
     @TaskAction
     fun generate() {
         val head = headFile.get().asFile
+
         val hash = try {
             if (head.exists()) {
+                // Read the commit hash from .git/HEAD
                 val headContent = head.readText().trim()
                 if (headContent.startsWith("ref:")) {
-                    val refPath = headContent.substring(5).trim()
+                    val refPath = headContent.substring(5) // e.g., refs/heads/main
                     val commitFile = File(head.parentFile, refPath)
                     if (commitFile.exists()) commitFile.readText().trim() else ""
-                } else headContent
-            } else ""
+                } else headContent // If it's a detached HEAD (commit hash directly)
+            } else "" // If .git/HEAD doesn't exist
         } catch (_: Throwable) {
-            ""
-        }.take(7)
+            "" // Just set to an empty string if any exception occurs
+        }.take(7) // Get the short commit hash
 
         val outFile = outputDir.file("git-hash.txt").get().asFile
         outFile.parentFile.mkdirs()
@@ -48,8 +52,10 @@ abstract class GenerateGitHashTask : DefaultTask() {
 
 val generateGitHash = tasks.register<GenerateGitHashTask>("generateGitHash") {
     val gitDir = layout.projectDirectory.dir("../.git")
+
     headFile.set(gitDir.file("HEAD"))
     headsDir.set(gitDir.dir("refs/heads"))
+
     outputDir.set(layout.buildDirectory.dir("generated/git"))
 }
 
@@ -78,11 +84,6 @@ android {
         unitTests.isReturnDefaultValues = true
     }
 
-    // Perbaikan Error 1 (AdiXtream): Konfigurasi bahasa dipindah ke sini
-    androidResources {
-        localeFilters += listOf("en", "id", "in")
-    }
-
     // Looks like google likes to add metadata only they can read https://gitlab.com/IzzyOnDroid/repo/-/work_items/491
     dependenciesInfo {
         // Disables dependency metadata when building APKs.
@@ -101,7 +102,7 @@ android {
     }
 
     signingConfigs {
-        // Konfigurasi release milik AdiXtream (Prerelease sudah dihapus)
+        // Konfigurasi release milik AdiXtream (Prerelease tidak digunakan)
         create("release") {
             val envKeystorePath = System.getenv("KEYSTORE_PATH")
             storeFile = if (envKeystorePath != null) file(envKeystorePath) else file("keystore.jks")
@@ -128,6 +129,7 @@ android {
         resValue("string", "app_name", "AdiXtream")
         resValue("color", "blackBoarder", "#FF000000")
 
+        // Reads local.properties
         val localProperties = gradleLocalProperties(rootDir, project.providers)
 
         // === SECURITY REPO PROTECTOR (LEVEL 3 - ANTI-MODDER) ===
@@ -146,12 +148,24 @@ android {
         buildConfigField("String", "FIREBASE_URL_ENCODED", "\"${xorEncrypt(firebaseUrl, xorSecretKey)}\"")
         // =======================================================
 
-        buildConfigField("long", "BUILD_DATE", "${System.currentTimeMillis()}")
+        buildConfigField(
+            "long",
+            "BUILD_DATE",
+            "${System.currentTimeMillis()}"
+        )
         buildConfigField("String", "APP_VERSION", "\"$versionName\"")
 
-        // Konfigurasi spesifik AdiXtream
-        buildConfigField("String", "SIMKL_CLIENT_ID", "\"db13c9a72e036f717c3a85b13cdeb31fa884c8f4991e43695f7b6477374e35b8\"")
-        buildConfigField("String", "SIMKL_CLIENT_SECRET", "\"d8cf8e1b79bae9b2f77f0347d6384a62f1a8d802abdd73d9aa52bf6a848532ba\"")
+        // Konfigurasi spesifik AdiXtream (hardcoded, bukan env)
+        buildConfigField(
+            "String",
+            "SIMKL_CLIENT_ID",
+            "\"db13c9a72e036f717c3a85b13cdeb31fa884c8f4991e43695f7b6477374e35b8\""
+        )
+        buildConfigField(
+            "String",
+            "SIMKL_CLIENT_SECRET",
+            "\"d8cf8e1b79bae9b2f77f0347d6384a62f1a8d802abdd73d9aa52bf6a848532ba\""
+        )
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -162,13 +176,24 @@ android {
             isDebuggable = false
             isMinifyEnabled = false
             isShrinkResources = false
-            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
         }
         debug {
             isDebuggable = true
             applicationIdSuffix = ".debug"
-            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
         }
+    }
+
+    // Locale filter khusus AdiXtream
+    androidResources {
+        localeFilters += listOf("en", "id", "in")
     }
 
     flavorDimensions.add("state")
@@ -177,7 +202,7 @@ android {
             dimension = "state"
             resValue("bool", "is_prerelease", "false") // Modifikasi AdiXtream
         }
-        // Flavor prerelease dihapus sepenuhnya dari sini
+        // Flavor prerelease tidak digunakan di AdiXtream
     }
 
     compileOptions {
@@ -223,7 +248,9 @@ dependencies {
     androidTestImplementation(libs.core)
     androidTestImplementation(libs.espresso.core)
     androidTestImplementation(libs.ext.junit)
+    androidTestImplementation(libs.instancio.core)
     androidTestImplementation(libs.junit.ktx)
+    androidTestImplementation(libs.kotlin.test)
 
     // Android Core & Lifecycle
     implementation(libs.core.ktx)
@@ -234,6 +261,7 @@ dependencies {
     implementation(libs.bundles.lifecycle)
     implementation(libs.bundles.navigation)
     implementation(libs.kotlinx.collections.immutable)
+    implementation(libs.kotlinx.serialization.json) // JSON Parser
 
     // Design & UI
     implementation(libs.preference.ktx)
@@ -267,11 +295,9 @@ dependencies {
     implementation(libs.previewseekbar.media3) // SeekBar Preview
     implementation(libs.qrcode.kotlin) // QR Code for PIN Auth on TV
 
-    // Keamanan ekstra AdiXtream
-    implementation("androidx.security:security-crypto:1.1.0-alpha06")
-
     // Extensions & Other Libs
     implementation(libs.jsoup) // HTML Parser
+    implementation(libs.ksoup) // HTML Parser
     implementation(libs.rhino) // Run JavaScript
     implementation(libs.safefile) // To Prevent the URI File Fu*kery
     coreLibraryDesugaring(libs.desugar.jdk.libs.nio) // NIO Flavor Needed for NewPipeExtractor
@@ -279,8 +305,11 @@ dependencies {
     implementation(libs.jackson.module.kotlin) // JSON Parser
     implementation(libs.zipline)
 
-    // Deprecated; will be removed once extensions have time to migrate from using it
+    // AdiXtream: pakai libs catalog (bukan literal me.xdrop)
     implementation(libs.fuzzywuzzy)
+
+    // Keamanan ekstra AdiXtream
+    implementation("androidx.security:security-crypto:1.1.0-alpha06")
 
     // Torrent Support
     implementation(libs.torrentserver)
@@ -294,7 +323,6 @@ dependencies {
 
 tasks.register<Jar>("androidSourcesJar") {
     archiveClassifier.set("sources")
-    // Perbaikan Error 2 (AdiXtream): Mengganti srcDirs menjadi directories
     from(android.sourceSets.getByName("main").java.directories) // Full Sources
 }
 
@@ -330,7 +358,8 @@ tasks.withType<KotlinJvmCompile> {
         freeCompilerArgs.add("-Xannotation-default-target=param-property")
         optIn.addAll(
             "com.lagradost.cloudstream3.InternalAPI",
-            "com.lagradost.cloudstream3.Prerelease"
+            "com.lagradost.cloudstream3.Prerelease",
+            "kotlin.uuid.ExperimentalUuidApi",
         )
     }
 }
@@ -338,7 +367,6 @@ tasks.withType<KotlinJvmCompile> {
 dokka {
     moduleName = "App"
     dokkaSourceSets {
-        // Perbaikan Error 3 (AdiXtream): Menggunakan configureEach alih-alih main
         configureEach {
             analysisPlatform = KotlinPlatform.JVM
             displayName = "JVM"
