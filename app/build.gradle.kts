@@ -34,11 +34,11 @@ abstract class GenerateGitHashTask : DefaultTask() {
                     val refPath = headContent.substring(5).trim()
                     val commitFile = File(head.parentFile, refPath)
                     if (commitFile.exists()) commitFile.readText().trim() else ""
-                } else headContent 
-            } else "" 
+                } else headContent
+            } else ""
         } catch (_: Throwable) {
-            "" 
-        }.take(7) 
+            ""
+        }.take(7)
 
         val outFile = outputDir.file("git-hash.txt").get().asFile
         outFile.parentFile.mkdirs()
@@ -83,8 +83,11 @@ android {
         localeFilters += listOf("en", "id", "in")
     }
 
+    // Looks like google likes to add metadata only they can read https://gitlab.com/IzzyOnDroid/repo/-/work_items/491
     dependenciesInfo {
+        // Disables dependency metadata when building APKs.
         includeInApk = false
+        // Disables dependency metadata when building Android App Bundles.
         includeInBundle = false
     }
 
@@ -136,7 +139,7 @@ android {
 
         // --- TEKNIK JEBAKAN: Pecah Kunci jadi Array Angka + 7 ---
         val obfuscatedKeyArray = xorSecretKey.map { it.code + 7 }.joinToString(", ")
-       
+
         buildConfigField("int[]", "OBFUSCATED_KEY", "new int[]{$obfuscatedKeyArray}")
         buildConfigField("String", "PREMIUM_REPO_ENCODED", "\"${xorEncrypt(premiumRepo, xorSecretKey)}\"")
         buildConfigField("String", "FREE_REPO_ENCODED", "\"${xorEncrypt(freeRepo, xorSecretKey)}\"")
@@ -145,7 +148,7 @@ android {
 
         buildConfigField("long", "BUILD_DATE", "${System.currentTimeMillis()}")
         buildConfigField("String", "APP_VERSION", "\"$versionName\"")
-        
+
         // Konfigurasi spesifik AdiXtream
         buildConfigField("String", "SIMKL_CLIENT_ID", "\"db13c9a72e036f717c3a85b13cdeb31fa884c8f4991e43695f7b6477374e35b8\"")
         buildConfigField("String", "SIMKL_CLIENT_SECRET", "\"d8cf8e1b79bae9b2f77f0347d6384a62f1a8d802abdd73d9aa52bf6a848532ba\"")
@@ -157,7 +160,7 @@ android {
         release {
             signingConfig = signingConfigs.getByName("release")
             isDebuggable = false
-            isMinifyEnabled = false 
+            isMinifyEnabled = false
             isShrinkResources = false
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
@@ -167,7 +170,7 @@ android {
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
     }
-    
+
     flavorDimensions.add("state")
     productFlavors {
         create("stable") {
@@ -184,6 +187,8 @@ android {
     }
 
     java {
+        // Use Java 17 toolchain even if a higher JDK runs the build.
+        // We still use Java 8 for now which higher JDKs have deprecated.
         toolchain {
             languageVersion.set(JavaLanguageVersion.of(libs.versions.jdkToolchain.get()))
         }
@@ -197,11 +202,13 @@ android {
     buildFeatures {
         buildConfig = true
         resValues = true // Modifikasi AdiXtream
-        viewBinding = true 
+        viewBinding = true
     }
 
     packaging {
         jniLibs {
+            // Enables legacy JNI packaging to reduce APK size (similar to builds before minSdk 23).
+            // Note: This may increase app startup time slightly.
             useLegacyPackaging = true
         }
     }
@@ -210,13 +217,15 @@ android {
 }
 
 dependencies {
+    // Testing
     testImplementation(libs.junit)
     testImplementation(libs.json)
     androidTestImplementation(libs.core)
-    implementation(libs.junit.ktx)
-    androidTestImplementation(libs.ext.junit)
     androidTestImplementation(libs.espresso.core)
+    androidTestImplementation(libs.ext.junit)
+    androidTestImplementation(libs.junit.ktx)
 
+    // Android Core & Lifecycle
     implementation(libs.core.ktx)
     implementation(libs.activity.ktx)
     implementation(libs.annotation)
@@ -226,49 +235,59 @@ dependencies {
     implementation(libs.bundles.navigation)
     implementation(libs.kotlinx.collections.immutable)
 
+    // Design & UI
     implementation(libs.preference.ktx)
     implementation(libs.material)
     implementation(libs.constraintlayout)
 
+    // Coil Image Loading
     implementation(libs.bundles.coil)
 
+    // Media 3 (ExoPlayer)
     implementation(libs.bundles.media3)
     implementation(libs.video)
 
+    // FFmpeg Decoding
     implementation(libs.bundles.nextlib)
 
+    // Anime-db for filler
     implementation(libs.anime.db)
 
-    implementation(libs.colorpicker)
-    implementation(libs.newpipeextractor)
-    implementation(libs.juniversalchardet)
+    // PlayBack
+    implementation(libs.colorpicker) // Subtitle Color Picker
+    implementation(libs.newpipeextractor) // For Trailers
+    implementation(libs.juniversalchardet) // Subtitle Decoding
 
-    implementation(libs.shimmer)
-    implementation(libs.palette.ktx)
+    // UI Stuff
+    implementation(libs.shimmer) // Shimmering Effect (Loading Skeleton)
+    implementation(libs.palette.ktx) // Palette for Images -> Colors
     implementation(libs.tvprovider)
-    implementation(libs.overlappingpanels)
-    implementation(libs.biometric)
-    
+    implementation(libs.overlappingpanels) // Gestures
+    implementation(libs.biometric) // Fingerprint Authentication
+    implementation(libs.previewseekbar.media3) // SeekBar Preview
+    implementation(libs.qrcode.kotlin) // QR Code for PIN Auth on TV
+
     // Keamanan ekstra AdiXtream
     implementation("androidx.security:security-crypto:1.1.0-alpha06")
 
-    implementation(libs.previewseekbar.media3)
-    implementation(libs.qrcode.kotlin)
-
-    implementation(libs.jsoup)
-    implementation(libs.rhino)
-    implementation(libs.fuzzywuzzy)
-    implementation(libs.safefile)
-    
-    coreLibraryDesugaring(libs.desugar.jdk.libs.nio)
-    implementation(libs.conscrypt.android)
-    implementation(libs.jackson.module.kotlin)
+    // Extensions & Other Libs
+    implementation(libs.jsoup) // HTML Parser
+    implementation(libs.rhino) // Run JavaScript
+    implementation(libs.safefile) // To Prevent the URI File Fu*kery
+    coreLibraryDesugaring(libs.desugar.jdk.libs.nio) // NIO Flavor Needed for NewPipeExtractor
+    implementation(libs.conscrypt.android) // To Fix SSL Fu*kery on Android 9
+    implementation(libs.jackson.module.kotlin) // JSON Parser
     implementation(libs.zipline)
 
+    // Deprecated; will be removed once extensions have time to migrate from using it
+    implementation(libs.fuzzywuzzy)
+
+    // Torrent Support
     implementation(libs.torrentserver)
 
+    // Downloading & Networking
     implementation(libs.work.runtime.ktx)
-    implementation(libs.nicehttp)
+    implementation(libs.nicehttp) // HTTP Lib
 
     implementation(project(":library"))
 }
@@ -276,7 +295,7 @@ dependencies {
 tasks.register<Jar>("androidSourcesJar") {
     archiveClassifier.set("sources")
     // Perbaikan Error 2 (AdiXtream): Mengganti srcDirs menjadi directories
-    from(android.sourceSets.getByName("main").java.directories)
+    from(android.sourceSets.getByName("main").java.directories) // Full Sources
 }
 
 tasks.register<Copy>("copyJar") {
@@ -287,10 +306,13 @@ tasks.register<Copy>("copyJar") {
     )
     into("build/app-classes")
     include("classes.jar", "library-jvm*.jar")
+    // Remove the version
     rename("library-jvm.*.jar", "library-jvm.jar")
 }
 
+// Merge the app classes and the library classes into classes.jar
 tasks.register<Jar>("makeJar") {
+    // Duplicates cause hard to catch errors, better to fail at compile time.
     duplicatesStrategy = DuplicatesStrategy.FAIL
     dependsOn(tasks.getByName("copyJar"))
     from(
@@ -324,7 +346,7 @@ dokka {
                 VisibilityModifier.Public,
                 VisibilityModifier.Protected
             )
-            
+
             sourceLink {
                 localDirectory = file("..")
                 // Menggunakan repo AdiXtream
@@ -338,11 +360,11 @@ dokka {
 // === FUNGSI ENKRIPSI XOR OTOMATIS SAAT BUILD (AdiXtream) ===
 fun xorEncrypt(input: String, keyString: String): String {
     if (input.isEmpty() || keyString.isEmpty()) return ""
-    
+
     val key = keyString.toByteArray(Charsets.UTF_8)
     val inputBytes = input.toByteArray(Charsets.UTF_8)
     val outputBytes = ByteArray(inputBytes.size)
-    
+
     for (i in inputBytes.indices) {
         outputBytes[i] = (inputBytes[i].toInt() xor key[i % key.size].toInt()).toByte()
     }
