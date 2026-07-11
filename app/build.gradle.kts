@@ -305,9 +305,6 @@ dependencies {
     implementation(libs.jackson.module.kotlin) // JSON Parser
     implementation(libs.zipline)
 
-    // AdiXtream: pakai libs catalog (bukan literal me.xdrop)
-    implementation(libs.fuzzywuzzy)
-
     // Keamanan ekstra AdiXtream
     implementation("androidx.security:security-crypto:1.1.0-alpha06")
 
