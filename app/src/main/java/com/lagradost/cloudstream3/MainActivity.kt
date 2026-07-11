@@ -206,6 +206,10 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
         const val ANIMATED_OUTLINE: Boolean = false
         var lastError: String? = null
 
+        /** Update lastError variable based on error file, to check if app crashed.
+         * Can be called multiple times without changing the lastError variable.
+         * (Adopted from upstream Cloudstream MainActivity)
+         **/
         fun setLastError(context: Context) {
             if (lastError != null) return
 
@@ -221,22 +225,49 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
         private const val FILE_DELETE_KEY = "FILES_TO_DELETE_KEY"
         const val API_NAME_EXTRA_KEY = "API_NAME_EXTRA_KEY"
 
+        /**
+         * Transient files to delete on application exit.
+         * Deletes files in onDestroy().
+         * (Adopted from upstream Cloudstream MainActivity)
+         */
         private var filesToDelete: Set<String>
             get() = getKey<Set<String>>(FILE_DELETE_KEY) ?: setOf()
             private set(value) = setKey(FILE_DELETE_KEY, value)
 
+        /** Add file to delete on Exit. (Adopted from upstream Cloudstream MainActivity) */
         fun deleteFileOnExit(file: File) {
             filesToDelete = filesToDelete + file.path
         }
 
+        /**
+         * Setting this will automatically enter the query in the search
+         * next time the search fragment is opened.
+         * This variable will clear itself after one use. Null does nothing.
+         * (Adopted from upstream Cloudstream MainActivity)
+         */
         var nextSearchQuery: String? = null
 
+        /**
+         * Fires every time a new batch of plugins have been loaded, no guarantee about how often this is run and on which thread.
+         * (Adopted from upstream Cloudstream MainActivity)
+         */
         val afterPluginsLoadedEvent = Event<Boolean>()
-        val mainPluginsLoadedEvent = Event<Boolean>() 
+        /** Homepage api, used to speed up time to load for homepage.
+         * (Adopted from upstream Cloudstream MainActivity) */
+        val mainPluginsLoadedEvent = Event<Boolean>()
         val afterRepositoryLoadedEvent = Event<Boolean>()
         val bookmarksUpdatedEvent = Event<Boolean>()
+
+        /** Used by DataStoreHelper to fully reload home when switching accounts.
+         * (Adopted from upstream Cloudstream MainActivity) */
         val reloadHomeEvent = Event<Boolean>()
+
+        /** Used by DataStoreHelper to fully reload library when switching accounts.
+         * (Adopted from upstream Cloudstream MainActivity) */
         val reloadLibraryEvent = Event<Boolean>()
+
+        /** Used by DataStoreHelper to fully reload Navigation Rail header picture.
+         * (Adopted from upstream Cloudstream MainActivity) */
         val reloadAccountEvent = Event<Boolean>()
 
         fun handleAppIntentUrl(
@@ -288,8 +319,15 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                         for (api in AccountManager.allApis) {
                             if (api.isValidRedirectUrl(str)) {
                                 ioSafe {
+                                    // UPSTREAM CLOUDSTREAM ADOPT: tambah Log untuk debugging autentikasi
+                                    Log.i(TAG, "handleAppIntent $str")
                                     try {
                                         val isSuccessful = api.login(str)
+                                        if (isSuccessful) {
+                                            Log.i(TAG, "authenticated ${api.name}")
+                                        } else {
+                                            Log.i(TAG, "failed to authenticate ${api.name}")
+                                        }
                                         showToast(
                                             if (isSuccessful) {
                                                 txt(R.string.authenticated_user, api.name)
@@ -375,11 +413,13 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
         fun centerView(view: View?) {
             if (view == null) return
             try {
+                // UPSTREAM CLOUDSTREAM ADOPT: Log untuk debugging center view
+                Log.v(TAG, "centerView: $view")
                 val r = Rect(0, 0, 0, 0)
                 view.getDrawingRect(r)
                 val x = r.centerX()
                 val y = r.centerY()
-                val dx = r.width() / 2 
+                val dx = r.width() / 2
                 val dy = screenHeight / 2
                 val r2 = Rect(x - dx, y - dy, x + dx, y + dy)
                 view.requestRectangleOnScreen(r2, false)
@@ -552,7 +592,8 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
         onUserLeaveHint(this)
     }
 
-    @SuppressLint("ApplySharedPref")
+    @SuppressLint("ApplySharedPref") // commit since the op needs to be synchronous
+    // ^ Adopted from upstream Cloudstream MainActivity
     private fun showConfirmExitDialog(settingsManager: SharedPreferences) {
         val confirmBeforeExit = settingsManager.getInt(getString(R.string.confirm_exit_key), -1)
 
@@ -581,7 +622,11 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
     override fun onDestroy() {
         filesToDelete.forEach { path ->
             val result = File(path).deleteRecursively()
-            if (result) Log.d(TAG, "Deleted temporary file: $path") else Log.d(TAG, "Failed to delete temporary file: $path")
+            if (result) {
+                Log.d(TAG, "Deleted temporary file: $path")
+            } else {
+                Log.d(TAG, "Failed to delete temporary file: $path")
+            }
         }
         filesToDelete = setOf()
         val broadcastIntent = Intent()
@@ -701,8 +746,10 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
     lateinit var viewModel: ResultViewModel2
     lateinit var syncViewModel: SyncViewModel
     private var libraryViewModel: LibraryViewModel? = null
-    var isLocalList: Boolean = false
 
+    /** kinda dirty, however it signals that we should use the watch status as sync or not
+     * (Adopted KDoc from upstream Cloudstream MainActivity) */
+    var isLocalList: Boolean = false
     override fun onCreateView(name: String, context: Context, attrs: AttributeSet): View? {
         viewModel = ViewModelProvider(this)[ResultViewModel2::class.java]
         syncViewModel = ViewModelProvider(this)[SyncViewModel::class.java]
@@ -1333,6 +1380,8 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                 libraryViewModel = ViewModelProvider(this@MainActivity)[LibraryViewModel::class.java]
                 libraryViewModel?.currentApiName?.observe(this@MainActivity) {
                     val syncAPI = libraryViewModel?.currentSyncApi
+                    // UPSTREAM CLOUDSTREAM ADOPT: Log info sync API untuk debugging
+                    Log.i("SYNC_API", "${syncAPI?.name}, ${syncAPI?.idPrefix}")
                     val icon = if (syncAPI?.idPrefix == localListApi.idPrefix) {
                         R.drawable.library_icon_selector
                     } else {
@@ -1457,7 +1506,11 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                     for (child in children) {
                         child.findViewById<RecyclerView?>(R.id.page_recyclerview)?.smoothScrollToPosition(0)
                     }
-                } catch (_: Exception) {}
+                } catch (_: IndexOutOfBoundsException) {
+                    // UPSTREAM CLOUDSTREAM ADOPT: tangani IndexOutOfBoundsException secara spesifik
+                } catch (t: Throwable) {
+                    logError(t)
+                }
                 return@setOnLongClickListener true
             }
             view?.findViewById<View?>(R.id.navigation_search)?.setOnLongClickListener {
@@ -1491,12 +1544,20 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
             File(filesDir, "exoplayer").deleteRecursively()
             deleteFileOnExit(File(cacheDir, "exoplayer"))
         } catch (e: Exception) { logError(e) }
+        // UPSTREAM CLOUDSTREAM ADOPT: penanda log lifecycle
+        println("Loaded everything")
 
         ioSafe { migrateResumeWatching() }
 
         main {
             val channelId = TvChannelUtils.getChannelId(this@MainActivity, getString(R.string.app_name))
-            if (channelId == null) TvChannelUtils.createTvChannel(this@MainActivity)
+            // UPSTREAM CLOUDSTREAM ADOPT: Log debugging untuk TvChannel
+            if (channelId == null) {
+                Log.d("TvChannel", "Channel not found, creating")
+                TvChannelUtils.createTvChannel(this@MainActivity)
+            } else {
+                Log.d("TvChannel", "Channel ID: $channelId")
+            }
         }
 
         getKey<String>(USER_SELECTED_HOMEPAGE_API)?.let { homepage ->
