@@ -12,6 +12,8 @@ import com.lagradost.cloudstream3.syncproviders.AuthToken
 import com.lagradost.cloudstream3.syncproviders.AuthUser
 import com.lagradost.cloudstream3.syncproviders.SubtitleAPI
 import com.lagradost.cloudstream3.TvType
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 
 class SubDlApi : SubtitleAPI() {
     override val name = "SubDL"
@@ -24,7 +26,7 @@ class SubDlApi : SubtitleAPI() {
     override val createAccountUrl = "https://subdl.com/panel/register"
 
     companion object {
-        const val APIURL = "https://apiold.subdl.com"
+        const val APIURL = "https://api.subdl.com"
         const val APIENDPOINT = "$APIURL/api/v1/subtitles"
         const val DOWNLOADENDPOINT = "https://dl.subdl.com"
     }
@@ -122,69 +124,77 @@ class SubDlApi : SubtitleAPI() {
         }
     }
 
+    @Serializable
     data class SubtitleOAuthEntity(
-        @JsonProperty("userEmail") var userEmail: String,
-        @JsonProperty("pass") var pass: String,
-        @JsonProperty("name") var name: String? = null,
-        @JsonProperty("accessToken") var accessToken: String? = null,
-        @JsonProperty("apiKey") var apiKey: String? = null,
+        @JsonProperty("userEmail") @SerialName("userEmail") var userEmail: String,
+        @JsonProperty("pass") @SerialName("pass") var pass: String,
+        @JsonProperty("name") @SerialName("name") var name: String? = null,
+        @JsonProperty("accessToken") @SerialName("accessToken") var accessToken: String? = null,
+        @JsonProperty("apiKey") @SerialName("apiKey") var apiKey: String? = null,
     )
 
+    @Serializable
     data class OAuthTokenResponse(
-        @JsonProperty("token") val token: String,
-        @JsonProperty("userData") val userData: UserData? = null,
-        @JsonProperty("status") val status: Boolean? = null,
-        @JsonProperty("message") val message: String? = null,
+        @JsonProperty("token") @SerialName("token") val token: String,
+        @JsonProperty("userData") @SerialName("userData") val userData: UserData? = null,
+        @JsonProperty("status") @SerialName("status") val status: Boolean? = null,
+        @JsonProperty("message") @SerialName("message") val message: String? = null,
     )
 
+    @Serializable
     data class UserData(
-        @JsonProperty("email") val email: String,
-        @JsonProperty("name") val name: String,
-        @JsonProperty("country") val country: String,
-        @JsonProperty("scStepCode") val scStepCode: String,
-        @JsonProperty("scVerified") val scVerified: Boolean,
-        @JsonProperty("username") val username: String? = null,
-        @JsonProperty("scUsername") val scUsername: String,
+        @JsonProperty("email") @SerialName("email") val email: String,
+        @JsonProperty("name") @SerialName("name") val name: String,
+        @JsonProperty("country") @SerialName("country") val country: String,
+        @JsonProperty("scStepCode") @SerialName("scStepCode") val scStepCode: String,
+        @JsonProperty("scVerified") @SerialName("scVerified") val scVerified: Boolean,
+        @JsonProperty("username") @SerialName("username") val username: String? = null,
+        @JsonProperty("scUsername") @SerialName("scUsername") val scUsername: String,
     )
 
+    @Serializable
     data class ApiKeyResponse(
-        @JsonProperty("ok") val ok: Boolean? = false,
-        @JsonProperty("api_key") val apiKey: String,
-        @JsonProperty("usage") val usage: Usage? = null,
+        @JsonProperty("ok") @SerialName("ok") val ok: Boolean? = false,
+        @JsonProperty("api_key") @SerialName("api_key") val apiKey: String,
+        @JsonProperty("usage") @SerialName("usage") val usage: Usage? = null,
     )
 
+    @Serializable
     data class Usage(
-        @JsonProperty("total") val total: Long? = 0,
-        @JsonProperty("today") val today: Long? = 0,
+        @JsonProperty("total") @SerialName("total") val total: Long? = 0,
+        @JsonProperty("today") @SerialName("today") val today: Long? = 0,
     )
 
+    @Serializable
     data class ApiResponse(
-        @JsonProperty("status") val status: Boolean? = null,
-        @JsonProperty("results") val results: List<Result>? = null,
-        @JsonProperty("subtitles") val subtitles: List<Subtitle>? = null,
+        @JsonProperty("status") @SerialName("status") val status: Boolean? = null,
+        @JsonProperty("results") @SerialName("results") val results: List<Result>? = null,
+        @JsonProperty("subtitles") @SerialName("subtitles") val subtitles: List<Subtitle>? = null,
     )
 
+    @Serializable
     data class Result(
-        @JsonProperty("sd_id") val sdId: Int? = null,
-        @JsonProperty("type") val type: String? = null,
-        @JsonProperty("name") val name: String? = null,
-        @JsonProperty("imdb_id") val imdbId: String? = null,
-        @JsonProperty("tmdb_id") val tmdbId: Long? = null,
-        @JsonProperty("first_air_date") val firstAirDate: String? = null,
-        @JsonProperty("year") val year: Int? = null,
+        @JsonProperty("sd_id") @SerialName("sd_id") val sdId: Int? = null,
+        @JsonProperty("type") @SerialName("type") val type: String? = null,
+        @JsonProperty("name") @SerialName("name") val name: String? = null,
+        @JsonProperty("imdb_id") @SerialName("imdb_id") val imdbId: String? = null,
+        @JsonProperty("tmdb_id") @SerialName("tmdb_id") val tmdbId: Long? = null,
+        @JsonProperty("first_air_date") @SerialName("first_air_date") val firstAirDate: String? = null,
+        @JsonProperty("year") @SerialName("year") val year: Int? = null,
     )
 
+    @Serializable
     data class Subtitle(
-        @JsonProperty("release_name") val releaseName: String,
-        @JsonProperty("name") val name: String,
-        @JsonProperty("lang") val lang: String, // subdl language code
-        @JsonProperty("author") val author: String? = null,
-        @JsonProperty("url") val url: String? = null,
-        @JsonProperty("subtitlePage") val subtitlePage: String? = null,
-        @JsonProperty("season") val season: Int? = null,
-        @JsonProperty("episode") val episode: Int? = null,
-        @JsonProperty("language") val language: String? = null, // full language name
-        @JsonProperty("hi") val hearingImpaired: Boolean? = null,
+        @JsonProperty("release_name") @SerialName("release_name") val releaseName: String,
+        @JsonProperty("name") @SerialName("name") val name: String,
+        @JsonProperty("lang") @SerialName("lang") val lang: String, // subdl language code
+        @JsonProperty("author") @SerialName("author") val author: String? = null,
+        @JsonProperty("url") @SerialName("url") val url: String? = null,
+        @JsonProperty("subtitlePage") @SerialName("subtitlePage") val subtitlePage: String? = null,
+        @JsonProperty("season") @SerialName("season") val season: Int? = null,
+        @JsonProperty("episode") @SerialName("episode") val episode: Int? = null,
+        @JsonProperty("language") @SerialName("language") val language: String? = null, // full language name
+        @JsonProperty("hi") @SerialName("hi") val hearingImpaired: Boolean? = null,
     )
 
     // https://subdl.com/api-files/language_list.json
@@ -197,7 +207,6 @@ class SubDlApi : SubtitleAPI() {
         "en-nl" to "NL_EN", // "Dutch_English"
         "pt-br" to "BR_PT", // "Brazillian Portuguese"
         "zh-hant" to "ZH_BG", // "Big 5 code" -> traditional Chinese (?_?)
-        "id" to "ID", // "Indonesian" -> SUDAH DIAKTIFKAN
         // "ar" to "AR", // "Arabic"
         // "az" to "AZ", // "Azerbaijani"
         // "be" to "BE", // "Belarusian"
@@ -220,6 +229,7 @@ class SubDlApi : SubtitleAPI() {
         // "hi" to "HI", // "Hindi"
         // "hr" to "HR", // "Croatian"
         // "hu" to "HU", // "Hungarian"
+        // "id" to "ID", // "Indonesian"
         // "is" to "IS", // "Icelandic"
         // "it" to "IT", // "Italian"
         // "ja" to "JA", // "Japanese"
