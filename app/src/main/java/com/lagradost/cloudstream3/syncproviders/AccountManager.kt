@@ -11,27 +11,31 @@ import com.lagradost.cloudstream3.syncproviders.providers.MALApi
 import com.lagradost.cloudstream3.syncproviders.providers.OpenSubtitlesApi
 import com.lagradost.cloudstream3.syncproviders.providers.SimklApi
 import com.lagradost.cloudstream3.syncproviders.providers.SubDlApi
-import com.lagradost.cloudstream3.syncproviders.providers.SubSourceApi
 import com.lagradost.cloudstream3.utils.DataStoreHelper
 import java.util.concurrent.TimeUnit
 
 abstract class AccountManager {
     companion object {
-        // --- Bagian Konfigurasi AdiXtream (Dipertahankan) ---
+        // --- MODIFIKASI ADIXTREAM (DIPERTAHANKAN): Branding APP_STRING ---
         const val APP_STRING = "adixtream"
         const val APP_STRING_REPO = "adixtreamrepo"
         const val APP_STRING_PLAYER = "adixtreamplayer"
+
+        // Instantly start the search given a query
         const val APP_STRING_SEARCH = "adixtreamsearch"
+
+        // Instantly resume watching a show
         const val APP_STRING_RESUME_WATCHING = "adixtreamcontinuewatching"
+
         const val APP_STRING_SHARE = "csshare"
-        
+
         const val ACCOUNT_TOKEN = "auth_tokens"
         const val ACCOUNT_IDS = "auth_ids"
         const val NONE_ID: Int = -1
-        // ------------------------------------
+        // ---------------------------------------------------------------
 
         val malApi = MALApi()
-        val kitsuApi = KitsuApi() // Ditambahkan dari update terbaru CloudStream
+        val kitsuApi = KitsuApi()
         val aniListApi = AniListApi()
         val simklApi = SimklApi()
         val localListApi = LocalList()
@@ -39,8 +43,8 @@ abstract class AccountManager {
         val openSubtitlesApi = OpenSubtitlesApi()
         val addic7ed = Addic7ed()
         val subDlApi = SubDlApi()
-        val subSourceApi = SubSourceApi() // Ditambahkan dari update terbaru CloudStream
 
+        // --- MODIFIKASI ADIXTREAM: cachedAccounts inisialisasi (anti NPE) ---
         var cachedAccounts: MutableMap<String, Array<AuthData>> = mutableMapOf()
         var cachedAccountIds: MutableMap<String, Int> = mutableMapOf()
 
@@ -68,9 +72,10 @@ abstract class AccountManager {
             }
         }
 
+        // --- MODIFIKASI ADIXTREAM: animeSkipApi & subSourceApi tidak digunakan ---
         val allApis = arrayOf(
             SyncRepo(malApi),
-            SyncRepo(kitsuApi), // Kitsu ditambahkan kembali
+            SyncRepo(kitsuApi),
             SyncRepo(aniListApi),
             SyncRepo(simklApi),
             SyncRepo(localListApi),
@@ -114,10 +119,11 @@ abstract class AccountManager {
             cachedAccountIds = ids
         }
 
-        // Fungsi ini disesuaikan dengan update CloudStream terbaru
+        // I do not want to place this in the init block as JVM initialization order is weird, and it may cause exceptions
+        // accessing other classes
         fun initMainAPI() {
             LoadResponse.malIdPrefix = malApi.idPrefix
-            LoadResponse.kitsuIdPrefix = kitsuApi.idPrefix // Kitsu prefix ditambahkan
+            LoadResponse.kitsuIdPrefix = kitsuApi.idPrefix
             LoadResponse.aniListIdPrefix = aniListApi.idPrefix
             LoadResponse.simklIdPrefix = simklApi.idPrefix
         }
@@ -127,16 +133,16 @@ abstract class AccountManager {
             SubtitleRepo(addic7ed),
             SubtitleRepo(subDlApi)
         )
-        
+
         val syncApis = arrayOf(
             SyncRepo(malApi),
-            SyncRepo(kitsuApi), // Kitsu ditambahkan kembali
+            SyncRepo(kitsuApi),
             SyncRepo(aniListApi),
             SyncRepo(simklApi),
             SyncRepo(localListApi)
         )
 
-        // Diperbarui agar persis dengan akurasi format hitungan CloudStream terbaru
+        // --- MODIFIKASI ADIXTREAM: secondsToReadable lebih clean (no dead code) ---
         fun secondsToReadable(seconds: Int, completedValue: String): String {
             var secondsLong = seconds.toLong()
             val days = TimeUnit.SECONDS.toDays(secondsLong)
@@ -149,7 +155,6 @@ abstract class AccountManager {
             if (minutes < 0) {
                 return completedValue
             }
-            
             return "${if (days != 0L) "$days" + "d " else ""}${if (hours != 0L) "$hours" + "h " else ""}${minutes}m"
         }
     }
