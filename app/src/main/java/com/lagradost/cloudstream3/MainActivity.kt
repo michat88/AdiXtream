@@ -171,13 +171,17 @@ import com.lagradost.cloudstream3.utils.UIHelper.hideKeyboard
 import com.lagradost.cloudstream3.utils.UIHelper.navigate
 import com.lagradost.cloudstream3.utils.UIHelper.requestRW
 import com.lagradost.cloudstream3.utils.UIHelper.setNavigationBarColorCompat
+import com.lagradost.cloudstream3.utils.UIHelper.showProgress
 import com.lagradost.cloudstream3.utils.UIHelper.toPx
 import com.lagradost.cloudstream3.utils.USER_PROVIDER_API
 import com.lagradost.cloudstream3.utils.USER_SELECTED_HOMEPAGE_API
+import com.lagradost.cloudstream3.utils.downloader.DownloadQueueManager
 import com.lagradost.cloudstream3.utils.setText
 import com.lagradost.cloudstream3.utils.setTextHtml
 import com.lagradost.cloudstream3.utils.txt
 import com.lagradost.safefile.SafeFile
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import java.io.File
@@ -187,16 +191,11 @@ import java.net.URLDecoder
 import java.nio.charset.Charset
 import kotlin.math.abs
 import kotlin.math.absoluteValue
+import kotlin.reflect.full.createInstance
 import kotlin.system.exitProcess
-import com.lagradost.cloudstream3.utils.downloader.DownloadQueueManager
 
-// --- IMPORT TAMBAHAN ADIXTREAM ---
-import com.lagradost.cloudstream3.plugins.RepositoryManager
-import com.lagradost.cloudstream3.ui.settings.extensions.PluginsViewModel
-import com.lagradost.cloudstream3.ui.settings.extensions.RepositoryData
-import com.lagradost.cloudstream3.PremiumManager
-import kotlinx.coroutines.Job
-// -----------------------
+// Import tambahan untuk membungkus tipe data repositori kustom AdiXtream
+import com.lagradost.cloudstream3.utils.AppUtils.RepositoryData 
 
 class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCallback {
     companion object {
@@ -206,10 +205,6 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
         const val ANIMATED_OUTLINE: Boolean = false
         var lastError: String? = null
 
-        /** Update lastError variable based on error file, to check if app crashed.
-         * Can be called multiple times without changing the lastError variable.
-         * (Adopted from upstream Cloudstream MainActivity)
-         **/
         fun setLastError(context: Context) {
             if (lastError != null) return
 
@@ -225,49 +220,22 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
         private const val FILE_DELETE_KEY = "FILES_TO_DELETE_KEY"
         const val API_NAME_EXTRA_KEY = "API_NAME_EXTRA_KEY"
 
-        /**
-         * Transient files to delete on application exit.
-         * Deletes files in onDestroy().
-         * (Adopted from upstream Cloudstream MainActivity)
-         */
         private var filesToDelete: Set<String>
             get() = getKey<Set<String>>(FILE_DELETE_KEY) ?: setOf()
             private set(value) = setKey(FILE_DELETE_KEY, value)
 
-        /** Add file to delete on Exit. (Adopted from upstream Cloudstream MainActivity) */
         fun deleteFileOnExit(file: File) {
             filesToDelete = filesToDelete + file.path
         }
 
-        /**
-         * Setting this will automatically enter the query in the search
-         * next time the search fragment is opened.
-         * This variable will clear itself after one use. Null does nothing.
-         * (Adopted from upstream Cloudstream MainActivity)
-         */
         var nextSearchQuery: String? = null
 
-        /**
-         * Fires every time a new batch of plugins have been loaded, no guarantee about how often this is run and on which thread.
-         * (Adopted from upstream Cloudstream MainActivity)
-         */
         val afterPluginsLoadedEvent = Event<Boolean>()
-        /** Homepage api, used to speed up time to load for homepage.
-         * (Adopted from upstream Cloudstream MainActivity) */
-        val mainPluginsLoadedEvent = Event<Boolean>()
+        val mainPluginsLoadedEvent = Event<Boolean>() 
         val afterRepositoryLoadedEvent = Event<Boolean>()
         val bookmarksUpdatedEvent = Event<Boolean>()
-
-        /** Used by DataStoreHelper to fully reload home when switching accounts.
-         * (Adopted from upstream Cloudstream MainActivity) */
         val reloadHomeEvent = Event<Boolean>()
-
-        /** Used by DataStoreHelper to fully reload library when switching accounts.
-         * (Adopted from upstream Cloudstream MainActivity) */
         val reloadLibraryEvent = Event<Boolean>()
-
-        /** Used by DataStoreHelper to fully reload Navigation Rail header picture.
-         * (Adopted from upstream Cloudstream MainActivity) */
         val reloadAccountEvent = Event<Boolean>()
 
         fun handleAppIntentUrl(
@@ -280,46 +248,16 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                 fun safeURI(uri: String) = safe { URI(uri) }
 
                 if (str != null && this != null) {
-                    // === ADIXTREAM SHARE MOD ===
-                    if (str.startsWith(APP_STRING_SHARE) || str.startsWith("adixtreamshare")) {
-                        try {
-                            val rawData = if (str.contains("?data=")) {
-                                str.substringAfter("?data=")
-                            } else {
-                                str.substringAfter("://")
-                            }
-                            
-                            val parts = rawData.split("_=_", limit = 2)
-                            val flags = android.util.Base64.URL_SAFE or android.util.Base64.NO_WRAP or android.util.Base64.NO_PADDING
-                            val decodedApiName = String(android.util.Base64.decode(parts[0], flags), Charsets.UTF_8)
-                            val decodedUrl = String(android.util.Base64.decode(parts[1], flags), Charsets.UTF_8)
-                            
-                            val isPremium = PremiumManager.isPremium(activity ?: return false)
-
-                            if (!isPremium) {
-                                activity.runOnUiThread {
-                                    showToast("Akses Premium Diperlukan", Toast.LENGTH_SHORT)
-                                    PremiumDialogManager.showPremiumUnlockDialog(activity)
-                                }
-                                return true
-                            }
-                            loadResult(decodedUrl, decodedApiName, "")
-                            return true
-                        } catch (e: Exception) {
-                            logError(e)
-                            showToast("Gagal memuat film dari link", Toast.LENGTH_SHORT)
-                            return false
-                        }
-                    } else if (str.startsWith("https://cs.repo")) {
+                    // FIX MODIFIKASI ADIXTREAM: Dibungkus ke RepositoryData agar tidak mismatch tipe data String
+                    if (str.startsWith("https://cs.repo")) {
                         val realUrl = "https://" + str.substringAfter("?")
                         println("Repository url: $realUrl")
-                        loadRepository(realUrl)
+                        loadRepository(RepositoryData(name = "AdiXtream Repo", url = realUrl))
                         return true
                     } else if (str.contains(APP_STRING)) {
                         for (api in AccountManager.allApis) {
                             if (api.isValidRedirectUrl(str)) {
                                 ioSafe {
-                                    // UPSTREAM CLOUDSTREAM ADOPT: tambah Log untuk debugging autentikasi
                                     Log.i(TAG, "handleAppIntent $str")
                                     try {
                                         val isSuccessful = api.login(str)
@@ -337,7 +275,9 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                                         )
                                     } catch (t: Throwable) {
                                         logError(t)
-                                        showToast(txt(R.string.authenticated_user_fail, api.name))
+                                        showToast(
+                                            txt(R.string.authenticated_user_fail, api.name)
+                                        )
                                     }
                                 }
                                 return true
@@ -345,12 +285,15 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                         }
                         if (str == "$APP_STRING:") {
                             ioSafe {
-                                PluginManager.___DO_NOT_CALL_FROM_A_PLUGIN_hotReloadAllLocalPlugins(activity)
+                                PluginManager.___DO_NOT_CALL_FROM_A_PLUGIN_hotReloadAllLocalPlugins(
+                                    activity
+                                )
                             }
                         }
                     } else if (safeURI(str)?.scheme == APP_STRING_REPO) {
+                        // FIX MODIFIKASI ADIXTREAM: Dibungkus ke RepositoryData agar tidak mismatch tipe data String
                         val url = str.replaceFirst(APP_STRING_REPO, "https")
-                        loadRepository(url)
+                        loadRepository(RepositoryData(name = "AdiXtream Repo", url = url))
                         return true
                     } else if (safeURI(str)?.scheme == APP_STRING_SEARCH) {
                         val query = str.substringAfter("$APP_STRING_SEARCH://")
@@ -361,14 +304,15 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                                 logError(t)
                                 query
                             }
-                        activity?.findViewById<BottomNavigationView>(R.id.nav_view)?.selectedItemId = R.id.navigation_search
-                        activity?.findViewById<NavigationRailView>(R.id.nav_rail_view)?.selectedItemId = R.id.navigation_search
+                        activity?.findViewById<BottomNavigationView>(R.id.nav_view)?.selectedItemId =
+                            R.id.navigation_search
+                        activity?.findViewById<NavigationRailView>(R.id.nav_rail_view)?.selectedItemId =
+                            R.id.navigation_search
                     } else if (safeURI(str)?.scheme == APP_STRING_PLAYER) {
                         val uri = str.toUri()
                         val name = uri.getQueryParameter("name")
                         val url = URLDecoder.decode(uri.authority, "UTF-8")
 
-                        // UPSTREAM CLOUDSTREAM UPDATE: Penambahan ID & Parameter 0
                         navigate(
                             R.id.global_to_navigation_player,
                             GeneratorPlayer.newInstance(
@@ -380,29 +324,48 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                             )
                         )
                     } else if (safeURI(str)?.scheme == APP_STRING_RESUME_WATCHING) {
-                        val id = str.substringAfter("$APP_STRING_RESUME_WATCHING://").toIntOrNull() ?: return false
+                        val id =
+                            str.substringAfter("$APP_STRING_RESUME_WATCHING://").toIntOrNull()
+                                ?: return false
                         ioSafe {
-                            val resumeWatchingCard = HomeViewModel.getResumeWatching()?.firstOrNull { it.id == id } ?: return@ioSafe
-                            activity.loadSearchResult(resumeWatchingCard, START_ACTION_RESUME_LATEST)
+                            val resumeWatchingCard =
+                                HomeViewModel.getResumeWatching()?.firstOrNull { it.id == id }
+                                    ?: return@ioSafe
+                            activity.loadSearchResult(
+                                resumeWatchingCard,
+                                START_ACTION_RESUME_LATEST
+                            )
+                        }
+                    } else if (str.startsWith(APP_STRING_SHARE)) {
+                        try {
+                            val data = str.substringAfter("$APP_STRING_SHARE:")
+                            val parts = data.split("?", limit = 2)
+                            loadResult(
+                                String(base64DecodeArray(parts[1]), Charsets.UTF_8),
+                                String(base64DecodeArray(parts[0]), Charsets.UTF_8),
+                                ""
+                            )
+                            return true
+                        } catch (e: Exception) {
+                            showToast("Invalid Uri", Toast.LENGTH_SHORT)
+                            return false
                         }
                     } else if (!isWebview) {
                         if (str.startsWith(DOWNLOAD_NAVIGATE_TO)) {
                             this.navigate(R.id.navigation_downloads)
                             return true
                         } else {
-                            val apiName = extraArgs?.getString(API_NAME_EXTRA_KEY)?.takeIf { it.isNotBlank() }
+                            val apiName = extraArgs?.getString(API_NAME_EXTRA_KEY)
+                                ?.takeIf { it.isNotBlank() }
                             if (apiName != null) {
                                 loadResult(str, apiName, "")
                                 return true
                             }
 
-                            synchronized(apis) {
-                                for (api in apis) {
-                                    if (str.startsWith(api.mainUrl)) {
-                                        loadResult(str, api.name, "")
-                                        return true
-                                    }
-                                }
+                            val matchedApi = apis.filter { str.startsWith(it.mainUrl) }.firstOrNull()
+                            if (matchedApi != null) {
+                                loadResult(str, matchedApi.name, "")
+                                return true
                             }
                         }
                     }
@@ -413,13 +376,12 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
         fun centerView(view: View?) {
             if (view == null) return
             try {
-                // UPSTREAM CLOUDSTREAM ADOPT: Log untuk debugging center view
                 Log.v(TAG, "centerView: $view")
                 val r = Rect(0, 0, 0, 0)
                 view.getDrawingRect(r)
                 val x = r.centerX()
                 val y = r.centerY()
-                val dx = r.width() / 2
+                val dx = r.width() / 2 
                 val dy = screenHeight / 2
                 val r2 = Rect(x - dx, y - dy, x + dx, y + dy)
                 view.requestRectangleOnScreen(r2, false)
@@ -444,9 +406,11 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
         }
 
         lastPopupJob?.cancel()
-        if (load) {
-            lastPopupJob = viewModel.load(
-                this, result.url, result.apiName, false, if (getApiDubstatusSettings().contains(DubStatus.Dubbed)) DubStatus.Dubbed else DubStatus.Subbed, null
+        lastPopupJob = if (load) {
+            viewModel.load(
+                this, result.url, result.apiName, false, if (getApiDubstatusSettings()
+                        .contains(DubStatus.Dubbed)
+                ) DubStatus.Dubbed else DubStatus.Subbed, null
             )
         } else {
             viewModel.loadSmall(result)
@@ -466,7 +430,8 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
         updateLocale() 
         updateTheme(this) 
 
-        val navHostFragment = supportFragmentManager.findFragmentById(R.id.nav_host_fragment) as NavHostFragment
+        val navHostFragment =
+            supportFragmentManager.findFragmentById(R.id.nav_host_fragment) as NavHostFragment
         navHostFragment.navController.currentDestination?.let { updateNavBar(it) }
     }
 
@@ -506,7 +471,6 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
             navView.isVisible = isNavVisible && !isLandscape()
             navHostFragment.apply {
                 val marginPx = resources.getDimensionPixelSize(R.dimen.nav_rail_view_width)
-                // UPSTREAM CLOUDSTREAM UPDATE: Reformat layoutParams
                 layoutParams =
                     (navHostFragment.layoutParams as ViewGroup.MarginLayoutParams).apply {
                         marginStart =
@@ -515,7 +479,6 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
             }
 
             when (destination.id) {
-                // UPSTREAM CLOUDSTREAM UPDATE: Reformat ListOf
                 in listOf(
                     R.id.navigation_downloads,
                     R.id.navigation_download_child,
@@ -524,6 +487,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                     navRailView.menu.findItem(R.id.navigation_downloads).isChecked = true
                     navView.menu.findItem(R.id.navigation_downloads).isChecked = true
                 }
+
                 in listOf(
                     R.id.navigation_settings,
                     R.id.navigation_subtitles,
@@ -582,18 +546,23 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
             if (isCastApiAvailable()) {
                 mSessionManager?.removeSessionManagerListener(mSessionManagerListener)
             }
-        } catch (e: Exception) { logError(e) }
+        } catch (e: Exception) {
+            logError(e)
+        }
     }
 
-    override fun dispatchKeyEvent(event: KeyEvent): Boolean = CommonActivity.dispatchKeyEvent(this, event) ?: super.dispatchKeyEvent(event)
-    override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean = CommonActivity.onKeyDown(this, keyCode, event) ?: super.onKeyDown(keyCode, event)
+    override fun dispatchKeyEvent(event: KeyEvent): Boolean =
+        CommonActivity.dispatchKeyEvent(this, event) ?: super.dispatchKeyEvent(event)
+
+    override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean =
+        CommonActivity.onKeyDown(this, keyCode, event) ?: super.onKeyDown(keyCode, event)
+
     override fun onUserLeaveHint() {
         super.onUserLeaveHint()
         onUserLeaveHint(this)
     }
 
-    @SuppressLint("ApplySharedPref") // commit since the op needs to be synchronous
-    // ^ Adopted from upstream Cloudstream MainActivity
+    @SuppressLint("ApplySharedPref")
     private fun showConfirmExitDialog(settingsManager: SharedPreferences) {
         val confirmBeforeExit = settingsManager.getInt(getString(R.string.confirm_exit_key), -1)
 
@@ -616,6 +585,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                 }
                 if (isLayout(TV)) exitProcess(0) else finish()
             }
+
         builder.show().setDefaultFocus()
     }
 
@@ -650,7 +620,8 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
         handleAppIntentUrl(this, str, false, intent.extras)
     }
 
-    private fun NavDestination.matchDestination(@IdRes destId: Int): Boolean = hierarchy.any { it.id == destId }
+    private fun NavDestination.matchDestination(@IdRes destId: Int): Boolean =
+        hierarchy.any { it.id == destId }
 
     private var lastNavTime = 0L
     private fun onNavDestinationSelected(item: MenuItem, navController: NavController): Boolean {
@@ -659,16 +630,6 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
         lastNavTime = currentTime
 
         val destinationId = item.itemId
-
-        // --- SECURITY GUARD ADIXTREAM (SATPAM MENU) ---
-        if (destinationId == R.id.navigation_settings_extensions || destinationId == R.id.navigation_settings_plugins) {
-            if (!PremiumManager.isPremium(this)) {
-                PremiumDialogManager.showPremiumUnlockDialog(this)
-                return false
-            }
-        }
-        // ----------------------------------------------
-
         if (navController.currentDestination?.id == destinationId) return false
 
         val targetView = when (destinationId) {
@@ -718,22 +679,27 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
     private fun onAllPluginsLoaded(success: Boolean = false) {
         ioSafe {
             pluginsLock.withLock {
-                synchronized(allProviders) {
+                allProviders.withLock {
                     try {
                         getKey<Array<SettingsGeneral.CustomSite>>(USER_PROVIDER_API)?.let { list ->
                             list.forEach { custom ->
-                                allProviders.firstOrNull { it.javaClass.simpleName == custom.parentJavaClass }?.let {
-                                        allProviders.add(
-                                            it.javaClass.getDeclaredConstructor().newInstance().apply {
-                                                    name = custom.name
-                                                    lang = custom.lang
-                                                    mainUrl = custom.url.trimEnd('/')
-                                                    canBeOverridden = false
-                                                })
-                                   }
+                                allProviders.firstOrNull {
+                                    it::class.simpleName == custom.parentClassName
+                                }?.let {
+                                    allProviders.add(
+                                        it::class.createInstance().apply {
+                                            name = custom.name
+                                            lang = custom.lang
+                                            mainUrl = custom.url.trimEnd('/')
+                                            canBeOverridden = false
+                                        }
+                                    )
+                                }
                             }
                         }
-                        apis = allProviders.distinctBy { it.lang + it.name + it.mainUrl + it.javaClass.name }
+                        apis = allProviders.distinctBy {
+                            it.lang + it.name + it.mainUrl + it::class.qualifiedName
+                        }
                         APIHolder.apiMap = null
                     } catch (e: Exception) {
                         logError(e)
@@ -747,8 +713,6 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
     lateinit var syncViewModel: SyncViewModel
     private var libraryViewModel: LibraryViewModel? = null
 
-    /** kinda dirty, however it signals that we should use the watch status as sync or not
-     * (Adopted KDoc from upstream Cloudstream MainActivity) */
     var isLocalList: Boolean = false
     override fun onCreateView(name: String, context: Context, attrs: AttributeSet): View? {
         viewModel = ViewModelProvider(this)[ResultViewModel2::class.java]
@@ -770,6 +734,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
         val ret = (bottomPreviewBinding ?: run {
             val builder: Dialog
             val layout: Int
+
             if (isLayout(PHONE)) {
                 builder = BottomSheetDialog(this)
                 layout = R.layout.bottom_resultview_preview
@@ -778,7 +743,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                 layout = R.layout.bottom_resultview_preview_tv
                 builder.window?.setGravity(Gravity.CENTER_VERTICAL or Gravity.END)
             }
-         
+
             val root = layoutInflater.inflate(layout, null, false)
             val binding = BottomResultviewPreviewBinding.bind(root)
 
@@ -821,9 +786,9 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
 
         var last: FocusTarget = FocusTarget(0, 0, 0.0f, 0.0f)
         var current: FocusTarget = FocusTarget(0, 0, 0.0f, 0.0f)
+
         var focusOutline: WeakReference<View> = WeakReference(null)
         var lastFocus: WeakReference<View> = WeakReference(null)
-        
         private val layoutListener: View.OnLayoutChangeListener =
             View.OnLayoutChangeListener { _, _, _, _, _, _, _, _, _ ->
                 lastFocus.get()?.apply {
@@ -831,7 +796,6 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                     postDelayed({ updateFocusView(lastFocus.get(), same = false) }, 300)
                 }
             }
-            
         private val attachListener: View.OnAttachStateChangeListener =
             object : View.OnAttachStateChangeListener {
                 override fun onViewAttachedToWindow(v: View) { updateFocusView(v) }
@@ -856,7 +820,9 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
 
         private val reflectedScroll by lazy {
             try {
-                RecyclerView::class.java.declaredMethods.firstOrNull { it.name == "scrollStep" }?.also { it.isAccessible = true }
+                RecyclerView::class.java.declaredMethods.firstOrNull {
+                    it.name == "scrollStep"
+                }?.also { it.isAccessible = true }
             } catch (t: Throwable) { null }
         }
 
@@ -868,7 +834,9 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
             if (!exactlyTheSame) {
                 lastView?.removeOnLayoutChangeListener(layoutListener)
                 lastView?.removeOnAttachStateChangeListener(attachListener)
-                (lastView?.parent as? RecyclerView)?.apply { removeOnLayoutChangeListener(layoutListener) }
+                (lastView?.parent as? RecyclerView)?.apply {
+                    removeOnLayoutChangeListener(layoutListener)
+                }
             }
 
             val wasGone = focusOutline.isGone
@@ -890,6 +858,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                             } else {
                                 if (dx > 0) dx else 0
                             }
+
                             if (!NO_MOVE_LIST) {
                                 parent.smoothScrollBy(rdx, 0)
                             } else {
@@ -926,9 +895,13 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                 }
                 x -= targetDx
 
-                if (screenX == 0 && screenY == 0) focusOutline.isVisible = false
+                if (screenX == 0 && screenY == 0) {
+                    focusOutline.isVisible = false
+                }
                 if (!exactlyTheSame) {
-                    (newFocus.parent as? RecyclerView)?.apply { addOnLayoutChangeListener(layoutListener) }
+                    (newFocus.parent as? RecyclerView)?.apply {
+                        addOnLayoutChangeListener(layoutListener)
+                    }
                     newFocus.addOnLayoutChangeListener(layoutListener)
                     newFocus.addOnAttachStateChangeListener(attachListener)
                 }
@@ -970,6 +943,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                     }
                     start()
                 }
+
                 if (!same) {
                     newFocus.postDelayed({ updateFocusView(lastFocus.get(), same = true) }, 200)
                 }
@@ -977,15 +951,10 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
         }
     }
 
-    @Suppress("DEPRECATION_ERROR")
     override fun onCreate(savedInstanceState: Bundle?) {
-        // --- UPSTREAM CLOUDSTREAM SSL FIX ---
         app.initClient(this, ignoreSSL = false)
-        // Baris insecureApp dan UnsafeSSL dihapus agar tidak terjadi error Unresolved reference pada base project AdiXtream
-
-        // --- ADIXTREAM MOD: MIGRASI SILENT USER OFFLINE LAMA ---
-        PremiumManager.checkAndMigrateOldOfflineUser(this)
-        // -------------------------------------------------------
+        @OptIn(UnsafeSSL::class)
+        insecureApp.initClient(this, ignoreSSL = true)
 
         val settingsManager = PreferenceManager.getDefaultSharedPreferences(this)
         setLastError(this)
@@ -999,7 +968,6 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
         setNavigationBarColorCompat(R.attr.primaryGrayBackground)
         updateLocale()
         super.onCreate(savedInstanceState)
-        
         try {
             if (isCastApiAvailable()) {
                 CastContext.getSharedInstance(this) { it.run() }
@@ -1014,14 +982,12 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
 
         safe {
             val appVer = BuildConfig.VERSION_NAME
-            val lastAppAutoBackup: String = getKey("VERSION_NAME") ?: ""
+            val lastAppAutoBackup: String = getKey<String>("VERSION_NAME") ?: ""
             if (appVer != lastAppAutoBackup) {
                 setKey("VERSION_NAME", BuildConfig.VERSION_NAME)
-                if (lastAppAutoBackup.isNotEmpty()) {
-                    // ADIXTREAM MOD: Mematikan auto-backup diam-diam saat update aplikasi.
-                    // safe { backup(this) }
-                    safe { PluginManager.deleteAllOatFiles(this) }
-                }
+                if (lastAppAutoBackup.isEmpty()) return@safe
+                safe { backup(this) }
+                safe { PluginManager.deleteAllOatFiles(this) }
             }
         }
 
@@ -1063,7 +1029,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                         centerView(newFocus)
                     }
                 }
-                ActivityMainBinding.bind(newLocalBinding.root) 
+                ActivityMainBinding.bind(newLocalBinding.root)
             } else {
                 val newLocalBinding = ActivityMainBinding.inflate(layoutInflater, null, false)
                 setContentView(newLocalBinding.root)
@@ -1100,8 +1066,8 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                     this.setKey(getString(R.string.jsdelivr_proxy_key), false)
                 } else {
                     this.setKey(getString(R.string.jsdelivr_proxy_key), true)
-                    showSnackbar(this@MainActivity, R.string.jsdelivr_enabled, Snackbar.LENGTH_LONG, R.string.revert) { 
-                        setKey(getString(R.string.jsdelivr_proxy_key), false) 
+                    showSnackbar(this@MainActivity, R.string.jsdelivr_enabled, Snackbar.LENGTH_LONG, R.string.revert) {
+                        setKey(getString(R.string.jsdelivr_proxy_key), false)
                     }
                 }
             }
@@ -1112,97 +1078,25 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
         if (PluginManager.checkSafeModeFile()) {
             safe { showToast(R.string.safe_mode_file, Toast.LENGTH_LONG) }
         } else if (lastError == null) {
-            // === ADIXTREAM MOD: LOGIKA REPOSITORY & UPDATE (ANTI-BUG V4 - POLLING SYSTEM) ===
             ioSafe {
-                val isPremium = PremiumManager.isPremium(this@MainActivity)
-                val targetRepoUrl = if (isPremium) PremiumManager.PREMIUM_REPO_URL else PremiumManager.FREE_REPO_URL
-                
-                val currentRepos = RepositoryManager.getRepositories()
-                val hasTargetRepo = currentRepos.any { it.url == targetRepoUrl }
-                val hasInvalidRepos = currentRepos.any { it.url != targetRepoUrl }
-                
-                var isRepoChanged = false
+                DataStoreHelper.currentHomePage?.let { homeApi ->
+                    mainPluginsLoadedEvent.invoke(loadSinglePlugin(this@MainActivity, homeApi))
+                } ?: run { mainPluginsLoadedEvent.invoke(false) }
 
-                if (!hasTargetRepo || hasInvalidRepos) {
-                    Log.d(TAG, "Status Repo tidak sinkron. Melakukan penyesuaian otomatis...")
-
-                    try {
-                        APIHolder.allProviders.clear() 
-                        val pluginDir1 = java.io.File(this@MainActivity.filesDir, "plugins")
-                        val pluginDir2 = java.io.File(this@MainActivity.filesDir, "Plugins")
-                        if (pluginDir1.exists()) pluginDir1.deleteRecursively() 
-                        if (pluginDir2.exists()) pluginDir2.deleteRecursively()
-                    } catch (e: Exception) { 
-                        logError(e) 
-                    }
-
-                    currentRepos.forEach { repo ->
-                        RepositoryManager.removeRepository(this@MainActivity, repo)
-                    }
-                    try {
-                        val parsedRepo = RepositoryManager.parseRepository(targetRepoUrl)
-                        if (parsedRepo != null) {
-                            val repoData = RepositoryData(parsedRepo.iconUrl, parsedRepo.name, targetRepoUrl)
-                            RepositoryManager.addRepository(repoData)
-                            isRepoChanged = true 
-                            Log.d(TAG, "Repo berhasil disinkronkan ke: $targetRepoUrl")
-                        }
-                    } catch (e: Exception) { logError(e) }
-                }
-
-                kotlinx.coroutines.delay(1000)
-
-                if (isRepoChanged) {
-                    try {
-                        Log.d(TAG, "Mengunduh plugin dari Repo Baru...")
-                        PluginsViewModel.downloadAll(this@MainActivity, targetRepoUrl, null)
-                        PluginManager.___DO_NOT_CALL_FROM_A_PLUGIN_loadAllOnlinePlugins(this@MainActivity)
-                        PluginManager.___DO_NOT_CALL_FROM_A_PLUGIN_loadAllLocalPlugins(this@MainActivity, false)
-                    } catch (e: Exception) { logError(e) }
-                } else {
+                ioSafe {
                     if (settingsManager.getBoolean(getString(R.string.auto_update_plugins_key), true)) {
                         PluginManager.___DO_NOT_CALL_FROM_A_PLUGIN_updateAllOnlinePluginsAndLoadThem(this@MainActivity)
                     } else {
-                        PluginManager.___DO_NOT_CALL_FROM_A_PLUGIN_loadAllOnlinePlugins(this@MainActivity)
+                        ___DO_NOT_CALL_FROM_A_PLUGIN_loadAllOnlinePlugins(this@MainActivity)
                     }
 
                     val autoDownloadPlugin = AutoDownloadMode.getEnum(settingsManager.getInt(getString(R.string.auto_download_plugins_key), 0)) ?: AutoDownloadMode.Disable
                     if (autoDownloadPlugin != AutoDownloadMode.Disable) {
                         PluginManager.___DO_NOT_CALL_FROM_A_PLUGIN_downloadNotExistingPluginsAndLoad(this@MainActivity, autoDownloadPlugin)
                     }
-                    PluginManager.___DO_NOT_CALL_FROM_A_PLUGIN_loadAllLocalPlugins(this@MainActivity, false)
                 }
 
-                val isAdultEnabled = settingsManager.getBoolean(getString(R.string.enable_nsfw_on_providers_key), false)
-
-                kotlinx.coroutines.withTimeoutOrNull(15_000L) {
-                    while (APIHolder.allProviders.none { provider -> 
-                        provider.hasMainPage && (isAdultEnabled || !provider.supportedTypes.contains(com.lagradost.cloudstream3.TvType.NSFW)) 
-                    }) {
-                        kotlinx.coroutines.delay(500)
-                    }
-                }
-
-                val availableProviders = APIHolder.allProviders.filter { provider ->
-                    provider.hasMainPage && (isAdultEnabled || !provider.supportedTypes.contains(com.lagradost.cloudstream3.TvType.NSFW))
-                }
-                
-                val currentSelected = DataStoreHelper.currentHomePage
-
-                if (currentSelected == null || availableProviders.none { it.name == currentSelected }) {
-                    if (availableProviders.isNotEmpty()) {
-                        val targetApiToLoad = availableProviders.first().name
-                        DataStoreHelper.currentHomePage = targetApiToLoad
-                        Log.d(TAG, "Auto-select plugin sukses dieksekusi: $targetApiToLoad")
-                        mainPluginsLoadedEvent.invoke(loadSinglePlugin(this@MainActivity, targetApiToLoad))
-                        reloadHomeEvent.invoke(true)
-                    } else {
-                        mainPluginsLoadedEvent.invoke(false)
-                    }
-                } else {
-                    mainPluginsLoadedEvent.invoke(loadSinglePlugin(this@MainActivity, currentSelected))
-                    reloadHomeEvent.invoke(true)
-                }
+                ioSafe { PluginManager.___DO_NOT_CALL_FROM_A_PLUGIN_loadAllLocalPlugins(this@MainActivity, false) }
             }
         } else {
             val builder: AlertDialog.Builder = AlertDialog.Builder(this)
@@ -1236,8 +1130,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                     }
                     else -> {
                         resultviewPreviewBookmark.isEnabled = false
-                        resultviewPreviewBookmark.setIconResource(R.drawable.ic_baseline_bookmark_border_24)
-                        resultviewPreviewBookmark.setText(R.string.loading)
+                        resultviewPreviewBookmark.showProgress()
                     }
                 }
             }
@@ -1258,6 +1151,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                     setImageResource(drawable)
                 }
                 isVisible = state != null
+
                 setOnClickListener {
                     viewModel.toggleSubscriptionStatus(context) { newStatus: Boolean? ->
                         if (newStatus == null) return@toggleSubscriptionStatus
@@ -1277,6 +1171,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
         observe(viewModel.watchStatus, ::setWatchStatus)
         observe(syncViewModel.userData, ::setUserData)
         observeNullable(viewModel.subscribeStatus, ::setSubscribeStatus)
+
         observeNullable(viewModel.page) { resource ->
             if (resource == null) {
                 hidePreviewPopupDialog()
@@ -1301,13 +1196,13 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                         resultviewPreviewLoading.isVisible = false
                         resultviewPreviewResult.isVisible = true
                         resultviewPreviewLoadingShimmer.stopShimmer()
-
                         resultviewPreviewTitle.text = d.title
                         resultviewPreviewMetaType.setText(d.typeText)
                         resultviewPreviewMetaYear.setText(d.yearText)
                         resultviewPreviewMetaDuration.setText(d.durationText)
                         resultviewPreviewMetaRating.setText(d.ratingText)
                         resultviewPreviewDescription.setTextHtml(d.plotText)
+                        
                         if (isLayout(PHONE)) {
                             resultviewPreviewPoster.loadImage(d.posterImage ?: d.posterBackgroundImage, headers = d.posterHeaders)
                         } else {
@@ -1326,7 +1221,9 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                                     value.ordinal,
                                     this@MainActivity.getString(R.string.action_add_to_bookmarks),
                                     showApply = false,
-                                    {}) { viewModel.updateWatchStatus(WatchType.entries[it], this@MainActivity) }
+                                    {}) {
+                                    viewModel.updateWatchStatus(WatchType.entries[it], this@MainActivity)
+                                }
                             } else {
                                 val value = (syncViewModel.userData.value as? Resource.Success)?.value?.status ?: SyncWatchType.NONE
                                 this@MainActivity.showBottomDialog(
@@ -1361,7 +1258,9 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                             resultviewPreviewDescription.setOnClickListener { view ->
                                 view.context?.let { ctx ->
                                     val builder: AlertDialog.Builder = AlertDialog.Builder(ctx, R.style.AlertDialogCustom)
-                                    builder.setMessage(d.plotText.asString(ctx).html()).setTitle(d.plotHeaderText.asString(ctx)).show()
+                                    builder.setMessage(d.plotText.asString(ctx).html())
+                                        .setTitle(d.plotHeaderText.asString(ctx))
+                                        .show()
                                 }
                             }
 
@@ -1380,13 +1279,13 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                 libraryViewModel = ViewModelProvider(this@MainActivity)[LibraryViewModel::class.java]
                 libraryViewModel?.currentApiName?.observe(this@MainActivity) {
                     val syncAPI = libraryViewModel?.currentSyncApi
-                    // UPSTREAM CLOUDSTREAM ADOPT: Log info sync API untuk debugging
                     Log.i("SYNC_API", "${syncAPI?.name}, ${syncAPI?.idPrefix}")
                     val icon = if (syncAPI?.idPrefix == localListApi.idPrefix) {
                         R.drawable.library_icon_selector
                     } else {
                         syncAPI?.icon ?: R.drawable.library_icon_selector
                     }
+
                     binding?.apply {
                         navRailView.menu.findItem(R.id.navigation_library)?.setIcon(icon)
                         navView.menu.findItem(R.id.navigation_library)?.setIcon(icon)
@@ -1399,7 +1298,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
 
         ioSafe {
             initAll()
-            apis = synchronized(allProviders) { allProviders.distinctBy { it } }
+            apis = allProviders.distinctBy { it }
         }
 
         setUpBackup()
@@ -1408,29 +1307,18 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
         val navController = navHostFragment.navController
 
         navController.addOnDestinationChangedListener { _: NavController, navDestination: NavDestination, bundle: Bundle? ->
-            // --- SECURITY GUARD ADIXTREAM (ON CHANGE) ---
-            if (navDestination.id == R.id.navigation_settings_extensions || navDestination.id == R.id.navigation_settings_plugins) {
-                if (!PremiumManager.isPremium(this@MainActivity)) {
-                    PremiumDialogManager.showPremiumUnlockDialog(this@MainActivity)
-                    navController.popBackStack()
-                    return@addOnDestinationChangedListener
-                }
-            }
-            // --------------------------------------------
-
             updateNavBar(navDestination)
             if (navDestination.matchDestination(R.id.navigation_search) && !nextSearchQuery.isNullOrBlank()) {
-                bundle?.apply { this.putString(SearchFragment.SEARCH_QUERY, nextSearchQuery) }
+                bundle?.apply { putString(SearchFragment.SEARCH_QUERY, nextSearchQuery) }
             }
 
             if (navDestination.matchDestination(R.id.navigation_home)) {
-                attachBackPressedCallback("MainActivity") {
-                    showConfirmExitDialog(settingsManager)
-                }
+                attachBackPressedCallback("MainActivity") { showConfirmExitDialog(settingsManager) }
             } else detachBackPressedCallback("MainActivity")
         }
 
         val rippleColor = ColorStateList.valueOf(getResourceColor(R.attr.colorPrimary, 0.1f))
+
         binding?.navView?.apply {
             itemRippleColor = rippleColor
             itemActiveIndicatorColor = rippleColor
@@ -1443,19 +1331,14 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                 itemRippleColor = rippleColor
                 itemActiveIndicatorColor = rippleColor
             } else {
-                val rippleColor = ColorStateList.valueOf(getResourceColor(R.attr.textColor, 1.0f))
+                val rippleColorTxt = ColorStateList.valueOf(getResourceColor(R.attr.textColor, 1.0f))
                 val rippleColorTransparent = ColorStateList.valueOf(getResourceColor(R.attr.textColor, 0.2f))
                 itemSpacing = 12.toPx 
                 itemRippleColor = rippleColorTransparent
-                itemActiveIndicatorColor = rippleColor
+                itemActiveIndicatorColor = rippleColorTxt
             }
             setupWithNavController(navController)
             setOnItemSelectedListener { item -> onNavDestinationSelected(item, navController) }
-
-            fun noFocus(view: View) {
-                view.tag = view.context.getString(R.string.tv_no_focus_tag)
-                (view as? ViewGroup)?.let { for (child in it.children) noFocus(child) }
-            }
 
             val navProfileRoot = findViewById<LinearLayout>(R.id.nav_footer_root)
 
@@ -1465,6 +1348,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
 
                 navProfileCard?.setOnClickListener { showAccountSelectLinear() }
                 val homeViewModel = ViewModelProvider(this@MainActivity)[HomeViewModel::class.java]
+
                 observe(homeViewModel.currentAccount) { currentAccount ->
                     if (currentAccount != null) {
                         navProfilePic?.loadImage(currentAccount.image)
@@ -1481,10 +1365,14 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
         val rail = binding?.navRailView
         if (rail != null) {
             binding?.navRailView?.labelVisibilityMode = NavigationRailView.LABEL_VISIBILITY_UNLABELED
-            var prevId: Int? = null
-            var prevView: View? = null
             rail.findViewById<View?>(R.id.navigation_settings)?.nextFocusDownId = R.id.nav_footer_profile_card
-            for (id in arrayOf(R.id.navigation_home, R.id.navigation_search, R.id.navigation_library, R.id.navigation_downloads, R.id.navigation_settings)) {
+            for (id in arrayOf(
+                R.id.navigation_home,
+                R.id.navigation_search,
+                R.id.navigation_library,
+                R.id.navigation_downloads,
+                R.id.navigation_settings
+            )) {
                 val view = rail.findViewById<View?>(id) ?: continue
                 prevId?.let { view.nextFocusUpId = it }
                 prevView?.nextFocusDownId = id
@@ -1499,6 +1387,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                 recycler?.smoothScrollToPosition(0)
                 return@setOnLongClickListener recycler != null
             }
+
             view?.findViewById<View?>(R.id.navigation_library)?.setOnLongClickListener {
                 val viewPager = binding?.root?.findViewById<ViewPager2?>(R.id.viewpager) ?: return@setOnLongClickListener false
                 try {
@@ -1507,12 +1396,10 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                         child.findViewById<RecyclerView?>(R.id.page_recyclerview)?.smoothScrollToPosition(0)
                     }
                 } catch (_: IndexOutOfBoundsException) {
-                    // UPSTREAM CLOUDSTREAM ADOPT: tangani IndexOutOfBoundsException secara spesifik
-                } catch (t: Throwable) {
-                    logError(t)
-                }
+                } catch (t: Throwable) { logError(t) }
                 return@setOnLongClickListener true
             }
+
             view?.findViewById<View?>(R.id.navigation_search)?.setOnLongClickListener {
                 for (recyclerId in arrayOf(R.id.search_master_recycler, R.id.search_autofit_results, R.id.search_history_recycler)) {
                     val recycler = binding?.root?.findViewById<RecyclerView?>(recyclerId) ?: return@setOnLongClickListener false
@@ -1520,6 +1407,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                 }
                 return@setOnLongClickListener true
             }
+
             view?.findViewById<View?>(R.id.navigation_downloads)?.setOnLongClickListener {
                 val recycler: RecyclerView? = binding?.root?.findViewById(R.id.download_list) ?: binding?.root?.findViewById(R.id.download_child_list)
                 recycler?.smoothScrollToPosition(0)
@@ -1529,11 +1417,22 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
 
         loadCache()
         updateHasTrailers()
+
         if (!checkWrite()) {
             requestRW()
             if (checkWrite()) return
         }
-        
+
+        if (BuildConfig.DEBUG) {
+            var providersAndroidManifestString = "Current androidmanifest should be:\n"
+            allProviders.withLock {
+                for (api in allProviders) {
+                    providersAndroidManifestString += "<data android:scheme=\"https\" android:host=\"${api.mainUrl.removePrefix("https://")}\" android:pathPrefix=\"/\"/>\n"
+                }
+            }
+            println(providersAndroidManifestString)
+        }
+
         handleAppIntent(intent)
         ioSafe { runAutoUpdate() }
         FcastManager().init(this, false)
@@ -1541,17 +1440,15 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
 
         try {
             loadCache()
-            File(filesDir, "exoplayer").deleteRecursively()
-            deleteFileOnExit(File(cacheDir, "exoplayer"))
+            File(filesDir, "exoplayer").deleteRecursively() 
+            deleteFileOnExit(File(cacheDir, "exoplayer"))   
         } catch (e: Exception) { logError(e) }
-        // UPSTREAM CLOUDSTREAM ADOPT: penanda log lifecycle
         println("Loaded everything")
 
         ioSafe { migrateResumeWatching() }
 
         main {
             val channelId = TvChannelUtils.getChannelId(this@MainActivity, getString(R.string.app_name))
-            // UPSTREAM CLOUDSTREAM ADOPT: Log debugging untuk TvChannel
             if (channelId == null) {
                 Log.d("TvChannel", "Channel not found, creating")
                 TvChannelUtils.createTvChannel(this@MainActivity)
@@ -1565,28 +1462,26 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
             removeKey(USER_SELECTED_HOMEPAGE_API)
         }
 
-        // --- BYPASS SETUP AWAL ADIXTREAM ---
-        if (getKey(HAS_DONE_SETUP_KEY, false) != true) {
-             setKey(HAS_DONE_SETUP_KEY, true)
-             updateLocale() 
-        }
-        // -----------------------------------
+        try {
+            if (getKey<Boolean>(HAS_DONE_SETUP_KEY, false) != true) {
+                navController.navigate(R.id.navigation_setup_language)
+            } else if (PluginManager.getPluginsOnline().isEmpty() && PluginManager.getPluginsLocal().isEmpty()) {
+                navController.navigate(R.id.navigation_setup_extensions, SetupFragmentExtensions.newInstance(false))
+            }
+        } catch (e: Exception) { logError(e) }
 
         attachBackPressedCallback("MainActivityDefault") {
             setNavigationBarColorCompat(R.attr.primaryGrayBackground)
             updateLocale()
             runDefault()
         }
-        
-        DownloadQueueManager.init(this)
 
-        // === TAMBAHAN ADIXTREAM: CEK POPUP PROMO ===
-        CampaignPopupManager.checkAndShowCampaignPopup(this)
+        DownloadQueueManager.init(this)
     }
 
     override fun onAuthenticationSuccess() { binding?.navHostFragment?.isInvisible = false }
     override fun onAuthenticationError() { finish() }
-    
+
     suspend fun checkGithubConnectivity(): Boolean {
         return try {
             app.get("https://raw.githubusercontent.com/recloudstream/.github/master/connectivitycheck", timeout = 5).text.trim() == "ok"
