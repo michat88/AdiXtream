@@ -29,13 +29,14 @@ import com.lagradost.cloudstream3.ui.settings.Globals.TV
 import com.lagradost.cloudstream3.ui.settings.Globals.isLandscape
 import com.lagradost.cloudstream3.ui.settings.Globals.isLayout
 import com.lagradost.cloudstream3.utils.DataStoreHelper
+import com.lagradost.cloudstream3.utils.GitInfo.currentCommitHash
 import com.lagradost.cloudstream3.utils.ImageLoader.loadImage
 import com.lagradost.cloudstream3.utils.UIHelper.clipboardHelper
 import com.lagradost.cloudstream3.utils.UIHelper.fixSystemBarsPadding
 import com.lagradost.cloudstream3.utils.UIHelper.navigate
+import com.lagradost.cloudstream3.utils.UIHelper.toPx
 import com.lagradost.cloudstream3.utils.getImageFromDrawable
 import com.lagradost.cloudstream3.utils.txt
-import com.lagradost.cloudstream3.utils.GitInfo.currentCommitHash 
 import java.io.File
 import java.text.DateFormat
 import java.text.SimpleDateFormat
@@ -44,7 +45,7 @@ import java.util.Locale
 import java.util.TimeZone
 import android.widget.Toast
 
-// --- IMPORT TAMBAHAN ADIXTREAM & REDEEM UI ---
+// --- MODIFIKASI ADIXTREAM: Import tambahan untuk Redeem UI & Premium ---
 import android.graphics.Color
 import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
@@ -63,8 +64,7 @@ import android.content.res.ColorStateList
 import android.graphics.drawable.StateListDrawable
 import android.text.InputFilter
 import android.widget.FrameLayout
-import com.lagradost.cloudstream3.utils.UIHelper.toPx
-// ----------------------------------------------
+// -----------------------------------------------------------------------
 
 class SettingsFragment : BaseFragment<MainSettingsBinding>(
     BaseFragment.BindingCreator.Inflate(MainSettingsBinding::inflate)
@@ -80,6 +80,9 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
             }
         }
 
+        /**
+         * Hide many Preferences on selected layouts.
+         **/
         fun PreferenceFragmentCompat?.hidePrefs(ids: List<Int>, layoutFlags: Int) {
             if (this == null) return
             try {
@@ -91,15 +94,22 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
             }
         }
 
+        /**
+         * Hide the [Preference] on selected layouts.
+         * @return [Preference] if visible otherwise null.
+         */
         fun Preference?.hideOn(layoutFlags: Int): Preference? {
             if (this == null) return null
             this.isVisible = !isLayout(layoutFlags)
             return if(this.isVisible) this else null
         }
 
+        /**
+         * On TV you cannot properly scroll to the bottom of settings, this fixes that.
+         * */
         fun PreferenceFragmentCompat.setPaddingBottom() {
             if (isLayout(TV or EMULATOR)) {
-                listView?.setPadding(0, 0, 0, 0)
+                listView?.setPadding(0, 0, 0, 100.toPx)
             }
         }
 
@@ -155,7 +165,7 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
                 fixSystemBarsPadding(
                     it,
                     padLeft = isLayout(TV or EMULATOR),
-                    padBottom = if (isLayout(TV or EMULATOR)) false else isLandscape()
+                    padBottom = isLandscape()
                 )
             }
         }
@@ -164,7 +174,9 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
             var size: Long = 0
             dir.listFiles()?.let {
                 for (file in it) {
-                    size += if (file.isFile) file.length() else getFolderSize(file)
+                    size += if (file.isFile) {
+                        file.length()
+                    } else getFolderSize(file)
                 }
             }
             return size
@@ -174,7 +186,7 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
     override fun fixLayout(view: View) {
         fixSystemBarsPadding(
             view,
-            padBottom = if (isLayout(TV or EMULATOR)) false else isLandscape(),
+            padBottom = isLandscape(),
             padLeft = isLayout(TV or EMULATOR)
         )
     }
@@ -194,9 +206,9 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
                     }
                 }
                 binding.settingsProfileText.text = login.name
-                return true 
+                return true
             }
-            return false 
+            return false
         }
 
         if (!hasProfilePictureFromAccountManagers(AccountManager.allApis)) {
@@ -214,6 +226,7 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
         }
 
         binding.apply {
+            // --- MODIFIKASI ADIXTREAM: PremiumManager untuk settingsExtensions ---
             settingsExtensions.setOnClickListener {
                 try {
                     val bundle = Bundle()
@@ -230,6 +243,7 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
                 }
             }
 
+            // --- MODIFIKASI ADIXTREAM: Dialog "Tentang AdiXtream" ---
             appVersionInfo.setOnClickListener {
                 val builder = AlertDialog.Builder(requireContext(), R.style.AlertDialogCustom)
                 builder.setTitle("Tentang AdiXtream")
@@ -276,18 +290,19 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
         }
 
         // ==========================================================
-        // --- LOGIKA VERSI, STATUS LANGGANAN & DEVICE ID ---
+        // --- MODIFIKASI ADIXTREAM: Versi, Status Langganan & Device ID ---
         // ==========================================================
         val appVersion = BuildConfig.VERSION_NAME
         val commitInfo = activity?.currentCommitHash() ?: ""
-        val buildTimestamp = SimpleDateFormat.getDateTimeInstance(DateFormat.LONG, DateFormat.LONG, Locale.getDefault()).apply { 
+        // MODIFIKASI ADIXTREAM: DateFormat.LONG (bukan MEDIUM dari upstream)
+        val buildTimestamp = SimpleDateFormat.getDateTimeInstance(DateFormat.LONG, DateFormat.LONG, Locale.getDefault()).apply {
             timeZone = TimeZone.getTimeZone("UTC")
         }.format(Date(BuildConfig.BUILD_DATE)).replace("UTC", "")
 
         binding.appVersion.text = appVersion
         binding.buildDate.text = buildTimestamp
-        binding.commitHash.text = commitInfo 
-        
+        binding.commitHash.text = commitInfo
+
         val context = context
         val premiumStatus = if (context != null) {
             val dateStr = PremiumManager.getExpiryDateString(context)
@@ -307,9 +322,8 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
                 if (pParent.findViewWithTag<TextView>(topTag) == null) {
                     val tvTopRight = TextView(ctx).apply {
                         tag = topTag
-                        // Ikon dihilangkan, teks tetap polos
                         text = if (isTvMode) "ID: $deviceId   •   Status: $premiumStatus" else "ID: $deviceId"
-                        textSize = if (isTvMode) 13f else 12f 
+                        textSize = if (isTvMode) 13f else 12f
                         setTextColor(Color.parseColor("#94a3b8"))
                         setTypeface(null, Typeface.BOLD)
                         gravity = Gravity.END or Gravity.CENTER_VERTICAL
@@ -323,7 +337,7 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
                             }
                         }
                     }
-                    
+
                     if (pParent is ConstraintLayout) {
                         tvTopRight.id = View.generateViewId()
                         pParent.addView(tvTopRight)
@@ -336,7 +350,7 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
                     } else {
                         // Jika parent bukan ConstraintLayout (biasanya di HP)
                         binding.settingsProfileText.text = "${binding.settingsProfileText.text}   •   ID: $deviceId" + (if (isTvMode) "   •   $premiumStatus" else "")
-                        
+
                         // FIX: Memastikan teks profil di HP bisa di-tap untuk menyalin ID
                         if (!isTvMode) {
                             binding.settingsProfileText.isClickable = true
@@ -357,39 +371,38 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
                 if (!isTvMode) {
                     val tagStatus = "status_langganan_tag"
                     var statusView = parent.findViewWithTag<TextView>(tagStatus)
-                    
+
                     if (statusView == null) {
                         statusView = TextView(ctx).apply {
                             tag = tagStatus
-                            gravity = Gravity.CENTER 
-                            textSize = 12f 
-                            setTextColor(Color.parseColor("#94a3b8")) 
+                            gravity = Gravity.CENTER
+                            textSize = 12f
+                            setTextColor(Color.parseColor("#94a3b8"))
                             layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
-                                bottomMargin = 12.toPx 
+                                bottomMargin = 12.toPx
                             }
                         }
                         val index = parent.indexOfChild(binding.appVersionInfo)
                         parent.addView(statusView, index + 1)
                     }
-                    // Hanya menampilkan Status Langganan
                     statusView.text = "Status Langganan: $premiumStatus"
                 }
 
                 // --- B. Tombol KODE PROMO (Gaya Netflix) ---
                 val tagBtnPromo = "btn_promo_tag_only"
                 var btnPromo = parent.findViewWithTag<Button>(tagBtnPromo)
-                
+
                 if (btnPromo == null) {
                     val shapeNormal = GradientDrawable().apply {
                         shape = GradientDrawable.RECTANGLE
-                        cornerRadius = 4.toPx.toFloat() 
-                        setColor(Color.parseColor("#E50914")) 
+                        cornerRadius = 4.toPx.toFloat()
+                        setColor(Color.parseColor("#E50914"))
                     }
                     val shapeFocused = GradientDrawable().apply {
                         shape = GradientDrawable.RECTANGLE
                         cornerRadius = 4.toPx.toFloat()
-                        setColor(Color.parseColor("#E50914")) 
-                        setStroke(3.toPx, Color.WHITE) 
+                        setColor(Color.parseColor("#E50914"))
+                        setStroke(3.toPx, Color.WHITE)
                     }
                     val stateListBg = StateListDrawable().apply {
                         addState(intArrayOf(android.R.attr.state_focused), shapeFocused)
@@ -398,15 +411,15 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
                     val textColorStateList = ColorStateList(arrayOf(intArrayOf(android.R.attr.state_focused), intArrayOf()), intArrayOf(Color.WHITE, Color.WHITE))
 
                     btnPromo = Button(ctx).apply {
-                        id = View.generateViewId() 
+                        id = View.generateViewId()
                         tag = tagBtnPromo
                         text = "MASUKKAN KODE PROMO"
                         textSize = 12f
-                        setTextColor(textColorStateList) 
-                        setTypeface(null, Typeface.BOLD) 
-                        background = stateListBg 
+                        setTextColor(textColorStateList)
+                        setTypeface(null, Typeface.BOLD)
+                        background = stateListBg
                         isAllCaps = false
-                        isFocusable = true 
+                        isFocusable = true
                         val padVert = if (isTvMode) 6.toPx else 12.toPx
                         setPadding(32.toPx, padVert, 32.toPx, padVert)
                         layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
@@ -434,7 +447,7 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
                             background = GradientDrawable().apply {
                                 shape = GradientDrawable.RECTANGLE
                                 cornerRadius = 4.toPx.toFloat()
-                                setColor(Color.parseColor("#333333")) 
+                                setColor(Color.parseColor("#333333"))
                             }
                             setPadding(16.toPx, 16.toPx, 16.toPx, 16.toPx)
                             filters = arrayOf(InputFilter.AllCaps(), InputFilter.LengthFilter(10))
@@ -444,7 +457,7 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
                         AlertDialog.Builder(ctx, R.style.AlertDialogCustom)
                             .setTitle("Klaim Kode Promo")
                             .setMessage("Masukkan kodenya di bawah ini:")
-                            .setView(inputContainer) 
+                            .setView(inputContainer)
                             .setPositiveButton("Klaim") { _, _ ->
                                 val code = input.text.toString()
                                 PremiumManager.activatePromoWithCode(ctx, code, deviceId) { success, msg ->
@@ -462,6 +475,7 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
             }
         }
 
+        // --- MODIFIKASI ADIXTREAM: Focus TV handler untuk tombol promo ---
         binding.appVersionInfo.isFocusable = true
         if (isLayout(TV)) {
             binding.settingsExtensions.nextFocusDownId = binding.appVersionInfo.id
@@ -473,9 +487,10 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
             }
         }
 
+        // --- MODIFIKASI ADIXTREAM: Focus highlight untuk appVersionInfo ---
         binding.appVersionInfo.setOnFocusChangeListener { view, hasFocus ->
             if (hasFocus) {
-                view.setBackgroundColor(Color.parseColor("#1Affffff")) 
+                view.setBackgroundColor(Color.parseColor("#1Affffff"))
                 view.scaleX = 1.02f
                 view.scaleY = 1.02f
             } else {
@@ -485,9 +500,10 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
             }
         }
 
+        // --- MODIFIKASI ADIXTREAM: Long click untuk copy device info ---
         binding.appVersionInfo.setOnLongClickListener {
             clipboardHelper(
-                txt(R.string.extension_version), 
+                txt(R.string.extension_version),
                 "Device ID: $deviceId\n$appVersion $commitInfo $buildTimestamp\nStatus Langganan: $premiumStatus"
             )
             true
