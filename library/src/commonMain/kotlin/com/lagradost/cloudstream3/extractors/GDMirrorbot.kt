@@ -106,3 +106,4 @@ open class GDMirrorbot : ExtractorApi() {
         return Url(url).let { "${it.protocol.name}://${it.host}" }
     }
 }
+
