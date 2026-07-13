@@ -11,7 +11,9 @@ import com.lagradost.cloudstream3.syncproviders.providers.MALApi
 import com.lagradost.cloudstream3.syncproviders.providers.OpenSubtitlesApi
 import com.lagradost.cloudstream3.syncproviders.providers.SimklApi
 import com.lagradost.cloudstream3.syncproviders.providers.SubDlApi
+import com.lagradost.cloudstream3.syncproviders.providers.SubSourceApi
 import com.lagradost.cloudstream3.utils.DataStoreHelper
+import com.lagradost.cloudstream3.utils.videoskip.AnimeSkipAuth
 import java.util.concurrent.TimeUnit
 
 abstract class AccountManager {
@@ -43,6 +45,8 @@ abstract class AccountManager {
         val openSubtitlesApi = OpenSubtitlesApi()
         val addic7ed = Addic7ed()
         val subDlApi = SubDlApi()
+        val subSourceApi = SubSourceApi()
+        val animeSkipApi = AnimeSkipAuth()
 
         // --- MODIFIKASI ADIXTREAM: cachedAccounts inisialisasi (anti NPE) ---
         var cachedAccounts: MutableMap<String, Array<AuthData>> = mutableMapOf()
@@ -73,6 +77,7 @@ abstract class AccountManager {
         }
 
         // --- MODIFIKASI ADIXTREAM: animeSkipApi & subSourceApi tidak digunakan ---
+        // Patch: keduanya sekarang di-include supaya build match dengan SettingsAccount.kt Cloudstream
         val allApis = arrayOf(
             SyncRepo(malApi),
             SyncRepo(kitsuApi),
@@ -81,7 +86,9 @@ abstract class AccountManager {
             SyncRepo(localListApi),
             SubtitleRepo(openSubtitlesApi),
             SubtitleRepo(addic7ed),
-            SubtitleRepo(subDlApi)
+            SubtitleRepo(subDlApi),
+            SubtitleRepo(subSourceApi),
+            PlainAuthRepo(animeSkipApi)
         )
 
         fun updateAccountIds() {
@@ -131,7 +138,8 @@ abstract class AccountManager {
         val subtitleProviders = arrayOf(
             SubtitleRepo(openSubtitlesApi),
             SubtitleRepo(addic7ed),
-            SubtitleRepo(subDlApi)
+            SubtitleRepo(subDlApi),
+            SubtitleRepo(subSourceApi)
         )
 
         val syncApis = arrayOf(
