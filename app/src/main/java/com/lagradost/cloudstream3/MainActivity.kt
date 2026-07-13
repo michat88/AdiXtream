@@ -1452,9 +1452,12 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                     try {
                         val parsedRepo = RepositoryManager.parseRepository(targetRepoUrl)
                         if (parsedRepo != null) {
-                            // RepositoryData di base AdiXtream punya named param 'url'
-                            // (wajib) — parameter lain seperti icon/name opsional/default.
-                            val repoData = RepositoryData(url = targetRepoUrl)
+                            // Signature: constructor(iconUrl: String?, name: String, url: String)
+                            val repoData = RepositoryData(
+                                parsedRepo.iconUrl,
+                                parsedRepo.name,
+                                targetRepoUrl
+                            )
                             RepositoryManager.addRepository(repoData)
                             isRepoChanged = true
                             Log.d(TAG, "Repo berhasil disinkronkan ke: $targetRepoUrl")
@@ -1470,7 +1473,10 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                 if (isRepoChanged) {
                     try {
                         Log.d(TAG, "Mengunduh plugin dari Repo Baru...")
-                        PluginsViewModel.downloadAll(this@MainActivity, targetRepoUrl, null)
+                        // Signature downloadAll(context, repository: RepositoryData, ?)
+                        // Buat RepositoryData dari targetRepoUrl (name default dari url).
+                        val repoForDownload = RepositoryData("", targetRepoUrl)
+                        PluginsViewModel.downloadAll(this@MainActivity, repoForDownload, null)
                         PluginManager.___DO_NOT_CALL_FROM_A_PLUGIN_loadAllOnlinePlugins(
                             this@MainActivity
                         )
