@@ -137,8 +137,23 @@
     <string name="advanced_search">Pencarian Lanjutan</string>
     <string name="advanced_search_des">Memberikan hasil pencarian yang dipisahkan berdasarkan penyedia</string>
     <string name="show_fillers_settings">Tampilkan episode filler untuk anime</string>
+    <string name="show_player_metadata_overlay">Tampilkan overlay metadata pemutar</string>
+    <string name="show_trailers_settings">Tampilkan cuplikan</string>
+    <string name="kitsu_settings">Tampilkan poster dari Kitsu</string>
+    <string name="show_cast_in_details">Tampilkan panel cast</string>
+    <string name="pref_filter_search_quality">Sembunyikan kualitas video terpilih di pencarian</string>
+    <string name="automatic_plugin_updates">Pembaruan plugin otomatis</string>
+    <string name="automatic_plugin_download">Unduh plugin secara otomatis</string>
+    <string name="automatic_plugin_download_mode_title">Pilih mode filter unduhan plugin</string>
+    <string name="automatic_plugin_download_summary">Pasang otomatis semua plugin yang belum terpasang dari repositori yang ditambahkan.</string>
     <string name="updates_settings">Tampilkan pembaruan aplikasi</string>
     <string name="updates_settings_des">Secara otomatis mencari pembaruan baru setelah aplikasi dibuka.</string>
+    <string name="redo_setup_process">Ulang proses pemasangan</string>
+    <string name="install_prerelease">Pasang versi pra-rilis</string>
+    <string name="prerelease_already_installed">Versi pra-rilis sudah terpasang.</string>
+    <string name="prerelease_install_failed">Gagal memasang versi pra-rilis.</string>
+    <string name="apk_installer_settings">Penginstal APK</string>
+    <string name="apk_installer_settings_des">Beberapa perangkat tidak mendukung penginstal paket mode baru. Coba mode lama jika pembaruan tidak dapat diinstal.</string>
     <string name="github">Github</string>
     <string name="lightnovel">Aplikasi novel ringan dari developer yang sama</string>
     <string name="anim">Aplikasi anime dari developer yang sama</string>
@@ -162,6 +177,7 @@
     <string name="delete">Hapus</string>
     <string name="cancel">Batalkan</string>
     <string name="pause">Jeda</string>
+    <string name="start">Mulai</string>
     <string name="resume">Lanjutkan</string>
     <string name="go_back_30">-30</string>
     <string name="go_forward_30">+30</string>
@@ -391,7 +407,7 @@
     <string name="plugins_disabled" formatted="true">Tidak aktif: %d</string>
     <string name="uppercase_all_subtitles">Gunakan huruf besar untuk semua subtitel</string>
     <string name="plugins_downloaded" formatted="true">Terunduh: %d</string>
-    <string name="plugins_not_downloaded" formatted="true">Tidak terunduh: %d</string>
+    <string name="plugins_not_downloaded" formatted="true">Not terunduh: %d</string>
     <string name="download_all_plugins_from_repo">Peringatan: AdiXtream tidak bertanggung jawab atas penggunaan ekstensi pihak ketiga dan tidak menyediakan dukungan apa pun untuk ekstensi tersebut!</string>
     <string name="safe_mode_title">Mode aman aktif</string>
     <string name="single_plugin_disabled" formatted="true">%s (Tidak aktif)</string>
@@ -564,7 +580,7 @@
     <string name="password_pin_authentication_title">Otentikasi Kata Sandi/PIN</string>
     <string name="biometric_unsupported">Otentikasi biometrik tidak didukung di perangkat ini</string>
     <string name="biometric_setting_summary">Buka kunci aplikasi dengan Sidik Jari, Face ID, PIN, Pola, dan Kata Sandi.</string>
-    <string name="biometric_prompt_description">Setelah beberapa kali gagal, perintah akan ditutup. Cukup mulai ulang aplikasi untuk mencoba lagi.</string>
+    <string name="biometric_prompt_description">After beberapa kali gagal, perintah akan ditutup. Cukup mulai ulang aplikasi untuk mencoba lagi.</string>
     <string name="unfavorite">Batalkan favorit</string>
     <string name="biometric_authentication_title">Buka kunci AdiXtream</string>
     <string name="resume_remaining" formatted="true">%s \ntersisa</string>
@@ -593,6 +609,7 @@
     <string name="test_warning">Hati hati</string>
     <string name="device_pin_expired_message">Kode PIN sudah kedaluwarsa!</string>
     <string name="qr_image">Gambar Kode QR</string>
+    <string name="custom_media_singluar">Media</string>
     <string name="dismiss">Tutup</string>
     <string name="device_pin_counter_text">Kode kedaluwarsa dalam %1$dm %2$dd</string>
     <string name="auth_locally">Otorisasi Lokal</string>
@@ -734,4 +751,11 @@
     <string name="video_singular">Video</string>
     <string name="skip_type_preview">Pratinjau</string>
     <string name="legal_notice_text">Segala masalah hukum terkait konten yang diakses melalui aplikasi ini harus ditujukan langsung kepada penyedia dan host file yang bersangkutan.\n\nAdiXtream dilengkapi dengan repositori kustom bawaan untuk plugin ekstensi guna mengakses berbagai situs web pihak ketiga. Namun, AdiXtream sama sekali tidak meng-host, mengunggah, atau mengelola media, video, atau film apa pun yang ditemukan melalui ekstensi tersebut. Aplikasi ini murni berfungsi sebagai klien dan agregator yang mengambil data (scraping) dari situs web yang dapat diakses secara publik.\n\nKami memohon kebijaksanaan Anda untuk memastikan bahwa penggunaan aplikasi beserta plugin bawaannya selaras dengan peraturan yang berlaku di wilayah Anda. Dengan menggunakan AdiXtream, Anda memahami bahwa segala risiko penggunaan merupakan tanggung jawab pribadi.</string>
+
+    <!-- INJEKSI PERBAIKAN EROR INTERN & COMPILER ADIXTREAM (SINKRONISASI UPSTREAM) -->
+    <string name="animeskip_key">anime_skip_runtime_key</string>
+    <string name="audio_singluar">Audio</string>
+    <string name="music_singlar">Musik</string>
+    <string name="podcast_singluar">Podcast</string>
+    <string name="skip_type_creddits">Sesi Kredit</string>
 </resources>
