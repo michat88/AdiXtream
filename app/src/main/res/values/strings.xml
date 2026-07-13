@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- FORMAT MIGHT TRANSLATE, WILL CAUSE CRASH IF APPLIED WRONG -->
     <string name="app_dub_sub_episode_text_format" formatted="true">%1$s Ep %2$d</string>
     <string name="cast_format" formatted="true">Cast: %s</string>
     <string name="next_episode_format" formatted="true">Episode %d will be released in</string>
@@ -10,6 +11,8 @@
     <string name="download_time_left_hour_min_sec_format" formatted="true">%1$dh %2$dm %3$ds</string>
     <string name="download_time_left_min_sec_format" formatted="true">%1$dm %2$ds</string>
     <string name="download_time_left_sec_format" formatted="true">%1$ds</string>
+    
+    <!-- IS NOT NEEDED TO TRANSLATE AS THEY ARE ONLY USED FOR SCREEN READERS AND WONT SHOW UP TO NORMAL USERS -->
     <string name="result_poster_img_des">Poster</string>
     <string name="search_poster_img_des">Poster</string>
     <string name="episode_poster_img_des">Episode Poster</string>
@@ -19,13 +22,18 @@
     <string name="play_from_beginning_img_des">Play from the Beginning</string>
     <string name="home_change_provider_img_des">Change Provider</string>
     <string name="preview_background_img_des">Preview Background</string>
+    
+    <!-- TRANSLATE, BUT DON'T FORGET FORMAT -->
     <string name="player_speed_text_format" formatted="true">Speed (%.2fx)</string>
     <string name="rated_format" formatted="true">Rated: %.1f</string>
     <string name="new_update_format" formatted="true">New update found!\n%1$s -&gt; %2$s</string>
     <string name="filler" formatted="true">Filler</string>
     <string name="duration_format" formatted="true">%d min</string>
+    
+    <!-- MODIFIKASI BRANDING ADIXTREAM -->
     <string name="app_name">AdiXtream</string>
     <string name="play_with_app_name">Play with AdiXtream</string>
+    
     <string name="title_home">Home</string>
     <string name="title_search">Search</string>
     <string name="title_downloads">Downloads</string>
@@ -385,6 +393,8 @@
     <string name="app_theme_settings">App theme</string>
     <string name="bottom_title_settings">Poster title location</string>
     <string name="bottom_title_settings_des">Put the title under the poster</string>
+    
+    <!-- MODIFIKASI BRANDING REPO ADIXTREAM -->
     <string name="example_password">password123</string>
     <string name="example_username">Username</string>
     <string name="example_email">hello@world.com</string>
@@ -504,9 +514,9 @@
     <string name="plugins_disabled" formatted="true">Disabled: %d</string>
     <string name="plugins_not_downloaded" formatted="true">Not downloaded: %d</string>
     <string name="plugins_updated" formatted="true">Updated %d plugins</string>
-    <string name="blank_repo_message">AdiXtream has no sites installed by default. You need to install the sites from repositories.
-\n
-\nJoin our Discord or search online.</string>
+    
+    <!-- BRANDING DIALOG & NOTIFIKASI ADIXTREAM -->
+    <string name="blank_repo_message">AdiXtream has no sites installed by default. You need to install the sites from repositories.\n\nJoin our Discord or search online.</string>
     <string name="view_public_repositories_button">View community repositories</string>
     <string name="view_public_repositories_button_short">Public list</string>
     <string name="uppercase_all_subtitles">Uppercase all subtitles</string>
@@ -668,6 +678,7 @@
     <string name="auto_rotate_video">Auto rotate</string>
     <string name="favorite">Favorite</string>
     <string name="unfavorite">Unfavorite</string>
+    
     <string name="biometric_authentication_title">Unlock AdiXtream</string>
     <string name="biometric_setting">Lock with Biometrics</string>
     <string name="password_pin_authentication_title">Password/PIN Authentication</string>
@@ -763,4 +774,11 @@
     </plurals>
     <string name="player_is_live">Live</string>
 
+    <!-- INJEKSI PERBAIKAN EROR INTERN & COMPILER ADIXTREAM (UPSTREAM SINKRONISASI) -->
+    <string name="animeskip_key">anime_skip_runtime_key</string>
+    <string name="audio_singluar">Audio</string>
+    <string name="custom_media_singluar">Media</string>
+    <string name="music_singlar">Music</string>
+    <string name="podcast_singluar">Podcast</string>
+    <string name="skip_type_creddits">Credits</string>
 </resources>
