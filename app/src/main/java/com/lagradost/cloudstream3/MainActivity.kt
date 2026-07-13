@@ -1452,8 +1452,9 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                     try {
                         val parsedRepo = RepositoryManager.parseRepository(targetRepoUrl)
                         if (parsedRepo != null) {
-                            // RepositoryData di base project AdiXtream cukup butuh URL.
-                            val repoData = RepositoryData(targetRepoUrl)
+                            // RepositoryData di base AdiXtream punya named param 'url'
+                            // (wajib) — parameter lain seperti icon/name opsional/default.
+                            val repoData = RepositoryData(url = targetRepoUrl)
                             RepositoryManager.addRepository(repoData)
                             isRepoChanged = true
                             Log.d(TAG, "Repo berhasil disinkronkan ke: $targetRepoUrl")
