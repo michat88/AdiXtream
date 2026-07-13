@@ -194,9 +194,6 @@ import kotlin.math.absoluteValue
 import kotlin.reflect.full.createInstance
 import kotlin.system.exitProcess
 
-// Import tambahan untuk membungkus tipe data repositori kustom AdiXtream
-import com.lagradost.cloudstream3.utils.AppUtils.RepositoryData
-
 class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCallback {
     companion object {
         var activityResultLauncher: ActivityResultLauncher<Intent>? = null
@@ -294,11 +291,10 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                 fun safeURI(uri: String) = safe { URI(uri) }
 
                 if (str != null && this != null) {
-                    // FIX MODIFIKASI ADIXTREAM: Dibungkus ke RepositoryData agar tidak mismatch tipe data String
                     if (str.startsWith("https://cs.repo")) {
                         val realUrl = "https://" + str.substringAfter("?")
                         println("Repository url: $realUrl")
-                        loadRepository(RepositoryData(name = "AdiXtream Repo", url = realUrl))
+                        loadRepository(realUrl)
                         return true
                     } else if (str.contains(APP_STRING)) {
                         for (api in AccountManager.allApis) {
@@ -339,9 +335,8 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                             }
                         }
                     } else if (safeURI(str)?.scheme == APP_STRING_REPO) {
-                        // FIX MODIFIKASI ADIXTREAM: Dibungkus ke RepositoryData agar tidak mismatch tipe data String
                         val url = str.replaceFirst(APP_STRING_REPO, "https")
-                        loadRepository(RepositoryData(name = "AdiXtream Repo", url = url))
+                        loadRepository(url)
                         return true
                     } else if (safeURI(str)?.scheme == APP_STRING_SEARCH) {
                         val query = str.substringAfter("$APP_STRING_SEARCH://")
