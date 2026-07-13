@@ -16,37 +16,16 @@ import org.conscrypt.Conscrypt
 import java.io.File
 import java.security.Security
 
-// ==========================================
-// MODIFIKASI ADIXTREAM
-// Daftar DNS provider yang valid (sinkron dengan dns_pref_values di arrays.xml).
-// Index 3 (OpenDns) sengaja diskip karena provider-nya tidak aktif.
-// ==========================================
-private val VALID_DNS_PROVIDERS = setOf(1, 2, 4, 5, 6, 7, 8)
-private const val DEFAULT_DNS_PROVIDER = 1 // Google DNS
-
-/**
- * Resolusi nilai DNS dari SharedPreferences.
- * - First install / pref belum ada            -> DEFAULT_DNS_PROVIDER (Google)
- * - Legacy user dengan nilai 0 (None)         -> DEFAULT_DNS_PROVIDER (Google)
- * - Nilai di luar VALID_DNS_PROVIDERS         -> DEFAULT_DNS_PROVIDER (Google)
- * - Nilai valid (1,2,4,5,6,7,8)               -> nilai user
- */
-private fun Context.resolveDnsProvider(): Int {
-    val raw = PreferenceManager.getDefaultSharedPreferences(this)
-        .getInt(getString(R.string.dns_pref), DEFAULT_DNS_PROVIDER)
-    return if (raw in VALID_DNS_PROVIDERS) raw else DEFAULT_DNS_PROVIDER
-}
-
 // Backwards compatible constructor, mark as deprecated later
 fun Requests.initClient(context: Context) {
     this.baseClient = buildDefaultClient(context)
 }
 
 /** Only use ignoreSSL if you know what you are doing*/
-@Prerelease
 fun Requests.initClient(context: Context, ignoreSSL: Boolean = false) {
     this.baseClient = buildDefaultClient(context, ignoreSSL)
 }
+
 
 // Backwards compatible constructor, mark as deprecated later
 fun buildDefaultClient(context: Context): OkHttpClient {
@@ -54,12 +33,11 @@ fun buildDefaultClient(context: Context): OkHttpClient {
 }
 
 /** Only use ignoreSSL if you know what you are doing*/
-@Prerelease
 fun buildDefaultClient(context: Context, ignoreSSL: Boolean = false): OkHttpClient {
     safe { Security.insertProviderAt(Conscrypt.newProvider(), 1) }
-
-    val dns = context.resolveDnsProvider()
-
+    
+    val settingsManager = PreferenceManager.getDefaultSharedPreferences(context)
+    val dns = settingsManager.getInt(context.getString(R.string.dns_pref), 0)
     val baseClient = OkHttpClient.Builder()
         .followRedirects(true)
         .followSslRedirects(true)
