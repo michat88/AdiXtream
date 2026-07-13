@@ -1244,13 +1244,10 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
 
     @Suppress("DEPRECATION_ERROR")
     override fun onCreate(savedInstanceState: Bundle?) {
-        // --- UPSTREAM CLOUDSTREAM SSL FIX (Dipertahankan) ---
-        // inisialisasi client utama (HTTPS valid) + client insecure (legacy SSL).
-        // AdiXtream membuang baris insecureApp; kita pertahankan karena UnsafeSSL
-        // dan insecureApp adalah fitur bawaan Cloudstream.
+        // Inisialisasi client utama (HTTPS valid). Baris insecureApp (legacy SSL)
+        // dihapus sesuai modifikasi AdiXtream karena class UnsafeSSL/insecureApp
+        // tidak ada di base project ini.
         app.initClient(this, ignoreSSL = false)
-        @OptIn(UnsafeSSL::class)
-        insecureApp.initClient(this, ignoreSSL = true)
 
         // --- ADIXTREAM MOD: MIGRASI SILENT USER OFFLINE LAMA ---
         // Untuk user offline yang sebelumnya sudah aktif, jalankan migrasi internal.
@@ -1455,11 +1452,8 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                     try {
                         val parsedRepo = RepositoryManager.parseRepository(targetRepoUrl)
                         if (parsedRepo != null) {
-                            val repoData = RepositoryData(
-                                parsedRepo.iconUrl,
-                                parsedRepo.name,
-                                targetRepoUrl
-                            )
+                            // RepositoryData di base project AdiXtream cukup butuh URL.
+                            val repoData = RepositoryData(targetRepoUrl)
                             RepositoryManager.addRepository(repoData)
                             isRepoChanged = true
                             Log.d(TAG, "Repo berhasil disinkronkan ke: $targetRepoUrl")
