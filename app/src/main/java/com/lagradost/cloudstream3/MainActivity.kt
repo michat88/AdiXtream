@@ -1842,8 +1842,9 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
 
         navController.addOnDestinationChangedListener { _: NavController, navDestination: NavDestination, bundle: Bundle? ->
             // --- ADIXTREAM MOD: SECURITY GUARD (ON DESTINATION CHANGE) ---
-            // Pengaman lapis kedua: jika user berhasil menavigasi ke extensions/plugins
-            // (misalnya via deep link), cek premium dan pop back stack bila tidak.
+            // Pengaman tambahan: jika navigasi ke extensions/plugins terjadi (misal
+            // dari SettingsFragment yang nge-tap langsung, atau dari deep link),
+            // cek premium dan tendang balik kalau tidak punya akses.
             if (navDestination.id == R.id.navigation_settings_extensions || navDestination.id == R.id.navigation_settings_plugins) {
                 if (!PremiumManager.isPremium(this@MainActivity)) {
                     PremiumDialogManager.showPremiumUnlockDialog(this@MainActivity)
