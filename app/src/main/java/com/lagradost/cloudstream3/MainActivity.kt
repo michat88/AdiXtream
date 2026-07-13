@@ -389,20 +389,6 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                                 START_ACTION_RESUME_LATEST
                             )
                         }
-                    } else if (str.startsWith(APP_STRING_SHARE)) {
-                        try {
-                            val data = str.substringAfter("$APP_STRING_SHARE:")
-                            val parts = data.split("?", limit = 2)
-                            loadResult(
-                                String(base64DecodeArray(parts[1]), Charsets.UTF_8),
-                                String(base64DecodeArray(parts[0]), Charsets.UTF_8),
-                                ""
-                            )
-                            return true
-                        } catch (e: Exception) {
-                            showToast("Invalid Uri", Toast.LENGTH_SHORT)
-                            return false
-                        }
                     } else if (str.startsWith("adixtreamshare") || str.startsWith("$APP_STRING_SHARE://")) {
                         // === ADIXTREAM MOD: NEW SHARE FORMAT WITH PREMIUM GATE ===
                         // Mendukung: adixtreamshare://base64api_=_base64url
@@ -2209,6 +2195,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                 // user tidak perlu lagi melewati wizard bahasa/extension.
                 setKey(HAS_DONE_SETUP_KEY, true)
                 updateLocale()
+                // If no plugins bring up extensions screen
             } else if (PluginManager.getPluginsOnline().isEmpty()
                 && PluginManager.getPluginsLocal().isEmpty()
 //                && PREBUILT_REPOSITORIES.isNotEmpty()
