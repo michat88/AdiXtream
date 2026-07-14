@@ -8,8 +8,6 @@ import android.os.Looper
 import android.provider.Settings
 import android.widget.Toast
 import androidx.preference.PreferenceManager
-import androidx.security.crypto.EncryptedSharedPreferences
-import androidx.security.crypto.MasterKey
 import org.json.JSONObject
 import java.net.HttpURLConnection
 import java.net.URL
@@ -26,6 +24,7 @@ import com.lagradost.cloudstream3.utils.RepoProtector
 object PremiumManager {
     private const val PREF_IS_PREMIUM = "is_premium_user"
     private const val PREF_EXPIRY_DATE = "premium_expiry_date"
+    private const val PREFS_NAME = "premium_secure_data"   // ← tetap, biar migrasi data lama oke
     private var lastCheckTime = 0L
 
     val PREMIUM_REPO_URL = RepoProtector.decode(RepoProtector.PREMIUM_REPO_ENCODED)
@@ -37,21 +36,17 @@ object PremiumManager {
         return abs(androidId.hashCode()).toString().take(8)
     }
 
+    /**
+     * FIX: Ganti EncryptedSharedPreferences → SharedPreferences plain.
+     * Keamanan data bukan masalah besar karena:
+     * 1. Isinya cuma flag boolean + timestamp (bukan data sensitif)
+     * 2. Server Firebase adalah source of truth (di-validate di isPremium via checkAndSyncWithServer)
+     * 3. EncryptedSharedPreferences alpha06 sering gagal di OPPO/ColorOS
+     */
     private fun getSecurePrefs(context: Context): SharedPreferences {
-        val masterKey = MasterKey.Builder(context)
-            .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
-            .build()
-
-        return EncryptedSharedPreferences.create(
-            context,
-            "premium_secure_data",
-            masterKey,
-            EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-            EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
-        )
+        return context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
     }
 
-    // FIX BARU: Fungsi untuk mengubah angka waktu ke format teks ISO yang disukai React Native & Firebase
     private fun getIsoTime(timeMillis: Long): String {
         val sdf = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US)
         sdf.timeZone = TimeZone.getTimeZone("UTC")
@@ -99,7 +94,7 @@ object PremiumManager {
                     val jsonPayload = JSONObject().apply {
                         put("status", "aktif")
                         put("expired_at", oldExpiryDate)
-                        put("last_update", getIsoTime(System.currentTimeMillis())) // Ubah ke teks ISO
+                        put("last_update", getIsoTime(System.currentTimeMillis()))
                     }.toString()
 
                     connection.outputStream.use { it.write(jsonPayload.toByteArray(Charsets.UTF_8)) }
@@ -143,13 +138,17 @@ object PremiumManager {
 
                             if (serverTime < dbExpired) {
                                 val securePrefs = getSecurePrefs(context)
-                                securePrefs.edit()
+                                val saved = securePrefs.edit()
                                     .putBoolean(PREF_IS_PREMIUM, true)
                                     .putLong(PREF_EXPIRY_DATE, dbExpired)
                                     .commit()
                                 
                                 lastCheckTime = serverTime
-                                Handler(Looper.getMainLooper()).post { onResult(true, "Aktivasi Berhasil") }
+                                if (saved) {
+                                    Handler(Looper.getMainLooper()).post { onResult(true, "Aktivasi Berhasil") }
+                                } else {
+                                    Handler(Looper.getMainLooper()).post { onResult(false, "Gagal simpan data aktivasi") }
+                                }
                             } else {
                                 Handler(Looper.getMainLooper()).post { onResult(false, "Masa aktif kadaluarsa!") }
                             }
@@ -255,7 +254,7 @@ object PremiumManager {
                 
                 val userPatch = JSONObject().apply {
                     put("expired_at", newExpiredTimestamp)
-                    put("last_update", getIsoTime(serverTime)) // Ubah ke teks ISO agar lolos Firebase Rules
+                    put("last_update", getIsoTime(serverTime))
                 }.toString()
                 
                 updateUserConn.outputStream.use { it.write(userPatch.toByteArray(Charsets.UTF_8)) }
@@ -263,18 +262,22 @@ object PremiumManager {
                 val finalUserRes = updateUserConn.responseCode
                 if (finalUserRes == HttpURLConnection.HTTP_OK) {
                     val securePrefs = getSecurePrefs(context)
-                    securePrefs.edit()
+                    val saved = securePrefs.edit()
                         .putBoolean(PREF_IS_PREMIUM, true)
                         .putLong(PREF_EXPIRY_DATE, newExpiredTimestamp)
                         .commit() 
 
                     lastCheckTime = serverTime
                     
-                    Handler(Looper.getMainLooper()).post { 
-                        Toast.makeText(context, "Selamat! Promo Berhasil Diklaim.", Toast.LENGTH_LONG).show()
-                        val intent = context.packageManager.getLaunchIntentForPackage(context.packageName)
-                        context.startActivity(Intent.makeRestartActivityTask(intent?.component))
-                        Runtime.getRuntime().exit(0)
+                    if (saved) {
+                        Handler(Looper.getMainLooper()).post { 
+                            Toast.makeText(context, "Selamat! Promo Berhasil Diklaim.", Toast.LENGTH_LONG).show()
+                            val intent = context.packageManager.getLaunchIntentForPackage(context.packageName)
+                            context.startActivity(Intent.makeRestartActivityTask(intent?.component))
+                            Runtime.getRuntime().exit(0)
+                        }
+                    } else {
+                        Handler(Looper.getMainLooper()).post { onResult(false, "Aktivasi sukses tapi gagal simpan lokal") }
                     }
                 } else {
                     Handler(Looper.getMainLooper()).post { onResult(false, "Gagal Sinkronisasi User (Error $finalUserRes)") }
@@ -286,35 +289,50 @@ object PremiumManager {
     }
 
     fun isPremium(context: Context): Boolean {
-        val securePrefs = getSecurePrefs(context)
-        val isPremium = securePrefs.getBoolean(PREF_IS_PREMIUM, false)
-        val expiryDate = securePrefs.getLong(PREF_EXPIRY_DATE, 0)
-        
-        if (isPremium) {
-            if (System.currentTimeMillis() > expiryDate) {
-                deactivatePremium(context) 
-                return false
+        return try {
+            val securePrefs = getSecurePrefs(context)
+            val isPremium = securePrefs.getBoolean(PREF_IS_PREMIUM, false)
+            val expiryDate = securePrefs.getLong(PREF_EXPIRY_DATE, 0)
+            
+            android.util.Log.d("PremiumDebug", "isPremium: stored=$isPremium, exp=$expiryDate, now=${System.currentTimeMillis()}")
+            
+            if (isPremium) {
+                if (System.currentTimeMillis() > expiryDate) {
+                    deactivatePremium(context) 
+                    return false
+                }
+                if (System.currentTimeMillis() - lastCheckTime > 5 * 60 * 1000) {
+                    checkAndSyncWithServer(context, getDeviceId(context))
+                }
+                return true
             }
-            if (System.currentTimeMillis() - lastCheckTime > 5 * 60 * 1000) {
-                checkAndSyncWithServer(context, getDeviceId(context))
-            }
-            return true
+            return false
+        } catch (e: Exception) {
+            android.util.Log.e("PremiumDebug", "isPremium exception", e)
+            false
         }
-        return false
     }
 
     fun deactivatePremium(context: Context) {
-        val securePrefs = getSecurePrefs(context)
-        securePrefs.edit()
-            .putBoolean(PREF_IS_PREMIUM, false)
-            .putLong(PREF_EXPIRY_DATE, 0)
-            .commit() 
+        try {
+            val securePrefs = getSecurePrefs(context)
+            securePrefs.edit()
+                .putBoolean(PREF_IS_PREMIUM, false)
+                .putLong(PREF_EXPIRY_DATE, 0)
+                .commit() 
+        } catch (e: Exception) {
+            android.util.Log.e("PremiumDebug", "deactivatePremium exception", e)
+        }
     }
     
     fun getExpiryDateString(context: Context): String {
-        val securePrefs = getSecurePrefs(context)
-        val date = securePrefs.getLong(PREF_EXPIRY_DATE, 0)
-        return if (date == 0L) "Gratis" else SimpleDateFormat("dd MMM yyyy", Locale.getDefault()).format(Date(date))
+        return try {
+            val securePrefs = getSecurePrefs(context)
+            val date = securePrefs.getLong(PREF_EXPIRY_DATE, 0)
+            if (date == 0L) "Gratis" else SimpleDateFormat("dd MMM yyyy", Locale.getDefault()).format(Date(date))
+        } catch (e: Exception) {
+            "Gratis"
+        }
     }
     
     private fun checkAndSyncWithServer(context: Context, deviceId: String) {
@@ -377,8 +395,8 @@ object PremiumManager {
 
             val jsonPayload = JSONObject().apply {
                 put("status", "aktif")
-                put("created_at", getIsoTime(serverTime)) // Ubah ke teks ISO agar lolos Firebase Rules
-                put("last_update", getIsoTime(serverTime)) // Ubah ke teks ISO agar lolos Firebase Rules
+                put("created_at", getIsoTime(serverTime))
+                put("last_update", getIsoTime(serverTime))
             }.toString()
             
             connection.outputStream.use { it.write(jsonPayload.toByteArray(Charsets.UTF_8)) }
