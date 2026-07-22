@@ -282,38 +282,40 @@ dependencies {
     testImplementation(libs.junit)
     testImplementation(libs.json)
     androidTestImplementation(libs.core)
-
-    implementation(libs.junit.ktx)
-    androidTestImplementation(libs.runner)
     androidTestImplementation(libs.espresso.core)
+    androidTestImplementation(libs.ext.junit)
+    androidTestImplementation(libs.instancio.core)
+    androidTestImplementation(libs.junit.ktx)
+    androidTestImplementation(libs.kotlin.test)
 
     // Android Core & Lifecycle
     implementation(libs.core.ktx)
+    implementation(libs.activity.ktx)
+    implementation(libs.annotation)
     implementation(libs.appcompat)
-    implementation(libs.navigation.ui.ktx)
-    implementation(libs.lifecycle.livedata.ktx)
-    implementation(libs.lifecycle.viewmodel.ktx)
-    implementation(libs.navigation.fragment.ktx)
+    implementation(libs.fragment.ktx)
+    implementation(libs.bundles.lifecycle)
+    implementation(libs.bundles.navigation)
+    implementation(libs.kotlinx.collections.immutable)
     implementation(libs.kotlinx.serialization.json) // JSON Parser
 
     // Design & UI
     implementation(libs.preference.ktx)
     implementation(libs.material)
     implementation(libs.constraintlayout)
-    implementation(libs.swiperefreshlayout)
 
     // Coil Image Loading
     implementation(libs.bundles.coil)
 
     // Media 3 (ExoPlayer)
     implementation(libs.bundles.media3)
+    implementation(libs.video)
 
     // FFmpeg Decoding
-    implementation(libs.nextlib.media3ext)
-    implementation(libs.nextlib.mediainfo)
+    implementation(libs.bundles.nextlib)
 
     // Anime-db for filler
-    implementation(libs.aniyomi.mpv.lib)
+    implementation(libs.anime.db)
 
     // PlayBack
     implementation(libs.colorpicker) // Subtitle Color Picker
@@ -337,6 +339,7 @@ dependencies {
     coreLibraryDesugaring(libs.desugar.jdk.libs.nio) // NIO Flavor Needed for NewPipeExtractor
     implementation(libs.conscrypt.android) // To Fix SSL Fu*kery on Android 9
     implementation(libs.jackson.module.kotlin) // JSON Parser
+    implementation(libs.zipline)
 
     // ===== AdiXtream: penyimpanan terenkripsi (repo premium) =====
     implementation("androidx.security:security-crypto:1.1.0-alpha06")
