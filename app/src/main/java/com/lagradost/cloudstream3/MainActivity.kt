@@ -386,6 +386,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
             }
         }
     }
+
     var lastPopup: SearchResponse? = null
     var lastPopupJob: Job? = null
     fun loadPopup(result: SearchResponse, load: Boolean = true) {
@@ -673,18 +674,19 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                     try {
                         getKey<Array<SettingsGeneral.CustomSite>>(USER_PROVIDER_API)?.let { list ->
                             list.forEach { custom ->
-                                allProviders.firstOrNull { it.javaClass.simpleName == custom.parentJavaClass }?.let {
-                                        allProviders.add(
-                                            it.javaClass.getDeclaredConstructor().newInstance().apply {
-                                                    name = custom.name
-                                                    lang = custom.lang
-                                                    mainUrl = custom.url.trimEnd('/')
-                                                    canBeOverridden = false
-                                                })
-                                   }
+                                allProviders.firstOrNull { it::class.simpleName == custom.parentClassName }?.let {
+                                    allProviders.add(
+                                        it::class.java.getDeclaredConstructor().newInstance().apply {
+                                            name = custom.name
+                                            lang = custom.lang
+                                            mainUrl = custom.url.trimEnd('/')
+                                            canBeOverridden = false
+                                        }
+                                    )
+                                }
                             }
                         }
-                        apis = allProviders.distinctBy { it.lang + it.name + it.mainUrl + it.javaClass.name }
+                        apis = allProviders.distinctBy { it.lang + it.name + it.mainUrl + it::class.qualifiedName }
                         APIHolder.apiMap = null
                     } catch (e: Exception) {
                         logError(e)
@@ -704,6 +706,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
         syncViewModel = ViewModelProvider(this)[SyncViewModel::class.java]
         return super.onCreateView(name, context, attrs)
     }
+
     private fun hidePreviewPopupDialog() {
         bottomPreviewPopup.dismissSafe(this)
         lastPopupJob?.cancel()
@@ -1057,7 +1060,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
         if (PluginManager.checkSafeModeFile()) {
             safe { showToast(R.string.safe_mode_file, Toast.LENGTH_LONG) }
         } else if (lastError == null) {
-            // === ADIXTREAM MOD: LOGIKA REPOSITORY & UPDATE (DIPERBAIKI: ANTI-PENGHAPUSAN AGRESIF) ===
+            // === ADIXTREAM MOD: LOGIKA REPOSITORY & UPDATE (ANTI-PENGHAPUSAN AGRESIF) ===
             ioSafe {
                 val isPremium = PremiumManager.isPremium(this@MainActivity)
                 val targetRepoUrl = if (isPremium) PremiumManager.PREMIUM_REPO_URL else PremiumManager.FREE_REPO_URL
