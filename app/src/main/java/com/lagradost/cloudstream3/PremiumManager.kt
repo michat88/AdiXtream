@@ -39,7 +39,7 @@ object PremiumManager {
         return abs(androidId.hashCode()).toString().take(8)
     }
 
-    // PENGAMAN: Jika EncryptedSharedPreferences corrupt (AEADBadTagException), hapus file corrupt tersebut secara otomatis
+    // Handled Try-Catch: Hapus file terenkripsi jika corrupt (AEADBadTagException)
     private fun getSecurePrefs(context: Context): SharedPreferences? {
         return try {
             val masterKey = MasterKey.Builder(context)
@@ -103,18 +103,32 @@ object PremiumManager {
         return sdf.format(Date(timeMillis))
     }
 
+    // Parser tanggal fleksibel (Mendukung Long ms, Long sec, String ISO Date)
     private fun parseExpiryTimestamp(json: JSONObject): Long {
         return try {
-            if (json.has("expired_at")) {
-                val obj = json.get("expired_at")
-                when (obj) {
-                    is Long -> obj
-                    is Int -> obj.toLong()
-                    is Number -> obj.toLong()
-                    is String -> obj.toLongOrNull() ?: 0L
-                    else -> 0L
+            if (!json.has("expired_at")) return 0L
+            val obj = json.get("expired_at")
+            when (obj) {
+                is Long -> if (obj < 10_000_000_000L) obj * 1000L else obj
+                is Int -> obj.toLong() * 1000L
+                is Number -> {
+                    val l = obj.toLong()
+                    if (l < 10_000_000_000L) l * 1000L else l
                 }
-            } else 0L
+                is String -> {
+                    val num = obj.toLongOrNull()
+                    if (num != null) {
+                        if (num < 10_000_000_000L) num * 1000L else num
+                    } else {
+                        try {
+                            val sdf = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US)
+                            sdf.timeZone = TimeZone.getTimeZone("UTC")
+                            sdf.parse(obj)?.time ?: 0L
+                        } catch (_: Exception) { 0L }
+                    }
+                }
+                else -> 0L
+            }
         } catch (e: Exception) {
             0L
         }
@@ -358,7 +372,7 @@ object PremiumManager {
                 isPrem = rawState == "ACTIVE_VIP"
                 expDate = rawExp.toLongOrNull() ?: 0L
 
-                // Jika backup valid, sinkronkan kembali
+                // Jika backup valid, sinkronkan kembali ke Encrypted Storage
                 if (isPrem && expDate > System.currentTimeMillis()) {
                     saveLicenseLocally(context, true, expDate)
                 }
