@@ -98,11 +98,8 @@ android {
         unitTests.isReturnDefaultValues = true
     }
 
-    // Looks like google likes to add metadata only they can read https://gitlab.com/IzzyOnDroid/repo/-/work_items/491
     dependenciesInfo {
-        // Disables dependency metadata when building APKs.
         includeInApk = false
-        // Disables dependency metadata when building Android App Bundles.
         includeInBundle = false
     }
 
@@ -115,7 +112,7 @@ android {
         }
     }
 
-    // ===== AdiXtream: signing release sendiri (menggantikan signing prerelease CI upstream) =====
+    // ===== AdiXtream: signing release sendiri =====
     signingConfigs {
         create("release") {
             val envKeystorePath = System.getenv("KEYSTORE_PATH")
@@ -182,7 +179,7 @@ android {
         // ===== AdiXtream: versi aplikasi untuk UI =====
         buildConfigField("String", "APP_VERSION", "\"$versionName\"")
 
-        // ===== AdiXtream: kunci SIMKL di-hardcode (tanpa env CI) =====
+        // ===== AdiXtream: kunci SIMKL di-hardcode =====
         buildConfigField(
             "String",
             "SIMKL_CLIENT_ID",
@@ -193,8 +190,6 @@ android {
             "SIMKL_CLIENT_SECRET",
             "\"d8cf8e1b79bae9b2f77f0347d6384a62f1a8d802abdd73d9aa52bf6a848532ba\""
         )
-        // Dipertahankan dari upstream: kode sumber baru bisa saja mereferensikan
-        // BuildConfig.MAL_KEY / ANILIST_KEY. Nilai tetap dari env/local.properties.
         buildConfigField(
             "String",
             "MAL_KEY",
@@ -210,7 +205,6 @@ android {
 
     buildTypes {
         release {
-            // ===== AdiXtream: tanda tangani release dengan keystore sendiri =====
             signingConfig = signingConfigs.getByName("release")
             isDebuggable = false
             isMinifyEnabled = false
@@ -230,7 +224,6 @@ android {
         }
     }
 
-    // ===== AdiXtream: hanya flavor stable (flavor prerelease upstream dihapus) =====
     flavorDimensions.add("state")
     productFlavors {
         create("stable") {
@@ -246,8 +239,6 @@ android {
     }
 
     java {
-        // Use Java 17 toolchain even if a higher JDK runs the build.
-        // We still use Java 8 for now which higher JDKs have deprecated.
         toolchain {
             languageVersion.set(JavaLanguageVersion.of(libs.versions.jdkToolchain.get()))
         }
@@ -255,21 +246,17 @@ android {
 
     lint {
         checkReleaseBuilds = false
-        // ===== AdiXtream: locale difilter, jadi peringatan terjemahan dimatikan =====
         disable.add("MissingTranslation")
     }
 
     buildFeatures {
         buildConfig = true
-        // ===== AdiXtream: wajib untuk resValue di atas =====
         resValues = true
         viewBinding = true
     }
 
     packaging {
         jniLibs {
-            // Enables legacy JNI packaging to reduce APK size (similar to builds before minSdk 23).
-            // Note: This may increase app startup time slightly.
             useLegacyPackaging = true
         }
     }
@@ -297,7 +284,7 @@ dependencies {
     implementation(libs.bundles.lifecycle)
     implementation(libs.bundles.navigation)
     implementation(libs.kotlinx.collections.immutable)
-    implementation(libs.kotlinx.serialization.json) // JSON Parser
+    implementation(libs.kotlinx.serialization.json)
 
     // Design & UI
     implementation(libs.preference.ktx)
@@ -318,35 +305,34 @@ dependencies {
     implementation(libs.anime.db)
 
     // PlayBack
-    implementation(libs.colorpicker) // Subtitle Color Picker
-    implementation(libs.newpipeextractor) // For Trailers
-    implementation(libs.juniversalchardet) // Subtitle Decoding
+    implementation(libs.colorpicker)
+    implementation(libs.newpipeextractor)
+    implementation(libs.juniversalchardet)
 
     // UI Stuff
-    implementation(libs.shimmer) // Shimmering Effect (Loading Skeleton)
-    implementation(libs.palette.ktx) // Palette for Images -> Colors
+    implementation(libs.shimmer)
+    implementation(libs.palette.ktx)
     implementation(libs.tvprovider)
-    implementation(libs.overlappingpanels) // Gestures
-    implementation(libs.biometric) // Fingerprint Authentication
-    implementation(libs.previewseekbar.media3) // SeekBar Preview
-    implementation(libs.qrcode.kotlin) // QR Code for PIN Auth on TV
+    implementation(libs.overlappingpanels)
+    implementation(libs.biometric)
+    implementation(libs.previewseekbar.media3)
+    implementation(libs.qrcode.kotlin)
 
     // Extensions & Other Libs
-    implementation(libs.jsoup) // HTML Parser
-    implementation(libs.ksoup) // HTML Parser
-    implementation(libs.rhino) // Run JavaScript
-    implementation(libs.safefile) // To Prevent the URI File Fu*kery
-    coreLibraryDesugaring(libs.desugar.jdk.libs.nio) // NIO Flavor Needed for NewPipeExtractor
-    implementation(libs.conscrypt.android) // To Fix SSL Fu*kery on Android 9
-    implementation(libs.jackson.module.kotlin) // JSON Parser
+    implementation(libs.jsoup)
+    implementation(libs.ksoup)
+    implementation(libs.rhino)
+    implementation(libs.safefile)
+    coreLibraryDesugaring(libs.desugar.jdk.libs.nio)
+    implementation(libs.conscrypt.android)
+    implementation(libs.jackson.module.kotlin)
     implementation(libs.zipline)
 
     // ===== AdiXtream: penyimpanan terenkripsi (repo premium) =====
     implementation("androidx.security:security-crypto:1.1.0-alpha06")
 
-    // Temp/deprecated; will be removed once extensions have time to migrate from using it
+    // Temp/deprecated
     implementation("com.google.code.gson:gson:2.11.0")
-    // Deprecated; will be removed once extensions have time to migrate from using it
     implementation("me.xdrop:fuzzywuzzy:1.4.0")
 
     // Torrent Support
@@ -354,32 +340,28 @@ dependencies {
 
     // Downloading & Networking
     implementation(libs.work.runtime.ktx)
-    implementation(libs.nicehttp) // HTTP Lib
+    implementation(libs.nicehttp)
 
     implementation(project(":library"))
 }
 
 tasks.register<Jar>("androidSourcesJar") {
     archiveClassifier.set("sources")
-    from(android.sourceSets.getByName("main").java.directories) // Full Sources
+    from(android.sourceSets.getByName("main").java.directories)
 }
 
 tasks.register<Copy>("copyJar") {
     dependsOn("build", ":library:jvmJar")
     from(
-        // ===== AdiXtream: flavor prerelease dihapus, jadi jar diambil dari stableDebug =====
         "build/intermediates/compile_app_classes_jar/stableDebug/bundleStableDebugClassesToCompileJar",
         "../library/build/libs"
     )
     into("build/app-classes")
     include("classes.jar", "library-jvm*.jar")
-    // Remove the version
     rename("library-jvm.*.jar", "library-jvm.jar")
 }
 
-// Merge the app classes and the library classes into classes.jar
 tasks.register<Jar>("makeJar") {
-    // Duplicates cause hard to catch errors, better to fail at compile time.
     duplicatesStrategy = DuplicatesStrategy.FAIL
     dependsOn(tasks.getByName("copyJar"))
     from(
@@ -394,13 +376,9 @@ tasks.withType<KotlinJvmCompile> {
     compilerOptions {
         jvmTarget.set(javaTarget)
         jvmDefault.set(JvmDefaultMode.ENABLE)
-        // ===== AdiXtream. CATATAN: hanya valid di Kotlin >= 2.2.
-        // Jika build error "Unknown option -Xannotation-default-target", hapus baris ini. =====
-        freeCompilerArgs.add("-Xannotation-default-target=param-property")
         optIn.addAll(
             "com.lagradost.cloudstream3.InternalAPI",
             "com.lagradost.cloudstream3.Prerelease",
-            // ===== AdiXtream =====
             "kotlin.uuid.ExperimentalUuidApi",
         )
     }
@@ -410,8 +388,6 @@ dokka {
     moduleName = "App"
     dokkaSourceSets {
         configureEach {
-            // ===== AdiXtream: baris suppress upstream dihapus karena mengacu
-            // ke variant prereleaseDebug yang tidak ada lagi di fork ini =====
             analysisPlatform = KotlinPlatform.JVM
             displayName = "JVM"
             documentedVisibilities(
