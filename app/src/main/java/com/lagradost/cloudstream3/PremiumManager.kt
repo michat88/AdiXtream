@@ -6,6 +6,7 @@ import android.content.SharedPreferences
 import android.os.Handler
 import android.os.Looper
 import android.provider.Settings
+import android.util.Base64
 import android.util.Log
 import android.widget.Toast
 import androidx.preference.PreferenceManager
@@ -38,6 +39,7 @@ object PremiumManager {
         return abs(androidId.hashCode()).toString().take(8)
     }
 
+    // PENGAMAN: Jika EncryptedSharedPreferences corrupt (AEADBadTagException), hapus file corrupt tersebut secara otomatis
     private fun getSecurePrefs(context: Context): SharedPreferences? {
         return try {
             val masterKey = MasterKey.Builder(context)
@@ -52,27 +54,45 @@ object PremiumManager {
                 EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
             )
         } catch (e: Exception) {
-            Log.e("PremiumManager", "Gagal memuat EncryptedSharedPreferences, menggunakan fallback: ${e.message}")
+            Log.e("PremiumManager", "EncryptedSharedPreferences Corrupt! Auto-resetting Encrypted file: ${e.message}")
+            try {
+                context.deleteSharedPreferences("premium_secure_data")
+            } catch (_: Exception) {}
             null
         }
     }
 
     private fun getBackupPrefs(context: Context): SharedPreferences {
-        return context.getSharedPreferences("premium_backup_prefs", Context.MODE_PRIVATE)
+        return context.getSharedPreferences("premium_fallback_prefs", Context.MODE_PRIVATE)
+    }
+
+    private fun encodeObfuscated(data: String): String {
+        return Base64.encodeToString(data.toByteArray(Charsets.UTF_8), Base64.NO_WRAP)
+    }
+
+    private fun decodeObfuscated(data: String): String {
+        return try {
+            String(Base64.decode(data, Base64.NO_WRAP), Charsets.UTF_8)
+        } catch (e: Exception) {
+            ""
+        }
     }
 
     private fun saveLicenseLocally(context: Context, isPremium: Boolean, expiryDate: Long) {
-        // 1. Simpan ke EncryptedSharedPreferences jika tersedia
+        // 1. Simpan ke EncryptedStorage jika bisa
         getSecurePrefs(context)?.edit()?.apply {
             putBoolean(PREF_IS_PREMIUM, isPremium)
             putLong(PREF_EXPIRY_DATE, expiryDate)
             commit()
         }
 
-        // 2. Selalu simpan backup ke SharedPreferences biasa agar tidak hilang saat restart
+        // 2. Selalu simpan ke Fallback Preferences (Sangat stabil & anti Android Keystore Crash)
+        val obfuscatedState = encodeObfuscated(if (isPremium) "ACTIVE_VIP" else "INACTIVE")
+        val obfuscatedExp = encodeObfuscated(expiryDate.toString())
+
         getBackupPrefs(context).edit().apply {
-            putBoolean(PREF_IS_PREMIUM, isPremium)
-            putLong(PREF_EXPIRY_DATE, expiryDate)
+            putString("obf_state", obfuscatedState)
+            putString("obf_exp", obfuscatedExp)
             commit()
         }
     }
@@ -314,26 +334,41 @@ object PremiumManager {
     }
 
     fun isPremium(context: Context): Boolean {
-        // Cek dulu dari EncryptedSharedPreferences
-        var isPremium = getSecurePrefs(context)?.getBoolean(PREF_IS_PREMIUM, false) ?: false
-        var expiryDate = getSecurePrefs(context)?.getLong(PREF_EXPIRY_DATE, 0L) ?: 0L
+        var isPrem = false
+        var expDate = 0L
 
-        // Jika Encrypted gagal/kosong, ambil dari Backup SharedPreferences
-        if (!isPremium) {
-            val backup = getBackupPrefs(context)
-            isPremium = backup.getBoolean(PREF_IS_PREMIUM, false)
-            expiryDate = backup.getLong(PREF_EXPIRY_DATE, 0L)
-            
-            // Jika backup valid, pulihkan ke Encrypted Storage
-            if (isPremium && expiryDate > System.currentTimeMillis()) {
-                saveLicenseLocally(context, true, expiryDate)
+        // 1. Coba baca dari Encrypted preferences
+        try {
+            val secure = getSecurePrefs(context)
+            if (secure != null) {
+                isPrem = secure.getBoolean(PREF_IS_PREMIUM, false)
+                expDate = secure.getLong(PREF_EXPIRY_DATE, 0L)
             }
+        } catch (e: Exception) {
+            isPrem = false
         }
 
-        Log.d("PremiumDebug", "isPremium: stored=$isPremium, exp=$expiryDate, now=${System.currentTimeMillis()}")
+        // 2. Jika Encrypted gagal/kosong, fallback baca dari Obfuscated Backup Preferences
+        if (!isPrem) {
+            try {
+                val backup = getBackupPrefs(context)
+                val rawState = decodeObfuscated(backup.getString("obf_state", "") ?: "")
+                val rawExp = decodeObfuscated(backup.getString("obf_exp", "") ?: "")
+                
+                isPrem = rawState == "ACTIVE_VIP"
+                expDate = rawExp.toLongOrNull() ?: 0L
 
-        if (isPremium) {
-            if (System.currentTimeMillis() > expiryDate) {
+                // Jika backup valid, sinkronkan kembali
+                if (isPrem && expDate > System.currentTimeMillis()) {
+                    saveLicenseLocally(context, true, expDate)
+                }
+            } catch (e: Exception) { }
+        }
+
+        Log.d("PremiumDebug", "isPremium: stored=$isPrem, exp=$expDate, now=${System.currentTimeMillis()}")
+
+        if (isPrem) {
+            if (System.currentTimeMillis() > expDate) {
                 deactivatePremium(context) 
                 return false
             }
@@ -350,8 +385,19 @@ object PremiumManager {
     }
     
     fun getExpiryDateString(context: Context): String {
-        val backup = getBackupPrefs(context)
-        val date = backup.getLong(PREF_EXPIRY_DATE, 0L)
+        var date = 0L
+        try {
+            val backup = getBackupPrefs(context)
+            val rawExp = decodeObfuscated(backup.getString("obf_exp", "") ?: "")
+            date = rawExp.toLongOrNull() ?: 0L
+        } catch (_: Exception) {}
+
+        if (date == 0L) {
+            try {
+                date = getSecurePrefs(context)?.getLong(PREF_EXPIRY_DATE, 0L) ?: 0L
+            } catch (_: Exception) {}
+        }
+
         return if (date == 0L) "Gratis" else SimpleDateFormat("dd MMM yyyy", Locale.getDefault()).format(Date(date))
     }
     
