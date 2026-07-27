@@ -674,7 +674,8 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                     try {
                         getKey<Array<SettingsGeneral.CustomSite>>(USER_PROVIDER_API)?.let { list ->
                             list.forEach { custom ->
-                                allProviders.firstOrNull { it.javaClass.simpleName == custom.parentJavaClass }?.let {
+                                // FIX: Menggunakan parentClassName sesuai dengan CustomSite
+                                allProviders.firstOrNull { it.javaClass.simpleName == custom.parentClassName }?.let {
                                     allProviders.add(
                                         it.javaClass.getDeclaredConstructor().newInstance().apply {
                                             name = custom.name
@@ -1103,7 +1104,8 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                 if (isRepoChanged) {
                     try {
                         Log.d(TAG, "Mengunduh plugin dari Repo Baru...")
-                        PluginsViewModel.downloadAll(this@MainActivity, targetRepoUrl, null)
+                        // FIX: Membungkus targetRepoUrl ke dalam RepositoryData
+                        PluginsViewModel.downloadAll(this@MainActivity, RepositoryData("", "", targetRepoUrl), null)
                         PluginManager.___DO_NOT_CALL_FROM_A_PLUGIN_loadAllOnlinePlugins(this@MainActivity)
                         PluginManager.___DO_NOT_CALL_FROM_A_PLUGIN_loadAllLocalPlugins(this@MainActivity, false)
                     } catch (e: Exception) { logError(e) }
