@@ -222,7 +222,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
         const val API_NAME_EXTRA_KEY = "API_NAME_EXTRA_KEY"
 
         private var filesToDelete: Set<String>
-            get() = getKey<Set<String>>(FILE_DELETE_KEY) ?: setOf()
+            get() = getKey(FILE_DELETE_KEY) ?: setOf()
             private set(value) = setKey(FILE_DELETE_KEY, value)
 
         fun deleteFileOnExit(file: File) {
@@ -612,14 +612,14 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
 
         val destinationId = item.itemId
 
-        // --- SECURITY GUARD ADIXTREAM (SATPAM MENU) ---
+        // --- SECURITY GUARD ADIXTREAM (SATPAM MENU NAV RAIL/BOTTOM) ---
         if (destinationId == R.id.navigation_settings_extensions || destinationId == R.id.navigation_settings_plugins) {
             if (!PremiumManager.isPremium(this)) {
                 PremiumDialogManager.showPremiumUnlockDialog(this)
                 return false
             }
         }
-        // ----------------------------------------------
+        // -------------------------------------------------------------
 
         if (navController.currentDestination?.id == destinationId) return false
 
@@ -674,9 +674,9 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                     try {
                         getKey<Array<SettingsGeneral.CustomSite>>(USER_PROVIDER_API)?.let { list ->
                             list.forEach { custom ->
-                                allProviders.firstOrNull { it::class.simpleName == custom.parentClassName }?.let {
+                                allProviders.firstOrNull { it.javaClass.simpleName == custom.parentJavaClass }?.let {
                                     allProviders.add(
-                                        it::class.java.getDeclaredConstructor().newInstance().apply {
+                                        it.javaClass.getDeclaredConstructor().newInstance().apply {
                                             name = custom.name
                                             lang = custom.lang
                                             mainUrl = custom.url.trimEnd('/')
@@ -686,7 +686,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                                 }
                             }
                         }
-                        apis = allProviders.distinctBy { it.lang + it.name + it.mainUrl + it::class.qualifiedName }
+                        apis = allProviders.distinctBy { it.lang + it.name + it.mainUrl + it.javaClass.name }
                         APIHolder.apiMap = null
                     } catch (e: Exception) {
                         logError(e)
@@ -1060,7 +1060,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
         if (PluginManager.checkSafeModeFile()) {
             safe { showToast(R.string.safe_mode_file, Toast.LENGTH_LONG) }
         } else if (lastError == null) {
-            // === ADIXTREAM MOD: LOGIKA REPOSITORY & UPDATE (ANTI-PENGHAPUSAN AGRESIF) ===
+            // === ADIXTREAM MOD: LOGIKA REPOSITORY & UPDATE ===
             ioSafe {
                 val isPremium = PremiumManager.isPremium(this@MainActivity)
                 val targetRepoUrl = if (isPremium) PremiumManager.PREMIUM_REPO_URL else PremiumManager.FREE_REPO_URL
@@ -1073,6 +1073,16 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
 
                 if (!hasTargetRepo || hasInvalidRepos) {
                     Log.d(TAG, "Status Repo tidak sinkron. Melakukan penyesuaian otomatis...")
+
+                    try {
+                        APIHolder.allProviders.clear() 
+                        val pluginDir1 = File(this@MainActivity.filesDir, "plugins")
+                        val pluginDir2 = File(this@MainActivity.filesDir, "Plugins")
+                        if (pluginDir1.exists()) pluginDir1.deleteRecursively() 
+                        if (pluginDir2.exists()) pluginDir2.deleteRecursively()
+                    } catch (e: Exception) { 
+                        logError(e) 
+                    }
 
                     currentRepos.forEach { repo ->
                         RepositoryManager.removeRepository(this@MainActivity, repo)
@@ -1093,7 +1103,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                 if (isRepoChanged) {
                     try {
                         Log.d(TAG, "Mengunduh plugin dari Repo Baru...")
-                        PluginsViewModel.downloadAll(this@MainActivity, RepositoryData("", "", targetRepoUrl), null)
+                        PluginsViewModel.downloadAll(this@MainActivity, targetRepoUrl, null)
                         PluginManager.___DO_NOT_CALL_FROM_A_PLUGIN_loadAllOnlinePlugins(this@MainActivity)
                         PluginManager.___DO_NOT_CALL_FROM_A_PLUGIN_loadAllLocalPlugins(this@MainActivity, false)
                     } catch (e: Exception) { logError(e) }
@@ -1344,15 +1354,17 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
         val navController = navHostFragment.navController
 
         navController.addOnDestinationChangedListener { _: NavController, navDestination: NavDestination, bundle: Bundle? ->
-            // --- SECURITY GUARD ADIXTREAM (ON CHANGE) ---
+            // --- SECURITY GUARD ADIXTREAM (SAFE GUARD AMAN KICK-OUT) ---
             if (navDestination.id == R.id.navigation_settings_extensions || navDestination.id == R.id.navigation_settings_plugins) {
                 if (!PremiumManager.isPremium(this@MainActivity)) {
                     PremiumDialogManager.showPremiumUnlockDialog(this@MainActivity)
-                    navController.popBackStack()
+                    if (navController.previousBackStackEntry != null) {
+                        navController.popBackStack()
+                    }
                     return@addOnDestinationChangedListener
                 }
             }
-            // --------------------------------------------
+            // -------------------------------------------------------------
 
             updateNavBar(navDestination)
             if (navDestination.matchDestination(R.id.navigation_search) && !nextSearchQuery.isNullOrBlank()) {
@@ -1503,9 +1515,6 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
         }
         
         DownloadQueueManager.init(this)
-
-        // === TAMBAHAN ADIXTREAM: CEK POPUP PROMO ===
-        CampaignPopupManager.checkAndShowCampaignPopup(this)
     }
 
     override fun onAuthenticationSuccess() { binding?.navHostFragment?.isInvisible = false }
