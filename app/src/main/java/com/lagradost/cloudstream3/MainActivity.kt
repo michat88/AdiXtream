@@ -195,7 +195,10 @@ import com.lagradost.cloudstream3.plugins.RepositoryManager
 import com.lagradost.cloudstream3.ui.settings.extensions.PluginsViewModel
 import com.lagradost.cloudstream3.ui.settings.extensions.RepositoryData
 import com.lagradost.cloudstream3.PremiumManager
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
 // -----------------------
 
 class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCallback {
@@ -674,7 +677,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                     try {
                         getKey<Array<SettingsGeneral.CustomSite>>(USER_PROVIDER_API)?.let { list ->
                             list.forEach { custom ->
-                                // FIX: Menggunakan parentClassName sesuai dengan CustomSite
+                                // FIX: Menggunakan parentClassName sesuai data class CustomSite
                                 allProviders.firstOrNull { it.javaClass.simpleName == custom.parentClassName }?.let {
                                     allProviders.add(
                                         it.javaClass.getDeclaredConstructor().newInstance().apply {
@@ -1061,7 +1064,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
         if (PluginManager.checkSafeModeFile()) {
             safe { showToast(R.string.safe_mode_file, Toast.LENGTH_LONG) }
         } else if (lastError == null) {
-            // === ADIXTREAM MOD: LOGIKA REPOSITORY & UPDATE ===
+            // === ADIXTREAM MOD: LOGIKA REPOSITORY & UPDATE (ANTI-CANCEL COROUTINE) ===
             ioSafe {
                 val isPremium = PremiumManager.isPremium(this@MainActivity)
                 val targetRepoUrl = if (isPremium) PremiumManager.PREMIUM_REPO_URL else PremiumManager.FREE_REPO_URL
@@ -1091,7 +1094,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                     try {
                         val parsedRepo = RepositoryManager.parseRepository(targetRepoUrl)
                         if (parsedRepo != null) {
-                            val repoData = RepositoryData(parsedRepo.iconUrl, parsedRepo.name, targetRepoUrl)
+                            val repoData = RepositoryData(parsedRepo.iconUrl ?: "", parsedRepo.name, targetRepoUrl)
                             RepositoryManager.addRepository(repoData)
                             isRepoChanged = true 
                             Log.d(TAG, "Repo berhasil disinkronkan ke: $targetRepoUrl")
@@ -1099,59 +1102,61 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                     } catch (e: Exception) { logError(e) }
                 }
 
-                kotlinx.coroutines.delay(1000)
+                // FIX: Menjalankan download di GlobalScope + applicationContext agar tidak ter-cancel saat UI transition
+                GlobalScope.launch(Dispatchers.IO) {
+                    kotlinx.coroutines.delay(2000) // Memberi jeda 2 detik untuk stabilitas UI
 
-                if (isRepoChanged) {
-                    try {
-                        Log.d(TAG, "Mengunduh plugin dari Repo Baru...")
-                        // FIX: Membungkus targetRepoUrl ke dalam RepositoryData
-                        PluginsViewModel.downloadAll(this@MainActivity, RepositoryData("", "", targetRepoUrl), null)
-                        PluginManager.___DO_NOT_CALL_FROM_A_PLUGIN_loadAllOnlinePlugins(this@MainActivity)
-                        PluginManager.___DO_NOT_CALL_FROM_A_PLUGIN_loadAllLocalPlugins(this@MainActivity, false)
-                    } catch (e: Exception) { logError(e) }
-                } else {
-                    if (settingsManager.getBoolean(getString(R.string.auto_update_plugins_key), true)) {
-                        PluginManager.___DO_NOT_CALL_FROM_A_PLUGIN_updateAllOnlinePluginsAndLoadThem(this@MainActivity)
+                    if (isRepoChanged) {
+                        try {
+                            Log.d(TAG, "Mengunduh plugin dari Repo Baru...")
+                            PluginsViewModel.downloadAll(this@MainActivity.applicationContext, RepositoryData("", "", targetRepoUrl), null)
+                            PluginManager.___DO_NOT_CALL_FROM_A_PLUGIN_loadAllOnlinePlugins(this@MainActivity.applicationContext)
+                            PluginManager.___DO_NOT_CALL_FROM_A_PLUGIN_loadAllLocalPlugins(this@MainActivity.applicationContext, false)
+                        } catch (e: Exception) { logError(e) }
                     } else {
-                        PluginManager.___DO_NOT_CALL_FROM_A_PLUGIN_loadAllOnlinePlugins(this@MainActivity)
+                        if (settingsManager.getBoolean(getString(R.string.auto_update_plugins_key), true)) {
+                            PluginManager.___DO_NOT_CALL_FROM_A_PLUGIN_updateAllOnlinePluginsAndLoadThem(this@MainActivity.applicationContext)
+                        } else {
+                            PluginManager.___DO_NOT_CALL_FROM_A_PLUGIN_loadAllOnlinePlugins(this@MainActivity.applicationContext)
+                        }
+
+                        val autoDownloadPlugin = AutoDownloadMode.getEnum(settingsManager.getInt(getString(R.string.auto_download_plugins_key), 0)) ?: AutoDownloadMode.Disable
+                        if (autoDownloadPlugin != AutoDownloadMode.Disable) {
+                            PluginManager.___DO_NOT_CALL_FROM_A_PLUGIN_downloadNotExistingPluginsAndLoad(this@MainActivity.applicationContext, autoDownloadPlugin)
+                        }
+                        PluginManager.___DO_NOT_CALL_FROM_A_PLUGIN_loadAllLocalPlugins(this@MainActivity.applicationContext, false)
                     }
 
-                    val autoDownloadPlugin = AutoDownloadMode.getEnum(settingsManager.getInt(getString(R.string.auto_download_plugins_key), 0)) ?: AutoDownloadMode.Disable
-                    if (autoDownloadPlugin != AutoDownloadMode.Disable) {
-                        PluginManager.___DO_NOT_CALL_FROM_A_PLUGIN_downloadNotExistingPluginsAndLoad(this@MainActivity, autoDownloadPlugin)
+                    val isAdultEnabled = settingsManager.getBoolean(getString(R.string.enable_nsfw_on_providers_key), false)
+
+                    kotlinx.coroutines.withTimeoutOrNull(15_000L) {
+                        while (APIHolder.allProviders.none { provider -> 
+                            provider.hasMainPage && (isAdultEnabled || !provider.supportedTypes.contains(com.lagradost.cloudstream3.TvType.NSFW)) 
+                        }) {
+                            kotlinx.coroutines.delay(500)
+                        }
                     }
-                    PluginManager.___DO_NOT_CALL_FROM_A_PLUGIN_loadAllLocalPlugins(this@MainActivity, false)
-                }
 
-                val isAdultEnabled = settingsManager.getBoolean(getString(R.string.enable_nsfw_on_providers_key), false)
-
-                kotlinx.coroutines.withTimeoutOrNull(15_000L) {
-                    while (APIHolder.allProviders.none { provider -> 
-                        provider.hasMainPage && (isAdultEnabled || !provider.supportedTypes.contains(com.lagradost.cloudstream3.TvType.NSFW)) 
-                    }) {
-                        kotlinx.coroutines.delay(500)
+                    val availableProviders = APIHolder.allProviders.filter { provider ->
+                        provider.hasMainPage && (isAdultEnabled || !provider.supportedTypes.contains(com.lagradost.cloudstream3.TvType.NSFW))
                     }
-                }
+                    
+                    val currentSelected = DataStoreHelper.currentHomePage
 
-                val availableProviders = APIHolder.allProviders.filter { provider ->
-                    provider.hasMainPage && (isAdultEnabled || !provider.supportedTypes.contains(com.lagradost.cloudstream3.TvType.NSFW))
-                }
-                
-                val currentSelected = DataStoreHelper.currentHomePage
-
-                if (currentSelected == null || availableProviders.none { it.name == currentSelected }) {
-                    if (availableProviders.isNotEmpty()) {
-                        val targetApiToLoad = availableProviders.first().name
-                        DataStoreHelper.currentHomePage = targetApiToLoad
-                        Log.d(TAG, "Auto-select plugin sukses dieksekusi: $targetApiToLoad")
-                        mainPluginsLoadedEvent.invoke(loadSinglePlugin(this@MainActivity, targetApiToLoad))
+                    if (currentSelected == null || availableProviders.none { it.name == currentSelected }) {
+                        if (availableProviders.isNotEmpty()) {
+                            val targetApiToLoad = availableProviders.first().name
+                            DataStoreHelper.currentHomePage = targetApiToLoad
+                            Log.d(TAG, "Auto-select plugin sukses dieksekusi: $targetApiToLoad")
+                            mainPluginsLoadedEvent.invoke(loadSinglePlugin(this@MainActivity.applicationContext, targetApiToLoad))
+                            reloadHomeEvent.invoke(true)
+                        } else {
+                            mainPluginsLoadedEvent.invoke(false)
+                        }
+                    } else {
+                        mainPluginsLoadedEvent.invoke(loadSinglePlugin(this@MainActivity.applicationContext, currentSelected))
                         reloadHomeEvent.invoke(true)
-                    } else {
-                        mainPluginsLoadedEvent.invoke(false)
                     }
-                } else {
-                    mainPluginsLoadedEvent.invoke(loadSinglePlugin(this@MainActivity, currentSelected))
-                    reloadHomeEvent.invoke(true)
                 }
             }
         } else {
