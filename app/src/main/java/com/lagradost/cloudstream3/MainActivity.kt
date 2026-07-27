@@ -1102,29 +1102,29 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                     } catch (e: Exception) { logError(e) }
                 }
 
-                // FIX: Menjalankan download di GlobalScope + applicationContext agar tidak ter-cancel saat UI transition
+                // FIX: Memakai Activity (this@MainActivity) agar cocok dengan signature method CloudStream
                 GlobalScope.launch(Dispatchers.IO) {
                     kotlinx.coroutines.delay(2000) // Memberi jeda 2 detik untuk stabilitas UI
 
                     if (isRepoChanged) {
                         try {
                             Log.d(TAG, "Mengunduh plugin dari Repo Baru...")
-                            PluginsViewModel.downloadAll(this@MainActivity.applicationContext, RepositoryData("", "", targetRepoUrl), null)
-                            PluginManager.___DO_NOT_CALL_FROM_A_PLUGIN_loadAllOnlinePlugins(this@MainActivity.applicationContext)
-                            PluginManager.___DO_NOT_CALL_FROM_A_PLUGIN_loadAllLocalPlugins(this@MainActivity.applicationContext, false)
+                            PluginsViewModel.downloadAll(this@MainActivity, RepositoryData("", "", targetRepoUrl), null)
+                            PluginManager.___DO_NOT_CALL_FROM_A_PLUGIN_loadAllOnlinePlugins(this@MainActivity)
+                            PluginManager.___DO_NOT_CALL_FROM_A_PLUGIN_loadAllLocalPlugins(this@MainActivity, false)
                         } catch (e: Exception) { logError(e) }
                     } else {
                         if (settingsManager.getBoolean(getString(R.string.auto_update_plugins_key), true)) {
-                            PluginManager.___DO_NOT_CALL_FROM_A_PLUGIN_updateAllOnlinePluginsAndLoadThem(this@MainActivity.applicationContext)
+                            PluginManager.___DO_NOT_CALL_FROM_A_PLUGIN_updateAllOnlinePluginsAndLoadThem(this@MainActivity)
                         } else {
-                            PluginManager.___DO_NOT_CALL_FROM_A_PLUGIN_loadAllOnlinePlugins(this@MainActivity.applicationContext)
+                            PluginManager.___DO_NOT_CALL_FROM_A_PLUGIN_loadAllOnlinePlugins(this@MainActivity)
                         }
 
                         val autoDownloadPlugin = AutoDownloadMode.getEnum(settingsManager.getInt(getString(R.string.auto_download_plugins_key), 0)) ?: AutoDownloadMode.Disable
                         if (autoDownloadPlugin != AutoDownloadMode.Disable) {
-                            PluginManager.___DO_NOT_CALL_FROM_A_PLUGIN_downloadNotExistingPluginsAndLoad(this@MainActivity.applicationContext, autoDownloadPlugin)
+                            PluginManager.___DO_NOT_CALL_FROM_A_PLUGIN_downloadNotExistingPluginsAndLoad(this@MainActivity, autoDownloadPlugin)
                         }
-                        PluginManager.___DO_NOT_CALL_FROM_A_PLUGIN_loadAllLocalPlugins(this@MainActivity.applicationContext, false)
+                        PluginManager.___DO_NOT_CALL_FROM_A_PLUGIN_loadAllLocalPlugins(this@MainActivity, false)
                     }
 
                     val isAdultEnabled = settingsManager.getBoolean(getString(R.string.enable_nsfw_on_providers_key), false)
@@ -1148,13 +1148,13 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                             val targetApiToLoad = availableProviders.first().name
                             DataStoreHelper.currentHomePage = targetApiToLoad
                             Log.d(TAG, "Auto-select plugin sukses dieksekusi: $targetApiToLoad")
-                            mainPluginsLoadedEvent.invoke(loadSinglePlugin(this@MainActivity.applicationContext, targetApiToLoad))
+                            mainPluginsLoadedEvent.invoke(loadSinglePlugin(this@MainActivity, targetApiToLoad))
                             reloadHomeEvent.invoke(true)
                         } else {
                             mainPluginsLoadedEvent.invoke(false)
                         }
                     } else {
-                        mainPluginsLoadedEvent.invoke(loadSinglePlugin(this@MainActivity.applicationContext, currentSelected))
+                        mainPluginsLoadedEvent.invoke(loadSinglePlugin(this@MainActivity, currentSelected))
                         reloadHomeEvent.invoke(true)
                     }
                 }
