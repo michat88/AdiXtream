@@ -1,12 +1,29 @@
 package com.lagradost.cloudstream3.ui.settings
 
+import android.content.Context
 import android.content.Intent
+import android.content.res.ColorStateList
+import android.graphics.Color
+import android.graphics.Typeface
+import android.graphics.drawable.GradientDrawable
+import android.graphics.drawable.StateListDrawable
 import android.net.Uri
 import android.os.Bundle
+import android.text.InputFilter
 import android.util.Log
+import android.view.Gravity
 import android.view.View
+import android.view.ViewGroup
+import android.widget.Button
+import android.widget.EditText
 import android.widget.ImageView
+import android.widget.LinearLayout
+import android.widget.TextView
+import android.widget.Toast
 import androidx.annotation.StringRes
+import androidx.appcompat.app.AlertDialog
+import androidx.constraintlayout.widget.ConstraintLayout
+import androidx.constraintlayout.widget.ConstraintSet
 import androidx.core.view.children
 import androidx.core.view.updateLayoutParams
 import androidx.fragment.app.Fragment
@@ -15,6 +32,7 @@ import androidx.preference.PreferenceFragmentCompat
 import com.google.android.material.appbar.AppBarLayout
 import com.google.android.material.appbar.MaterialToolbar
 import com.lagradost.cloudstream3.BuildConfig
+import com.lagradost.cloudstream3.PremiumManager
 import com.lagradost.cloudstream3.R
 import com.lagradost.cloudstream3.databinding.MainSettingsBinding
 import com.lagradost.cloudstream3.mvvm.logError
@@ -43,28 +61,6 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import java.util.TimeZone
-import android.widget.Toast
-
-// --- MODIFIKASI ADIXTREAM: Import tambahan untuk Redeem UI & Premium ---
-import android.graphics.Color
-import android.graphics.Typeface
-import android.graphics.drawable.GradientDrawable
-import android.view.Gravity
-import android.view.ViewGroup
-import android.widget.Button
-import android.widget.EditText
-import android.widget.LinearLayout
-import android.widget.TextView
-import androidx.appcompat.app.AlertDialog
-import androidx.constraintlayout.widget.ConstraintLayout
-import androidx.constraintlayout.widget.ConstraintSet
-import com.lagradost.cloudstream3.PremiumManager
-import android.content.Context
-import android.content.res.ColorStateList
-import android.graphics.drawable.StateListDrawable
-import android.text.InputFilter
-import android.widget.FrameLayout
-// -----------------------------------------------------------------------
 
 class SettingsFragment : BaseFragment<MainSettingsBinding>(
     BaseFragment.BindingCreator.Inflate(MainSettingsBinding::inflate)
@@ -80,9 +76,6 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
             }
         }
 
-        /**
-         * Hide many Preferences on selected layouts.
-         **/
         fun PreferenceFragmentCompat?.hidePrefs(ids: List<Int>, layoutFlags: Int) {
             if (this == null) return
             try {
@@ -94,19 +87,12 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
             }
         }
 
-        /**
-         * Hide the [Preference] on selected layouts.
-         * @return [Preference] if visible otherwise null.
-         */
         fun Preference?.hideOn(layoutFlags: Int): Preference? {
             if (this == null) return null
             this.isVisible = !isLayout(layoutFlags)
             return if(this.isVisible) this else null
         }
 
-        /**
-         * On TV you cannot properly scroll to the bottom of settings, this fixes that.
-         * */
         fun PreferenceFragmentCompat.setPaddingBottom() {
             if (isLayout(TV or EMULATOR)) {
                 listView?.setPadding(0, 0, 0, 100.toPx)
@@ -226,14 +212,19 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
         }
 
         binding.apply {
-            // --- MODIFIKASI ADIXTREAM: PremiumManager untuk settingsExtensions ---
+            // --- MODIFIKASI ADIXTREAM: Safe Navigation & Repo URL Fallback ---
             settingsExtensions.setOnClickListener {
                 try {
                     val bundle = Bundle()
                     val context = requireContext()
                     val isPremium = PremiumManager.isPremium(context)
+                    
+                    var repoUrl = if (isPremium) PremiumManager.PREMIUM_REPO_URL else PremiumManager.FREE_REPO_URL
+                    if (repoUrl.isBlank()) {
+                        repoUrl = "https://raw.githubusercontent.com/michat88/Repo_Gratis/refs/heads/builds/repo.json"
+                    }
+                    
                     val repoName = if (isPremium) "Repository Premium" else "Repository Gratis"
-                    val repoUrl = if (isPremium) PremiumManager.PREMIUM_REPO_URL else PremiumManager.FREE_REPO_URL
                     bundle.putString("name", repoName)
                     bundle.putString("url", repoUrl)
                     bundle.putBoolean("isLocal", false)
@@ -294,7 +285,6 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
         // ==========================================================
         val appVersion = BuildConfig.VERSION_NAME
         val commitInfo = activity?.currentCommitHash() ?: ""
-        // MODIFIKASI ADIXTREAM: DateFormat.LONG (bukan MEDIUM dari upstream)
         val buildTimestamp = SimpleDateFormat.getDateTimeInstance(DateFormat.LONG, DateFormat.LONG, Locale.getDefault()).apply {
             timeZone = TimeZone.getTimeZone("UTC")
         }.format(Date(BuildConfig.BUILD_DATE)).replace("UTC", "")
@@ -348,10 +338,8 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
                         set.connect(tvTopRight.id, ConstraintSet.BOTTOM, binding.settingsProfileText.id, ConstraintSet.BOTTOM)
                         set.applyTo(pParent)
                     } else {
-                        // Jika parent bukan ConstraintLayout (biasanya di HP)
                         binding.settingsProfileText.text = "${binding.settingsProfileText.text}   •   ID: $deviceId" + (if (isTvMode) "   •   $premiumStatus" else "")
 
-                        // FIX: Memastikan teks profil di HP bisa di-tap untuk menyalin ID
                         if (!isTvMode) {
                             binding.settingsProfileText.isClickable = true
                             binding.settingsProfileText.setOnClickListener {
