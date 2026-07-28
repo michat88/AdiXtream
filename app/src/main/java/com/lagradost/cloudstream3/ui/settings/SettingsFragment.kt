@@ -46,6 +46,7 @@ import com.lagradost.cloudstream3.ui.settings.Globals.PHONE
 import com.lagradost.cloudstream3.ui.settings.Globals.TV
 import com.lagradost.cloudstream3.ui.settings.Globals.isLandscape
 import com.lagradost.cloudstream3.ui.settings.Globals.isLayout
+import com.lagradost.cloudstream3.ui.settings.extensions.RepositoryData
 import com.lagradost.cloudstream3.utils.DataStoreHelper
 import com.lagradost.cloudstream3.utils.GitInfo.currentCommitHash
 import com.lagradost.cloudstream3.utils.ImageLoader.loadImage
@@ -212,10 +213,9 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
         }
 
         binding.apply {
-            // --- MODIFIKASI ADIXTREAM: Safe Navigation & Repo URL Fallback ---
+            // --- MODIFIKASI ADIXTREAM: Direct Bypass ke PluginsFragment (Kompatibel Versi Baru) ---
             settingsExtensions.setOnClickListener {
                 try {
-                    val bundle = Bundle()
                     val context = requireContext()
                     val isPremium = PremiumManager.isPremium(context)
                     
@@ -223,11 +223,21 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
                     if (repoUrl.isBlank()) {
                         repoUrl = "https://raw.githubusercontent.com/michat88/Repo_Gratis/refs/heads/builds/repo.json"
                     }
-                    
                     val repoName = if (isPremium) "Repository Premium" else "Repository Gratis"
-                    bundle.putString("name", repoName)
-                    bundle.putString("url", repoUrl)
-                    bundle.putBoolean("isLocal", false)
+
+                    val repositoryData = RepositoryData(
+                        iconUrl = "",
+                        name = repoName,
+                        url = repoUrl
+                    )
+
+                    val bundle = Bundle().apply {
+                        putString("name", repoName)
+                        putString("url", repoUrl)
+                        putBoolean("isLocal", false)
+                        putSerializable("repositoryData", repositoryData)
+                    }
+
                     activity?.navigate(R.id.navigation_settings_plugins, bundle)
                 } catch (e: Exception) {
                     logError(e)
