@@ -16,6 +16,7 @@ import androidx.core.view.isVisible
 import androidx.core.view.marginBottom
 import androidx.core.view.marginTop
 import androidx.fragment.app.activityViewModels
+import androidx.navigation.NavOptions
 import androidx.navigation.fragment.findNavController
 import com.lagradost.cloudstream3.CommonActivity.showToast
 import com.lagradost.cloudstream3.MainActivity.Companion.afterRepositoryLoadedEvent
@@ -51,7 +52,7 @@ class ExtensionsFragment : BaseFragment<FragmentExtensionsBinding>(
     private val extensionViewModel: ExtensionsViewModel by activityViewModels()
     private val pluginViewModel: PluginsViewModel by activityViewModels()
 
-    // Flag pengaman agar auto-redirect hanya berjalan 1 kali saat fragment dibuka
+    // Flag pengaman agar auto-redirect hanya berjalan 1 kali per pembukaan
     private var hasAutoNavigated = false
 
     private fun View.setLayoutWidth(weight: Int) {
@@ -119,9 +120,14 @@ class ExtensionsFragment : BaseFragment<FragmentExtensionsBinding>(
             }
 
             adapter = RepoAdapter(false, { repo ->
+                val navOptions = NavOptions.Builder()
+                    .setPopUpTo(R.id.navigation_settings_extensions, true)
+                    .build()
+
                 findNavController().navigate(
                     R.id.navigation_settings_extensions_to_navigation_settings_plugins,
-                    PluginsFragment.newInstance(repo)
+                    PluginsFragment.newInstance(repo),
+                    navOptions
                 )
             }, { repo ->
                 main {
@@ -159,7 +165,7 @@ class ExtensionsFragment : BaseFragment<FragmentExtensionsBinding>(
             (binding.repoRecyclerView.adapter as? RepoAdapter)?.submitList(repos.toList())
             pluginViewModel.updatePluginList(binding.root.context, repos.toList())
 
-            // === ADIXTREAM MOD: AUTO-REDIRECT BYPASS KE DAFTAR PLUGIN ===
+            // === ADIXTREAM MOD: AUTO-REDIRECT BYPASS + HAPUS EXTENSIONS DARI BACKSTACK ===
             if (!hasAutoNavigated && repos.isNotEmpty()) {
                 hasAutoNavigated = true
                 val targetRepo = repos.find { 
@@ -168,15 +174,21 @@ class ExtensionsFragment : BaseFragment<FragmentExtensionsBinding>(
                 } ?: repos.first()
 
                 try {
+                    // Opsi untuk menghapus ExtensionsFragment dari backstack
+                    val navOptions = NavOptions.Builder()
+                        .setPopUpTo(R.id.navigation_settings_extensions, true)
+                        .build()
+
                     findNavController().navigate(
                         R.id.navigation_settings_extensions_to_navigation_settings_plugins,
-                        PluginsFragment.newInstance(targetRepo)
+                        PluginsFragment.newInstance(targetRepo),
+                        navOptions
                     )
                 } catch (e: Exception) {
                     logError(e)
                 }
             }
-            // ============================================================
+            // ============================================================================
         }
 
         observeNullable(extensionViewModel.pluginStats) { value ->
@@ -203,11 +215,16 @@ class ExtensionsFragment : BaseFragment<FragmentExtensionsBinding>(
         }
 
         binding.pluginStorageAppbar.setOnClickListener {
+            val navOptions = NavOptions.Builder()
+                .setPopUpTo(R.id.navigation_settings_extensions, true)
+                .build()
+
             findNavController().navigate(
                 R.id.navigation_settings_extensions_to_navigation_settings_plugins,
                 PluginsFragment.newLocalInstance(
                     getString(R.string.extensions),
-                )
+                ),
+                navOptions
             )
         }
 
