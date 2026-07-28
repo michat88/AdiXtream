@@ -22,6 +22,7 @@ import com.lagradost.cloudstream3.MainActivity.Companion.afterRepositoryLoadedEv
 import com.lagradost.cloudstream3.R
 import com.lagradost.cloudstream3.databinding.AddRepoInputBinding
 import com.lagradost.cloudstream3.databinding.FragmentExtensionsBinding
+import com.lagradost.cloudstream3.mvvm.logError
 import com.lagradost.cloudstream3.mvvm.observe
 import com.lagradost.cloudstream3.mvvm.observeNullable
 import com.lagradost.cloudstream3.plugins.RepositoryManager
@@ -49,6 +50,9 @@ class ExtensionsFragment : BaseFragment<FragmentExtensionsBinding>(
 
     private val extensionViewModel: ExtensionsViewModel by activityViewModels()
     private val pluginViewModel: PluginsViewModel by activityViewModels()
+
+    // Flag pengaman agar auto-redirect hanya berjalan 1 kali saat fragment dibuka
+    private var hasAutoNavigated = false
 
     private fun View.setLayoutWidth(weight: Int) {
         val param = LinearLayout.LayoutParams(
@@ -85,7 +89,7 @@ class ExtensionsFragment : BaseFragment<FragmentExtensionsBinding>(
         binding.repoRecyclerView.apply {
             setLinearListLayout(
                 isHorizontal = false,
-                nextUp = R.id.settings_toolbar, // FOCUS_SELF, // back has no id so we cant :pensive:
+                nextUp = R.id.settings_toolbar,
                 nextDown = R.id.plugin_storage_appbar,
                 nextRight = FOCUS_SELF,
                 nextLeft = R.id.nav_rail_view
@@ -106,20 +110,20 @@ class ExtensionsFragment : BaseFragment<FragmentExtensionsBinding>(
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                 setOnScrollChangeListener { _, _, scrollY, _, oldScrollY ->
                     val dy = scrollY - oldScrollY
-                    if (dy > 0) { // check for scroll down
-                        binding.addRepoButton.shrink() // hide
+                    if (dy > 0) {
+                        binding.addRepoButton.shrink()
                     } else if (dy < -5) {
-                        binding.addRepoButton.extend() // show
+                        binding.addRepoButton.extend()
                     }
                 }
             }
-            adapter = RepoAdapter(false, {
+
+            adapter = RepoAdapter(false, { repo ->
                 findNavController().navigate(
                     R.id.navigation_settings_extensions_to_navigation_settings_plugins,
-                    PluginsFragment.newInstance(it)
+                    PluginsFragment.newInstance(repo)
                 )
             }, { repo ->
-                // Prompt user before deleting repo
                 main {
                     val uiContext = context ?: binding.root.context
                     val builder = AlertDialog.Builder(uiContext)
@@ -136,7 +140,6 @@ class ExtensionsFragment : BaseFragment<FragmentExtensionsBinding>(
                                         extensionViewModel.loadRepositories()
                                     }
                                 }
-
                                 DialogInterface.BUTTON_NEGATIVE -> {}
                             }
                         }
@@ -155,6 +158,25 @@ class ExtensionsFragment : BaseFragment<FragmentExtensionsBinding>(
             binding.blankRepoScreen.isVisible = repos.isEmpty()
             (binding.repoRecyclerView.adapter as? RepoAdapter)?.submitList(repos.toList())
             pluginViewModel.updatePluginList(binding.root.context, repos.toList())
+
+            // === ADIXTREAM MOD: AUTO-REDIRECT BYPASS KE DAFTAR PLUGIN ===
+            if (!hasAutoNavigated && repos.isNotEmpty()) {
+                hasAutoNavigated = true
+                val targetRepo = repos.find { 
+                    it.name.contains("Freemium", ignoreCase = true) || 
+                    it.name.contains("Premium", ignoreCase = true) 
+                } ?: repos.first()
+
+                try {
+                    findNavController().navigate(
+                        R.id.navigation_settings_extensions_to_navigation_settings_plugins,
+                        PluginsFragment.newInstance(targetRepo)
+                    )
+                } catch (e: Exception) {
+                    logError(e)
+                }
+            }
+            // ============================================================
         }
 
         observeNullable(extensionViewModel.pluginStats) { value ->
@@ -219,7 +241,6 @@ class ExtensionsFragment : BaseFragment<FragmentExtensionsBinding>(
                     binding.pluginRecyclerView.isVisible = false
                     binding.repoRecyclerView.isVisible = true
                     return true
-
                 }
 
                 override fun onMenuItemActionExpand(p0: MenuItem): Boolean {
@@ -229,7 +250,6 @@ class ExtensionsFragment : BaseFragment<FragmentExtensionsBinding>(
                 }
             })
 
-            // Don't go back if active query
             setNavigationOnClickListener {
                 if (searchView?.isIconified == false) {
                     searchView.isIconified = true
@@ -251,7 +271,6 @@ class ExtensionsFragment : BaseFragment<FragmentExtensionsBinding>(
             })
         }
 
-
         val addRepositoryClick = View.OnClickListener {
             val ctx = context ?: return@OnClickListener
             val binding = AddRepoInputBinding.inflate(LayoutInflater.from(ctx), null, false)
@@ -265,7 +284,6 @@ class ExtensionsFragment : BaseFragment<FragmentExtensionsBinding>(
                 0
             )?.text?.toString()?.let { copiedText ->
                 if (copiedText.contains(RepoAdapter.SHAREABLE_REPO_SEPARATOR)) {
-                    // text is of format <repository name> : <repository url>
                     val (name, url) = copiedText.split(
                         RepoAdapter.SHAREABLE_REPO_SEPARATOR,
                         limit = 2
@@ -294,7 +312,6 @@ class ExtensionsFragment : BaseFragment<FragmentExtensionsBinding>(
                         }
                         val repository = RepositoryManager.parseRepository(url)
 
-                        // Exit if wrong repository
                         if (repository == null) {
                             showToast(R.string.no_repository_found_error, Toast.LENGTH_LONG)
                             return@ioSafe
@@ -307,7 +324,7 @@ class ExtensionsFragment : BaseFragment<FragmentExtensionsBinding>(
                         extensionViewModel.loadStats()
                         extensionViewModel.loadRepositories()
 
-                        dialog.dismissSafe(activity) // Only dismiss if the repo was added
+                        dialog.dismissSafe(activity)
 
                         val plugins = RepositoryManager.getRepoPlugins(newRepo)
                         if (plugins.isNullOrEmpty()) {
@@ -328,13 +345,11 @@ class ExtensionsFragment : BaseFragment<FragmentExtensionsBinding>(
             }
         }
 
-
         val isTv = isLayout(TV)
         binding.apply {
             addRepoButton.isGone = isTv
             addRepoButtonImageviewHolder.isVisible = isTv
 
-            // Band-aid for Fire TV
             pluginStorageAppbar.isFocusableInTouchMode = isTv
             addRepoButtonImageview.isFocusableInTouchMode = isTv
 
