@@ -32,7 +32,6 @@ import androidx.preference.PreferenceFragmentCompat
 import com.google.android.material.appbar.AppBarLayout
 import com.google.android.material.appbar.MaterialToolbar
 import com.lagradost.cloudstream3.BuildConfig
-import com.lagradost.cloudstream3.PremiumDialogManager
 import com.lagradost.cloudstream3.PremiumManager
 import com.lagradost.cloudstream3.R
 import com.lagradost.cloudstream3.databinding.MainSettingsBinding
@@ -56,7 +55,6 @@ import com.lagradost.cloudstream3.utils.UIHelper.navigate
 import com.lagradost.cloudstream3.utils.UIHelper.toPx
 import com.lagradost.cloudstream3.utils.getImageFromDrawable
 import com.lagradost.cloudstream3.utils.txt
-import org.json.JSONObject
 import java.io.File
 import java.text.DateFormat
 import java.text.SimpleDateFormat
@@ -214,51 +212,6 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
         }
 
         binding.apply {
-            // --- MODIFIKASI ADIXTREAM: Direct Bypass ke PluginsFragment ---
-            settingsExtensions.setOnClickListener {
-                try {
-                    val context = requireContext()
-                    val act = activity ?: return@setOnClickListener
-                    val isPremium = PremiumManager.isPremium(context)
-                    
-                    // Jika belum Premium, tampilkan dialog unlock
-                    if (!isPremium) {
-                        PremiumDialogManager.showPremiumUnlockDialog(act)
-                        return@setOnClickListener
-                    }
-
-                    // Tentukan URL Repository
-                    var repoUrl = PremiumManager.PREMIUM_REPO_URL
-                    if (repoUrl.isBlank()) {
-                        repoUrl = "https://raw.githubusercontent.com/michat88/Repo_Gratis/refs/heads/builds/repo.json"
-                    }
-                    val repoName = "Repository Premium"
-
-                    // Buat JSON String RepositoryData menggunakan JSONObject bawaan Android
-                    val repoJson = try {
-                        JSONObject().apply {
-                            put("iconUrl", "")
-                            put("name", repoName)
-                            put("url", repoUrl)
-                        }.toString()
-                    } catch (e: Exception) {
-                        ""
-                    }
-
-                    // Kirim Bundle lengkap
-                    val bundle = Bundle().apply {
-                        putString("name", repoName)
-                        putString("url", repoUrl)
-                        putString("repositoryData", repoJson)
-                        putBoolean("isLocal", false)
-                    }
-
-                    act.navigate(R.id.navigation_settings_plugins, bundle)
-                } catch (e: Exception) {
-                    logError(e)
-                }
-            }
-
             // --- MODIFIKASI ADIXTREAM: Dialog "Tentang AdiXtream" ---
             appVersionInfo.setOnClickListener {
                 val builder = AlertDialog.Builder(requireContext(), R.style.AlertDialogCustom)
@@ -286,6 +239,7 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
                 }
             }
 
+            // KEMBALIKAN settingsExtensions KE DALAM LIST NAVIGASI STANDAR
             listOf(
                 settingsGeneral to R.id.action_navigation_global_to_navigation_settings_general,
                 settingsPlayer to R.id.action_navigation_global_to_navigation_settings_player,
@@ -293,6 +247,7 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
                 settingsUi to R.id.action_navigation_global_to_navigation_settings_ui,
                 settingsProviders to R.id.action_navigation_global_to_navigation_settings_providers,
                 settingsUpdates to R.id.action_navigation_global_to_navigation_settings_updates,
+                settingsExtensions to R.id.action_navigation_global_to_navigation_settings_extensions,
             ).forEach { (view, navigationId) ->
                 view.apply {
                     setOnClickListener { navigate(navigationId) }
