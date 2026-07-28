@@ -39,6 +39,7 @@ import androidx.core.view.isVisible
 import androidx.core.view.marginStart
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.NavController
 import androidx.navigation.NavDestination
 import androidx.navigation.NavDestination.Companion.hierarchy
@@ -196,7 +197,6 @@ import com.lagradost.cloudstream3.ui.settings.extensions.PluginsViewModel
 import com.lagradost.cloudstream3.ui.settings.extensions.RepositoryData
 import com.lagradost.cloudstream3.PremiumManager
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 // -----------------------
@@ -1064,7 +1064,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
         if (PluginManager.checkSafeModeFile()) {
             safe { showToast(R.string.safe_mode_file, Toast.LENGTH_LONG) }
         } else if (lastError == null) {
-            // === ADIXTREAM MOD: LOGIKA REPOSITORY & UPDATE (ANTI-CANCEL COROUTINE) ===
+            // === ADIXTREAM MOD: LOGIKA REPOSITORY & UPDATE (MENGGUNAKAN lifecycleScope) ===
             ioSafe {
                 val isPremium = PremiumManager.isPremium(this@MainActivity)
                 val targetRepoUrl = if (isPremium) PremiumManager.PREMIUM_REPO_URL else PremiumManager.FREE_REPO_URL
@@ -1102,8 +1102,8 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                     } catch (e: Exception) { logError(e) }
                 }
 
-                // FIX: Memakai Activity (this@MainActivity) agar cocok dengan signature method CloudStream
-                GlobalScope.launch(Dispatchers.IO) {
+                // FIX: Menggunakan lifecycleScope.launch untuk menggantikan GlobalScope (Aman dari Warning & Leak)
+                lifecycleScope.launch(Dispatchers.IO) {
                     kotlinx.coroutines.delay(2000) // Memberi jeda 2 detik untuk stabilitas UI
 
                     if (isRepoChanged) {
