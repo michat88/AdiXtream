@@ -32,6 +32,7 @@ import androidx.preference.PreferenceFragmentCompat
 import com.google.android.material.appbar.AppBarLayout
 import com.google.android.material.appbar.MaterialToolbar
 import com.lagradost.cloudstream3.BuildConfig
+import com.lagradost.cloudstream3.PremiumDialogManager
 import com.lagradost.cloudstream3.PremiumManager
 import com.lagradost.cloudstream3.R
 import com.lagradost.cloudstream3.databinding.MainSettingsBinding
@@ -46,7 +47,6 @@ import com.lagradost.cloudstream3.ui.settings.Globals.PHONE
 import com.lagradost.cloudstream3.ui.settings.Globals.TV
 import com.lagradost.cloudstream3.ui.settings.Globals.isLandscape
 import com.lagradost.cloudstream3.ui.settings.Globals.isLayout
-import com.lagradost.cloudstream3.ui.settings.extensions.RepositoryData
 import com.lagradost.cloudstream3.utils.DataStoreHelper
 import com.lagradost.cloudstream3.utils.GitInfo.currentCommitHash
 import com.lagradost.cloudstream3.utils.ImageLoader.loadImage
@@ -213,32 +213,33 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
         }
 
         binding.apply {
-            // --- MODIFIKASI ADIXTREAM: Direct Bypass ke PluginsFragment (Kompatibel Versi Baru) ---
+            // --- MODIFIKASI ADIXTREAM: Direct Bypass ke PluginsFragment (Sesuai Logika V4.8.1) ---
             settingsExtensions.setOnClickListener {
                 try {
                     val context = requireContext()
+                    val act = activity ?: return@setOnClickListener
                     val isPremium = PremiumManager.isPremium(context)
                     
-                    var repoUrl = if (isPremium) PremiumManager.PREMIUM_REPO_URL else PremiumManager.FREE_REPO_URL
+                    // Jika belum Premium, munculkan Dialog Pembuka Kunci & stop navigasi
+                    if (!isPremium) {
+                        PremiumDialogManager.showPremiumUnlockDialog(act)
+                        return@setOnClickListener
+                    }
+
+                    // Jika Premium, bypass langsung ke daftar plugin
+                    var repoUrl = PremiumManager.PREMIUM_REPO_URL
                     if (repoUrl.isBlank()) {
                         repoUrl = "https://raw.githubusercontent.com/michat88/Repo_Gratis/refs/heads/builds/repo.json"
                     }
-                    val repoName = if (isPremium) "Repository Premium" else "Repository Gratis"
-
-                    val repositoryData = RepositoryData(
-                        iconUrl = "",
-                        name = repoName,
-                        url = repoUrl
-                    )
+                    val repoName = "Repository Premium"
 
                     val bundle = Bundle().apply {
                         putString("name", repoName)
                         putString("url", repoUrl)
                         putBoolean("isLocal", false)
-                        putSerializable("repositoryData", repositoryData)
                     }
 
-                    activity?.navigate(R.id.navigation_settings_plugins, bundle)
+                    act.navigate(R.id.navigation_settings_plugins, bundle)
                 } catch (e: Exception) {
                     logError(e)
                 }
