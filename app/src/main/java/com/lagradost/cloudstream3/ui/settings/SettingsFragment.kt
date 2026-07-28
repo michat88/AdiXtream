@@ -47,7 +47,6 @@ import com.lagradost.cloudstream3.ui.settings.Globals.PHONE
 import com.lagradost.cloudstream3.ui.settings.Globals.TV
 import com.lagradost.cloudstream3.ui.settings.Globals.isLandscape
 import com.lagradost.cloudstream3.ui.settings.Globals.isLayout
-import com.lagradost.cloudstream3.ui.settings.extensions.RepositoryData
 import com.lagradost.cloudstream3.utils.DataStoreHelper
 import com.lagradost.cloudstream3.utils.GitInfo.currentCommitHash
 import com.lagradost.cloudstream3.utils.ImageLoader.loadImage
@@ -57,6 +56,7 @@ import com.lagradost.cloudstream3.utils.UIHelper.navigate
 import com.lagradost.cloudstream3.utils.UIHelper.toPx
 import com.lagradost.cloudstream3.utils.getImageFromDrawable
 import com.lagradost.cloudstream3.utils.txt
+import org.json.JSONObject
 import java.io.File
 import java.text.DateFormat
 import java.text.SimpleDateFormat
@@ -214,7 +214,7 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
         }
 
         binding.apply {
-            // --- MODIFIKASI ADIXTREAM: Direct Bypass ke PluginsFragment (Lengkap dengan Jackson JSON Serializer) ---
+            // --- MODIFIKASI ADIXTREAM: Direct Bypass ke PluginsFragment ---
             settingsExtensions.setOnClickListener {
                 try {
                     val context = requireContext()
@@ -234,21 +234,18 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
                     }
                     val repoName = "Repository Premium"
 
-                    // Buat objek RepositoryData
-                    val repoData = RepositoryData(
-                        iconUrl = "",
-                        name = repoName,
-                        url = repoUrl
-                    )
-
-                    // Convert objek ke JSON String agar terbaca oleh PluginsFragment CloudStream
+                    // Buat JSON String RepositoryData menggunakan JSONObject bawaan Android
                     val repoJson = try {
-                        DataStoreHelper.mapper.writeValueAsString(repoData)
+                        JSONObject().apply {
+                            put("iconUrl", "")
+                            put("name", repoName)
+                            put("url", repoUrl)
+                        }.toString()
                     } catch (e: Exception) {
                         ""
                     }
 
-                    // Kirim Bundle lengkap (String + JSON)
+                    // Kirim Bundle lengkap
                     val bundle = Bundle().apply {
                         putString("name", repoName)
                         putString("url", repoUrl)
@@ -272,7 +269,7 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
                         val browserIntent = Intent(Intent.ACTION_VIEW, Uri.parse("https://michat88.github.io/adixtream-web/"))
                         startActivity(browserIntent)
                     } catch (e: Exception) {
-                        e.printStackTrace Jackson
+                        e.printStackTrace()
                     }
                 }
                 builder.setPositiveButton("Tutup") { dialog, _ -> dialog.dismiss() }
