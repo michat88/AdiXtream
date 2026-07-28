@@ -47,6 +47,7 @@ import com.lagradost.cloudstream3.ui.settings.Globals.PHONE
 import com.lagradost.cloudstream3.ui.settings.Globals.TV
 import com.lagradost.cloudstream3.ui.settings.Globals.isLandscape
 import com.lagradost.cloudstream3.ui.settings.Globals.isLayout
+import com.lagradost.cloudstream3.ui.settings.extensions.RepositoryData
 import com.lagradost.cloudstream3.utils.DataStoreHelper
 import com.lagradost.cloudstream3.utils.GitInfo.currentCommitHash
 import com.lagradost.cloudstream3.utils.ImageLoader.loadImage
@@ -213,29 +214,45 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
         }
 
         binding.apply {
-            // --- MODIFIKASI ADIXTREAM: Direct Bypass ke PluginsFragment (Sesuai Logika V4.8.1) ---
+            // --- MODIFIKASI ADIXTREAM: Direct Bypass ke PluginsFragment (Lengkap dengan Jackson JSON Serializer) ---
             settingsExtensions.setOnClickListener {
                 try {
                     val context = requireContext()
                     val act = activity ?: return@setOnClickListener
                     val isPremium = PremiumManager.isPremium(context)
                     
-                    // Jika belum Premium, munculkan Dialog Pembuka Kunci & stop navigasi
+                    // Jika belum Premium, tampilkan dialog unlock
                     if (!isPremium) {
                         PremiumDialogManager.showPremiumUnlockDialog(act)
                         return@setOnClickListener
                     }
 
-                    // Jika Premium, bypass langsung ke daftar plugin
+                    // Tentukan URL Repository
                     var repoUrl = PremiumManager.PREMIUM_REPO_URL
                     if (repoUrl.isBlank()) {
                         repoUrl = "https://raw.githubusercontent.com/michat88/Repo_Gratis/refs/heads/builds/repo.json"
                     }
                     val repoName = "Repository Premium"
 
+                    // Buat objek RepositoryData
+                    val repoData = RepositoryData(
+                        iconUrl = "",
+                        name = repoName,
+                        url = repoUrl
+                    )
+
+                    // Convert objek ke JSON String agar terbaca oleh PluginsFragment CloudStream
+                    val repoJson = try {
+                        DataStoreHelper.mapper.writeValueAsString(repoData)
+                    } catch (e: Exception) {
+                        ""
+                    }
+
+                    // Kirim Bundle lengkap (String + JSON)
                     val bundle = Bundle().apply {
                         putString("name", repoName)
                         putString("url", repoUrl)
+                        putString("repositoryData", repoJson)
                         putBoolean("isLocal", false)
                     }
 
@@ -255,7 +272,7 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
                         val browserIntent = Intent(Intent.ACTION_VIEW, Uri.parse("https://michat88.github.io/adixtream-web/"))
                         startActivity(browserIntent)
                     } catch (e: Exception) {
-                        e.printStackTrace()
+                        e.printStackTrace Jackson
                     }
                 }
                 builder.setPositiveButton("Tutup") { dialog, _ -> dialog.dismiss() }
@@ -316,7 +333,6 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
         context?.let { ctx ->
             val isTvMode = isLayout(TV)
 
-            // --- A1. SUNTIK TEKS DI SEBELAH PROFIL "DEFAULT" (TV & HP) ---
             val profileParent = binding.settingsProfileText.parent as? ViewGroup
             profileParent?.let { pParent ->
                 val topTag = "status_tv_tag"
@@ -364,7 +380,6 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
                 }
             }
 
-            // --- A2. STATUS LANGGANAN DI BAWAH (KHUSUS HP) ---
             val versionParent = binding.appVersionInfo.parent as? ViewGroup
             versionParent?.let { parent ->
                 if (!isTvMode) {
@@ -387,7 +402,6 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
                     statusView.text = "Status Langganan: $premiumStatus"
                 }
 
-                // --- B. Tombol KODE PROMO (Gaya Netflix) ---
                 val tagBtnPromo = "btn_promo_tag_only"
                 var btnPromo = parent.findViewWithTag<Button>(tagBtnPromo)
 
@@ -474,7 +488,6 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
             }
         }
 
-        // --- MODIFIKASI ADIXTREAM: Focus TV handler untuk tombol promo ---
         binding.appVersionInfo.isFocusable = true
         if (isLayout(TV)) {
             binding.settingsExtensions.nextFocusDownId = binding.appVersionInfo.id
@@ -486,7 +499,6 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
             }
         }
 
-        // --- MODIFIKASI ADIXTREAM: Focus highlight untuk appVersionInfo ---
         binding.appVersionInfo.setOnFocusChangeListener { view, hasFocus ->
             if (hasFocus) {
                 view.setBackgroundColor(Color.parseColor("#1Affffff"))
@@ -499,7 +511,6 @@ class SettingsFragment : BaseFragment<MainSettingsBinding>(
             }
         }
 
-        // --- MODIFIKASI ADIXTREAM: Long click untuk copy device info ---
         binding.appVersionInfo.setOnLongClickListener {
             clipboardHelper(
                 txt(R.string.extension_version),
