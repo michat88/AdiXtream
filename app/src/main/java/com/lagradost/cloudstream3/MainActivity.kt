@@ -934,6 +934,14 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
 
     @Suppress("DEPRECATION_ERROR")
     override fun onCreate(savedInstanceState: Bundle?) {
+        val settingsManager = PreferenceManager.getDefaultSharedPreferences(this)
+
+        // === ADIXTREAM MOD: PAKSA GOOGLE DNS (1) AKTIF SEJAK FIRST INSTALL ===
+        if (!settingsManager.contains(getString(R.string.dns_pref))) {
+            settingsManager.edit().putInt(getString(R.string.dns_pref), 1).apply()
+        }
+        // ======================================================================
+
         // --- UPSTREAM CLOUDSTREAM SSL FIX ---
         app.initClient(this, ignoreSSL = false)
 
@@ -941,7 +949,6 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
         PremiumManager.checkAndMigrateOldOfflineUser(this)
         // -------------------------------------------------------
 
-        val settingsManager = PreferenceManager.getDefaultSharedPreferences(this)
         setLastError(this)
 
         val settingsForProvider = SettingsJson()
