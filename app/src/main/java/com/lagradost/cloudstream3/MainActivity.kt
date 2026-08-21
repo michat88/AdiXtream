@@ -677,7 +677,6 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                     try {
                         getKey<Array<SettingsGeneral.CustomSite>>(USER_PROVIDER_API)?.let { list ->
                             list.forEach { custom ->
-                                // FIX: Menggunakan parentClassName sesuai data class CustomSite
                                 allProviders.firstOrNull { it.javaClass.simpleName == custom.parentClassName }?.let {
                                     allProviders.add(
                                         it.javaClass.getDeclaredConstructor().newInstance().apply {
@@ -1071,8 +1070,9 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
         if (PluginManager.checkSafeModeFile()) {
             safe { showToast(R.string.safe_mode_file, Toast.LENGTH_LONG) }
         } else if (lastError == null) {
-            // === ADIXTREAM MOD: LOGIKA REPOSITORY & UPDATE (MENGGUNAKAN lifecycleScope) ===
-            ioSafe {
+            // === ADIXTREAM MOD: LOGIKA REPOSITORY & UPDATE ===
+            // (BUG DIPERBAIKI: Hapus ioSafe yang membungkus lifecycleScope)
+            lifecycleScope.launch(Dispatchers.IO) {
                 val isPremium = PremiumManager.isPremium(this@MainActivity)
                 val targetRepoUrl = if (isPremium) PremiumManager.PREMIUM_REPO_URL else PremiumManager.FREE_REPO_URL
                 
@@ -1109,61 +1109,58 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                     } catch (e: Exception) { logError(e) }
                 }
 
-                // FIX: Menggunakan lifecycleScope.launch untuk menggantikan GlobalScope (Aman dari Warning & Leak)
-                lifecycleScope.launch(Dispatchers.IO) {
-                    kotlinx.coroutines.delay(2000) // Memberi jeda 2 detik untuk stabilitas UI
+                kotlinx.coroutines.delay(2000) // Memberi jeda 2 detik untuk stabilitas UI
 
-                    if (isRepoChanged) {
-                        try {
-                            Log.d(TAG, "Mengunduh plugin dari Repo Baru...")
-                            PluginsViewModel.downloadAll(this@MainActivity, RepositoryData("", "", targetRepoUrl), null)
-                            PluginManager.___DO_NOT_CALL_FROM_A_PLUGIN_loadAllOnlinePlugins(this@MainActivity)
-                            PluginManager.___DO_NOT_CALL_FROM_A_PLUGIN_loadAllLocalPlugins(this@MainActivity, false)
-                        } catch (e: Exception) { logError(e) }
-                    } else {
-                        if (settingsManager.getBoolean(getString(R.string.auto_update_plugins_key), true)) {
-                            PluginManager.___DO_NOT_CALL_FROM_A_PLUGIN_updateAllOnlinePluginsAndLoadThem(this@MainActivity)
-                        } else {
-                            PluginManager.___DO_NOT_CALL_FROM_A_PLUGIN_loadAllOnlinePlugins(this@MainActivity)
-                        }
-
-                        val autoDownloadPlugin = AutoDownloadMode.getEnum(settingsManager.getInt(getString(R.string.auto_download_plugins_key), 0)) ?: AutoDownloadMode.Disable
-                        if (autoDownloadPlugin != AutoDownloadMode.Disable) {
-                            PluginManager.___DO_NOT_CALL_FROM_A_PLUGIN_downloadNotExistingPluginsAndLoad(this@MainActivity, autoDownloadPlugin)
-                        }
+                if (isRepoChanged) {
+                    try {
+                        Log.d(TAG, "Mengunduh plugin dari Repo Baru...")
+                        PluginsViewModel.downloadAll(this@MainActivity, RepositoryData("", "", targetRepoUrl), null)
+                        PluginManager.___DO_NOT_CALL_FROM_A_PLUGIN_loadAllOnlinePlugins(this@MainActivity)
                         PluginManager.___DO_NOT_CALL_FROM_A_PLUGIN_loadAllLocalPlugins(this@MainActivity, false)
-                    }
-
-                    val isAdultEnabled = settingsManager.getBoolean(getString(R.string.enable_nsfw_on_providers_key), false)
-
-                    kotlinx.coroutines.withTimeoutOrNull(15_000L) {
-                        while (APIHolder.allProviders.none { provider -> 
-                            provider.hasMainPage && (isAdultEnabled || !provider.supportedTypes.contains(com.lagradost.cloudstream3.TvType.NSFW)) 
-                        }) {
-                            kotlinx.coroutines.delay(500)
-                        }
-                    }
-
-                    val availableProviders = APIHolder.allProviders.filter { provider ->
-                        provider.hasMainPage && (isAdultEnabled || !provider.supportedTypes.contains(com.lagradost.cloudstream3.TvType.NSFW))
-                    }
-                    
-                    val currentSelected = DataStoreHelper.currentHomePage
-
-                    if (currentSelected == null || availableProviders.none { it.name == currentSelected }) {
-                        if (availableProviders.isNotEmpty()) {
-                            val targetApiToLoad = availableProviders.first().name
-                            DataStoreHelper.currentHomePage = targetApiToLoad
-                            Log.d(TAG, "Auto-select plugin sukses dieksekusi: $targetApiToLoad")
-                            mainPluginsLoadedEvent.invoke(loadSinglePlugin(this@MainActivity, targetApiToLoad))
-                            reloadHomeEvent.invoke(true)
-                        } else {
-                            mainPluginsLoadedEvent.invoke(false)
-                        }
+                    } catch (e: Exception) { logError(e) }
+                } else {
+                    if (settingsManager.getBoolean(getString(R.string.auto_update_plugins_key), true)) {
+                        PluginManager.___DO_NOT_CALL_FROM_A_PLUGIN_updateAllOnlinePluginsAndLoadThem(this@MainActivity)
                     } else {
-                        mainPluginsLoadedEvent.invoke(loadSinglePlugin(this@MainActivity, currentSelected))
-                        reloadHomeEvent.invoke(true)
+                        PluginManager.___DO_NOT_CALL_FROM_A_PLUGIN_loadAllOnlinePlugins(this@MainActivity)
                     }
+
+                    val autoDownloadPlugin = AutoDownloadMode.getEnum(settingsManager.getInt(getString(R.string.auto_download_plugins_key), 0)) ?: AutoDownloadMode.Disable
+                    if (autoDownloadPlugin != AutoDownloadMode.Disable) {
+                        PluginManager.___DO_NOT_CALL_FROM_A_PLUGIN_downloadNotExistingPluginsAndLoad(this@MainActivity, autoDownloadPlugin)
+                    }
+                    PluginManager.___DO_NOT_CALL_FROM_A_PLUGIN_loadAllLocalPlugins(this@MainActivity, false)
+                }
+
+                val isAdultEnabled = settingsManager.getBoolean(getString(R.string.enable_nsfw_on_providers_key), false)
+
+                kotlinx.coroutines.withTimeoutOrNull(15_000L) {
+                    while (APIHolder.allProviders.none { provider -> 
+                        provider.hasMainPage && (isAdultEnabled || !provider.supportedTypes.contains(com.lagradost.cloudstream3.TvType.NSFW)) 
+                    }) {
+                        kotlinx.coroutines.delay(500)
+                    }
+                }
+
+                val availableProviders = APIHolder.allProviders.filter { provider ->
+                    provider.hasMainPage && (isAdultEnabled || !provider.supportedTypes.contains(com.lagradost.cloudstream3.TvType.NSFW))
+                }
+                
+                val currentSelected = DataStoreHelper.currentHomePage
+
+                if (currentSelected == null || availableProviders.none { it.name == currentSelected }) {
+                    if (availableProviders.isNotEmpty()) {
+                        val targetApiToLoad = availableProviders.first().name
+                        DataStoreHelper.currentHomePage = targetApiToLoad
+                        Log.d(TAG, "Auto-select plugin sukses dieksekusi: $targetApiToLoad")
+                        mainPluginsLoadedEvent.invoke(loadSinglePlugin(this@MainActivity, targetApiToLoad))
+                        reloadHomeEvent.invoke(true)
+                    } else {
+                        mainPluginsLoadedEvent.invoke(false)
+                    }
+                } else {
+                    mainPluginsLoadedEvent.invoke(loadSinglePlugin(this@MainActivity, currentSelected))
+                    reloadHomeEvent.invoke(true)
                 }
             }
         } else {
@@ -1529,6 +1526,9 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
         }
         
         DownloadQueueManager.init(this)
+
+        // === TAMBAHAN ADIXTREAM: CEK POPUP PROMO ===
+        CampaignPopupManager.checkAndShowCampaignPopup(this)
     }
 
     override fun onAuthenticationSuccess() { binding?.navHostFragment?.isInvisible = false }
