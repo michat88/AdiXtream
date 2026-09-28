@@ -24,8 +24,11 @@ jobs:
           cache: 'gradle'
 
       - name: Decode Keystore dari Secret
+        env:
+          SIGNING_KEY: ${{ secrets.SIGNING_KEY }}
         run: |
-          echo "${{ secrets.SIGNING_KEY }}" | base64 -d > app/release.keystore
+          test -n "$SIGNING_KEY" || { echo "SIGNING_KEY is required"; exit 1; }
+          printf '%s' "$SIGNING_KEY" | base64 -d > app/release.keystore
 
       - name: Izinkan Gradle
         run: chmod +x gradlew
@@ -37,6 +40,8 @@ jobs:
           ALIAS: ${{ secrets.ALIAS }}
           KEY_STORE_PASSWORD: ${{ secrets.KEY_STORE_PASSWORD }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          SIMKL_CLIENT_ID: ${{ secrets.SIMKL_CLIENT_ID }}
+          SIMKL_CLIENT_SECRET: ${{ secrets.SIMKL_CLIENT_SECRET }}
           # === TAMBAHAN ADIXTREAM: SECURITY REPO PROTECTOR (LEVEL 2 - XOR) ===
           # Menyuntikkan Kunci Rahasia dan Base64 ke dalam sistem Gradle
           XOR_SECRET_KEY: ${{ secrets.XOR_SECRET_KEY }}
