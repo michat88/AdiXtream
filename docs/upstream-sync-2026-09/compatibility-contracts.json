@@ -1,0 +1,36 @@
+{
+  "initial": "0864e972c9580dff9a2eb7a6a87aed5d43d98fa1",
+  "protected": {
+    "app/src/main/java/com/lagradost/cloudstream3/RepoProtector.kt": "9ff12c28b0f735cc601fad05a89d4487ae330c20367bbfa67e3627a1ce888173",
+    "app/src/main/java/com/lagradost/cloudstream3/PremiumDialogManager.kt": "03de775f405c614587cc84f4da916f2df9f5291b634ee39e565b58ef626b634e",
+    "app/src/main/java/com/lagradost/cloudstream3/CampaignPopupManager.kt": "f41ed2586b047bdf83fe9b1ef47bb380920facd005b0a60d5ed47a6b59dd8bdd",
+    "app/src/main/java/com/lagradost/cloudstream3/SplashActivity.kt": "85d8a393b27735de9f13241c56ab7f40101ef408eae7d44c14bcc90a8ceea6b5",
+    "app/src/main/res/layout/activity_splash.xml": "1907ab7ad55886167efd4b38e85d0f8db668c0136519a99d9e69814b4dd19546",
+    "app/src/main/res/mipmap-anydpi-v26/ic_banner.png": "7297e6607a47ab3294826d91f9b335002ace0384af43a72457b712bff7913285",
+    "app/src/main/res/mipmap-xxhdpi/ic_launcher_round.png": "0954be7a2e1c37d355a6448ce68240267c62975dbe3a37c3318c491151cae848",
+    "app/src/main/res/mipmap-xxhdpi/ic_banner.png": "7297e6607a47ab3294826d91f9b335002ace0384af43a72457b712bff7913285",
+    "app/src/main/res/mipmap-xxhdpi/ic_launcher.png": "0954be7a2e1c37d355a6448ce68240267c62975dbe3a37c3318c491151cae848",
+    "app/src/main/res/mipmap-xhdpi/ic_launcher_round.png": "f3b0de6caeded371ce2f71e4b4757b7982cfa4cfcd7d91aab97f37f904ec154e",
+    "app/src/main/res/mipmap-xhdpi/ic_banner.png": "7297e6607a47ab3294826d91f9b335002ace0384af43a72457b712bff7913285",
+    "app/src/main/res/mipmap-xhdpi/ic_launcher.png": "f3b0de6caeded371ce2f71e4b4757b7982cfa4cfcd7d91aab97f37f904ec154e",
+    "app/src/main/res/mipmap-hdpi/ic_launcher_round.png": "f3ce1b6a08861c06f30b64baf331c758f6e05d70e273f295d47eaa42befab814",
+    "app/src/main/res/mipmap-hdpi/ic_launcher.png": "f3ce1b6a08861c06f30b64baf331c758f6e05d70e273f295d47eaa42befab814",
+    "app/src/main/res/mipmap-mdpi/ic_launcher_round.png": "4de6e6364c71459c1cd4b861026fce8f0e9c37e5f3c4d99ee6315f2a0559dd99",
+    "app/src/main/res/mipmap-mdpi/ic_launcher.png": "4de6e6364c71459c1cd4b861026fce8f0e9c37e5f3c4d99ee6315f2a0559dd99",
+    "app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.png": "b16638a951fd27867f29a05bf040b1d1174801905822dfa282a00bfbbaa40c72",
+    "app/src/main/res/mipmap-xxxhdpi/ic_launcher.png": "b16638a951fd27867f29a05bf040b1d1174801905822dfa282a00bfbbaa40c72"
+  },
+  "premiumMethods": {
+    "getDeviceId": "e5f9a481a33e4d6ccf69749e8a46a1b057430f4cf50c4a472932bf6179fefef8",
+    "getSecurePrefs": "095eee3207c1310703f216b7c3ee20c153d14d739649eff1388312908c5cabb6",
+    "getBackupPrefs": "285a1c72a63de5085e9ff589d654fada0dd205be3f53609ba58f71cf5ac1c801",
+    "saveLicenseLocally": "eaa16f9b8f58703652a96dd97616beb64790e4ffc16934ea009ec8e6a4fce471",
+    "checkAndMigrateOldOfflineUser": "99e4e11a2646b4c45e1c3d79ba31d3bd4b3a9194136706e0896244db877922c0",
+    "isPremium": "ed1ba288881f029bb094b9b2ff6dfdef2156ea1ac2c87d209f136bf8af7a6a33",
+    "deactivatePremium": "1118d20af7be41e7dbafa68447b5fe7287d422bd5da70862917b3b70d34bd52c",
+    "getExpiryDateString": "ad3e0ab50319994d21db42e0f2411b7e8b196af2b0736977207579b0deace313",
+    "checkAndSyncWithServer": "697deed8c395b0554099cbd324edd64deccf95d6c646d026411658b973df5bc5",
+    "registerUserToServer": "23e153474b4fe7d28305560d54cb4419050a01d8e41d8616119092a7d22de0f0"
+  },
+  "xorEncrypt": "9fb6962bba2cb60850fab4f4bc27a4f58b3d8a2b48d61fdc9d6c9c4ab9ba7704"
+}

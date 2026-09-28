@@ -27,9 +27,16 @@ jobs:
           distribution: temurin
           java-version: '17'
       - uses: android-actions/setup-android@v3
+        with:
+          cmdline-tools-version: '13114758'
+          packages: 'platform-tools platforms;android-37.0 build-tools;36.0.0'
       - uses: gradle/actions/setup-gradle@v4
+      - name: Offline compatibility and credential checks
+        run: |
+          python3 scripts/verify_migration.py
+          python3 scripts/scan_credentials.py
       - name: Clean build, tests and lint without production secrets
-        run: ./gradlew clean :app:assembleStableDebug :app:testStableDebugUnitTest :library:jvmTest :app:lintStableDebug --no-configuration-cache --stacktrace
+        run: ./gradlew clean :app:assembleStableDebug :app:testStableDebugUnitTest :library:jvmTest :app:lintStableDebug --continue --no-configuration-cache --stacktrace
       - name: Upload verification reports
         if: always()
         uses: actions/upload-artifact@v4

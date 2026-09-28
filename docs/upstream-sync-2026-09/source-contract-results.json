@@ -1,0 +1,450 @@
+[
+  {
+    "contract": "retained app/src/main/java/com/lagradost/cloudstream3/RepoProtector.kt",
+    "passed": true
+  },
+  {
+    "contract": "retained app/src/main/java/com/lagradost/cloudstream3/PremiumDialogManager.kt",
+    "passed": true
+  },
+  {
+    "contract": "retained app/src/main/java/com/lagradost/cloudstream3/CampaignPopupManager.kt",
+    "passed": true
+  },
+  {
+    "contract": "retained app/src/main/java/com/lagradost/cloudstream3/SplashActivity.kt",
+    "passed": true
+  },
+  {
+    "contract": "retained app/src/main/res/layout/activity_splash.xml",
+    "passed": true
+  },
+  {
+    "contract": "retained app/src/main/res/mipmap-anydpi-v26/ic_banner.png",
+    "passed": true
+  },
+  {
+    "contract": "retained app/src/main/res/mipmap-xxhdpi/ic_launcher_round.png",
+    "passed": true
+  },
+  {
+    "contract": "retained app/src/main/res/mipmap-xxhdpi/ic_banner.png",
+    "passed": true
+  },
+  {
+    "contract": "retained app/src/main/res/mipmap-xxhdpi/ic_launcher.png",
+    "passed": true
+  },
+  {
+    "contract": "retained app/src/main/res/mipmap-xhdpi/ic_launcher_round.png",
+    "passed": true
+  },
+  {
+    "contract": "retained app/src/main/res/mipmap-xhdpi/ic_banner.png",
+    "passed": true
+  },
+  {
+    "contract": "retained app/src/main/res/mipmap-xhdpi/ic_launcher.png",
+    "passed": true
+  },
+  {
+    "contract": "retained app/src/main/res/mipmap-hdpi/ic_launcher_round.png",
+    "passed": true
+  },
+  {
+    "contract": "retained app/src/main/res/mipmap-hdpi/ic_launcher.png",
+    "passed": true
+  },
+  {
+    "contract": "retained app/src/main/res/mipmap-mdpi/ic_launcher_round.png",
+    "passed": true
+  },
+  {
+    "contract": "retained app/src/main/res/mipmap-mdpi/ic_launcher.png",
+    "passed": true
+  },
+  {
+    "contract": "retained app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.png",
+    "passed": true
+  },
+  {
+    "contract": "retained app/src/main/res/mipmap-xxxhdpi/ic_launcher.png",
+    "passed": true
+  },
+  {
+    "contract": "premium compatibility: getDeviceId",
+    "passed": true
+  },
+  {
+    "contract": "premium compatibility: getSecurePrefs",
+    "passed": true
+  },
+  {
+    "contract": "premium compatibility: getBackupPrefs",
+    "passed": true
+  },
+  {
+    "contract": "premium compatibility: saveLicenseLocally",
+    "passed": true
+  },
+  {
+    "contract": "premium compatibility: checkAndMigrateOldOfflineUser",
+    "passed": true
+  },
+  {
+    "contract": "premium compatibility: isPremium",
+    "passed": true
+  },
+  {
+    "contract": "premium compatibility: deactivatePremium",
+    "passed": true
+  },
+  {
+    "contract": "premium compatibility: getExpiryDateString",
+    "passed": true
+  },
+  {
+    "contract": "premium compatibility: checkAndSyncWithServer",
+    "passed": true
+  },
+  {
+    "contract": "premium compatibility: registerUserToServer",
+    "passed": true
+  },
+  {
+    "contract": "premium storage key: premium_secure_data",
+    "passed": true
+  },
+  {
+    "contract": "premium storage key: premium_fallback_prefs",
+    "passed": true
+  },
+  {
+    "contract": "premium storage key: is_premium_user",
+    "passed": true
+  },
+  {
+    "contract": "premium storage key: premium_expiry_date",
+    "passed": true
+  },
+  {
+    "contract": "premium storage key: obf_state",
+    "passed": true
+  },
+  {
+    "contract": "premium storage key: obf_exp",
+    "passed": true
+  },
+  {
+    "contract": "legacy promo API",
+    "passed": true
+  },
+  {
+    "contract": "subscription existing API: getDeviceId",
+    "passed": true
+  },
+  {
+    "contract": "subscription existing API: activatePremiumWithCode",
+    "passed": true
+  },
+  {
+    "contract": "subscription existing API: activatePromoWithCode",
+    "passed": true
+  },
+  {
+    "contract": "offline migration at startup",
+    "passed": true
+  },
+  {
+    "contract": "premium startup reconciliation",
+    "passed": true
+  },
+  {
+    "contract": "repository deep link guard",
+    "passed": true
+  },
+  {
+    "contract": "production package identity",
+    "passed": true
+  },
+  {
+    "contract": "original version",
+    "passed": true
+  },
+  {
+    "contract": "locale scope",
+    "passed": true
+  },
+  {
+    "contract": "XOR algorithm unchanged",
+    "passed": true
+  },
+  {
+    "contract": "shared dependency",
+    "passed": true
+  },
+  {
+    "contract": "existing env: ALIAS",
+    "passed": true
+  },
+  {
+    "contract": "existing env: KEY_STORE_PASSWORD",
+    "passed": true
+  },
+  {
+    "contract": "existing env: KEY_PASSWORD",
+    "passed": true
+  },
+  {
+    "contract": "existing env: XOR_SECRET_KEY",
+    "passed": true
+  },
+  {
+    "contract": "existing env: PREMIUM_REPO_ENCODED",
+    "passed": true
+  },
+  {
+    "contract": "existing env: FREE_REPO_ENCODED",
+    "passed": true
+  },
+  {
+    "contract": "existing env: FIREBASE_URL_ENCODED",
+    "passed": true
+  },
+  {
+    "contract": "workflow secret: SIGNING_KEY",
+    "passed": true
+  },
+  {
+    "contract": "workflow secret: ALIAS",
+    "passed": true
+  },
+  {
+    "contract": "workflow secret: KEY_STORE_PASSWORD",
+    "passed": true
+  },
+  {
+    "contract": "workflow secret: KEY_PASSWORD",
+    "passed": true
+  },
+  {
+    "contract": "workflow secret: XOR_SECRET_KEY",
+    "passed": true
+  },
+  {
+    "contract": "workflow secret: PREMIUM_REPO_ENCODED",
+    "passed": true
+  },
+  {
+    "contract": "workflow secret: FREE_REPO_ENCODED",
+    "passed": true
+  },
+  {
+    "contract": "workflow secret: FIREBASE_URL_ENCODED",
+    "passed": true
+  },
+  {
+    "contract": "workflow secret: SIMKL_CLIENT_ID",
+    "passed": true
+  },
+  {
+    "contract": "workflow secret: SIMKL_CLIENT_SECRET",
+    "passed": true
+  },
+  {
+    "contract": "existing keystore path",
+    "passed": true
+  },
+  {
+    "contract": "no signing fallback",
+    "passed": true
+  },
+  {
+    "contract": "release fails without config",
+    "passed": true
+  },
+  {
+    "contract": "Compose configuration",
+    "passed": true
+  },
+  {
+    "contract": "root menu order",
+    "passed": true
+  },
+  {
+    "contract": "root scroll/build stamp",
+    "passed": true
+  },
+  {
+    "contract": "no add repository menu",
+    "passed": true
+  },
+  {
+    "contract": "subscription scroll and TV focus",
+    "passed": true
+  },
+  {
+    "contract": "repository fetch restriction",
+    "passed": true
+  },
+  {
+    "contract": "repository insert restriction",
+    "passed": true
+  },
+  {
+    "contract": "no arbitrary repo form",
+    "passed": true
+  },
+  {
+    "contract": "phone/TV add buttons disabled",
+    "passed": true
+  },
+  {
+    "contract": "Compose updater origin",
+    "passed": true
+  },
+  {
+    "contract": "fallback updater origin",
+    "passed": true
+  },
+  {
+    "contract": "package/certificate validation",
+    "passed": true
+  },
+  {
+    "contract": "navigation destinations",
+    "passed": true
+  },
+  {
+    "contract": "Compose settings root",
+    "passed": true
+  },
+  {
+    "contract": "subscription destination",
+    "passed": true
+  },
+  {
+    "contract": "navigation class: com.lagradost.cloudstream3.ui.settings.SettingsPlayer2",
+    "passed": true
+  },
+  {
+    "contract": "navigation class: com.lagradost.cloudstream3.ui.settings.SettingsUI2",
+    "passed": true
+  },
+  {
+    "contract": "navigation class: com.lagradost.cloudstream3.ui.library.LibraryFragment",
+    "passed": true
+  },
+  {
+    "contract": "navigation class: com.lagradost.cloudstream3.ui.settings.SettingsGeneral2",
+    "passed": true
+  },
+  {
+    "contract": "navigation class: com.lagradost.cloudstream3.ui.settings.extensions.ExtensionsFragment",
+    "passed": true
+  },
+  {
+    "contract": "navigation class: com.lagradost.cloudstream3.ui.settings.extensions.PluginsFragment",
+    "passed": true
+  },
+  {
+    "contract": "navigation class: com.lagradost.cloudstream3.ui.WebviewFragment",
+    "passed": true
+  },
+  {
+    "contract": "navigation class: com.lagradost.cloudstream3.ui.settings.SettingsProviders2",
+    "passed": true
+  },
+  {
+    "contract": "navigation class: com.lagradost.cloudstream3.ui.settings.SettingsUpdates2",
+    "passed": true
+  },
+  {
+    "contract": "navigation class: com.lagradost.cloudstream3.ui.settings.SettingsAccount2",
+    "passed": true
+  },
+  {
+    "contract": "navigation class: com.lagradost.cloudstream3.ui.home.HomeFragment",
+    "passed": true
+  },
+  {
+    "contract": "navigation class: com.lagradost.cloudstream3.ui.search.SearchFragment",
+    "passed": true
+  },
+  {
+    "contract": "navigation class: com.lagradost.cloudstream3.ui.download.DownloadFragment",
+    "passed": true
+  },
+  {
+    "contract": "navigation class: com.lagradost.cloudstream3.ui.settings.SettingsFragment2",
+    "passed": true
+  },
+  {
+    "contract": "navigation class: com.lagradost.cloudstream3.ui.subtitles.SubtitlesFragment2",
+    "passed": true
+  },
+  {
+    "contract": "navigation class: com.lagradost.cloudstream3.ui.subtitles.ChromecastSubtitlesFragment2",
+    "passed": true
+  },
+  {
+    "contract": "navigation class: com.lagradost.cloudstream3.ui.quicksearch.QuickSearchFragment",
+    "passed": true
+  },
+  {
+    "contract": "navigation class: com.lagradost.cloudstream3.ui.download.DownloadChildFragment",
+    "passed": true
+  },
+  {
+    "contract": "navigation class: com.lagradost.cloudstream3.ui.download.queue.DownloadQueueFragment",
+    "passed": true
+  },
+  {
+    "contract": "navigation class: com.lagradost.cloudstream3.ui.result.ResultTrailerPlayer",
+    "passed": true
+  },
+  {
+    "contract": "navigation class: com.lagradost.cloudstream3.ui.result.ResultFragmentTv",
+    "passed": true
+  },
+  {
+    "contract": "navigation class: com.lagradost.cloudstream3.ui.player.GeneratorPlayer",
+    "passed": true
+  },
+  {
+    "contract": "navigation class: com.lagradost.cloudstream3.ui.settings.testing.TestFragment",
+    "passed": true
+  },
+  {
+    "contract": "navigation class: com.lagradost.cloudstream3.ui.setup.SetupFragmentLanguage",
+    "passed": true
+  },
+  {
+    "contract": "navigation class: com.lagradost.cloudstream3.ui.setup.SetupFragmentExtensions",
+    "passed": true
+  },
+  {
+    "contract": "navigation class: com.lagradost.cloudstream3.ui.setup.SetupFragmentProviderLanguage",
+    "passed": true
+  },
+  {
+    "contract": "navigation class: com.lagradost.cloudstream3.ui.setup.SetupFragmentMedia",
+    "passed": true
+  },
+  {
+    "contract": "navigation class: com.lagradost.cloudstream3.ui.setup.SetupFragmentLayout",
+    "passed": true
+  },
+  {
+    "contract": "navigation class: com.lagradost.cloudstream3.ui.account.AccountSelectActivity",
+    "passed": true
+  },
+  {
+    "contract": "navigation class: com.lagradost.cloudstream3.ui.EasterEggMonkeFragment",
+    "passed": true
+  },
+  {
+    "contract": "navigation class: com.lagradost.cloudstream3.ui.settings.SettingsSubscription",
+    "passed": true
+  }
+]
