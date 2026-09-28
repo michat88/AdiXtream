@@ -788,4 +788,27 @@
     <string name="start_paused_settings">Start videos paused</string>
     <string name="start_paused_settings_des">Reduce stress when selecting sources</string>
     <string name="background">Background</string>
+    <string name="legal_notice_text">Any legal issues regarding the content on this application
+        should be taken up with the actual file hosts and providers themselves as we are not affiliated with them.
+
+        \n\nIn case of copyright infringement, please directly contact the responsible parties or the streaming websites.
+
+        \n\nThe app is purely for educational and personal use.
+
+        \n\nAdiXtream does not host any content on the app, and has no control over what media is put up or taken down.
+        AdiXtream functions like any other search engine, such as Google. AdiXtream does not host, upload or
+        manage any videos, films or content. It simply crawls, aggregates and displays links in a convenient,
+        user-friendly interface.
+
+        \n\nIt merely scrapes 3rd-party websites that are publicly accessible via any regular web browser. It is the
+        responsibility of user to avoid any actions that might violate the laws governing his/her locality. Use
+        AdiXtream at your own risk.
+    </string>
+    <string name="profile_settings">Profile settings</string>
+    <string name="profile_hide_negative_sources">Hide sources with negative priority</string>
+    <string name="profile_hide_error_sources">Hide sources with errors</string>
+    <plurals name="links_hidden">
+        <item quantity="one">%d link hidden</item>
+        <item quantity="other">%d links hidden</item>
+    </plurals>
 </resources>

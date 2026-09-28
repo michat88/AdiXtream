@@ -140,6 +140,10 @@
     "passed": true
   },
   {
+    "contract": "API 23 secure-store recovery",
+    "passed": true
+  },
+  {
     "contract": "subscription existing API: getDeviceId",
     "passed": true
   },

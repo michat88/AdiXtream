@@ -79,9 +79,19 @@ object PremiumManager {
         } catch (e: Exception) {
             Log.e("PremiumManager", "EncryptedSharedPreferences Corrupt! Auto-resetting Encrypted file: ${e.message}")
             try {
-                context.deleteSharedPreferences("premium_secure_data")
+                clearCorruptSecurePrefs(context)
             } catch (_: Exception) {}
             null
+        }
+    }
+
+    /** Preserve the existing corruption recovery on API 23, where deleteSharedPreferences is absent. */
+    private fun clearCorruptSecurePrefs(context: Context) {
+        if (android.os.Build.VERSION.SDK_INT >= 24) {
+            context.deleteSharedPreferences("premium_secure_data")
+        } else {
+            context.getSharedPreferences("premium_secure_data", Context.MODE_PRIVATE)
+                .edit().clear().commit()
         }
     }
 

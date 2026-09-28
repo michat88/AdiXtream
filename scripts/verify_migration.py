@@ -29,7 +29,12 @@ def function(source, name):
 def license_function(source, name):
     # Exclude the two additive display-only expiry-history calls. These cannot
     # grant access, change a device ID, or change a server record mapping.
-    return re.sub(r'^\s*(?:if \(isExpired\) )?rememberExpiredSubscription\(context, (?:expDate|dbExpired)\)\n', '', function(source, name), flags=re.M)
+    body = function(source, name)
+    # The only secure-store change delegates its existing corrupt-file cleanup
+    # to an API-23-compatible helper; valid preferences and fallback are untouched.
+    if name == 'getSecurePrefs':
+        body = body.replace('clearCorruptSecurePrefs(context)', 'context.deleteSharedPreferences("premium_secure_data")')
+    return re.sub(r'^\s*(?:if \(isExpired\) )?rememberExpiredSubscription\(context, (?:expDate|dbExpired)\)\n', '', body, flags=re.M)
 
 protected = [JAVA + p for p in ['RepoProtector.kt', 'PremiumDialogManager.kt', 'CampaignPopupManager.kt', 'SplashActivity.kt']]
 protected += ['app/src/main/res/layout/activity_splash.xml']
@@ -57,6 +62,7 @@ for name, expected in baseline['premiumMethods'].items():
 for key in ['premium_secure_data','premium_fallback_prefs','is_premium_user','premium_expiry_date','obf_state','obf_exp']:
     check('premium storage key: '+key, '"'+key+'"' in premium)
 check('legacy promo API', 'activatePromoWithCode(context, code, deviceId, true, onResult)' in premium)
+check('API 23 secure-store recovery', 'if (android.os.Build.VERSION.SDK_INT >= 24)' in function(premium, 'clearCorruptSecurePrefs'))
 service = read(JAVA+'ui/settings/SubscriptionViewModel.kt')
 for method in ['getDeviceId','activatePremiumWithCode','activatePromoWithCode']:
     check('subscription existing API: '+method, 'PremiumManager.'+method+'(' in service)

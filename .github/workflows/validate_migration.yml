@@ -51,6 +51,26 @@ jobs:
           assert 'KEYSTORE_PATH' in text and 'SIMKL_CLIENT_SECRET' in text
           print('PASS: release validation rejects missing configuration without signing.')
           PY
+      - name: Enable emulator acceleration
+        run: sudo chmod 0666 /dev/kvm
+      - name: Offline phone and TV layout smoke tests
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_2
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          script: bash scripts/run_settings_smoke.sh
+      - name: Upload phone and TV screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: migration-settings-screenshots
+          path: migration-ui/
+          if-no-files-found: warn
+          retention-days: 14
       - name: Upload verification reports
         if: always()
         uses: actions/upload-artifact@v4
@@ -59,8 +79,10 @@ jobs:
           path: |
             app/build/reports/
             library/build/reports/
+            app/build/outputs/androidTest-results/
           retention-days: 14
       - name: Upload isolated debug APK
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: AdiXtream-migration-debug

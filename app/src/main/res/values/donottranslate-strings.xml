@@ -135,22 +135,6 @@
     <string name="show_media_info_key">show_media_info</string>
     <string name="prefer_title_limit_key">prefer_title_limit</string>
 
-    <string name="legal_notice_text">Any legal issues regarding the content on this application
-        should be taken up with the actual file hosts and providers themselves as we are not affiliated with them.
-
-        \n\nIn case of copyright infringement, please directly contact the responsible parties or the streaming websites.
-
-        \n\nThe app is purely for educational and personal use.
-
-        \n\nAdiXtream does not host any content on the app, and has no control over what media is put up or taken down.
-        AdiXtream functions like any other search engine, such as Google. AdiXtream does not host, upload or
-        manage any videos, films or content. It simply crawls, aggregates and displays links in a convenient,
-        user-friendly interface.
-
-        \n\nIt merely scrapes 3rd-party websites that are publicly accessible via any regular web browser. It is the
-        responsibility of user to avoid any actions that might violate the laws governing his/her locality. Use
-        AdiXtream at your own risk.
-    </string>
 
     <plurals name="episodes">
         <item quantity="one">@string/episode</item>
