@@ -2,6 +2,9 @@ package com.lagradost.cloudstream3.ui.settings
 
 import android.content.Intent
 import android.net.Uri
+import android.widget.Toast
+import com.lagradost.cloudstream3.CommonActivity.showToast
+import com.lagradost.cloudstream3.utils.InAppUpdater.runAutoUpdate
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
@@ -91,17 +94,17 @@ object SettingsUpdatesScreen : SearchableSettings {
                         icon = painterResource(R.drawable.mobile_arrow_down_24px),
                         onClick = {
                             githubViewModel?.onAction(GithubAction.SearchForUpdate)
-                            /*ioSafe {
-                                if (activity?.runAutoUpdate(false) == false) {
-                                    activity?.runOnUiThread {
-                                        showToast(
-                                            R.string.no_update_found,
-                                            Toast.LENGTH_SHORT
-                                        )
-                                    }
-                                }
-                            }*/
+
                         }
+                    ),
+                    Preference.PreferenceItem.TextPreference(
+                        title = "Periksa update melalui jalur cadangan",
+                        icon = painterResource(R.drawable.autorenew_24px),
+                        onClick = { ioSafe {
+                            if (activity?.runAutoUpdate(false) == false) {
+                                activity?.runOnUiThread { showToast(R.string.no_update_found, Toast.LENGTH_SHORT) }
+                            }
+                        } }
                     ),
                     Preference.PreferenceItem.ListPreference(
                         title = stringResource(R.string.apk_installer_settings),

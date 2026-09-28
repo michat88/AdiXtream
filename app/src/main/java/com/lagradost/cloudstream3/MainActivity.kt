@@ -285,7 +285,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                         }
                     } else if (str.startsWith("https://cs.repo")) {
                         val realUrl = "https://" + str.substringAfter("?")
-                        println("Repository url: $realUrl")
+                        if (!RepositoryManager.isAllowedRepository(realUrl)) return false
                         loadRepository(realUrl)
                         return true
                     } else if (str.contains(APP_STRING)) {
@@ -1108,7 +1108,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                             val repoData = RepositoryData(parsedRepo.iconUrl ?: "", parsedRepo.name, targetRepoUrl)
                             RepositoryManager.addRepository(repoData)
                             isRepoChanged = true 
-                            Log.d(TAG, "Repo berhasil disinkronkan ke: $targetRepoUrl")
+                            Log.d(TAG, "Repository internal berhasil disinkronkan")
                         }
                     } catch (e: Exception) { logError(e) }
                 }

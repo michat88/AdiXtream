@@ -2,6 +2,7 @@ package com.lagradost.cloudstream3.ui.settings.extensions
 
 import android.view.LayoutInflater
 import android.view.ViewGroup
+import androidx.core.view.isVisible
 import com.lagradost.cloudstream3.R
 import com.lagradost.cloudstream3.databinding.RepositoryItemBinding
 import com.lagradost.cloudstream3.databinding.RepositoryItemTvBinding
@@ -59,6 +60,8 @@ class RepoAdapter(
                         actionButton.setImageResource(drawable)
                     }
 
+                    actionButton.isVisible = isSetup
+                    actionButton.isFocusable = isSetup
                     actionButton.setOnClickListener {
                         imageClickCallback(item)
                     }
@@ -67,7 +70,7 @@ class RepoAdapter(
                         clickCallback(item)
                     }
                     mainText.text = item.name
-                    subText.text = item.url
+                    subText.setText(R.string.adi_internal_repositories)
                     if (!item.iconUrl.isNullOrEmpty()) {
                         entryIcon.loadImage(item.iconUrl) {
                             error(
@@ -91,6 +94,8 @@ class RepoAdapter(
                         actionButton.setImageResource(drawable)
                     }
 
+                    actionButton.isVisible = isSetup
+                    actionButton.isFocusable = isSetup
                     actionButton.setOnClickListener {
                         imageClickCallback(item)
                     }
@@ -99,15 +104,10 @@ class RepoAdapter(
                         clickCallback(item)
                     }
 
-                    repositoryItemRoot.setOnLongClickListener {
-                        val shareableRepoData =
-                            "${item.name}$SHAREABLE_REPO_SEPARATOR\n ${item.url}"
-                        clipboardHelper(txt(R.string.repo_copy_label), shareableRepoData)
-                        true
-                    }
+                    repositoryItemRoot.setOnLongClickListener(null)
 
                     mainText.text = item.name
-                    subText.text = item.url
+                    subText.setText(R.string.adi_internal_repositories)
                     if (!item.iconUrl.isNullOrEmpty()) {
                         entryIcon.loadImage(item.iconUrl) {
                             error(

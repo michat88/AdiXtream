@@ -99,8 +99,7 @@ object SettingsFragmentScreen : Screen {
             subtitle = persistentListOf(
                 R.string.extension_language,
                 R.string.title_downloads,
-                R.string.pref_category_bypass,
-                R.string.pref_category_links
+                R.string.pref_category_bypass
             )
         ),
         SettingsNavigation(
@@ -161,7 +160,14 @@ object SettingsFragmentScreen : Screen {
             navigation = R.id.action_navigation_global_to_navigation_settings_extensions,
             screen = null,
             icon = R.drawable.extension_24px,
-            subtitle = persistentListOf(R.string.add_repository)
+            subtitle = persistentListOf(R.string.adi_internal_repositories)
+        ),
+        SettingsNavigation(
+            title = R.string.adi_subscription_title,
+            navigation = R.id.action_navigation_global_to_navigation_settings_subscription,
+            screen = null,
+            icon = R.drawable.encrypted_24px,
+            subtitle = persistentListOf(R.string.adi_subscription_summary)
         ),
     )
 
@@ -267,6 +273,7 @@ object SettingsFragmentScreen : Screen {
                                 SettingsTab(settingsTab)
                             }
                             BuildStamp()
+                            Spacer(Modifier.height(96.dp))
                         }
                     })
 
@@ -407,28 +414,31 @@ object SettingsFragmentScreen : Screen {
             commitHash to buildTimestamp
         }
 
-        Row(
-            horizontalArrangement = Arrangement.SpaceEvenly,
-            verticalAlignment = Alignment.CenterVertically,
+        Column(
+            verticalArrangement = Arrangement.spacedBy(8.dp),
             modifier = Modifier
                 .fillMaxWidth()
-                .height(50.dp)
                 .focusOutline()
                 .clickable {
-                    clipboardHelper(
-                        txt(R.string.extension_version),
-                        "${BuildConfig.VERSION_NAME} $commitHash $buildTimestamp"
-                    )
-                },
+                    activity?.let { host ->
+                        androidx.appcompat.app.AlertDialog.Builder(host)
+                            .setTitle("Tentang AdiXtream")
+                            .setMessage("AdiXtream ${BuildConfig.VERSION_NAME}\nOleh michat88\n\nBerbasis CloudStream oleh LagradOst dan para kontributor. Lisensi dan kredit upstream tetap berlaku.")
+                            .setPositiveButton("Website") { _, _ ->
+                                com.lagradost.cloudstream3.CloudStreamApp.openBrowser("https://michat88.github.io/adixtream-web/")
+                            }
+                            .setNeutralButton("Salin versi") { _, _ ->
+                                clipboardHelper(txt(R.string.extension_version), "AdiXtream ${BuildConfig.VERSION_NAME} $commitHash $buildTimestamp")
+                            }
+                            .setNegativeButton(android.R.string.cancel, null).show()
+                    }
+                }
+                .padding(horizontal = 24.dp, vertical = 20.dp),
         ) {
             ProvideTextStyle(MaterialTheme.typography.bodyMedium) {
-                Text(text = BuildConfig.VERSION_NAME)
-                if (commitHash != "") {
-                    Text("•")
-                    Text(text = commitHash)
-                }
-                Text("•")
-                Text(text = buildTimestamp)
+                Text("AdiXtream ${BuildConfig.VERSION_NAME} · $commitHash")
+                Text("$buildTimestamp UTC")
+                Text("Tentang AdiXtream · Kredit CloudStream")
             }
         }
     }

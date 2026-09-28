@@ -6,6 +6,8 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageInstaller
+import android.content.pm.PackageInfo
+import android.content.pm.PackageManager
 import android.os.Build
 import androidx.core.content.FileProvider
 import com.lagradost.cloudstream3.BuildConfig
@@ -37,6 +39,7 @@ object ApkUpdater : AppUpdater {
         digest: DigestPair?,
         downloadProgress: (Long, Long?) -> Unit
     ) {
+        require(AdiXtreamUpdatePolicy.allowsDownload(url)) { "Update must come from AdiXtream releases." }
         val activity = CommonActivity.activity ?: throw ErrorLoadingException("No activity found")
         clearOldFiles(activity)
 
@@ -47,20 +50,25 @@ object ApkUpdater : AppUpdater {
             val length = length ?: body.contentLength()
             val readStream = body.byteStream()
 
-            when (settings.updates.apkInstaller.get()) {
-                0 -> {
-                    packageInstallerDownloader(
-                        activity,
-                        readStream,
-                        length,
-                        digest,
-                        downloadProgress
-                    )
+            val downloadedFile = File.createTempFile(APP_UPDATE_NAME, ".$APP_UPDATE_SUFFIX", activity.cacheDir)
+            try {
+                withContext(Dispatchers.IO) {
+                    downloadedFile.outputStream().use {
+                        transfer(it, readStream, length, downloadProgress, digest)
+                    }
+                    validateUpgrade(activity, downloadedFile)
                 }
-
-                else -> {
-                    legacyDownloader(activity, readStream, length, digest, downloadProgress)
+                if (settings.updates.apkInstaller.get() == 0) {
+                    downloadedFile.inputStream().use {
+                        packageInstallerDownloader(activity, it, downloadedFile.length(), null) { _, _ -> }
+                    }
+                    downloadedFile.delete()
+                } else {
+                    openApk(activity, downloadedFile)
                 }
+            } catch (error: Throwable) {
+                downloadedFile.delete()
+                throw error
             }
         }
     }
@@ -195,7 +203,7 @@ object ApkUpdater : AppUpdater {
         digest: DigestPair?,
         downloadProgress: (Long, Long?) -> Unit
     ) = withContext(Dispatchers.IO) {
-        val downloadedFile = File.createTempFile(APP_UPDATE_NAME, ".$APP_UPDATE_SUFFIX")
+        val downloadedFile = File.createTempFile(APP_UPDATE_NAME, ".$APP_UPDATE_SUFFIX", activity.cacheDir)
 
         // We do not need to buffer this because transfer has large writes
         downloadedFile.outputStream().use { writeStream ->
@@ -206,6 +214,7 @@ object ApkUpdater : AppUpdater {
     }
 
     fun openApk(context: Context, file: File) {
+        validateUpgrade(context, file)
         val contentUri = FileProvider.getUriForFile(
             context, BuildConfig.APPLICATION_ID + ".provider", file
         )
@@ -213,8 +222,25 @@ object ApkUpdater : AppUpdater {
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
             putExtra(Intent.EXTRA_NOT_UNKNOWN_SOURCE, true)
-            data = contentUri
+            setDataAndType(contentUri, APK_CONTENT_TYPE)
         }
         context.startActivity(installIntent)
+    }
+
+    @Suppress("DEPRECATION")
+    fun validateUpgrade(context: Context, file: File) {
+        val pm = context.packageManager
+        val flags = if (Build.VERSION.SDK_INT >= 28) PackageManager.GET_SIGNING_CERTIFICATES else PackageManager.GET_SIGNATURES
+        val archive = pm.getPackageArchiveInfo(file.absolutePath, flags) ?: error("Invalid Android update package.")
+        val installed = pm.getPackageInfo(context.packageName, flags)
+        require(archive.packageName == context.packageName) { "Update package identity differs from AdiXtream." }
+        fun certificates(info: PackageInfo): Set<String> =
+            (if (Build.VERSION.SDK_INT >= 28) info.signingInfo?.apkContentsSigners else info.signatures)
+                ?.map { it.toCharsString() }?.toSet().orEmpty()
+        val existing = certificates(installed)
+        require(existing.isNotEmpty() && certificates(archive) == existing) { "Update signing certificate does not match this installation." }
+        val oldCode = if (Build.VERSION.SDK_INT >= 28) installed.longVersionCode else installed.versionCode.toLong()
+        val newCode = if (Build.VERSION.SDK_INT >= 28) archive.longVersionCode else archive.versionCode.toLong()
+        require(newCode >= oldCode) { "An older AdiXtream version cannot be installed as an update." }
     }
 }

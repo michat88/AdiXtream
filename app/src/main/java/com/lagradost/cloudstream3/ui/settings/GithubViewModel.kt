@@ -250,8 +250,10 @@ class GithubViewModel(
 
         val release = getRelease(prerelease)
 
-        // If on stable, only check that the display name matches
-        if (!prerelease && release.displayName == versionName) {
+        // AdiXtream asset names contain the app name. Do not repeatedly offer an
+        // installed version or downgrade just because the filename is different.
+        if (!prerelease && !AdiXtreamUpdatePolicy.isNewer(release.tagName, versionName) &&
+            !AdiXtreamUpdatePolicy.isNewer(release.displayName, versionName)) {
             updateState {
                 copy(dialog = baseDialog.copy(state = GithubUpdateDialogState.NoUpdateFound))
             }

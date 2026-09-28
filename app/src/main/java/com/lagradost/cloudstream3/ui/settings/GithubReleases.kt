@@ -98,7 +98,8 @@ object GithubReleases {
 
         // Find the first correct asset, given that we might have other binaries we release in the same version
         val foundAsset = latestRelease.assets.firstOrNull { asset ->
-            asset.contentType == contentType
+            (asset.contentType == contentType || asset.name.endsWith(".apk", true)) &&
+                AdiXtreamUpdatePolicy.allowsDownload(asset.browserDownloadUrl)
         }
 
         if (foundAsset == null) {

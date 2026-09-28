@@ -90,7 +90,7 @@ class ExtensionsViewModel : ViewModel() {
         ?: emptyArray()) + PREBUILT_REPOSITORIES
 
     fun loadRepositories() {
-        val urls = repos()
+        val urls = repos().filter { RepositoryManager.isAllowedRepository(it.url) }.toTypedArray()
         _repositories.postValue(urls)
     }
 }
