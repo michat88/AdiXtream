@@ -73,7 +73,7 @@ check('shared dependency','implementation(project(":shared"))' in gradle and '":
 names=['ALIAS','KEY_STORE_PASSWORD','KEY_PASSWORD','XOR_SECRET_KEY','PREMIUM_REPO_ENCODED','FREE_REPO_ENCODED','FIREBASE_URL_ENCODED']
 for name in names: check('existing env: '+name,'System.getenv("'+name+'")' in gradle)
 workflow=read('.github/workflows/buat_apk.yml')
-for name in ['SIGNING_KEY',*names,'SIMKL_CLIENT_ID','SIMKL_CLIENT_SECRET']:
+for name in ['SIGNING_KEY',*names,'SIMKL_CLIENT_ID','SIMKL_CLIENT_SECRET','ANILIST_CLIENT_SECRET','OPENSUBTITLES_API_KEY']:
     check('workflow secret: '+name,'${{ secrets.'+name+' }}' in workflow)
 check('existing keystore path','KEYSTORE_PATH: release.keystore' in workflow and '> app/release.keystore' in workflow)
 check('no signing fallback',not re.search(r'(?:storePassword|keyPassword|keyAlias)\s*=.*\?:',gradle))

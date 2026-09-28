@@ -68,7 +68,7 @@ object SettingsSubscriptionScreen : Screen {
         }
         Scaffold(topBar = {
             AppBar(title = stringResource(R.string.adi_subscription_title), navigateUp = {
-                activity?.onBackPressedDispatcher?.onBackPressed()
+                (activity as? androidx.activity.ComponentActivity)?.onBackPressedDispatcher?.onBackPressed()
             })
         }) { padding ->
             Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.TopCenter) {

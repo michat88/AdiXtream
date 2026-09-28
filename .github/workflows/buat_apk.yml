@@ -34,7 +34,7 @@ jobs:
         run: chmod +x gradlew
 
       - name: Mulai Proses Build
-        run: ./gradlew assembleRelease
+        run: ./gradlew assembleRelease --no-configuration-cache
         env:
           KEYSTORE_PATH: release.keystore
           ALIAS: ${{ secrets.ALIAS }}
@@ -42,6 +42,8 @@ jobs:
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
           SIMKL_CLIENT_ID: ${{ secrets.SIMKL_CLIENT_ID }}
           SIMKL_CLIENT_SECRET: ${{ secrets.SIMKL_CLIENT_SECRET }}
+          ANILIST_CLIENT_SECRET: ${{ secrets.ANILIST_CLIENT_SECRET }}
+          OPENSUBTITLES_API_KEY: ${{ secrets.OPENSUBTITLES_API_KEY }}
           # === TAMBAHAN ADIXTREAM: SECURITY REPO PROTECTOR (LEVEL 2 - XOR) ===
           # Menyuntikkan Kunci Rahasia dan Base64 ke dalam sistem Gradle
           XOR_SECRET_KEY: ${{ secrets.XOR_SECRET_KEY }}

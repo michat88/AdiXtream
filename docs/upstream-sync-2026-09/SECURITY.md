@@ -5,7 +5,7 @@ signing secret was created, replaced or rotated. The production application ID
 remains `com.adixtream.app`; debug builds retain the existing `.debug` suffix.
 
 Removed from the current source: hardcoded release signing password fallbacks,
-the hardcoded alias fallback, the default XOR key fallback, and embedded SIMKL
+the hardcoded alias fallback, the Gradle default XOR key fallback, and embedded SIMKL
 client credentials. The earlier commits remain intact as requested, so this is
 not a purge of historical Git objects. Initial inspection accidentally emitted
 old credential content because a redaction filter was incomplete; no values are
@@ -31,7 +31,24 @@ Release prebuild/signing validation fails with missing **variable names only**;
 it never falls back to another signing identity or an empty production backend.
 Local builds can use ignored local.properties for the existing backend/SIMKL
 configuration. Signing parameters always come from environment variables.
-`MAL_KEY` and `ANILIST_KEY` remain optional existing account integrations.
+`MAL_KEY` and `ANILIST_KEY` remain the pre-existing optional build fields; the
+existing public MAL/AniList client identifiers are retained in their providers.
+
+The full-tree Gitleaks audit additionally found an embedded AniList client secret
+and OpenSubtitles application API key. Both now use BuildConfig injected from
+`ANILIST_CLIENT_SECRET` and `OPENSUBTITLES_API_KEY` (Actions secrets/environment,
+or ignored local.properties for local builds). Production validation requires
+these existing values as well, to avoid silently breaking account/subtitle access.
+Account IDs, stored tokens, callback schemes and auth flows have not changed.
+Their availability in repository settings was not queried. The owner must add
+the existing values under the documented names if absent, without posting them
+in chat. These injected values are also extractable from an APK.
+
+Gitleaks' other candidates were reviewed: MAL's public OAuth client ID and two
+extractor protocol constants (Videa token alphabet and NineAnime cipher alphabet)
+are not owner account credentials. They remain for compatibility, with narrowly
+scoped scanner exceptions by path/rule/variable. No finding value is documented.
+Official AniList auth reference: https://docs.anilist.co/guide/auth/authorization-code
 
 ## SIMKL auth audit
 

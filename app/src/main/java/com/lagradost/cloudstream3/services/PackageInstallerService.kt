@@ -18,6 +18,8 @@ import com.lagradost.cloudstream3.MainActivity
 import com.lagradost.cloudstream3.MainActivity.Companion.deleteFileOnExit
 import com.lagradost.cloudstream3.R
 import com.lagradost.cloudstream3.app
+import com.lagradost.cloudstream3.ui.settings.AdiXtreamUpdatePolicy
+import com.lagradost.cloudstream3.ui.settings.ApkUpdater
 import com.lagradost.cloudstream3.mvvm.logError
 import com.lagradost.cloudstream3.mvvm.safe
 import com.lagradost.cloudstream3.utils.ApkInstaller
@@ -27,7 +29,6 @@ import com.lagradost.cloudstream3.utils.UIHelper.colorFromAttribute
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import java.io.File
-import java.io.FileOutputStream
 import kotlin.math.roundToInt
 
 class PackageInstallerService : Service() {
@@ -66,7 +67,8 @@ class PackageInstallerService : Service() {
 
     private suspend fun downloadUpdate(url: String, mode: Int): Boolean {
         try {
-            Log.d("PackageInstallerService", "Downloading update: $url (Mode: $mode)")
+            require(AdiXtreamUpdatePolicy.allowsDownload(url)) { "Update must come from AdiXtream releases." }
+            Log.d("PackageInstallerService", "Downloading AdiXtream update (Mode: $mode)")
 
             ioSafe {
                 val appUpdateName = "AdiXtream"
@@ -79,60 +81,48 @@ class PackageInstallerService : Service() {
             updateLock.withLock {
                 updateNotificationProgress(0f, ApkInstaller.InstallProgressStatus.Downloading)
 
-                val response = app.get(url)
-                val body = response.body 
-                val totalSize = body.contentLength()
-                val inputStream = body.byteStream()
-
-                if (mode == 1) {
-                    val downloadedFile = File.createTempFile("AdiXtream", ".apk", this@PackageInstallerService.cacheDir)
-                    val outputStream = FileOutputStream(downloadedFile)
-                    val data = ByteArray(8192)
-                    var count: Int
-                    var currentSize = 0L
-                    var lastUpdateTime = System.currentTimeMillis()
-
-                    while (inputStream.read(data).also { count = it } != -1) {
-                        outputStream.write(data, 0, count)
-                        currentSize += count
-
-                        val now = System.currentTimeMillis()
-                        if (now - lastUpdateTime > 500) { 
-                            if (totalSize > 0) {
-                                val percentage = currentSize.toFloat() / totalSize.toFloat()
-                                updateNotificationProgress(percentage, ApkInstaller.InstallProgressStatus.Downloading)
+                val downloadedFile = File.createTempFile("AdiXtream", ".apk", cacheDir)
+                try {
+                    val response = app.get(url)
+                    var lastProgressUpdate = 0L
+                    response.body.use { body ->
+                        val totalSize = body.contentLength().takeIf { it > 0 }
+                        body.byteStream().use { input ->
+                            downloadedFile.outputStream().use { output ->
+                                ApkUpdater.transfer(output, input, totalSize, { read, total ->
+                                    val now = android.os.SystemClock.elapsedRealtime()
+                                    if (total != null && total > 0 &&
+                                        (now - lastProgressUpdate >= 500L || read >= total)
+                                    ) {
+                                        updateNotificationProgress(
+                                            read.toFloat() / total.toFloat(), ApkInstaller.InstallProgressStatus.Downloading
+                                        )
+                                        lastProgressUpdate = now
+                                    }
+                                }, null)
                             }
-                            lastUpdateTime = now
                         }
                     }
-                    outputStream.flush()
-                    outputStream.close()
-                    inputStream.close()
-
-                    val installIntent = getInstallIntent(this@PackageInstallerService, downloadedFile)
-                    val pendingIntent = PendingIntentCompat.getActivity(
-                        this@PackageInstallerService, 1, installIntent, PendingIntent.FLAG_UPDATE_CURRENT, false
-                    )
-
-                    updateNotificationProgress(1f, ApkInstaller.InstallProgressStatus.Installing, pendingIntent)
-
-                    try {
-                        startActivity(installIntent)
-                    } catch (e: Exception) {
-                        logError(e)
+                    ApkUpdater.validateUpgrade(this@PackageInstallerService, downloadedFile)
+                    if (mode == 1) {
+                        val installIntent = getInstallIntent(this@PackageInstallerService, downloadedFile)
+                        val pendingIntent = PendingIntentCompat.getActivity(
+                            this@PackageInstallerService, 1, installIntent, PendingIntent.FLAG_UPDATE_CURRENT, false
+                        )
+                        updateNotificationProgress(1f, ApkInstaller.InstallProgressStatus.Installing, pendingIntent)
+                        try { startActivity(installIntent) } catch (e: Exception) { logError(e) }
+                    } else {
+                        installer = ApkInstaller(this@PackageInstallerService)
+                        downloadedFile.inputStream().use { input ->
+                            installer?.installApk(this@PackageInstallerService, input, downloadedFile.length(), {}) { status ->
+                                updateNotificationProgress(0f, status)
+                            }
+                        }
+                        downloadedFile.delete()
                     }
-
-                } else {
-                    installer = ApkInstaller(this@PackageInstallerService)
-                    var currentSize = 0
-                    installer?.installApk(this@PackageInstallerService, inputStream, totalSize, {
-                        currentSize += it
-                        if (totalSize == 0L) return@installApk
-                        val percentage = currentSize / totalSize.toFloat()
-                        updateNotificationProgress(percentage, ApkInstaller.InstallProgressStatus.Downloading)
-                    }) { status ->
-                        updateNotificationProgress(0f, status)
-                    }
+                } catch (error: Throwable) {
+                    downloadedFile.delete()
+                    throw error
                 }
             }
             return true
@@ -144,6 +134,7 @@ class PackageInstallerService : Service() {
     }
 
     private fun getInstallIntent(context: Context, file: File): Intent {
+        ApkUpdater.validateUpgrade(context, file)
         val contentUri = FileProvider.getUriForFile(
             context, BuildConfig.APPLICATION_ID + ".provider", file
         )

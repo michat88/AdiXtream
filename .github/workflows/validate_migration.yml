@@ -37,6 +37,20 @@ jobs:
           python3 scripts/scan_credentials.py
       - name: Clean build, tests and lint without production secrets
         run: ./gradlew clean :app:assembleStableDebug :app:testStableDebugUnitTest :library:jvmTest :app:lintStableDebug --continue --no-configuration-cache --stacktrace
+      - name: Verify missing release credentials fail closed
+        run: |
+          if ./gradlew :app:verifyReleaseConfiguration --no-configuration-cache > "$RUNNER_TEMP/release-gate.log" 2>&1; then
+            echo "Release validation unexpectedly accepted missing configuration"
+            exit 1
+          fi
+          python3 - <<'PY'
+          import os
+          from pathlib import Path
+          text = (Path(os.environ['RUNNER_TEMP']) / 'release-gate.log').read_text()
+          assert 'Release configuration missing:' in text, 'Unexpected release gate failure'
+          assert 'KEYSTORE_PATH' in text and 'SIMKL_CLIENT_SECRET' in text
+          print('PASS: release validation rejects missing configuration without signing.')
+          PY
       - name: Upload verification reports
         if: always()
         uses: actions/upload-artifact@v4

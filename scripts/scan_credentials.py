@@ -18,6 +18,14 @@ paths.update(filter(None, git('ls-files', '--others', '--exclude-standard', '-z'
 old = git('show', BASE + ':app/build.gradle.kts').decode()
 # Match the two legacy long client strings internally, without disclosing them.
 known = re.findall(r'\\"([a-f0-9]{50,})\\"', old)
+if len(known) != 2:
+    raise SystemExit('Legacy credential scan fixture changed; manual audit required (no values emitted).')
+for name, pattern in [('AniListApi.kt', r'private val secret = "([^"\n]+)"'),
+                      ('OpenSubtitlesApi.kt', r'const val API_KEY = "([^"\n]+)"')]:
+    source = git('show', BASE + ':app/src/main/java/com/lagradost/cloudstream3/syncproviders/providers/' + name).decode()
+    match = re.search(pattern, source)
+    if not match: raise SystemExit('Legacy credential fixture missing: ' + name)
+    known.append(match.group(1))
 rules = {
     'private key': re.compile(rb'-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----'),
     'GitHub token': re.compile(rb'\bgh[pousr]_[A-Za-z0-9]{30,}\b|github_pat_[A-Za-z0-9_]{50,}'),
@@ -31,7 +39,7 @@ for path in sorted(paths):
     if p.suffix in {'.jks', '.keystore', '.p12'}:
         findings.add((path, 'tracked signing material'))
     if any(value.encode() in data for value in known):
-        findings.add((path, 'legacy embedded SIMKL value'))
+        findings.add((path, 'legacy embedded credential value'))
     for kind, pattern in rules.items():
         if pattern.search(data): findings.add((path, kind))
 gradle = (ROOT / 'app/build.gradle.kts').read_text()

@@ -1,5 +1,6 @@
 package com.lagradost.cloudstream3.syncproviders.providers
 
+import com.lagradost.cloudstream3.BuildConfig
 import android.util.Log
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.APIHolder
@@ -37,7 +38,7 @@ class OpenSubtitlesApi : SubtitleAPI() {
     override val createAccountUrl = "https://www.opensubtitles.com/en/users/sign_up"
 
     companion object {
-        const val API_KEY = "uyBLgFD17MgrYmA0gSXoKllMJBelOYj2"
+        const val API_KEY = BuildConfig.OPENSUBTITLES_API_KEY
         const val HOST = "https://api.opensubtitles.com/api/v1"
         const val TAG = "OPENSUBS"
         const val COOLDOWN_DURATION: Long = 1000L * 30L // CoolDown if 429 error code in ms
@@ -75,6 +76,7 @@ class OpenSubtitlesApi : SubtitleAPI() {
     }
 
     override suspend fun login(form: AuthLoginResponse): AuthToken? {
+        if (API_KEY.isBlank()) return null
         val username = form.username ?: return null
         val password = form.password ?: return null
 

@@ -252,6 +252,14 @@
     "passed": true
   },
   {
+    "contract": "workflow secret: ANILIST_CLIENT_SECRET",
+    "passed": true
+  },
+  {
+    "contract": "workflow secret: OPENSUBTITLES_API_KEY",
+    "passed": true
+  },
+  {
     "contract": "existing keystore path",
     "passed": true
   },

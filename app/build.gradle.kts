@@ -18,10 +18,11 @@ val javaTarget = JvmTarget.fromTarget(libs.versions.jvmTarget.get())
 // Do not silently sign a customer update with another identity, or build an empty
 // production backend configuration. Debug builds can be tested without secrets.
 val verifyReleaseConfiguration = tasks.register("verifyReleaseConfiguration") {
+    notCompatibleWithConfigurationCache("Signing configuration is validated from the current environment, without caching secret inputs.")
     doLast {
         val required = listOf("KEYSTORE_PATH", "ALIAS", "KEY_STORE_PASSWORD", "KEY_PASSWORD",
             "XOR_SECRET_KEY", "PREMIUM_REPO_ENCODED", "FREE_REPO_ENCODED", "FIREBASE_URL_ENCODED",
-            "SIMKL_CLIENT_ID", "SIMKL_CLIENT_SECRET")
+            "SIMKL_CLIENT_ID", "SIMKL_CLIENT_SECRET", "ANILIST_CLIENT_SECRET", "OPENSUBTITLES_API_KEY")
         val local = gradleLocalProperties(rootDir, project.providers)
         val missing = required.filter { name ->
             val value = if (name in listOf("KEYSTORE_PATH", "ALIAS", "KEY_STORE_PASSWORD", "KEY_PASSWORD"))
@@ -203,7 +204,7 @@ android {
 
         // SIMKL client_id is public; client_secret is injected, never stored here.
         // BuildConfig values can still be extracted from a distributed APK.
-        for (name in listOf("SIMKL_CLIENT_ID", "SIMKL_CLIENT_SECRET")) {
+        for (name in listOf("SIMKL_CLIENT_ID", "SIMKL_CLIENT_SECRET", "ANILIST_CLIENT_SECRET", "OPENSUBTITLES_API_KEY")) {
             val value = System.getenv(name) ?: localProperties.getProperty(name).orEmpty()
             val escaped = value.replace("\\", "\\\\").replace("\"", "\\\"")
                 .replace("\n", "\\n").replace("\r", "\\r")
