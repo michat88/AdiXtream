@@ -3,10 +3,12 @@ package com.lagradost.cloudstream3
 import android.content.ClipboardManager
 import android.content.Context
 import android.content.pm.ActivityInfo
-import android.graphics.Bitmap
 import android.graphics.Rect
 import android.os.SystemClock
+import android.os.ParcelFileDescriptor
+import android.view.InputDevice
 import android.view.KeyEvent
+import android.view.MotionEvent
 import android.view.accessibility.AccessibilityNodeInfo
 import androidx.navigation.fragment.NavHostFragment
 import androidx.preference.PreferenceManager
@@ -20,7 +22,6 @@ import org.junit.Test
 import org.junit.rules.TestWatcher
 import org.junit.runner.Description
 import org.junit.runner.RunWith
-import java.io.File
 
 /** Runs only on an isolated emulator with empty backend configuration. Never submits a code. */
 @RunWith(AndroidJUnit4::class)
@@ -112,7 +113,7 @@ class SettingsMigrationSmokeTest {
     }
 
     private fun verifyMenuAndOpenSubscription() {
-        for (label in menuLabels) assertNotNull("Settings entry must be reachable", findVisible(label, scroll = true))
+        for (label in menuLabels) assertNotNull("Settings entry must be reachable: $label", findVisible(label, scroll = true))
         assertNotNull("Build stamp reachable by scrolling", findVisible("Tentang AdiXtream", scroll = true))
         capture("settings-bottom-${context.resources.configuration.orientation}-${layout()}")
         val subscription = findVisible("Aktivasi dan Langganan")
@@ -159,16 +160,41 @@ class SettingsMigrationSmokeTest {
     }
 
     private fun findVisible(text: String, scroll: Boolean = false, backward: Boolean = false): AccessibilityNodeInfo? {
-        repeat(if (scroll) 14 else 1) {
+        repeat(if (scroll) 24 else 1) {
             val all = nodes(automation.rootInActiveWindow)
             all.firstOrNull { it.isVisibleToUser && it.text?.toString()?.contains(text) == true }?.let { return it }
             if (!scroll) return null
-            val container = all.firstOrNull { it.isScrollable && it.isVisibleToUser } ?: return null
-            container.performAction(if (backward) AccessibilityNodeInfo.ACTION_SCROLL_BACKWARD else AccessibilityNodeInfo.ACTION_SCROLL_FORWARD)
+            // TV also has a scrollable navigation rail. Scroll the main content,
+            // and use overlapping swipes so short cards cannot be skipped.
+            val container = all.filter { it.isScrollable && it.isVisibleToUser }
+                .maxByOrNull { node -> Rect().also(node::getBoundsInScreen).let { it.width() * it.height() } }
+                ?: return null
+            swipeContent(container, backward)
             instrumentation.waitForIdleSync()
             SystemClock.sleep(250)
         }
+        saveScreenshot("missing-${text.hashCode()}")
         return null
+    }
+
+    private fun swipeContent(node: AccessibilityNodeInfo, backward: Boolean) {
+        val bounds = Rect().also(node::getBoundsInScreen)
+        val x = bounds.exactCenterX()
+        val start = bounds.top + bounds.height() * if (backward) 0.35f else 0.7f
+        val end = bounds.top + bounds.height() * if (backward) 0.7f else 0.35f
+        val downTime = SystemClock.uptimeMillis()
+        fun event(action: Int, y: Float) {
+            val motion = MotionEvent.obtain(downTime, SystemClock.uptimeMillis(), action, x, y, 0)
+            motion.source = InputDevice.SOURCE_TOUCHSCREEN
+            automation.injectInputEvent(motion, true)
+            motion.recycle()
+        }
+        event(MotionEvent.ACTION_DOWN, start)
+        for (step in 1..12) {
+            SystemClock.sleep(16)
+            event(MotionEvent.ACTION_MOVE, start + (end - start) * step / 12f)
+        }
+        event(MotionEvent.ACTION_UP, end)
     }
 
     private fun awaitText(text: String) {
@@ -190,9 +216,13 @@ class SettingsMigrationSmokeTest {
     }
 
     private fun saveScreenshot(name: String) {
-        val image = checkNotNull(automation.takeScreenshot())
-        val directory = File(context.getExternalFilesDir(null), "migration-ui").apply { mkdirs() }
-        File(directory, "$name.png").outputStream().use { image.compress(Bitmap.CompressFormat.PNG, 100, it) }
-        image.recycle()
+        check(name.matches(Regex("[a-zA-Z0-9_-]+")))
+        // AGP uninstalls the tested APK, deleting its external-files directory.
+        // Shell-owned emulator Downloads survives that cleanup; no app permission changes.
+        fun shell(command: String) {
+            ParcelFileDescriptor.AutoCloseInputStream(automation.executeShellCommand(command)).use { it.readBytes() }
+        }
+        shell("mkdir -p /sdcard/Download/AdiXtream-migration-ui")
+        shell("screencap -p /sdcard/Download/AdiXtream-migration-ui/$name.png")
     }
 }

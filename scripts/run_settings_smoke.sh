@@ -9,5 +9,5 @@ test_status=0
   -Pandroid.testInstrumentationRunnerArguments.adiOfflineUi=true \
   --no-configuration-cache --stacktrace || test_status=$?
 mkdir -p migration-ui
-adb pull /sdcard/Android/data/com.adixtream.app.debug/files/migration-ui/. migration-ui/ || true
+adb pull /sdcard/Download/AdiXtream-migration-ui/. migration-ui/ || true
 exit "$test_status"
