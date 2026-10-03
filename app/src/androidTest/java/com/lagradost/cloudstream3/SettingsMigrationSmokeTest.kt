@@ -81,7 +81,17 @@ class SettingsMigrationSmokeTest {
             val before = automation.rootInActiveWindow?.findFocus(AccessibilityNodeInfo.FOCUS_INPUT)
             instrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_DOWN)
             instrumentation.waitForIdleSync()
-            val after = automation.rootInActiveWindow?.findFocus(AccessibilityNodeInfo.FOCUS_INPUT)
+            // Compose may scroll/lazily compose the next field before changing focus;
+            // wait for the accessibility event rather than reading the previous cache frame.
+            var after: AccessibilityNodeInfo? = null
+            for (attempt in 0 until 30) {
+                val root = automation.rootInActiveWindow
+                root?.refresh()
+                after = root?.findFocus(AccessibilityNodeInfo.FOCUS_INPUT)?.apply { refresh() }
+                if (after != null && after != before) break
+                SystemClock.sleep(100)
+            }
+            saveScreenshot("tv-after-dpad-down")
             assertNotNull("D-pad retains a focus target", after)
             assertNotEquals("D-pad moves from copy to activation input", before, after)
             scenario.onActivity { host ->
