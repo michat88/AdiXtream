@@ -2,13 +2,19 @@
   {
     "path": ".github/workflows/validate_migration.yml",
     "classification": "added",
-    "current_blob": "641114fa6ed3b2374fb1aff9991185eb91b30c2d",
+    "current_blob": "661ad099d9736f8198e54c174f3aa87588f1470d",
     "note": "AdiXtream integration, compatibility/security tests or prerequisite from earlier upstream."
   },
   {
     "path": ".gitleaks.toml",
     "classification": "added",
     "current_blob": "5b0a5ac55be12b0e60f4155851ee5ed87d0aeaeb",
+    "note": "AdiXtream integration, compatibility/security tests or prerequisite from earlier upstream."
+  },
+  {
+    "path": "app/src/androidTest/java/com/lagradost/cloudstream3/SettingsMigrationSmokeTest.kt",
+    "classification": "added",
+    "current_blob": "9bf59147f3fd5a8dd6e9d51e97e120c84c97bcc6",
     "note": "AdiXtream integration, compatibility/security tests or prerequisite from earlier upstream."
   },
   {
@@ -1366,6 +1372,12 @@
     ],
     "current_blob": "92798c29c132e055508683edb66831f61918b895",
     "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "app/src/main/res/values-v31/styles.xml",
+    "classification": "added",
+    "current_blob": "08a1cd78e13515ee5012be789da7851c34b89dbd",
+    "note": "AdiXtream integration, compatibility/security tests or prerequisite from earlier upstream."
   },
   {
     "path": "app/src/main/res/values/adixtream-settings.xml",
@@ -3284,7 +3296,7 @@
   {
     "path": ".github/workflows/buat_apk.yml",
     "classification": "manual merge",
-    "current_blob": "b03c22037eee2154cc896d96307bfa0a68088c90",
+    "current_blob": "38a5ea8e06634f1968434dc0de65a7fd24b7cc85",
     "note": "AdiXtream integration, compatibility/security tests or prerequisite from earlier upstream."
   },
   {
@@ -3362,7 +3374,7 @@
   {
     "path": "app/src/main/java/com/lagradost/cloudstream3/PremiumManager.kt",
     "classification": "manual merge",
-    "current_blob": "e634c37e679af816046d41f7eb7b7c7d2a89976b",
+    "current_blob": "78c9487bff4d029498bf74fe4b4a551f7243e372",
     "note": "AdiXtream integration, compatibility/security tests or prerequisite from earlier upstream."
   },
   {
@@ -3770,7 +3782,7 @@
       "100644",
       "a1334f0b19224b360f58a1c360b48e4601ce8e66"
     ],
-    "current_blob": "a1834827fa72594621071a1031fd8ddd2da751b2",
+    "current_blob": "08c8c15d83f287fd341b9dee25875e00448cbd05",
     "note": "Fork diverged; upstream diff ported onto the AdiXtream file."
   },
   {
@@ -3788,7 +3800,7 @@
       "100644",
       "66eb3533c4c4448186f5719d697f54e40d96a9ea"
     ],
-    "current_blob": "00b5f1847b807c6a93e8929cd48dc2a998b3e205",
+    "current_blob": "0d47e5ba86e5b6b7876cfe1b57b9b2c53f6475f3",
     "note": "Fork diverged; upstream diff ported onto the AdiXtream file."
   },
   {
@@ -3806,7 +3818,7 @@
       "100644",
       "a5f8492dc9d959689cce1d02c2aa23420f21be0f"
     ],
-    "current_blob": "a72527486ef982b9e759ac326e861ddb474b23de",
+    "current_blob": "d43647ad5f86d63057ae73e678ba029b0de7f2df",
     "note": "Fork diverged; upstream diff ported onto the AdiXtream file."
   },
   {

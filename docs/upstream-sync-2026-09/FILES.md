@@ -50,12 +50,13 @@ Pinned upstream `a72f9e6c3f2e25eb74ce0e7d6cc56dc33c130288` → `e36ff7aa7997be86
 | `library/src/commonMain/kotlin/com/lagradost/cloudstream3/utils/M3u8Helper.kt` | Original fork equals baseline; current blob equals pinned upstream. |
 | `library/src/commonMain/kotlin/com/lagradost/cloudstream3/utils/SubtitleHelper.kt` | Original fork equals baseline; current blob equals pinned upstream. |
 
-## added (219)
+## added (221)
 
 | Path | Decision |
 | --- | --- |
 | `.github/workflows/validate_migration.yml` | AdiXtream integration, compatibility/security tests or prerequisite from earlier upstream. |
 | `.gitleaks.toml` | AdiXtream integration, compatibility/security tests or prerequisite from earlier upstream. |
+| `app/src/androidTest/java/com/lagradost/cloudstream3/SettingsMigrationSmokeTest.kt` | AdiXtream integration, compatibility/security tests or prerequisite from earlier upstream. |
 | `app/src/main/java/com/lagradost/cloudstream3/MainActivityScreen.kt` | New upstream file, imported unchanged. |
 | `app/src/main/java/com/lagradost/cloudstream3/plugins/InternalRepositoryPolicy.kt` | AdiXtream integration, compatibility/security tests or prerequisite from earlier upstream. |
 | `app/src/main/java/com/lagradost/cloudstream3/receivers/PackageInstallerStatusReceiver.kt` | New upstream file, imported unchanged. |
@@ -173,6 +174,7 @@ Pinned upstream `a72f9e6c3f2e25eb74ce0e7d6cc56dc33c130288` → `e36ff7aa7997be86
 | `app/src/main/res/drawable/uppercase_24px.xml` | New upstream file, imported unchanged. |
 | `app/src/main/res/drawable/visibility_off_24px.xml` | New upstream file, imported unchanged. |
 | `app/src/main/res/drawable/wifi_proxy_24px.xml` | New upstream file, imported unchanged. |
+| `app/src/main/res/values-v31/styles.xml` | AdiXtream integration, compatibility/security tests or prerequisite from earlier upstream. |
 | `app/src/main/res/values/adixtream-settings.xml` | AdiXtream integration, compatibility/security tests or prerequisite from earlier upstream. |
 | `app/src/test/java/com/lagradost/cloudstream3/plugins/InternalRepositoryPolicyTest.kt` | AdiXtream integration, compatibility/security tests or prerequisite from earlier upstream. |
 | `app/src/test/java/com/lagradost/cloudstream3/ui/settings/AdiXtreamUpdatePolicyTest.kt` | AdiXtream integration, compatibility/security tests or prerequisite from earlier upstream. |
