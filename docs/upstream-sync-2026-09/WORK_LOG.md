@@ -1,7 +1,7 @@
 # AdiXtream CloudStream migration
 
 The implementation is on `migration/cloudstream-2026-09-compose-premium` for a
-Draft PR. No master/main write, merge, force push, public release, production
+[Draft PR #1](https://github.com/michat88/AdiXtream/pull/1). No master/main write, merge, force push, public release, production
 signing operation or production activation/promo request has been performed.
 
 ## Pinned sources and review inventory
@@ -19,6 +19,7 @@ manual merge or protected/intentionally retained. The machine-readable
 [file manifest](file-manifest.json) includes original fork/baseline/upstream blob
 comparisons. [Original inventory](upstream-inventory.json) is retained for review.
 Existing checkpoint commits `566ab721` and `c8f26cba` remain in history.
+[MIGRATION_COMMITS.md](MIGRATION_COMMITS.md) records the structured migration commits.
 
 ## Implemented upstream functionality
 

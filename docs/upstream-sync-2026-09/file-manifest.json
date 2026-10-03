@@ -2,7 +2,7 @@
   {
     "path": ".github/workflows/validate_migration.yml",
     "classification": "added",
-    "current_blob": "661ad099d9736f8198e54c174f3aa87588f1470d",
+    "current_blob": "8b87851f619699c80d28842ee0c94619e5aa3881",
     "note": "AdiXtream integration, compatibility/security tests or prerequisite from earlier upstream."
   },
   {
@@ -14,7 +14,7 @@
   {
     "path": "app/src/androidTest/java/com/lagradost/cloudstream3/SettingsMigrationSmokeTest.kt",
     "classification": "added",
-    "current_blob": "9bf59147f3fd5a8dd6e9d51e97e120c84c97bcc6",
+    "current_blob": "44370cdff97178a9d2c932fa1e3d4223325ae70b",
     "note": "AdiXtream integration, compatibility/security tests or prerequisite from earlier upstream."
   },
   {
