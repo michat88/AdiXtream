@@ -15,7 +15,10 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import org.junit.Assert.*
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
+import org.junit.rules.TestWatcher
+import org.junit.runner.Description
 import org.junit.runner.RunWith
 import java.io.File
 
@@ -27,11 +30,21 @@ class SettingsMigrationSmokeTest {
     private val automation get() = instrumentation.uiAutomation
     private var menuLabels = emptyList<String>()
 
+    @get:Rule val failureEvidence = object : TestWatcher() {
+        override fun failed(error: Throwable, description: Description) {
+            runCatching { saveScreenshot("failure-${description.methodName}") }
+        }
+    }
+
     @Before fun requireIsolatedBuild() {
         check(InstrumentationRegistry.getArguments().getString("adiOfflineUi") == "true")
         check(BuildConfig.DEBUG && BuildConfig.APPLICATION_ID == "com.adixtream.app.debug")
         check(BuildConfig.FREE_REPO_ENCODED.isEmpty() && BuildConfig.PREMIUM_REPO_ENCODED.isEmpty())
         check(BuildConfig.FIREBASE_URL_ENCODED.isEmpty())
+        // A fresh install's permission dialog otherwise covers the Compose screen.
+        if (android.os.Build.VERSION.SDK_INT >= 33) {
+            automation.grantRuntimePermission(context.packageName, android.Manifest.permission.POST_NOTIFICATIONS)
+        }
     }
 
     @Test fun phonePortraitAndLandscape() {
@@ -102,7 +115,9 @@ class SettingsMigrationSmokeTest {
         for (label in menuLabels) assertNotNull("Settings entry must be reachable", findVisible(label, scroll = true))
         assertNotNull("Build stamp reachable by scrolling", findVisible("Tentang AdiXtream", scroll = true))
         capture("settings-bottom-${context.resources.configuration.orientation}-${layout()}")
-        val subscription = findVisible("Aktivasi dan Langganan") ?: error("Missing subscription entry")
+        val subscription = findVisible("Aktivasi dan Langganan")
+            ?: findVisible("Aktivasi dan Langganan", scroll = true, backward = true)
+            ?: error("Missing subscription entry")
         assertTrue(clickable(subscription).performAction(AccessibilityNodeInfo.ACTION_CLICK))
         awaitText("Status Langganan")
     }
@@ -143,13 +158,13 @@ class SettingsMigrationSmokeTest {
         }
     }
 
-    private fun findVisible(text: String, scroll: Boolean = false): AccessibilityNodeInfo? {
+    private fun findVisible(text: String, scroll: Boolean = false, backward: Boolean = false): AccessibilityNodeInfo? {
         repeat(if (scroll) 14 else 1) {
             val all = nodes(automation.rootInActiveWindow)
             all.firstOrNull { it.isVisibleToUser && it.text?.toString()?.contains(text) == true }?.let { return it }
             if (!scroll) return null
             val container = all.firstOrNull { it.isScrollable && it.isVisibleToUser } ?: return null
-            container.performAction(AccessibilityNodeInfo.ACTION_SCROLL_FORWARD)
+            container.performAction(if (backward) AccessibilityNodeInfo.ACTION_SCROLL_BACKWARD else AccessibilityNodeInfo.ACTION_SCROLL_FORWARD)
             instrumentation.waitForIdleSync()
             SystemClock.sleep(250)
         }
@@ -166,12 +181,16 @@ class SettingsMigrationSmokeTest {
 
     private fun capture(name: String) {
         instrumentation.waitForIdleSync()
-        val image = checkNotNull(automation.takeScreenshot())
-        val display = Rect(0, 0, image.width, image.height)
+        val display = Rect(0, 0, context.resources.displayMetrics.widthPixels, context.resources.displayMetrics.heightPixels)
         for (node in nodes(automation.rootInActiveWindow).filter { it.isVisibleToUser && it.isClickable }) {
             val bounds = Rect().also(node::getBoundsInScreen)
             assertTrue("Visible control intersects the display", bounds.isEmpty || Rect.intersects(display, bounds))
         }
+        saveScreenshot(name)
+    }
+
+    private fun saveScreenshot(name: String) {
+        val image = checkNotNull(automation.takeScreenshot())
         val directory = File(context.getExternalFilesDir(null), "migration-ui").apply { mkdirs() }
         File(directory, "$name.png").outputStream().use { image.compress(Bitmap.CompressFormat.PNG, 100, it) }
         image.recycle()

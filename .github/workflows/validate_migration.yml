@@ -3,15 +3,17 @@ name: Validate AdiXtream migration
 on:
   pull_request:
     branches: [master]
+    paths-ignore: ['docs/**']
   push:
     branches: [migration/cloudstream-2026-09-compose-premium]
+    paths-ignore: ['docs/**']
   workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: migration-validation-${{ github.ref }}
+  group: migration-validation-${{ github.head_ref || github.ref_name }}
   cancel-in-progress: true
 
 jobs:
