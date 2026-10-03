@@ -1,6 +1,9 @@
 package com.lagradost.cloudstream3
 
 import android.util.Xml
+import android.content.ContentValues
+import android.provider.MediaStore
+import android.view.inputmethod.InputMethodManager
 import android.content.ClipboardManager
 import android.content.Context
 import android.content.pm.ActivityInfo
@@ -81,6 +84,12 @@ class SettingsMigrationSmokeTest {
             val after = automation.rootInActiveWindow?.findFocus(AccessibilityNodeInfo.FOCUS_INPUT)
             assertNotNull("D-pad retains a focus target", after)
             assertNotEquals("D-pad moves from copy to activation input", before, after)
+            scenario.onActivity { host ->
+                (host.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager)
+                    .hideSoftInputFromWindow(host.window.decorView.windowToken, 0)
+            }
+            instrumentation.waitForIdleSync()
+            SystemClock.sleep(300)
             capture("tv-subscription-focus")
             findVisible("Klaim Promo", scroll = true) ?: error("Promo not reachable on TV")
             capture("tv-subscription-promo")
@@ -214,12 +223,16 @@ class SettingsMigrationSmokeTest {
 
     private fun capture(name: String) {
         instrumentation.waitForIdleSync()
-        val display = Rect(0, 0, context.resources.displayMetrics.widthPixels, context.resources.displayMetrics.heightPixels)
+        // Instrumentation targetContext may retain portrait metrics after rotation.
+        val bitmap = checkNotNull(automation.takeScreenshot())
+        val display = Rect(0, 0, bitmap.width, bitmap.height)
+        bitmap.recycle()
+        saveScreenshot(name)
         for (node in nodes(automation.rootInActiveWindow).filter { it.isVisibleToUser && it.isClickable }) {
             val bounds = Rect().also(node::getBoundsInScreen)
-            assertTrue("Visible control intersects the display", bounds.isEmpty || Rect.intersects(display, bounds))
+            assertTrue("Visible control ${node.className} at $bounds intersects $display",
+                bounds.isEmpty || Rect.intersects(display, bounds))
         }
-        saveScreenshot(name)
     }
 
     private fun saveScreenshot(name: String) {
@@ -232,8 +245,14 @@ class SettingsMigrationSmokeTest {
         shell("mkdir -p /sdcard/Download/AdiXtream-migration-ui")
         shell("screencap -p /sdcard/Download/AdiXtream-migration-ui/$name.png")
         // Test-only hierarchy contains isolated emulator state, never production credentials.
-        val hierarchy = java.io.File(context.cacheDir, "$name.xml")
-        hierarchy.outputStream().use { output ->
+        val resolver = context.contentResolver
+        val uri = checkNotNull(resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI,
+            ContentValues().apply {
+                put(MediaStore.MediaColumns.DISPLAY_NAME, "$name.xml")
+                put(MediaStore.MediaColumns.MIME_TYPE, "text/xml")
+                put(MediaStore.MediaColumns.RELATIVE_PATH, "Download/AdiXtream-migration-ui")
+            }))
+        checkNotNull(resolver.openOutputStream(uri)).use { output ->
             val xml = Xml.newSerializer().apply { setOutput(output, "UTF-8"); startDocument("UTF-8", true) }
             xml.startTag(null, "hierarchy")
             for (node in nodes(automation.rootInActiveWindow)) {
@@ -246,7 +265,5 @@ class SettingsMigrationSmokeTest {
             }
             xml.endTag(null, "hierarchy"); xml.endDocument()
         }
-        // run-as reads only this debuggable test package; shell writes shared evidence.
-        shell("sh -c 'run-as ${context.packageName} cat ${hierarchy.absolutePath} > /sdcard/Download/AdiXtream-migration-ui/$name.xml'")
     }
 }
