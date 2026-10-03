@@ -1,0 +1,28 @@
+title = "AdiXtream reviewed public identifiers and extractor protocol constants"
+
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "MAL public OAuth client identifier, not an account credential"
+targetRules = ["generic-api-key"]
+condition = "AND"
+paths = ['''(^|/)app/src/main/java/com/lagradost/cloudstream3/syncproviders/providers/MALApi\.kt$''']
+regexTarget = "line"
+regexes = ['''^\s*val key = "[a-zA-Z0-9]+"\s*$''']
+
+[[allowlists]]
+description = "Videa token alphabet used by the public extractor protocol"
+targetRules = ["generic-api-key"]
+condition = "AND"
+paths = ['''(^|/)library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/Videa\.kt$''']
+regexTarget = "line"
+regexes = ['''^\s*private val videaSecret = ".*"\s*$''']
+
+[[allowlists]]
+description = "NineAnime cipher alphabet used by the public extractor protocol"
+targetRules = ["generic-api-key"]
+condition = "AND"
+paths = ['''(^|/)library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/helper/NineAnimeHelper\.kt$''']
+regexTarget = "line"
+regexes = ['''^\s*private const val cipherKey = ".*"\s*$''']

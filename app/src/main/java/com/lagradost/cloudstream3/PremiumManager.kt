@@ -34,6 +34,29 @@ object PremiumManager {
     val FREE_REPO_URL = RepoProtector.decode(RepoProtector.FREE_REPO_ENCODED)
     val FIREBASE_BASE_URL = RepoProtector.decode(RepoProtector.FIREBASE_URL_ENCODED)
 
+    data class LocalSubscription(val isPremium: Boolean, val expiresAt: Long)
+
+    /** Settings snapshot using existing stores; does not request or write a server license. */
+    fun getLocalSubscription(context: Context): LocalSubscription {
+        val secure = getSecurePrefs(context)
+        var active = runCatching { secure?.getBoolean(PREF_IS_PREMIUM, false) }.getOrNull() ?: false
+        var expiry = runCatching { secure?.getLong(PREF_EXPIRY_DATE, 0L) }.getOrNull() ?: 0L
+        if (!active) {
+            val backup = getBackupPrefs(context)
+            active = decodeObfuscated(backup.getString("obf_state", "").orEmpty()) == "ACTIVE_VIP"
+            expiry = decodeObfuscated(backup.getString("obf_exp", "").orEmpty()).toLongOrNull() ?: expiry
+        }
+        if (!active && expiry == 0L) expiry = PreferenceManager.getDefaultSharedPreferences(context)
+            .getLong("adi_subscription_last_expiry", 0L)
+        return LocalSubscription(active, expiry)
+    }
+
+    // Display-only history, never used to grant access or map a backend/device record.
+    private fun rememberExpiredSubscription(context: Context, expiry: Long) {
+        PreferenceManager.getDefaultSharedPreferences(context).edit()
+            .putLong("adi_subscription_last_expiry", expiry).apply()
+    }
+
     fun getDeviceId(context: Context): String {
         val androidId = Settings.Secure.getString(context.contentResolver, Settings.Secure.ANDROID_ID) ?: "default_device"
         return abs(androidId.hashCode()).toString().take(8)
@@ -56,9 +79,19 @@ object PremiumManager {
         } catch (e: Exception) {
             Log.e("PremiumManager", "EncryptedSharedPreferences Corrupt! Auto-resetting Encrypted file: ${e.message}")
             try {
-                context.deleteSharedPreferences("premium_secure_data")
+                clearCorruptSecurePrefs(context)
             } catch (_: Exception) {}
             null
+        }
+    }
+
+    /** Preserve the existing corruption recovery on API 23, where deleteSharedPreferences is absent. */
+    private fun clearCorruptSecurePrefs(context: Context) {
+        if (android.os.Build.VERSION.SDK_INT >= 24) {
+            context.deleteSharedPreferences("premium_secure_data")
+        } else {
+            context.getSharedPreferences("premium_secure_data", Context.MODE_PRIVATE)
+                .edit().clear().commit()
         }
     }
 
@@ -194,6 +227,7 @@ object PremiumManager {
                 val connection = url.openConnection() as HttpURLConnection
                 connection.requestMethod = "GET"
                 connection.connectTimeout = 5000 
+                connection.readTimeout = 10000
 
                 if (connection.responseCode == HttpURLConnection.HTTP_OK) {
                     val response = connection.inputStream.bufferedReader().use { it.readText() }
@@ -226,6 +260,8 @@ object PremiumManager {
                     } else {
                         Handler(Looper.getMainLooper()).post { onResult(false, "Device belum terdaftar.") }
                     }
+                } else {
+                    Handler(Looper.getMainLooper()).post { onResult(false, "Server aktivasi belum dapat dihubungi.") }
                 }
             } catch (e: Exception) {
                 Handler(Looper.getMainLooper()).post { onResult(false, "Kesalahan Jaringan") }
@@ -234,6 +270,10 @@ object PremiumManager {
     }
 
     fun activatePromoWithCode(context: Context, code: String, deviceId: String, onResult: (Boolean, String) -> Unit) {
+        activatePromoWithCode(context, code, deviceId, true, onResult)
+    }
+
+    fun activatePromoWithCode(context: Context, code: String, deviceId: String, restartOnSuccess: Boolean, onResult: (Boolean, String) -> Unit) {
         val inputCode = code.trim().uppercase()
         if (inputCode.isEmpty()) {
             onResult(false, "Kode Promo kosong!")
@@ -333,10 +373,12 @@ object PremiumManager {
                     lastCheckTime = serverTime
                     
                     Handler(Looper.getMainLooper()).post { 
-                        Toast.makeText(context, "Selamat! Promo Berhasil Diklaim.", Toast.LENGTH_LONG).show()
-                        val intent = context.packageManager.getLaunchIntentForPackage(context.packageName)
-                        context.startActivity(Intent.makeRestartActivityTask(intent?.component))
-                        Runtime.getRuntime().exit(0)
+                        if (restartOnSuccess) {
+                            Toast.makeText(context, "Selamat! Promo Berhasil Diklaim.", Toast.LENGTH_LONG).show()
+                            val intent = context.packageManager.getLaunchIntentForPackage(context.packageName)
+                            context.startActivity(Intent.makeRestartActivityTask(intent?.component))
+                            Runtime.getRuntime().exit(0)
+                        } else onResult(true, "Promo berhasil diklaim.")
                     }
                 } else {
                     Handler(Looper.getMainLooper()).post { onResult(false, "Gagal Sinkronisasi User (Error $finalUserRes)") }
@@ -383,6 +425,7 @@ object PremiumManager {
 
         if (isPrem) {
             if (System.currentTimeMillis() > expDate) {
+                rememberExpiredSubscription(context, expDate)
                 deactivatePremium(context) 
                 return false
             }
@@ -439,6 +482,7 @@ object PremiumManager {
                        
                         if (isBanned || isExpired) {
                             if (wasPremium) {
+                                if (isExpired) rememberExpiredSubscription(context, dbExpired)
                                 deactivatePremium(context) 
                                 Handler(Looper.getMainLooper()).post {
                                     val pesan = if (isBanned) "⛔ AKSES DICABUT ADMIN!" else "⚠️ Masa Aktif Habis."

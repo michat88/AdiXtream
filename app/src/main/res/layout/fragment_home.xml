@@ -226,6 +226,12 @@
         tools:listitem="@layout/homepage_parent"
         tools:visibility="gone" />
 
+    <TextClock
+            android:id="@+id/home_clock"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:visibility="gone" />
+
     <com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
         android:id="@+id/home_api_fab"
         style="@style/ExtendedFloatingActionButton"
@@ -249,6 +255,13 @@
 
     <ImageView
         android:id="@+id/home_random_button_tv"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:visibility="gone" />
+
+    <!-- Placeholder for TV layout settings button - always hidden on phone -->
+    <ImageView
+        android:id="@+id/home_preview_settings_button"
         android:layout_width="0dp"
         android:layout_height="0dp"
         android:visibility="gone" />

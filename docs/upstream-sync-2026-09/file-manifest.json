@@ -1,0 +1,4337 @@
+[
+  {
+    "path": ".github/workflows/validate_migration.yml",
+    "classification": "added",
+    "current_blob": "8b87851f619699c80d28842ee0c94619e5aa3881",
+    "note": "AdiXtream integration, compatibility/security tests or prerequisite from earlier upstream."
+  },
+  {
+    "path": ".gitleaks.toml",
+    "classification": "added",
+    "current_blob": "5b0a5ac55be12b0e60f4155851ee5ed87d0aeaeb",
+    "note": "AdiXtream integration, compatibility/security tests or prerequisite from earlier upstream."
+  },
+  {
+    "path": "app/src/androidTest/java/com/lagradost/cloudstream3/SettingsMigrationSmokeTest.kt",
+    "classification": "added",
+    "current_blob": "44370cdff97178a9d2c932fa1e3d4223325ae70b",
+    "note": "AdiXtream integration, compatibility/security tests or prerequisite from earlier upstream."
+  },
+  {
+    "path": "app/src/main/java/com/lagradost/cloudstream3/MainActivityScreen.kt",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "28553b3200ef8e928212237729ede36f76ed9cee"
+    ],
+    "current_blob": "28553b3200ef8e928212237729ede36f76ed9cee",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "app/src/main/java/com/lagradost/cloudstream3/plugins/InternalRepositoryPolicy.kt",
+    "classification": "added",
+    "current_blob": "c477d1354caba49740382367c7c64f2d61515247",
+    "note": "AdiXtream integration, compatibility/security tests or prerequisite from earlier upstream."
+  },
+  {
+    "path": "app/src/main/java/com/lagradost/cloudstream3/receivers/PackageInstallerStatusReceiver.kt",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "1739b81478ae97fead1349dd49a0c42b89d6e901"
+    ],
+    "current_blob": "1739b81478ae97fead1349dd49a0c42b89d6e901",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "app/src/main/java/com/lagradost/cloudstream3/ui/settings/AdiXtreamSettingsMigration.kt",
+    "classification": "added",
+    "current_blob": "5b03bb0b8f09323bdeab04a1a9d8083c3acb2d00",
+    "note": "AdiXtream integration, compatibility/security tests or prerequisite from earlier upstream."
+  },
+  {
+    "path": "app/src/main/java/com/lagradost/cloudstream3/ui/settings/AdiXtreamUpdatePolicy.kt",
+    "classification": "added",
+    "current_blob": "1707c26a686ac9141c440c68bcd407273c0e924e",
+    "note": "AdiXtream integration, compatibility/security tests or prerequisite from earlier upstream."
+  },
+  {
+    "path": "app/src/main/java/com/lagradost/cloudstream3/ui/settings/ApkUpdater.kt",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "08e279b49a0aab9380d740914f863caf3b197a88"
+    ],
+    "current_blob": "f15489111cea05282ae8ce455fc90f42c72ac332",
+    "note": "New upstream file adapted for AdiXtream."
+  },
+  {
+    "path": "app/src/main/java/com/lagradost/cloudstream3/ui/settings/GithubReleases.kt",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "94e0ebf4a609ad14b0cade178a47c9f2eb327964"
+    ],
+    "current_blob": "291173c6cd3a9110d5eda8320a9ce9006c2f5135",
+    "note": "New upstream file adapted for AdiXtream."
+  },
+  {
+    "path": "app/src/main/java/com/lagradost/cloudstream3/ui/settings/GithubViewModel.kt",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "99236ab717381920883c8adec9b6bfc30cf1b946"
+    ],
+    "current_blob": "ad0dbf71dd9bc856aa7f41a5b9921d665b2ac745",
+    "note": "New upstream file adapted for AdiXtream."
+  },
+  {
+    "path": "app/src/main/java/com/lagradost/cloudstream3/ui/settings/SettingsAccount2.kt",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "0185370ce16a1bc57ec737d7bbcc9d1ee2408c38"
+    ],
+    "current_blob": "0185370ce16a1bc57ec737d7bbcc9d1ee2408c38",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "app/src/main/java/com/lagradost/cloudstream3/ui/settings/SettingsAccountScreen.kt",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "97890bbfa183f8076fed1249624f94fe8ef5d2cc"
+    ],
+    "current_blob": "97890bbfa183f8076fed1249624f94fe8ef5d2cc",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "app/src/main/java/com/lagradost/cloudstream3/ui/settings/SettingsFragment2.kt",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "24867b898fe476687239dfde2dc6bfab786cdfe6"
+    ],
+    "current_blob": "24867b898fe476687239dfde2dc6bfab786cdfe6",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "app/src/main/java/com/lagradost/cloudstream3/ui/settings/SettingsFragmentScreen.kt",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "c906b0982799159613679bc1f5525e1415482dc2"
+    ],
+    "current_blob": "89281f16ac14f6547282a7dbe2abfe45d35c0630",
+    "note": "New upstream file adapted for AdiXtream."
+  },
+  {
+    "path": "app/src/main/java/com/lagradost/cloudstream3/ui/settings/SettingsGeneral2.kt",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "37b1812b9c81b43ce2a4cbbe1da4741ed52da9b7"
+    ],
+    "current_blob": "37b1812b9c81b43ce2a4cbbe1da4741ed52da9b7",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "app/src/main/java/com/lagradost/cloudstream3/ui/settings/SettingsGeneralScreen.kt",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "4c4bff7aef1e1461ed7fe8d97f0c9c4600f497bd"
+    ],
+    "current_blob": "f59beacac7733fc79d5860263983fdc7b0ea5c64",
+    "note": "New upstream file adapted for AdiXtream."
+  },
+  {
+    "path": "app/src/main/java/com/lagradost/cloudstream3/ui/settings/SettingsPlayer2.kt",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "3c6a272d7e221314f37f01e83b7b4447088ca798"
+    ],
+    "current_blob": "3c6a272d7e221314f37f01e83b7b4447088ca798",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "app/src/main/java/com/lagradost/cloudstream3/ui/settings/SettingsPlayerScreen.kt",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "176eb1202e525d546c4e6126da10192b07140e67"
+    ],
+    "current_blob": "176eb1202e525d546c4e6126da10192b07140e67",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "app/src/main/java/com/lagradost/cloudstream3/ui/settings/SettingsProviders2.kt",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "a0faeca9390e0c2074c8a4db747488cbe99cd1e1"
+    ],
+    "current_blob": "a0faeca9390e0c2074c8a4db747488cbe99cd1e1",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "app/src/main/java/com/lagradost/cloudstream3/ui/settings/SettingsProvidersScreen.kt",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "4186994c78004612b6a4840d662215d4e3cc4809"
+    ],
+    "current_blob": "4186994c78004612b6a4840d662215d4e3cc4809",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "app/src/main/java/com/lagradost/cloudstream3/ui/settings/SettingsSubscription.kt",
+    "classification": "added",
+    "current_blob": "361c33d6d78f76f70d1cbe528148bbe983266ee9",
+    "note": "AdiXtream integration, compatibility/security tests or prerequisite from earlier upstream."
+  },
+  {
+    "path": "app/src/main/java/com/lagradost/cloudstream3/ui/settings/SettingsSubscriptionScreen.kt",
+    "classification": "added",
+    "current_blob": "9e0106a2c9705118d06f6354b5534dc0994d32ea",
+    "note": "AdiXtream integration, compatibility/security tests or prerequisite from earlier upstream."
+  },
+  {
+    "path": "app/src/main/java/com/lagradost/cloudstream3/ui/settings/SettingsUI2.kt",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "86f3371fa49cedd10a1335889e2239ebaa07c255"
+    ],
+    "current_blob": "86f3371fa49cedd10a1335889e2239ebaa07c255",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "app/src/main/java/com/lagradost/cloudstream3/ui/settings/SettingsUIScreen.kt",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "1092a9be604cd6af861771b596169f801359d0b8"
+    ],
+    "current_blob": "1092a9be604cd6af861771b596169f801359d0b8",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "app/src/main/java/com/lagradost/cloudstream3/ui/settings/SettingsUpdates2.kt",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "50070a38438d50b3cd848b13d1085690e467fde5"
+    ],
+    "current_blob": "50070a38438d50b3cd848b13d1085690e467fde5",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "app/src/main/java/com/lagradost/cloudstream3/ui/settings/SettingsUpdatesScreen.kt",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "091a645d6d1d80d690de76fe658de4db6b41cf42"
+    ],
+    "current_blob": "aafedd20b3800a5dcf6c1656dceecf36aedb9917",
+    "note": "New upstream file adapted for AdiXtream."
+  },
+  {
+    "path": "app/src/main/java/com/lagradost/cloudstream3/ui/settings/SubscriptionViewModel.kt",
+    "classification": "added",
+    "current_blob": "0ceb8936e5190b40dcadf3deb5d798ab29ce83e8",
+    "note": "AdiXtream integration, compatibility/security tests or prerequisite from earlier upstream."
+  },
+  {
+    "path": "app/src/main/java/com/lagradost/cloudstream3/ui/settings/logcat/LogcatDialog.kt",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "7d5ce2313abbd6bbcf4eeefd147d4f6cd6af446b"
+    ],
+    "current_blob": "7d5ce2313abbd6bbcf4eeefd147d4f6cd6af446b",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "app/src/main/java/com/lagradost/cloudstream3/ui/settings/logcat/LogcatParser.kt",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "df1dc70777c4d1d998608fe4487afdaac0383452"
+    ],
+    "current_blob": "df1dc70777c4d1d998608fe4487afdaac0383452",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "app/src/main/java/com/lagradost/cloudstream3/ui/subtitles/ChromecastSubtitlesFragment2.kt",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "a25a8aa886460a2c01e675ca8ab30d527b5d0dbe"
+    ],
+    "current_blob": "a25a8aa886460a2c01e675ca8ab30d527b5d0dbe",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "app/src/main/java/com/lagradost/cloudstream3/ui/subtitles/ChromecastSubtitlesScreen.kt",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "63c3209b6263a1194442af3f3032a8b7575d4683"
+    ],
+    "current_blob": "63c3209b6263a1194442af3f3032a8b7575d4683",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "app/src/main/java/com/lagradost/cloudstream3/ui/subtitles/SubtitlesFragment2.kt",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "b9fd405567e485aa5b9f21a05dc1305f26de9ce9"
+    ],
+    "current_blob": "b9fd405567e485aa5b9f21a05dc1305f26de9ce9",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "app/src/main/java/com/lagradost/cloudstream3/ui/subtitles/SubtitlesScreen.kt",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "cba651c7631886d67e1b69816f7c853118941330"
+    ],
+    "current_blob": "cba651c7631886d67e1b69816f7c853118941330",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "app/src/main/java/com/lagradost/cloudstream3/utils/BaseComposeFragment.kt",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "b11b037546d4fa896ebba03ff3a56ae7de0f2399"
+    ],
+    "current_blob": "b11b037546d4fa896ebba03ff3a56ae7de0f2399",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "app/src/main/res/color/account_edit_btn_tint.xml",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "7205c77fc86a5b1da9aef64de01e6aca183330f4"
+    ],
+    "current_blob": "7205c77fc86a5b1da9aef64de01e6aca183330f4",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "app/src/main/res/drawable/animeskip.xml",
+    "classification": "added",
+    "current_blob": "8f1bb3105ed402ec324697d91ee94b59db226eff",
+    "note": "AdiXtream integration, compatibility/security tests or prerequisite from earlier upstream."
+  },
+  {
+    "path": "app/src/main/res/drawable/article_24px.xml",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "5b0f458018fd8374c077ba98edc64c5ab5fd9c9c"
+    ],
+    "current_blob": "5b0f458018fd8374c077ba98edc64c5ab5fd9c9c",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "app/src/main/res/drawable/aspect_ratio_24px.xml",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "429ed723741462a7ffb412b345dffef26eafc7cc"
+    ],
+    "current_blob": "429ed723741462a7ffb412b345dffef26eafc7cc",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "app/src/main/res/drawable/audio_capture_24px.xml",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "a9ed40e02d0b2141f03ef894dd8714c1b81adc1e"
+    ],
+    "current_blob": "a9ed40e02d0b2141f03ef894dd8714c1b81adc1e",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "app/src/main/res/drawable/autorenew_24px.xml",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "4ac69c08f8b890d1e2262e7a36699c192d5eae5c"
+    ],
+    "current_blob": "4ac69c08f8b890d1e2262e7a36699c192d5eae5c",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "app/src/main/res/drawable/battery_alert_24px.xml",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "3675de44d071854f3d85fe52c6c8953ffc20aab4"
+    ],
+    "current_blob": "3675de44d071854f3d85fe52c6c8953ffc20aab4",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "app/src/main/res/drawable/border_color_24px.xml",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "f4a5bbf3b0d35407f33e2e51b39d89abdeaa3a67"
+    ],
+    "current_blob": "f4a5bbf3b0d35407f33e2e51b39d89abdeaa3a67",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "app/src/main/res/drawable/build_24px.xml",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "0616691da2f98f117959285a735a1f66506ee17c"
+    ],
+    "current_blob": "0616691da2f98f117959285a735a1f66506ee17c",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "app/src/main/res/drawable/cast.xml",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "7600cb70692199e56a08f1e18ca9316785207d06"
+    ],
+    "current_blob": "7600cb70692199e56a08f1e18ca9316785207d06",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "app/src/main/res/drawable/close_24px.xml",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "77be1d01e217444b8994d9df4aa27f42a604ab56"
+    ],
+    "current_blob": "77be1d01e217444b8994d9df4aa27f42a604ab56",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "app/src/main/res/drawable/closed_caption_24px.xml",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "793e1e0611a0f3c0aecf222663bf27ac3d518da6"
+    ],
+    "current_blob": "793e1e0611a0f3c0aecf222663bf27ac3d518da6",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "app/src/main/res/drawable/colors_24px.xml",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "d86304cf993a36fe45ae6417206482c3c328dbce"
+    ],
+    "current_blob": "d86304cf993a36fe45ae6417206482c3c328dbce",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "app/src/main/res/drawable/construction_24px.xml",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "00c976c90464d72dc974e2d4384b5712f35c117d"
+    ],
+    "current_blob": "00c976c90464d72dc974e2d4384b5712f35c117d",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "app/src/main/res/drawable/copy_all_24px.xml",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "8e4db679baa2b45b81b6ae4671e6d88cb1599ed6"
+    ],
+    "current_blob": "8e4db679baa2b45b81b6ae4671e6d88cb1599ed6",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "app/src/main/res/drawable/delete_24px.xml",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "237e75aa6fde1cb701d1e58013920096131f0f8d"
+    ],
+    "current_blob": "237e75aa6fde1cb701d1e58013920096131f0f8d",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "app/src/main/res/drawable/description_24px.xml",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "f55b9ad85e0b9e81dcd0ec7d6d3ebb4c2f43e4ad"
+    ],
+    "current_blob": "f55b9ad85e0b9e81dcd0ec7d6d3ebb4c2f43e4ad",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "app/src/main/res/drawable/dns_24px.xml",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "2f9b4c8bf7d1a559621b8f1aba345ffea6164f96"
+    ],
+    "current_blob": "2f9b4c8bf7d1a559621b8f1aba345ffea6164f96",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "app/src/main/res/drawable/encrypted_24px.xml",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "66231650a01d72aadfe1dcad91dba653ba687df9"
+    ],
+    "current_blob": "66231650a01d72aadfe1dcad91dba653ba687df9",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "app/src/main/res/drawable/extension_24px.xml",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "ce2cfc2601907fb889a482c2343176e43ef9ca89"
+    ],
+    "current_blob": "ce2cfc2601907fb889a482c2343176e43ef9ca89",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "app/src/main/res/drawable/extention_download.xml",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "97f3dbd6772e62914e52a73b0570b6b47be932d2"
+    ],
+    "current_blob": "97f3dbd6772e62914e52a73b0570b6b47be932d2",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "app/src/main/res/drawable/extention_renew.xml",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "a9e6e07f9c92fa7ae68fc227e4f89495e58da043"
+    ],
+    "current_blob": "a9e6e07f9c92fa7ae68fc227e4f89495e58da043",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "app/src/main/res/drawable/extention_renew2.xml",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "d34e91355fb28244abe2cf5e9071e7696cca3ff3"
+    ],
+    "current_blob": "d34e91355fb28244abe2cf5e9071e7696cca3ff3",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "app/src/main/res/drawable/face_24px.xml",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "152c278e79b1fd224e2489d5b0e8d2fbec941ded"
+    ],
+    "current_blob": "152c278e79b1fd224e2489d5b0e8d2fbec941ded",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "app/src/main/res/drawable/filter_alt_24px.xml",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "0afa9b51dc087397e9ce55883c67d7a10f9e2862"
+    ],
+    "current_blob": "0afa9b51dc087397e9ce55883c67d7a10f9e2862",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "app/src/main/res/drawable/folder_24px.xml",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "a1e978b693f30f2140a553d20753f78c60a2f692"
+    ],
+    "current_blob": "a1e978b693f30f2140a553d20753f78c60a2f692",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "app/src/main/res/drawable/font_download_24px.xml",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "82f04c483d105b26e05ebf501422a9ebb0df875a"
+    ],
+    "current_blob": "82f04c483d105b26e05ebf501422a9ebb0df875a",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "app/src/main/res/drawable/format_align_center_24px.xml",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "8a425daa4f634e3fbcba07972f04b0e796d69063"
+    ],
+    "current_blob": "8a425daa4f634e3fbcba07972f04b0e796d69063",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "app/src/main/res/drawable/format_bold_24px.xml",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "61aa7f5090eaeff2e97c2f129f48d00abce995a7"
+    ],
+    "current_blob": "61aa7f5090eaeff2e97c2f129f48d00abce995a7",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "app/src/main/res/drawable/format_color_fill_24px.xml",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "3dc2047e99d8cd927d0d82119d6c4c5ec643f031"
+    ],
+    "current_blob": "3dc2047e99d8cd927d0d82119d6c4c5ec643f031",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "app/src/main/res/drawable/format_color_text_24px.xml",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "e1d88be3317379c5113c92a3966db09d43a35051"
+    ],
+    "current_blob": "e1d88be3317379c5113c92a3966db09d43a35051",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "app/src/main/res/drawable/format_italic_24px.xml",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "0f69910e85c2530a76a50b1dd9755723c6c42144"
+    ],
+    "current_blob": "0f69910e85c2530a76a50b1dd9755723c6c42144",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "app/src/main/res/drawable/format_paint_24px.xml",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "b27cf246e789c52b2c65a23e34a7e85204e36d67"
+    ],
+    "current_blob": "b27cf246e789c52b2c65a23e34a7e85204e36d67",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "app/src/main/res/drawable/hard_drive_24px.xml",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "45fecb4d2abfba4f272ba0bd72853382f5f5d6f0"
+    ],
+    "current_blob": "45fecb4d2abfba4f272ba0bd72853382f5f5d6f0",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "app/src/main/res/drawable/high_res_24px.xml",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "183f2ae6941ac0c5d93a067d83103b5987447722"
+    ],
+    "current_blob": "183f2ae6941ac0c5d93a067d83103b5987447722",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "app/src/main/res/drawable/history_toggle_off_24px.xml",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "30186016ca7e6c7be7ebafadd2ce1f1c16f696c8"
+    ],
+    "current_blob": "30186016ca7e6c7be7ebafadd2ce1f1c16f696c8",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "app/src/main/res/drawable/ic_baseline_clock_24.xml",
+    "classification": "added",
+    "current_blob": "3436c6208ae0467738c6ae4bfb2b31647a9100e9",
+    "note": "AdiXtream integration, compatibility/security tests or prerequisite from earlier upstream."
+  },
+  {
+    "path": "app/src/main/res/drawable/imagesearch_roller_24px.xml",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "184f6f60a291b4329a7fc13623c3cb5fab4f85ff"
+    ],
+    "current_blob": "184f6f60a291b4329a7fc13623c3cb5fab4f85ff",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "app/src/main/res/drawable/keyboard_arrow_left_24px.xml",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "b4b89a92233df3b7e4128aab86141947bb49ce3d"
+    ],
+    "current_blob": "b4b89a92233df3b7e4128aab86141947bb49ce3d",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "app/src/main/res/drawable/keyboard_double_arrow_right_24px.xml",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "2e564cea409ad29bf6ccf5692033adc946af58ed"
+    ],
+    "current_blob": "2e564cea409ad29bf6ccf5692033adc946af58ed",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "app/src/main/res/drawable/label_24px.xml",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "fb1d1b50603c641d5d092f2e8efde4349b9bd03c"
+    ],
+    "current_blob": "fb1d1b50603c641d5d092f2e8efde4349b9bd03c",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "app/src/main/res/drawable/language_download.xml",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "129dd4eead59c8e0a896de8de16fcb949c1579af"
+    ],
+    "current_blob": "129dd4eead59c8e0a896de8de16fcb949c1579af",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "app/src/main/res/drawable/language_download2.xml",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "30cb8bf13ab91e274b22ab0ed14a30a5335171d9"
+    ],
+    "current_blob": "30cb8bf13ab91e274b22ab0ed14a30a5335171d9",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "app/src/main/res/drawable/language_korean_latin_24px.xml",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "55bf0cf216588f3371995501b886f53c099c1609"
+    ],
+    "current_blob": "55bf0cf216588f3371995501b886f53c099c1609",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "app/src/main/res/drawable/light_mode_24px.xml",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "8d278ec46dda15f4508211f9344e0506754d3489"
+    ],
+    "current_blob": "8d278ec46dda15f4508211f9344e0506754d3489",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "app/src/main/res/drawable/lock_icon_bg.xml",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "7d5a233e77e86e7360401771f4d9f22a8596371e"
+    ],
+    "current_blob": "7d5a233e77e86e7360401771f4d9f22a8596371e",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "app/src/main/res/drawable/match_word_24px.xml",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "d2a7334f8371c3e96ec75510a5741568b4088ce7"
+    ],
+    "current_blob": "d2a7334f8371c3e96ec75510a5741568b4088ce7",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "app/src/main/res/drawable/memory_24px.xml",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "7e4dd5e9b536ae298004feefacb797bc23981264"
+    ],
+    "current_blob": "7e4dd5e9b536ae298004feefacb797bc23981264",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "app/src/main/res/drawable/memory_alt_24px.xml",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "21807a9e9fcb91271026d4487b73bfa39f162236"
+    ],
+    "current_blob": "21807a9e9fcb91271026d4487b73bfa39f162236",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "app/src/main/res/drawable/mobile_arrow_down_24px.xml",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "caab6850ec531e8b9a6dda16f17993e9704d9d1c"
+    ],
+    "current_blob": "caab6850ec531e8b9a6dda16f17993e9704d9d1c",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "app/src/main/res/drawable/mobile_code_24px.xml",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "9b78af09412411075e9cf105eedad2ea275ce433"
+    ],
+    "current_blob": "9b78af09412411075e9cf105eedad2ea275ce433",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "app/src/main/res/drawable/mobile_wrench_24px.xml",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "5cc975528de652323779f6800b0f2f19b07b30f0"
+    ],
+    "current_blob": "5cc975528de652323779f6800b0f2f19b07b30f0",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "app/src/main/res/drawable/movie_edit_24px.xml",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "41df964e657b18379a95156192d5d9c50b511cbf"
+    ],
+    "current_blob": "41df964e657b18379a95156192d5d9c50b511cbf",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "app/src/main/res/drawable/movie_info_24px.xml",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "7d7dfe9e9084cda5682c35176bb9bef6e9d57e13"
+    ],
+    "current_blob": "7d7dfe9e9084cda5682c35176bb9bef6e9d57e13",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "app/src/main/res/drawable/notifications_active_24px.xml",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "b3982c522eed177ecaccac506102c0c017ec7099"
+    ],
+    "current_blob": "b3982c522eed177ecaccac506102c0c017ec7099",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "app/src/main/res/drawable/oval_stroke_focus.xml",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "a2af717f1bba69e286f14209b871a77feefec5b5"
+    ],
+    "current_blob": "a2af717f1bba69e286f14209b871a77feefec5b5",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "app/src/main/res/drawable/palette_24px.xml",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "f701027ccf9ef1feed9852bb9300e3c053aa2b0f"
+    ],
+    "current_blob": "f701027ccf9ef1feed9852bb9300e3c053aa2b0f",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "app/src/main/res/drawable/pause_24px.xml",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "e8de0339cef029c5661d7eea2d253a9252ffa686"
+    ],
+    "current_blob": "e8de0339cef029c5661d7eea2d253a9252ffa686",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "app/src/main/res/drawable/picture_in_picture_center_24px.xml",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "60d7e133ba28e422699feb7a155df061a00d2a69"
+    ],
+    "current_blob": "60d7e133ba28e422699feb7a155df061a00d2a69",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "app/src/main/res/drawable/pip_24px.xml",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "5fba5b85e353c960b6d6e242ef2d1562f8c540cf"
+    ],
+    "current_blob": "5fba5b85e353c960b6d6e242ef2d1562f8c540cf",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "app/src/main/res/drawable/play_arrow_24px.xml",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "b7b67fccce55578d2bc6d7b84b6ae8a47eb60753"
+    ],
+    "current_blob": "b7b67fccce55578d2bc6d7b84b6ae8a47eb60753",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "app/src/main/res/drawable/plugin_lang.xml",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "ac33489ac11c41c22884c32713531f1ebd33cd56"
+    ],
+    "current_blob": "ac33489ac11c41c22884c32713531f1ebd33cd56",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "app/src/main/res/drawable/reset_colors_24px.xml",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "6cfa81413f980b53107dadd40b218f4ef88bf925"
+    ],
+    "current_blob": "6cfa81413f980b53107dadd40b218f4ef88bf925",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "app/src/main/res/drawable/responsive_layout_24px.xml",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "4d3ea085f26911070a1ae2bdcdde49e644a355d5"
+    ],
+    "current_blob": "4d3ea085f26911070a1ae2bdcdde49e644a355d5",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "app/src/main/res/drawable/restore_page_24px.xml",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "65a7d274f9e5bcff6f6b306f0919696000535ee9"
+    ],
+    "current_blob": "65a7d274f9e5bcff6f6b306f0919696000535ee9",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "app/src/main/res/drawable/rounded_corner_24px.xml",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "6d3180c428764bc10ee19e0c0ec823ca5aca7f55"
+    ],
+    "current_blob": "6d3180c428764bc10ee19e0c0ec823ca5aca7f55",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "app/src/main/res/drawable/save_as_24px.xml",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "0c3c0141419dd94c737ade6e3e59f066bbbb0f50"
+    ],
+    "current_blob": "0c3c0141419dd94c737ade6e3e59f066bbbb0f50",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "app/src/main/res/drawable/save_clock_24px.xml",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "c86924cc1e74bcb7eb610d84c3afbd9d13a3a68c"
+    ],
+    "current_blob": "c86924cc1e74bcb7eb610d84c3afbd9d13a3a68c",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "app/src/main/res/drawable/screen_rotation_alt_24px.xml",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "a1d01a5c6935f6a5fca99f53e736813c94871a48"
+    ],
+    "current_blob": "a1d01a5c6935f6a5fca99f53e736813c94871a48",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "app/src/main/res/drawable/shadow_24px.xml",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "09bf8d62e20cdc6e1d460a01f1f5e0545433cc37"
+    ],
+    "current_blob": "09bf8d62e20cdc6e1d460a01f1f5e0545433cc37",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "app/src/main/res/drawable/shadow_add_24px.xml",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "9ff30d54c8cd0bdcdb8006be8a796b8d74c35667"
+    ],
+    "current_blob": "9ff30d54c8cd0bdcdb8006be8a796b8d74c35667",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "app/src/main/res/drawable/shuffle_24px.xml",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "d25985f8bc552c518a7d9aba855d62d4c020e8da"
+    ],
+    "current_blob": "d25985f8bc552c518a7d9aba855d62d4c020e8da",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "app/src/main/res/drawable/skip_next_24px.xml",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "3beb9c7604ecc70bea28ed66d4fd340f599d3007"
+    ],
+    "current_blob": "3beb9c7604ecc70bea28ed66d4fd340f599d3007",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "app/src/main/res/drawable/subtitles_gear_24px.xml",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "d84e9f883ab618796e4497e75731e94abe78147e"
+    ],
+    "current_blob": "d84e9f883ab618796e4497e75731e94abe78147e",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "app/src/main/res/drawable/swipe_24px.xml",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "9b2183713c3e5eedf991400315a68e292949c561"
+    ],
+    "current_blob": "9b2183713c3e5eedf991400315a68e292949c561",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "app/src/main/res/drawable/swipe_vertical_24px.xml",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "48048f3341e4dcd80815f04198e2ec8ae0504d05"
+    ],
+    "current_blob": "48048f3341e4dcd80815f04198e2ec8ae0504d05",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "app/src/main/res/drawable/text_ad_off_24px.xml",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "2a108446b05a2aa799b26f2dde5e0b4a057a4f59"
+    ],
+    "current_blob": "2a108446b05a2aa799b26f2dde5e0b4a057a4f59",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "app/src/main/res/drawable/text_fields_24px.xml",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "49153d403fa4731d3f4152ce054c9919657028f7"
+    ],
+    "current_blob": "49153d403fa4731d3f4152ce054c9919657028f7",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "app/src/main/res/drawable/text_select_move_up_24px.xml",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "7311798a9ea2dc9d1f6fae6887f67340e48ba565"
+    ],
+    "current_blob": "7311798a9ea2dc9d1f6fae6887f67340e48ba565",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "app/src/main/res/drawable/tooltip_24px.xml",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "5770d07b46b4b37636c7cb0ee6cc51cadabd2fa3"
+    ],
+    "current_blob": "5770d07b46b4b37636c7cb0ee6cc51cadabd2fa3",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "app/src/main/res/drawable/touch_double_24px.xml",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "f008bd3747431e6a25fd044e81929d642944049a"
+    ],
+    "current_blob": "f008bd3747431e6a25fd044e81929d642944049a",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "app/src/main/res/drawable/undo_24px.xml",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "89a3f5b801d1041953e35ebfb0cd0fdf28e096e9"
+    ],
+    "current_blob": "89a3f5b801d1041953e35ebfb0cd0fdf28e096e9",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "app/src/main/res/drawable/uppercase_24px.xml",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "68b9166ae87487eb984e78fa10cc3719f7aebe9e"
+    ],
+    "current_blob": "68b9166ae87487eb984e78fa10cc3719f7aebe9e",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "app/src/main/res/drawable/visibility_off_24px.xml",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "50ba19a57a1f2ea9120c29d01ea3d033a44f8a32"
+    ],
+    "current_blob": "50ba19a57a1f2ea9120c29d01ea3d033a44f8a32",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "app/src/main/res/drawable/wifi_proxy_24px.xml",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "92798c29c132e055508683edb66831f61918b895"
+    ],
+    "current_blob": "92798c29c132e055508683edb66831f61918b895",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "app/src/main/res/values-v31/styles.xml",
+    "classification": "added",
+    "current_blob": "08a1cd78e13515ee5012be789da7851c34b89dbd",
+    "note": "AdiXtream integration, compatibility/security tests or prerequisite from earlier upstream."
+  },
+  {
+    "path": "app/src/main/res/values/adixtream-settings.xml",
+    "classification": "added",
+    "current_blob": "ec32a260ffe983d428ee6eac26012dd038bf23e7",
+    "note": "AdiXtream integration, compatibility/security tests or prerequisite from earlier upstream."
+  },
+  {
+    "path": "app/src/test/java/com/lagradost/cloudstream3/plugins/InternalRepositoryPolicyTest.kt",
+    "classification": "added",
+    "current_blob": "8fb1cae947a2fa1718f5d87a418c4ae098443309",
+    "note": "AdiXtream integration, compatibility/security tests or prerequisite from earlier upstream."
+  },
+  {
+    "path": "app/src/test/java/com/lagradost/cloudstream3/ui/settings/AdiXtreamUpdatePolicyTest.kt",
+    "classification": "added",
+    "current_blob": "c40bd2e09f6c33b39effa52d3e4425970d0adf8f",
+    "note": "AdiXtream integration, compatibility/security tests or prerequisite from earlier upstream."
+  },
+  {
+    "path": "app/src/test/java/com/lagradost/cloudstream3/ui/settings/SubscriptionViewModelTest.kt",
+    "classification": "added",
+    "current_blob": "4e593e1e9b1e768972f94bfc5e0a53f3db7a916f",
+    "note": "AdiXtream integration, compatibility/security tests or prerequisite from earlier upstream."
+  },
+  {
+    "path": "desktopApp/build.gradle.kts",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "539c51d36f5bf59cd5fc12b77782ca6cdc9dcf2f"
+    ],
+    "current_blob": "edaf407b41a781d773eb7604792f7aa8644b2c35",
+    "note": "New upstream file adapted for AdiXtream."
+  },
+  {
+    "path": "desktopApp/src/desktop-icons/icon-linux.png",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "394459001fdb5237f04624560e66550660044d05"
+    ],
+    "current_blob": "af2a3f714cbe188f10426d467deb687df7ff67ac",
+    "note": "New upstream file adapted for AdiXtream."
+  },
+  {
+    "path": "desktopApp/src/desktop-icons/icon-windows.ico",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "defddc2e91042372ffb31d5826e7f1433448b41a"
+    ],
+    "current_blob": "d3b626c5ba31a45bff06d3c392c535013483cab9",
+    "note": "New upstream file adapted for AdiXtream."
+  },
+  {
+    "path": "desktopApp/src/jvmMain/kotlin/com/lagradost/cloudstream4/Main.kt",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "4ff13fe801cd17a7bcc18b8b183649c6f77602f7"
+    ],
+    "current_blob": "4ff13fe801cd17a7bcc18b8b183649c6f77602f7",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "desktopApp/src/readme.md",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "0bebb86381d1903877c4cb067e7cf71f812087b1"
+    ],
+    "current_blob": "0bebb86381d1903877c4cb067e7cf71f812087b1",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/Hexload.kt",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "15ed8df6e497beabcf259ed5689c891a72b96fa0"
+    ],
+    "current_blob": "15ed8df6e497beabcf259ed5689c891a72b96fa0",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/HubuCloud.kt",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "85151b1d70884c5115298c9d6f590e5ca9090cdc"
+    ],
+    "current_blob": "85151b1d70884c5115298c9d6f590e5ca9090cdc",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "library/src/jvmTest/kotlin/com/lagradost/cloudstream3/utils/M3u8HelperTest.kt",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "b58f90d4e3c9a3f67872eb75ba0d5244e3d564a0"
+    ],
+    "current_blob": "b58f90d4e3c9a3f67872eb75ba0d5244e3d564a0",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "shared/build.gradle.kts",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "6bca3488e24b6e36dfd4f6a66e9e06a072a7676d"
+    ],
+    "current_blob": "6bca3488e24b6e36dfd4f6a66e9e06a072a7676d",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "shared/readme.md",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "084244cf3c10058c618ca54d42bb7b4ba8f8a0d0"
+    ],
+    "current_blob": "084244cf3c10058c618ca54d42bb7b4ba8f8a0d0",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "shared/src/androidMain/kotlin/com/lagradost/cloudstream4/DevicePreferenceStore.android.kt",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "04ba9dd36798eaa84fbaee3780cd3d00dd7565d5"
+    ],
+    "current_blob": "04ba9dd36798eaa84fbaee3780cd3d00dd7565d5",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "shared/src/androidMain/kotlin/com/lagradost/cloudstream4/compose/ComposeFragment.kt",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "9a91e3e168833f0d94a8f2724e4b45b0c751c085"
+    ],
+    "current_blob": "9a91e3e168833f0d94a8f2724e4b45b0c751c085",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "shared/src/androidMain/kotlin/com/lagradost/cloudstream4/compose/Layout.kt",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "96838ae5ed938a1275def5b3907791daffdb91ce"
+    ],
+    "current_blob": "96838ae5ed938a1275def5b3907791daffdb91ce",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "shared/src/androidMain/kotlin/com/lagradost/cloudstream4/theme/ColorPreference.kt",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "17d715372b71e5284f50031e7f70b4a52bfa68b5"
+    ],
+    "current_blob": "17d715372b71e5284f50031e7f70b4a52bfa68b5",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "shared/src/androidMain/kotlin/com/lagradost/cloudstream4/theme/DeviceTheme.android.kt",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "73b188c25c7d1745c59c856eba04958669bf5bff"
+    ],
+    "current_blob": "73b188c25c7d1745c59c856eba04958669bf5bff",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "shared/src/androidMain/kotlin/com/mihon/common/preference/AndroidPreference.kt",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "b766dd4b3aaa27ec16ef58cabf79fc864401fe59"
+    ],
+    "current_blob": "b766dd4b3aaa27ec16ef58cabf79fc864401fe59",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "shared/src/androidMain/kotlin/com/mihon/common/preference/AndroidPreferenceStore.kt",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "192bc77edf7dd5e64b911ff48d6e2f4ceb40d98f"
+    ],
+    "current_blob": "192bc77edf7dd5e64b911ff48d6e2f4ceb40d98f",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "shared/src/androidMain/kotlin/com/mihon/common/preference/DataPreference.kt",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "dcf4eedfa811a1ebdc9bb33524874628d6bcc462"
+    ],
+    "current_blob": "dcf4eedfa811a1ebdc9bb33524874628d6bcc462",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "shared/src/androidMain/kotlin/com/mihon/common/preference/DataPreferenceStore.kt",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "4f197768da54ac5a558ab22c23a7146b537ae504"
+    ],
+    "current_blob": "4f197768da54ac5a558ab22c23a7146b537ae504",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "shared/src/androidMain/kotlin/com/mihon/common/preference/StatePreferenceStore.kt",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "f6346427a686da3d00f2c0c948d4d861cf33afa7"
+    ],
+    "current_blob": "f6346427a686da3d00f2c0c948d4d861cf33afa7",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "shared/src/commonMain/composeResources/drawable/arrow_back.xml",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "196b4c087f9098431fc01099e6e57c6841b7bece"
+    ],
+    "current_blob": "196b4c087f9098431fc01099e6e57c6841b7bece",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "shared/src/commonMain/composeResources/drawable/arrow_downward.xml",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "061a6db1b60ca4aa305dfa5be0f37366baea10ba"
+    ],
+    "current_blob": "061a6db1b60ca4aa305dfa5be0f37366baea10ba",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "shared/src/commonMain/composeResources/drawable/arrow_upward.xml",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "fbf89a7967cc2743797698d2fa921cd7ab942ed3"
+    ],
+    "current_blob": "fbf89a7967cc2743797698d2fa921cd7ab942ed3",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "shared/src/commonMain/composeResources/drawable/cancel.xml",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "57098699003be65ec518f35a6f7262de9fbdd583"
+    ],
+    "current_blob": "57098699003be65ec518f35a6f7262de9fbdd583",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "shared/src/commonMain/composeResources/drawable/check.xml",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "6976b0df21f530a28e76a29ebb14a5cc9c7dc2aa"
+    ],
+    "current_blob": "6976b0df21f530a28e76a29ebb14a5cc9c7dc2aa",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "shared/src/commonMain/composeResources/drawable/close.xml",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "14beedf9b5260c6c3ee2f1feb8629220dbabb158"
+    ],
+    "current_blob": "14beedf9b5260c6c3ee2f1feb8629220dbabb158",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "shared/src/commonMain/composeResources/drawable/default_icon.png",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "394459001fdb5237f04624560e66550660044d05"
+    ],
+    "current_blob": "af2a3f714cbe188f10426d467deb687df7ff67ac",
+    "note": "New upstream file adapted for AdiXtream."
+  },
+  {
+    "path": "shared/src/commonMain/composeResources/drawable/error.xml",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "b77c10cfa0771b92c7d7a338a65d21db2106b072"
+    ],
+    "current_blob": "b77c10cfa0771b92c7d7a338a65d21db2106b072",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "shared/src/commonMain/composeResources/drawable/info.xml",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "32d30b88aa99dc231c92ab2c41f1c8784347607d"
+    ],
+    "current_blob": "32d30b88aa99dc231c92ab2c41f1c8784347607d",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "shared/src/commonMain/composeResources/drawable/preview.xml",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "d56fbde6e85f8b422762e9a27b3b7d24d62367ba"
+    ],
+    "current_blob": "d56fbde6e85f8b422762e9a27b3b7d24d62367ba",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "shared/src/commonMain/composeResources/font/productsans_black.ttf",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "5864e2690837d17e7d01f323345e821eb96d3fa6"
+    ],
+    "current_blob": "5864e2690837d17e7d01f323345e821eb96d3fa6",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "shared/src/commonMain/composeResources/font/productsans_blackitalic.ttf",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "869037b785d84ca413a72c0802d48a223502508c"
+    ],
+    "current_blob": "869037b785d84ca413a72c0802d48a223502508c",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "shared/src/commonMain/composeResources/font/productsans_bold.ttf",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "96619df92e347c5852b6c50d71c362e4404c4c3c"
+    ],
+    "current_blob": "96619df92e347c5852b6c50d71c362e4404c4c3c",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "shared/src/commonMain/composeResources/font/productsans_bolditalic.ttf",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "bdd22b046b811b411085b9c866a1df2a0d392e67"
+    ],
+    "current_blob": "bdd22b046b811b411085b9c866a1df2a0d392e67",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "shared/src/commonMain/composeResources/font/productsans_italic.ttf",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "5b44037be5907cc01dcbfc07f300ef417127c59e"
+    ],
+    "current_blob": "5b44037be5907cc01dcbfc07f300ef417127c59e",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "shared/src/commonMain/composeResources/font/productsans_light.ttf",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "33de1c39f2dd872e5e3d55a8b80161bdcbdbbe44"
+    ],
+    "current_blob": "33de1c39f2dd872e5e3d55a8b80161bdcbdbbe44",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "shared/src/commonMain/composeResources/font/productsans_lightitalic.ttf",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "00c76b8ec8b1b4784ae123a2aa7ed9b0fd04271a"
+    ],
+    "current_blob": "00c76b8ec8b1b4784ae123a2aa7ed9b0fd04271a",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "shared/src/commonMain/composeResources/font/productsans_medium.ttf",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "fd818d6f5b2febcbd5e919f146fdb38a5cd5c73e"
+    ],
+    "current_blob": "fd818d6f5b2febcbd5e919f146fdb38a5cd5c73e",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "shared/src/commonMain/composeResources/font/productsans_mediumitalic.ttf",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "ec70cd38411657291dc13fec6c7274ce44471f66"
+    ],
+    "current_blob": "ec70cd38411657291dc13fec6c7274ce44471f66",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "shared/src/commonMain/composeResources/font/productsans_regular.ttf",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "e2c69c3fb94651237de80e67a69d458c55b45649"
+    ],
+    "current_blob": "e2c69c3fb94651237de80e67a69d458c55b45649",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "shared/src/commonMain/composeResources/font/productsans_thin.ttf",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "5e046b53295fdd1501c2d6cf22f1dac2cfd42793"
+    ],
+    "current_blob": "5e046b53295fdd1501c2d6cf22f1dac2cfd42793",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "shared/src/commonMain/composeResources/font/productsans_thinitalic.ttf",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "7b0495518876d68c69e024ae51032a5e4345a04f"
+    ],
+    "current_blob": "7b0495518876d68c69e024ae51032a5e4345a04f",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "shared/src/commonMain/composeResources/values/strings.xml",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "e5eca5dd287308cc2ed91ccede1193cc9eb41a96"
+    ],
+    "current_blob": "65cb1e267654dd5775d69554ab211f291e3a46fb",
+    "note": "New upstream file adapted for AdiXtream."
+  },
+  {
+    "path": "shared/src/commonMain/kotlin/com/lagradost/cloudstream4/DevicePreferenceStore.kt",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "168b825902801c3af34da3e8ab6229a02c980848"
+    ],
+    "current_blob": "0f01edc6233e94ce50ecbb8775f7935e2efcf0c8",
+    "note": "New upstream file adapted for AdiXtream."
+  },
+  {
+    "path": "shared/src/commonMain/kotlin/com/lagradost/cloudstream4/compose/ColorDialog.kt",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "c1abc206dd991902c7346c8ca1bff1f456b8028c"
+    ],
+    "current_blob": "c1abc206dd991902c7346c8ca1bff1f456b8028c",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "shared/src/commonMain/kotlin/com/lagradost/cloudstream4/compose/Colors.kt",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "6a363909f59312f2a7d052d2c20722208aafed32"
+    ],
+    "current_blob": "6a363909f59312f2a7d052d2c20722208aafed32",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "shared/src/commonMain/kotlin/com/lagradost/cloudstream4/compose/Dialog.kt",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "05948e45712c21a60d4dba3d3904b6f37b1b872a"
+    ],
+    "current_blob": "05948e45712c21a60d4dba3d3904b6f37b1b872a",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "shared/src/commonMain/kotlin/com/lagradost/cloudstream4/compose/Modifiers.kt",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "140c89b7655cd061821e99d6efbde5537eb4ba70"
+    ],
+    "current_blob": "140c89b7655cd061821e99d6efbde5537eb4ba70",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "shared/src/commonMain/kotlin/com/lagradost/cloudstream4/compose/Screen.kt",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "a99b623e82809c3d3f6604e3f4071c7642d88463"
+    ],
+    "current_blob": "a99b623e82809c3d3f6604e3f4071c7642d88463",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "shared/src/commonMain/kotlin/com/lagradost/cloudstream4/compose/Viewmodel.kt",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "1320fcf8e68e8c62fb496f01ab8becf8525ed444"
+    ],
+    "current_blob": "1320fcf8e68e8c62fb496f01ab8becf8525ed444",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "shared/src/commonMain/kotlin/com/lagradost/cloudstream4/compose/colorpicker/CircularColorPicker.kt",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "bdae7c0aaa6880280353be82e3e46f53f79c272f"
+    ],
+    "current_blob": "bdae7c0aaa6880280353be82e3e46f53f79c272f",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "shared/src/commonMain/kotlin/com/lagradost/cloudstream4/compose/colorpicker/ColorPickerDefaults.kt",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "9cc25a0aaf3523909e0930f21ec5fabab7f5961e"
+    ],
+    "current_blob": "9cc25a0aaf3523909e0930f21ec5fabab7f5961e",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "shared/src/commonMain/kotlin/com/lagradost/cloudstream4/compose/colorpicker/DoubleColorPicker.kt",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "e5b07d7b125e6189b82f01a648bfbcbca161bd67"
+    ],
+    "current_blob": "e5b07d7b125e6189b82f01a648bfbcbca161bd67",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "shared/src/commonMain/kotlin/com/lagradost/cloudstream4/compose/colorpicker/HsvColor.kt",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "0fcbbda992bb548d6fcd08320fc22cf02d2b8f02"
+    ],
+    "current_blob": "0fcbbda992bb548d6fcd08320fc22cf02d2b8f02",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "shared/src/commonMain/kotlin/com/lagradost/cloudstream4/compose/colorpicker/LICENSE",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "33e326d058c9e601213dd4b8dbc54a3938a21885"
+    ],
+    "current_blob": "33e326d058c9e601213dd4b8dbc54a3938a21885",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "shared/src/commonMain/kotlin/com/lagradost/cloudstream4/compose/colorpicker/README.md",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "a57df0ca230dc39857cff377be75f43a80fd847d"
+    ],
+    "current_blob": "a57df0ca230dc39857cff377be75f43a80fd847d",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "shared/src/commonMain/kotlin/com/lagradost/cloudstream4/compose/colorpicker/RingColorPicker.kt",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "602bd3ace0dc2cd6b15e2defa331af9300e883f9"
+    ],
+    "current_blob": "602bd3ace0dc2cd6b15e2defa331af9300e883f9",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "shared/src/commonMain/kotlin/com/lagradost/cloudstream4/compose/colorpicker/SquareColorPicker.kt",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "f409d4201145775c6f83141c57cabf1fd1d58398"
+    ],
+    "current_blob": "f409d4201145775c6f83141c57cabf1fd1d58398",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "shared/src/commonMain/kotlin/com/lagradost/cloudstream4/theme/DeviceTheme.kt",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "72da2f7890e95d8b1bad69fc456dcf619709645f"
+    ],
+    "current_blob": "72da2f7890e95d8b1bad69fc456dcf619709645f",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "shared/src/commonMain/kotlin/com/lagradost/cloudstream4/theme/Font.kt",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "c81519e6dfdface387960e80d73e0f213c1720e5"
+    ],
+    "current_blob": "c81519e6dfdface387960e80d73e0f213c1720e5",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "shared/src/commonMain/kotlin/com/lagradost/cloudstream4/theme/Palette.kt",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "c6332808f02bdf6abd6ff2cd10bb656317397587"
+    ],
+    "current_blob": "c6332808f02bdf6abd6ff2cd10bb656317397587",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "shared/src/commonMain/kotlin/com/lagradost/cloudstream4/theme/Scheme.kt",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "d51c75d082205439b279f6dbde174bd7921b6ded"
+    ],
+    "current_blob": "d51c75d082205439b279f6dbde174bd7921b6ded",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "shared/src/commonMain/kotlin/com/lagradost/cloudstream4/theme/Theme.kt",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "196d8d6a1af112022a1f255909ec3456b76312e8"
+    ],
+    "current_blob": "196d8d6a1af112022a1f255909ec3456b76312e8",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "shared/src/commonMain/kotlin/com/mihon/LICENSE",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "d9a10c0d8e868ebf8da0b3dc95bb0be634c34bfe"
+    ],
+    "current_blob": "d9a10c0d8e868ebf8da0b3dc95bb0be634c34bfe",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "shared/src/commonMain/kotlin/com/mihon/common/preference/InMemoryPreferenceStore.kt",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "5c604e5401be6e096abd189d15d56b29b215379f"
+    ],
+    "current_blob": "5c604e5401be6e096abd189d15d56b29b215379f",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "shared/src/commonMain/kotlin/com/mihon/common/preference/PreferenceData.kt",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "16aeb41bc36f9091c1801e93ac9f27d0642937bf"
+    ],
+    "current_blob": "16aeb41bc36f9091c1801e93ac9f27d0642937bf",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "shared/src/commonMain/kotlin/com/mihon/common/preference/PreferenceStore.kt",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "6075fb45cbc2957d3e0bda1132cf50308a3336b2"
+    ],
+    "current_blob": "6075fb45cbc2957d3e0bda1132cf50308a3336b2",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "shared/src/commonMain/kotlin/com/mihon/material/AppBar.kt",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "e544415955302b9e16e5190a89736c85c15276e5"
+    ],
+    "current_blob": "e544415955302b9e16e5190a89736c85c15276e5",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "shared/src/commonMain/kotlin/com/mihon/material/Constants.kt",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "2b38b44851fbb3e0940ee31637b8d4624f74ac38"
+    ],
+    "current_blob": "2b38b44851fbb3e0940ee31637b8d4624f74ac38",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "shared/src/commonMain/kotlin/com/mihon/material/LabeledCheckbox.kt",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "123bb34b72761b657b705c4eb9b0e77519f9d6ce"
+    ],
+    "current_blob": "123bb34b72761b657b705c4eb9b0e77519f9d6ce",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "shared/src/commonMain/kotlin/com/mihon/material/Pill.kt",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "44d6c2931d62d112f8475f692509bb9fc199f856"
+    ],
+    "current_blob": "44d6c2931d62d112f8475f692509bb9fc199f856",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "shared/src/commonMain/kotlin/com/mihon/material/Scaffold.kt",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "65c11f193b28b0ef5c3ccf4e1598303e9764933a"
+    ],
+    "current_blob": "65c11f193b28b0ef5c3ccf4e1598303e9764933a",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "shared/src/commonMain/kotlin/com/mihon/material/SettingsItems.kt",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "ab640e685a6839f770be33fbdf75cd21ed4ec721"
+    ],
+    "current_blob": "ab640e685a6839f770be33fbdf75cd21ed4ec721",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "shared/src/commonMain/kotlin/com/mihon/material/Slider.kt",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "105c38ab8022353c5f37a5fb2572fd462a2b5b60"
+    ],
+    "current_blob": "105c38ab8022353c5f37a5fb2572fd462a2b5b60",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "shared/src/commonMain/kotlin/com/mihon/material/Typography.kt",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "789f815397a369967e30312920be3be38cdfce89"
+    ],
+    "current_blob": "789f815397a369967e30312920be3be38cdfce89",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "shared/src/commonMain/kotlin/com/mihon/presentation/Modifier.kt",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "7a60342e9a1dba5d919eabf00028e91f95b5e4ce"
+    ],
+    "current_blob": "7a60342e9a1dba5d919eabf00028e91f95b5e4ce",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "shared/src/commonMain/kotlin/com/mihon/presentation/Navigation.kt",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "5cdb8aadae5219d1dbc008c8f35fff520ff9fc5c"
+    ],
+    "current_blob": "5cdb8aadae5219d1dbc008c8f35fff520ff9fc5c",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "shared/src/commonMain/kotlin/com/mihon/presentation/settings/Preference.kt",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "0fc381946b9dc97205baf390fd624119064f1e28"
+    ],
+    "current_blob": "0fc381946b9dc97205baf390fd624119064f1e28",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "shared/src/commonMain/kotlin/com/mihon/presentation/settings/PreferenceItem.kt",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "06d775aec8743d23ae713da59af37f2dc5f2ac95"
+    ],
+    "current_blob": "06d775aec8743d23ae713da59af37f2dc5f2ac95",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "shared/src/commonMain/kotlin/com/mihon/presentation/settings/PreferenceScaffold.kt",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "4f97d9f2b18a3b094bc93713530ba9d575c35d8c"
+    ],
+    "current_blob": "4f97d9f2b18a3b094bc93713530ba9d575c35d8c",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "shared/src/commonMain/kotlin/com/mihon/presentation/settings/PreferenceScreen.kt",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "0e99aa9a3c05ba193e70eda62c909183830db72e"
+    ],
+    "current_blob": "0e99aa9a3c05ba193e70eda62c909183830db72e",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "shared/src/commonMain/kotlin/com/mihon/presentation/settings/Search.kt",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "e3ff476252f1f908474e9ec61c54da1589311418"
+    ],
+    "current_blob": "e3ff476252f1f908474e9ec61c54da1589311418",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "shared/src/commonMain/kotlin/com/mihon/presentation/settings/SearchableSettings.kt",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "c114f0dd0485a4d5287e8f4e11065ec67357420b"
+    ],
+    "current_blob": "c114f0dd0485a4d5287e8f4e11065ec67357420b",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "shared/src/commonMain/kotlin/com/mihon/presentation/settings/widget/BasePreferenceWidget.kt",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "e103a144096fba12f645399235d90c0b639ffb3c"
+    ],
+    "current_blob": "e103a144096fba12f645399235d90c0b639ffb3c",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "shared/src/commonMain/kotlin/com/mihon/presentation/settings/widget/ColorPreferenceWidget.kt",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "d8841a3a905a472d810a7cdbc338a413d78e1ac8"
+    ],
+    "current_blob": "d8841a3a905a472d810a7cdbc338a413d78e1ac8",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "shared/src/commonMain/kotlin/com/mihon/presentation/settings/widget/EditTextPreferenceWidget.kt",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "137318928f106e5d56c1676bda6e329491ee3716"
+    ],
+    "current_blob": "137318928f106e5d56c1676bda6e329491ee3716",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "shared/src/commonMain/kotlin/com/mihon/presentation/settings/widget/InfoWidget.kt",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "3382ebda5c869908dcb32868ef53b57204a66682"
+    ],
+    "current_blob": "3382ebda5c869908dcb32868ef53b57204a66682",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "shared/src/commonMain/kotlin/com/mihon/presentation/settings/widget/ListPreferenceWidget.kt",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "6a573e7e8e2c1f57d6aefeea251e23a77088fff3"
+    ],
+    "current_blob": "6a573e7e8e2c1f57d6aefeea251e23a77088fff3",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "shared/src/commonMain/kotlin/com/mihon/presentation/settings/widget/MultiSelectListPreferenceWidget.kt",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "c0a2d735fa49e3670538161f0588d1324d8f7d17"
+    ],
+    "current_blob": "c0a2d735fa49e3670538161f0588d1324d8f7d17",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "shared/src/commonMain/kotlin/com/mihon/presentation/settings/widget/PreferenceGroupHeader.kt",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "b7d1197a939a7067897164c9e39d8689fa4eac3b"
+    ],
+    "current_blob": "b7d1197a939a7067897164c9e39d8689fa4eac3b",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "shared/src/commonMain/kotlin/com/mihon/presentation/settings/widget/SwitchPreferenceWidget.kt",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "2744cdcdc9b449cd15c904dcf2adae906900b869"
+    ],
+    "current_blob": "2744cdcdc9b449cd15c904dcf2adae906900b869",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "shared/src/commonMain/kotlin/com/mihon/presentation/settings/widget/TextPreferenceWidget.kt",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "91c19cd6a4c80f0d6625691dd742d9e02329c05e"
+    ],
+    "current_blob": "91c19cd6a4c80f0d6625691dd742d9e02329c05e",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "shared/src/commonMain/kotlin/com/mihon/readme.md",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "2984058d08f0c14d0f8290e34bc6cf3fa64c2f58"
+    ],
+    "current_blob": "2984058d08f0c14d0f8290e34bc6cf3fa64c2f58",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "shared/src/jvmMain/kotlin/com/lagradost/cloudstream4/DevicePreferenceStore.jvm.kt",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "cca2d70d79ef879c4c2e6bbce15408537ee2dee8"
+    ],
+    "current_blob": "cca2d70d79ef879c4c2e6bbce15408537ee2dee8",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "shared/src/jvmMain/kotlin/com/lagradost/cloudstream4/theme/DeviceTheme.jvm.kt",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "dc9f4f1aea271e37ec1e1b857de226cd57925441"
+    ],
+    "current_blob": "dc9f4f1aea271e37ec1e1b857de226cd57925441",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "shared/src/readme.md",
+    "classification": "added",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "8b37a84a043024299a0aac8db6c4943148f294bd"
+    ],
+    "current_blob": "8b37a84a043024299a0aac8db6c4943148f294bd",
+    "note": "New upstream file, imported unchanged."
+  },
+  {
+    "path": "app/src/main/java/com/lagradost/cloudstream3/actions/VideoClickAction.kt",
+    "classification": "direct replace",
+    "adi": [
+      "100644",
+      "f4e8768d88f7991ab861c38811dadd40cab2d75b"
+    ],
+    "baseline": [
+      "100644",
+      "f4e8768d88f7991ab861c38811dadd40cab2d75b"
+    ],
+    "upstream": [
+      "100644",
+      "0fdccb4766038b6a66d599049aac7dd504218aac"
+    ],
+    "current_blob": "0fdccb4766038b6a66d599049aac7dd504218aac",
+    "note": "Original fork equals baseline; current blob equals pinned upstream."
+  },
+  {
+    "path": "app/src/main/java/com/lagradost/cloudstream3/ui/account/AccountAdapter.kt",
+    "classification": "direct replace",
+    "adi": [
+      "100644",
+      "92d33d0f3493cb576c8165e7702372e51b2866b0"
+    ],
+    "baseline": [
+      "100644",
+      "92d33d0f3493cb576c8165e7702372e51b2866b0"
+    ],
+    "upstream": [
+      "100644",
+      "0b87509c49b6957305d0dd9bb981085708b934cf"
+    ],
+    "current_blob": "0b87509c49b6957305d0dd9bb981085708b934cf",
+    "note": "Original fork equals baseline; current blob equals pinned upstream."
+  },
+  {
+    "path": "app/src/main/java/com/lagradost/cloudstream3/ui/account/AccountSelectActivity.kt",
+    "classification": "direct replace",
+    "adi": [
+      "100644",
+      "ad323c7d12475f71eab98ee9717c1654f952245e"
+    ],
+    "baseline": [
+      "100644",
+      "ad323c7d12475f71eab98ee9717c1654f952245e"
+    ],
+    "upstream": [
+      "100644",
+      "28f5c15d83c2cc595e5a506fa737eb24b3b56c0e"
+    ],
+    "current_blob": "28f5c15d83c2cc595e5a506fa737eb24b3b56c0e",
+    "note": "Original fork equals baseline; current blob equals pinned upstream."
+  },
+  {
+    "path": "app/src/main/java/com/lagradost/cloudstream3/ui/account/AccountSelectLinearItemDecoration.kt",
+    "classification": "direct replace",
+    "adi": [
+      "100644",
+      "eb907b34472b1a7cc8880106a4c7ced989d8d1e4"
+    ],
+    "baseline": [
+      "100644",
+      "eb907b34472b1a7cc8880106a4c7ced989d8d1e4"
+    ],
+    "upstream": [
+      "100644",
+      "91e0caa2a9a7ed5c29598b203bb855fb92500492"
+    ],
+    "current_blob": "91e0caa2a9a7ed5c29598b203bb855fb92500492",
+    "note": "Original fork equals baseline; current blob equals pinned upstream."
+  },
+  {
+    "path": "app/src/main/java/com/lagradost/cloudstream3/ui/player/source_priority/QualityProfileDialog.kt",
+    "classification": "direct replace",
+    "adi": [
+      "100644",
+      "6a0f12e9a4ed2ec3b877328c2280d909832e36fd"
+    ],
+    "baseline": [
+      "100644",
+      "6a0f12e9a4ed2ec3b877328c2280d909832e36fd"
+    ],
+    "upstream": [
+      "100644",
+      "e1b8ad479c152e6c8f32a017680bebbf7b01f4e9"
+    ],
+    "current_blob": "e1b8ad479c152e6c8f32a017680bebbf7b01f4e9",
+    "note": "Original fork equals baseline; current blob equals pinned upstream."
+  },
+  {
+    "path": "app/src/main/java/com/lagradost/cloudstream3/ui/result/ResultFragmentTv.kt",
+    "classification": "direct replace",
+    "adi": [
+      "100644",
+      "ce67763d046fb9dc0c86b4e223ad431104b412f2"
+    ],
+    "baseline": [
+      "100644",
+      "ce67763d046fb9dc0c86b4e223ad431104b412f2"
+    ],
+    "upstream": [
+      "100644",
+      "c316fae1715521232e9fd1bf95aff079ae489be0"
+    ],
+    "current_blob": "c316fae1715521232e9fd1bf95aff079ae489be0",
+    "note": "Original fork equals baseline; current blob equals pinned upstream."
+  },
+  {
+    "path": "app/src/main/java/com/lagradost/cloudstream3/ui/settings/Globals.kt",
+    "classification": "direct replace",
+    "adi": [
+      "100644",
+      "93e469a4d64c4d804b8c63dcdd7b6731a3688d60"
+    ],
+    "baseline": [
+      "100644",
+      "93e469a4d64c4d804b8c63dcdd7b6731a3688d60"
+    ],
+    "upstream": [
+      "100644",
+      "70fd2a19dcabb75c0ed1444c8ed23a0269aa3312"
+    ],
+    "current_blob": "70fd2a19dcabb75c0ed1444c8ed23a0269aa3312",
+    "note": "Original fork equals baseline; current blob equals pinned upstream."
+  },
+  {
+    "path": "app/src/main/java/com/lagradost/cloudstream3/ui/settings/SettingsAccount.kt",
+    "classification": "direct replace",
+    "adi": [
+      "100644",
+      "75ba55674a6d46f8025247b5cd0315bc68ab661d"
+    ],
+    "baseline": [
+      "100644",
+      "75ba55674a6d46f8025247b5cd0315bc68ab661d"
+    ],
+    "upstream": [
+      "100644",
+      "6f67ab826620c74f2dc6d1cbecfdebf5834c1cac"
+    ],
+    "current_blob": "6f67ab826620c74f2dc6d1cbecfdebf5834c1cac",
+    "note": "Original fork equals baseline; current blob equals pinned upstream."
+  },
+  {
+    "path": "app/src/main/java/com/lagradost/cloudstream3/ui/settings/SettingsProviders.kt",
+    "classification": "direct replace",
+    "adi": [
+      "100644",
+      "c8478a84003de2e7dfe83dfd0f075b3d16b1bfe3"
+    ],
+    "baseline": [
+      "100644",
+      "c8478a84003de2e7dfe83dfd0f075b3d16b1bfe3"
+    ],
+    "upstream": [
+      "100644",
+      "08b147f52bf25caaff9374c3e2b5d33f53ff1571"
+    ],
+    "current_blob": "08b147f52bf25caaff9374c3e2b5d33f53ff1571",
+    "note": "Original fork equals baseline; current blob equals pinned upstream."
+  },
+  {
+    "path": "app/src/main/java/com/lagradost/cloudstream3/ui/setup/SetupFragmentLanguage.kt",
+    "classification": "direct replace",
+    "adi": [
+      "100644",
+      "e96a662c370f6846810c4e02d21926802cb6e470"
+    ],
+    "baseline": [
+      "100644",
+      "e96a662c370f6846810c4e02d21926802cb6e470"
+    ],
+    "upstream": [
+      "100644",
+      "42a62ed52dd74e6ce586ecf7a97d4052938df23d"
+    ],
+    "current_blob": "42a62ed52dd74e6ce586ecf7a97d4052938df23d",
+    "note": "Original fork equals baseline; current blob equals pinned upstream."
+  },
+  {
+    "path": "app/src/main/java/com/lagradost/cloudstream3/ui/setup/SetupFragmentMedia.kt",
+    "classification": "direct replace",
+    "adi": [
+      "100644",
+      "8da121daa98e708b19285934ccd1893cfb9b5873"
+    ],
+    "baseline": [
+      "100644",
+      "8da121daa98e708b19285934ccd1893cfb9b5873"
+    ],
+    "upstream": [
+      "100644",
+      "45755b9473555288a0b7a728de5a15b2894e1a30"
+    ],
+    "current_blob": "45755b9473555288a0b7a728de5a15b2894e1a30",
+    "note": "Original fork equals baseline; current blob equals pinned upstream."
+  },
+  {
+    "path": "app/src/main/java/com/lagradost/cloudstream3/utils/BackupUtils.kt",
+    "classification": "direct replace",
+    "adi": [
+      "100644",
+      "0a561b4712a8bfeabfbbfd756ef8f004b4c45ca1"
+    ],
+    "baseline": [
+      "100644",
+      "0a561b4712a8bfeabfbbfd756ef8f004b4c45ca1"
+    ],
+    "upstream": [
+      "100644",
+      "d0c79c43c89800f4b8476eaacc8cf6c43cd51d39"
+    ],
+    "current_blob": "d0c79c43c89800f4b8476eaacc8cf6c43cd51d39",
+    "note": "Original fork equals baseline; current blob equals pinned upstream."
+  },
+  {
+    "path": "app/src/main/java/com/lagradost/cloudstream3/utils/DataStoreHelper.kt",
+    "classification": "direct replace",
+    "adi": [
+      "100644",
+      "340266f6c521491a3e4d83f55194f9ee99dba272"
+    ],
+    "baseline": [
+      "100644",
+      "340266f6c521491a3e4d83f55194f9ee99dba272"
+    ],
+    "upstream": [
+      "100644",
+      "eabac20d32262bdfb6e782c84e0ec1042d292aea"
+    ],
+    "current_blob": "eabac20d32262bdfb6e782c84e0ec1042d292aea",
+    "note": "Original fork equals baseline; current blob equals pinned upstream."
+  },
+  {
+    "path": "app/src/main/java/com/lagradost/cloudstream3/utils/PowerManagerAPI.kt",
+    "classification": "direct replace",
+    "adi": [
+      "100644",
+      "e3c7d68dffd506114f5f64e06eb1417fa95035b4"
+    ],
+    "baseline": [
+      "100644",
+      "e3c7d68dffd506114f5f64e06eb1417fa95035b4"
+    ],
+    "upstream": [
+      "100644",
+      "af3795834bee0f6e0eb860cf8384c28617374cb1"
+    ],
+    "current_blob": "af3795834bee0f6e0eb860cf8384c28617374cb1",
+    "note": "Original fork equals baseline; current blob equals pinned upstream."
+  },
+  {
+    "path": "app/src/main/res/drawable/outline_drawable_forced_round.xml",
+    "classification": "direct replace",
+    "adi": [
+      "100644",
+      "7736f088a9c296f0a9d537fceb794d089dca11cc"
+    ],
+    "baseline": [
+      "100644",
+      "7736f088a9c296f0a9d537fceb794d089dca11cc"
+    ],
+    "upstream": [
+      "100644",
+      "e028ef10ad86a63428b5ec55d228ae7b0cbd8f0d"
+    ],
+    "current_blob": "e028ef10ad86a63428b5ec55d228ae7b0cbd8f0d",
+    "note": "Original fork equals baseline; current blob equals pinned upstream."
+  },
+  {
+    "path": "app/src/main/res/drawable/quick_novel_icon.xml",
+    "classification": "direct replace",
+    "adi": [
+      "100644",
+      "b19aaafeaf75d1c237e30d0b08da469a448602d8"
+    ],
+    "baseline": [
+      "100644",
+      "b19aaafeaf75d1c237e30d0b08da469a448602d8"
+    ],
+    "upstream": [
+      "100644",
+      "8f0b3cf3e7b891042204fe9954ad3645acd46008"
+    ],
+    "current_blob": "8f0b3cf3e7b891042204fe9954ad3645acd46008",
+    "note": "Original fork equals baseline; current blob equals pinned upstream."
+  },
+  {
+    "path": "app/src/main/res/drawable/rounded_outline.xml",
+    "classification": "direct replace",
+    "adi": [
+      "100644",
+      "b85ace8ea1901b4898c97c7aaa59e6502da52ae1"
+    ],
+    "baseline": [
+      "100644",
+      "b85ace8ea1901b4898c97c7aaa59e6502da52ae1"
+    ],
+    "upstream": [
+      "100644",
+      "117506429feb961328e4782e1934185938938ba7"
+    ],
+    "current_blob": "117506429feb961328e4782e1934185938938ba7",
+    "note": "Original fork equals baseline; current blob equals pinned upstream."
+  },
+  {
+    "path": "app/src/main/res/layout/account_edit_dialog.xml",
+    "classification": "direct replace",
+    "adi": [
+      "100644",
+      "f52c8ea5196e452cb6a05fec2b4c2fbc732926c0"
+    ],
+    "baseline": [
+      "100644",
+      "f52c8ea5196e452cb6a05fec2b4c2fbc732926c0"
+    ],
+    "upstream": [
+      "100644",
+      "ae91c16a5044c1ec5202466526fc8f2a302ac9f9"
+    ],
+    "current_blob": "ae91c16a5044c1ec5202466526fc8f2a302ac9f9",
+    "note": "Original fork equals baseline; current blob equals pinned upstream."
+  },
+  {
+    "path": "app/src/main/res/layout/account_list_item.xml",
+    "classification": "direct replace",
+    "adi": [
+      "100644",
+      "3cbfc72fb1e6fb56a38d1aa4137b49494bcc1808"
+    ],
+    "baseline": [
+      "100644",
+      "3cbfc72fb1e6fb56a38d1aa4137b49494bcc1808"
+    ],
+    "upstream": [
+      "100644",
+      "2108b888d2b745d806abd7d559e6fe5c4956e0d8"
+    ],
+    "current_blob": "2108b888d2b745d806abd7d559e6fe5c4956e0d8",
+    "note": "Original fork equals baseline; current blob equals pinned upstream."
+  },
+  {
+    "path": "app/src/main/res/layout/account_list_item_add.xml",
+    "classification": "direct replace",
+    "adi": [
+      "100644",
+      "dea64484fdb455f2a2dbd105b7232149591ec710"
+    ],
+    "baseline": [
+      "100644",
+      "dea64484fdb455f2a2dbd105b7232149591ec710"
+    ],
+    "upstream": [
+      "100644",
+      "90089f7500ec2386238ebd2a092e49109cd3a88a"
+    ],
+    "current_blob": "90089f7500ec2386238ebd2a092e49109cd3a88a",
+    "note": "Original fork equals baseline; current blob equals pinned upstream."
+  },
+  {
+    "path": "app/src/main/res/layout/account_list_item_edit.xml",
+    "classification": "direct replace",
+    "adi": [
+      "100644",
+      "3f41a23c230b32e0d18fd59664e663b039105dd6"
+    ],
+    "baseline": [
+      "100644",
+      "3f41a23c230b32e0d18fd59664e663b039105dd6"
+    ],
+    "upstream": [
+      "100644",
+      "71f0351d82c93057ec761968713024ae4a61cab8"
+    ],
+    "current_blob": "71f0351d82c93057ec761968713024ae4a61cab8",
+    "note": "Original fork equals baseline; current blob equals pinned upstream."
+  },
+  {
+    "path": "app/src/main/res/layout/account_select_linear.xml",
+    "classification": "direct replace",
+    "adi": [
+      "100644",
+      "b78c0d44c3c81410272bc405416c13be3fc94fcc"
+    ],
+    "baseline": [
+      "100644",
+      "b78c0d44c3c81410272bc405416c13be3fc94fcc"
+    ],
+    "upstream": [
+      "100644",
+      "65c2ffba9ce6d71ad88eef7813d7c0e1f64b8184"
+    ],
+    "current_blob": "65c2ffba9ce6d71ad88eef7813d7c0e1f64b8184",
+    "note": "Original fork equals baseline; current blob equals pinned upstream."
+  },
+  {
+    "path": "app/src/main/res/layout/activity_account_select.xml",
+    "classification": "direct replace",
+    "adi": [
+      "100644",
+      "9f62d56015c0b91bbbacd4456efd5777d409d716"
+    ],
+    "baseline": [
+      "100644",
+      "9f62d56015c0b91bbbacd4456efd5777d409d716"
+    ],
+    "upstream": [
+      "100644",
+      "c91071fe49183ff6fcfaa1c5a7d6880b618aa110"
+    ],
+    "current_blob": "c91071fe49183ff6fcfaa1c5a7d6880b618aa110",
+    "note": "Original fork equals baseline; current blob equals pinned upstream."
+  },
+  {
+    "path": "app/src/main/res/layout/activity_main.xml",
+    "classification": "direct replace",
+    "adi": [
+      "100644",
+      "2483a37145c0516d261e367657699f1f6dabd0a7"
+    ],
+    "baseline": [
+      "100644",
+      "2483a37145c0516d261e367657699f1f6dabd0a7"
+    ],
+    "upstream": [
+      "100644",
+      "eb7c67145b32b94fdac953be61eaa1fdef29bf24"
+    ],
+    "current_blob": "eb7c67145b32b94fdac953be61eaa1fdef29bf24",
+    "note": "Original fork equals baseline; current blob equals pinned upstream."
+  },
+  {
+    "path": "app/src/main/res/layout/activity_main_tv.xml",
+    "classification": "direct replace",
+    "adi": [
+      "100644",
+      "c51d77d162b3bc48f0ed3952afbadb3398dd14e8"
+    ],
+    "baseline": [
+      "100644",
+      "c51d77d162b3bc48f0ed3952afbadb3398dd14e8"
+    ],
+    "upstream": [
+      "100644",
+      "0d81285a62fc69fedea540954738b408dd1f45c0"
+    ],
+    "current_blob": "0d81285a62fc69fedea540954738b408dd1f45c0",
+    "note": "Original fork equals baseline; current blob equals pinned upstream."
+  },
+  {
+    "path": "app/src/main/res/layout/bottom_selection_dialog.xml",
+    "classification": "direct replace",
+    "adi": [
+      "100644",
+      "55ca6562e4eab06085c55a1835e2a06eb291b0ba"
+    ],
+    "baseline": [
+      "100644",
+      "55ca6562e4eab06085c55a1835e2a06eb291b0ba"
+    ],
+    "upstream": [
+      "100644",
+      "78916970b1fe59eae756ad7213b9864e7399b7b9"
+    ],
+    "current_blob": "78916970b1fe59eae756ad7213b9864e7399b7b9",
+    "note": "Original fork equals baseline; current blob equals pinned upstream."
+  },
+  {
+    "path": "app/src/main/res/layout/fragment_result.xml",
+    "classification": "direct replace",
+    "adi": [
+      "100644",
+      "a5c933d6a0360ec181b2a67b30293a0c2bb17b0a"
+    ],
+    "baseline": [
+      "100644",
+      "a5c933d6a0360ec181b2a67b30293a0c2bb17b0a"
+    ],
+    "upstream": [
+      "100644",
+      "9db120ad0f4b00bb72cafdf14ce1d3e1afc0e1ae"
+    ],
+    "current_blob": "9db120ad0f4b00bb72cafdf14ce1d3e1afc0e1ae",
+    "note": "Original fork equals baseline; current blob equals pinned upstream."
+  },
+  {
+    "path": "app/src/main/res/layout/fragment_result_tv.xml",
+    "classification": "direct replace",
+    "adi": [
+      "100644",
+      "3dff8f0d53565a83b6a30a27dfaf5210656ebe52"
+    ],
+    "baseline": [
+      "100644",
+      "3dff8f0d53565a83b6a30a27dfaf5210656ebe52"
+    ],
+    "upstream": [
+      "100644",
+      "b06886a9709cfaea15d7b286101cd6564c7fb6e6"
+    ],
+    "current_blob": "b06886a9709cfaea15d7b286101cd6564c7fb6e6",
+    "note": "Original fork equals baseline; current blob equals pinned upstream."
+  },
+  {
+    "path": "app/src/main/res/layout/fragment_setup_extensions.xml",
+    "classification": "direct replace",
+    "adi": [
+      "100644",
+      "e5288504695649a9bd09cef770b067343bd2fdc0"
+    ],
+    "baseline": [
+      "100644",
+      "e5288504695649a9bd09cef770b067343bd2fdc0"
+    ],
+    "upstream": [
+      "100644",
+      "151c9e0ece29e523442827cbab9e4396402e5bdb"
+    ],
+    "current_blob": "151c9e0ece29e523442827cbab9e4396402e5bdb",
+    "note": "Original fork equals baseline; current blob equals pinned upstream."
+  },
+  {
+    "path": "app/src/main/res/layout/fragment_setup_language.xml",
+    "classification": "direct replace",
+    "adi": [
+      "100644",
+      "93afe823ed5cc8f1bc0fe062fc41f5fc9e64ff7d"
+    ],
+    "baseline": [
+      "100644",
+      "93afe823ed5cc8f1bc0fe062fc41f5fc9e64ff7d"
+    ],
+    "upstream": [
+      "100644",
+      "bdba3f2097689099e33b07cf4c9e57f011b07426"
+    ],
+    "current_blob": "bdba3f2097689099e33b07cf4c9e57f011b07426",
+    "note": "Original fork equals baseline; current blob equals pinned upstream."
+  },
+  {
+    "path": "app/src/main/res/layout/fragment_setup_layout.xml",
+    "classification": "direct replace",
+    "adi": [
+      "100644",
+      "18815ced35304be9d29d54e760d96733ac04fc64"
+    ],
+    "baseline": [
+      "100644",
+      "18815ced35304be9d29d54e760d96733ac04fc64"
+    ],
+    "upstream": [
+      "100644",
+      "9e891e1aa6a626d72aaf86130100d3a8b2c1dd87"
+    ],
+    "current_blob": "9e891e1aa6a626d72aaf86130100d3a8b2c1dd87",
+    "note": "Original fork equals baseline; current blob equals pinned upstream."
+  },
+  {
+    "path": "app/src/main/res/layout/fragment_setup_media.xml",
+    "classification": "direct replace",
+    "adi": [
+      "100644",
+      "154db33869ed79ce97621b8c83861f172dec0863"
+    ],
+    "baseline": [
+      "100644",
+      "154db33869ed79ce97621b8c83861f172dec0863"
+    ],
+    "upstream": [
+      "100644",
+      "c1154405eb6730b4efa4554e68273cc18fb86b4c"
+    ],
+    "current_blob": "c1154405eb6730b4efa4554e68273cc18fb86b4c",
+    "note": "Original fork equals baseline; current blob equals pinned upstream."
+  },
+  {
+    "path": "app/src/main/res/layout/fragment_setup_provider_languages.xml",
+    "classification": "direct replace",
+    "adi": [
+      "100644",
+      "8dc889178ac7985388e445043d989891157f5f68"
+    ],
+    "baseline": [
+      "100644",
+      "8dc889178ac7985388e445043d989891157f5f68"
+    ],
+    "upstream": [
+      "100644",
+      "e92f1135bfcdeec0d7e1b602e2d873ffbe59ec40"
+    ],
+    "current_blob": "e92f1135bfcdeec0d7e1b602e2d873ffbe59ec40",
+    "note": "Original fork equals baseline; current blob equals pinned upstream."
+  },
+  {
+    "path": "app/src/main/res/values/attrs.xml",
+    "classification": "direct replace",
+    "adi": [
+      "100644",
+      "7c71b55719392c6f690ef9d47fd073614bc036d0"
+    ],
+    "baseline": [
+      "100644",
+      "7c71b55719392c6f690ef9d47fd073614bc036d0"
+    ],
+    "upstream": [
+      "100644",
+      "53b29475b77e56ae5924cd6fbec30dc2c135d992"
+    ],
+    "current_blob": "53b29475b77e56ae5924cd6fbec30dc2c135d992",
+    "note": "Original fork equals baseline; current blob equals pinned upstream."
+  },
+  {
+    "path": "build.gradle.kts",
+    "classification": "direct replace",
+    "adi": [
+      "100644",
+      "f58fb584fc84207b269fcccd3e75fd9700d8b3ee"
+    ],
+    "baseline": [
+      "100644",
+      "f58fb584fc84207b269fcccd3e75fd9700d8b3ee"
+    ],
+    "upstream": [
+      "100644",
+      "dc98269b5563c7211bddbb67edca77cef42c1172"
+    ],
+    "current_blob": "dc98269b5563c7211bddbb67edca77cef42c1172",
+    "note": "Original fork equals baseline; current blob equals pinned upstream."
+  },
+  {
+    "path": "gradle/libs.versions.toml",
+    "classification": "direct replace",
+    "adi": [
+      "100644",
+      "e388954512d5941f639ad0b9cda958e55c03b433"
+    ],
+    "baseline": [
+      "100644",
+      "e388954512d5941f639ad0b9cda958e55c03b433"
+    ],
+    "upstream": [
+      "100644",
+      "c6f0ee55ae2aac2831c063bbcc78d721caf40c34"
+    ],
+    "current_blob": "c6f0ee55ae2aac2831c063bbcc78d721caf40c34",
+    "note": "Original fork equals baseline; current blob equals pinned upstream."
+  },
+  {
+    "path": "library/src/commonMain/kotlin/com/lagradost/cloudstream3/ParCollections.kt",
+    "classification": "direct replace",
+    "adi": [
+      "100644",
+      "9e6cb99e5befcfae6caf671b869da5748224f660"
+    ],
+    "baseline": [
+      "100644",
+      "9e6cb99e5befcfae6caf671b869da5748224f660"
+    ],
+    "upstream": [
+      "100644",
+      "0f33a6ff6e8ca9a0c7e75b00a7331fa00e932c67"
+    ],
+    "current_blob": "0f33a6ff6e8ca9a0c7e75b00a7331fa00e932c67",
+    "note": "Original fork equals baseline; current blob equals pinned upstream."
+  },
+  {
+    "path": "library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/Firestream.kt",
+    "classification": "direct replace",
+    "adi": [
+      "100644",
+      "f1d33e8534b628c746f71adce0fbe179a83bffdb"
+    ],
+    "baseline": [
+      "100644",
+      "f1d33e8534b628c746f71adce0fbe179a83bffdb"
+    ],
+    "upstream": [
+      "100644",
+      "c4a74b90866022f5af6bbcc6064cc15be536e766"
+    ],
+    "current_blob": "c4a74b90866022f5af6bbcc6064cc15be536e766",
+    "note": "Original fork equals baseline; current blob equals pinned upstream."
+  },
+  {
+    "path": "library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/Vidsonic.kt",
+    "classification": "direct replace",
+    "adi": [
+      "100644",
+      "49560d456898841734ed60b50af536f0a7f275fe"
+    ],
+    "baseline": [
+      "100644",
+      "49560d456898841734ed60b50af536f0a7f275fe"
+    ],
+    "upstream": [
+      "100644",
+      "4cd85fdb53e8b4fd7c003c6fbb7e70ae0d251f5d"
+    ],
+    "current_blob": "4cd85fdb53e8b4fd7c003c6fbb7e70ae0d251f5d",
+    "note": "Original fork equals baseline; current blob equals pinned upstream."
+  },
+  {
+    "path": "library/src/commonMain/kotlin/com/lagradost/cloudstream3/utils/M3u8Helper.kt",
+    "classification": "direct replace",
+    "adi": [
+      "100644",
+      "d34f5f500e9c86179f1fd3b45aaa76abd55b754b"
+    ],
+    "baseline": [
+      "100644",
+      "d34f5f500e9c86179f1fd3b45aaa76abd55b754b"
+    ],
+    "upstream": [
+      "100644",
+      "3a4c21d989e66750721682ed79aad42fc784e7ca"
+    ],
+    "current_blob": "3a4c21d989e66750721682ed79aad42fc784e7ca",
+    "note": "Original fork equals baseline; current blob equals pinned upstream."
+  },
+  {
+    "path": "library/src/commonMain/kotlin/com/lagradost/cloudstream3/utils/SubtitleHelper.kt",
+    "classification": "direct replace",
+    "adi": [
+      "100644",
+      "497e129a0b3c582be9c077acd34b0b210a048960"
+    ],
+    "baseline": [
+      "100644",
+      "497e129a0b3c582be9c077acd34b0b210a048960"
+    ],
+    "upstream": [
+      "100644",
+      "7d81412f0bc963663647976ef196de32f84e54f4"
+    ],
+    "current_blob": "7d81412f0bc963663647976ef196de32f84e54f4",
+    "note": "Original fork equals baseline; current blob equals pinned upstream."
+  },
+  {
+    "path": ".github/workflows/buat_apk.yml",
+    "classification": "manual merge",
+    "current_blob": "38a5ea8e06634f1968434dc0de65a7fd24b7cc85",
+    "note": "AdiXtream integration, compatibility/security tests or prerequisite from earlier upstream."
+  },
+  {
+    "path": "app/build.gradle.kts",
+    "classification": "manual merge",
+    "adi": [
+      "100644",
+      "f56f98a51aa9934ab4486415a60a8cbf4324790c"
+    ],
+    "baseline": [
+      "100644",
+      "2ad8451a3521ed0fa67c1fbe47d9c4e0237e9a31"
+    ],
+    "upstream": [
+      "100644",
+      "c714368ee4a3018a5de50b62d7693098ccca2f26"
+    ],
+    "current_blob": "da510e2b6973caede16d2734f1c375b1adcf67ec",
+    "note": "Fork diverged; upstream diff ported onto the AdiXtream file."
+  },
+  {
+    "path": "app/src/main/AndroidManifest.xml",
+    "classification": "manual merge",
+    "adi": [
+      "100644",
+      "8f7314b128090071acebf3035538cc60e04260b6"
+    ],
+    "baseline": [
+      "100644",
+      "ee4c978f2beebe9daa903d639e85961efcb19230"
+    ],
+    "upstream": [
+      "100644",
+      "1012efb56b667f477bd63441e991e67228c5b94f"
+    ],
+    "current_blob": "c9d01f650e2545131c0e8afffb80e43ab071c320",
+    "note": "Fork diverged; upstream diff ported onto the AdiXtream file."
+  },
+  {
+    "path": "app/src/main/java/com/lagradost/cloudstream3/CloudStreamApp.kt",
+    "classification": "manual merge",
+    "adi": [
+      "100644",
+      "466ef5a007c3427f14b31ab3a3d006084dedb93e"
+    ],
+    "baseline": [
+      "100644",
+      "466ef5a007c3427f14b31ab3a3d006084dedb93e"
+    ],
+    "upstream": [
+      "100644",
+      "6ff3ab54def13c17ba2cfd7ead2c3905d47e62f4"
+    ],
+    "current_blob": "3a481459d32fa3cdfc31b50a5ae8c2afd9a94bcc",
+    "note": "Originally identical to baseline; upstream port then adapted to preserve AdiXtream integration."
+  },
+  {
+    "path": "app/src/main/java/com/lagradost/cloudstream3/MainActivity.kt",
+    "classification": "manual merge",
+    "adi": [
+      "100644",
+      "cd49383c111a7d8ebe1582938812a510d7aa4a3e"
+    ],
+    "baseline": [
+      "100644",
+      "5d39f6554cda833acb601b7cd9957a22f6fc6ade"
+    ],
+    "upstream": [
+      "100644",
+      "253f1023766a2965eef6c1ef0686b4d8f9ba9a01"
+    ],
+    "current_blob": "3ec97de89ac522dbdc7a0f5be39c3c9477f1fd71",
+    "note": "Fork diverged; upstream diff ported onto the AdiXtream file."
+  },
+  {
+    "path": "app/src/main/java/com/lagradost/cloudstream3/PremiumManager.kt",
+    "classification": "manual merge",
+    "current_blob": "78c9487bff4d029498bf74fe4b4a551f7243e372",
+    "note": "AdiXtream integration, compatibility/security tests or prerequisite from earlier upstream."
+  },
+  {
+    "path": "app/src/main/java/com/lagradost/cloudstream3/network/RequestsHelper.kt",
+    "classification": "manual merge",
+    "adi": [
+      "100644",
+      "b1a239bc3ee91021372c7f280e8a43662d5bd2d9"
+    ],
+    "baseline": [
+      "100644",
+      "203a503e9033a264f903d621f06070496257a967"
+    ],
+    "upstream": [
+      "100644",
+      "e49245904588385449b4265b8140ec2adce0faff"
+    ],
+    "current_blob": "91f4e9d90cd4e91d35e1213b874ba6f86a5a73eb",
+    "note": "Fork diverged; upstream diff ported onto the AdiXtream file."
+  },
+  {
+    "path": "app/src/main/java/com/lagradost/cloudstream3/plugins/RepositoryManager.kt",
+    "classification": "manual merge",
+    "current_blob": "a95879461194331d857f6e5900ed3189c8bbab4a",
+    "note": "AdiXtream integration, compatibility/security tests or prerequisite from earlier upstream."
+  },
+  {
+    "path": "app/src/main/java/com/lagradost/cloudstream3/services/PackageInstallerService.kt",
+    "classification": "manual merge",
+    "current_blob": "2a165b454d01e699cb945f4241d690dce7fcaa77",
+    "note": "AdiXtream integration, compatibility/security tests or prerequisite from earlier upstream."
+  },
+  {
+    "path": "app/src/main/java/com/lagradost/cloudstream3/syncproviders/providers/AniListApi.kt",
+    "classification": "manual merge",
+    "current_blob": "00f315c44baa8f92d6b5a0d0554689c7f424a24b",
+    "note": "AdiXtream integration, compatibility/security tests or prerequisite from earlier upstream."
+  },
+  {
+    "path": "app/src/main/java/com/lagradost/cloudstream3/syncproviders/providers/OpenSubtitlesApi.kt",
+    "classification": "manual merge",
+    "current_blob": "97e0fc31e1e3cf671631fe7863aae5999c100fb9",
+    "note": "AdiXtream integration, compatibility/security tests or prerequisite from earlier upstream."
+  },
+  {
+    "path": "app/src/main/java/com/lagradost/cloudstream3/syncproviders/providers/SimklApi.kt",
+    "classification": "manual merge",
+    "current_blob": "f3aa779888529c33d4d0f6cb5d7f1ca5c738cc4f",
+    "note": "AdiXtream integration, compatibility/security tests or prerequisite from earlier upstream."
+  },
+  {
+    "path": "app/src/main/java/com/lagradost/cloudstream3/ui/account/AccountHelper.kt",
+    "classification": "manual merge",
+    "adi": [
+      "100644",
+      "6ca9e5861a9fe731df05702dc484085149674a0d"
+    ],
+    "baseline": [
+      "100644",
+      "7725bad912824f880a4240ee53ae51ccc88a3af0"
+    ],
+    "upstream": [
+      "100644",
+      "15c87deac2df2fec9552e70693467ebb9516b10a"
+    ],
+    "current_blob": "ee24f56275a788aace58ea945b82d1bf207b2a18",
+    "note": "Fork diverged; upstream diff ported onto the AdiXtream file."
+  },
+  {
+    "path": "app/src/main/java/com/lagradost/cloudstream3/ui/home/HomeFragment.kt",
+    "classification": "manual merge",
+    "adi": [
+      "100644",
+      "60469585916e2459557182a6231f73f5e099f001"
+    ],
+    "baseline": [
+      "100644",
+      "0e52baff6b98ef86fe324c937bfc5b0513e227b7"
+    ],
+    "upstream": [
+      "100644",
+      "04f8b0b26ffba2026d77cbf2829d8028b7eaf99c"
+    ],
+    "current_blob": "eacef0c4e6af0c5cb5d11e7bc815c8de346246da",
+    "note": "Fork diverged; upstream diff ported onto the AdiXtream file."
+  },
+  {
+    "path": "app/src/main/java/com/lagradost/cloudstream3/ui/home/HomeParentItemAdapter.kt",
+    "classification": "manual merge",
+    "adi": [
+      "100644",
+      "8bdeb6fdb3567befcf2e424aacfe0116db8708c6"
+    ],
+    "baseline": [
+      "100644",
+      "6bdd1bf492f79c7436a63b7f2d128cfc32dc4a9d"
+    ],
+    "upstream": [
+      "100644",
+      "1f721ee206232d53c2984405a53ca15f998547d1"
+    ],
+    "current_blob": "af009cee3133fa41b2c4f831f1cfd93f2658da91",
+    "note": "Fork diverged; upstream diff ported onto the AdiXtream file."
+  },
+  {
+    "path": "app/src/main/java/com/lagradost/cloudstream3/ui/player/CS3IPlayer.kt",
+    "classification": "manual merge",
+    "adi": [
+      "100644",
+      "d7e10c81441bcba6a100771e826bb61af8ede614"
+    ],
+    "baseline": [
+      "100644",
+      "d316f28cd19e5102862db2775993a5f0eb88e8c0"
+    ],
+    "upstream": [
+      "100644",
+      "9c5685c682b2e8108b5e471db669ee1f5b5563e4"
+    ],
+    "current_blob": "deb2ffaba163fced828a2d143024a4dcb4fe6523",
+    "note": "Fork diverged; upstream diff ported onto the AdiXtream file."
+  },
+  {
+    "path": "app/src/main/java/com/lagradost/cloudstream3/ui/player/FullScreenPlayer.kt",
+    "classification": "manual merge",
+    "adi": [
+      "100644",
+      "20c37dcf4030981ca647f6043f02c9e7e364d961"
+    ],
+    "baseline": [
+      "100644",
+      "d90b6043f28158d6c28a578d60e07fd72877e5a6"
+    ],
+    "upstream": [
+      "100644",
+      "f38a9ab99fd3286aeb73aa725af83d5f64267070"
+    ],
+    "current_blob": "b8ffb9ef69e71adbe86e1b991dd227fda3059c59",
+    "note": "Fork diverged; upstream diff ported onto the AdiXtream file."
+  },
+  {
+    "path": "app/src/main/java/com/lagradost/cloudstream3/ui/player/GeneratorPlayer.kt",
+    "classification": "manual merge",
+    "adi": [
+      "100644",
+      "91e3ff9708df59c29a4479282e88c504234834cd"
+    ],
+    "baseline": [
+      "100644",
+      "4495a56026256d339b59a23ee48f0d4c50fc2c89"
+    ],
+    "upstream": [
+      "100644",
+      "e4616c93bcf21b949ebb0e5e7dec3b9627653173"
+    ],
+    "current_blob": "98b4489abfb615d3a1221dc8bb9ed64a0364db7a",
+    "note": "Fork diverged; upstream diff ported onto the AdiXtream file."
+  },
+  {
+    "path": "app/src/main/java/com/lagradost/cloudstream3/ui/search/SearchFragment.kt",
+    "classification": "manual merge",
+    "adi": [
+      "100644",
+      "b79ba1707ea886d9900f21022a6730e49670c064"
+    ],
+    "baseline": [
+      "100644",
+      "5f5b064b543ad41f1da77dbdf648200da82f9913"
+    ],
+    "upstream": [
+      "100644",
+      "dd5b9771194a155447438bbd4026fac16dee8d3e"
+    ],
+    "current_blob": "87889a11f96b208629d9bcf49928039c2cba0b0a",
+    "note": "Fork diverged; upstream diff ported onto the AdiXtream file."
+  },
+  {
+    "path": "app/src/main/java/com/lagradost/cloudstream3/ui/settings/SettingsGeneral.kt",
+    "classification": "manual merge",
+    "adi": [
+      "100644",
+      "7171495fbe489a8ee75a927519882f6c44f20dca"
+    ],
+    "baseline": [
+      "100644",
+      "b04f9a4a2abc299c011a83cb4c54dc06f993dbbc"
+    ],
+    "upstream": [
+      "100644",
+      "32f60752ea0ed39f03715cc8570945de71db9c9e"
+    ],
+    "current_blob": "5cff8822f3fefee1b14c4ce21c26c5edc8dc34ec",
+    "note": "Fork diverged; upstream diff ported onto the AdiXtream file."
+  },
+  {
+    "path": "app/src/main/java/com/lagradost/cloudstream3/ui/settings/SettingsUI.kt",
+    "classification": "manual merge",
+    "current_blob": "d9748a9f8f783f2cba7b06e51b38e4f416d8c30a",
+    "note": "AdiXtream integration, compatibility/security tests or prerequisite from earlier upstream."
+  },
+  {
+    "path": "app/src/main/java/com/lagradost/cloudstream3/ui/settings/extensions/ExtensionsFragment.kt",
+    "classification": "manual merge",
+    "current_blob": "6f72251edb85036c2d2014e4951e3f012bee9685",
+    "note": "AdiXtream integration, compatibility/security tests or prerequisite from earlier upstream."
+  },
+  {
+    "path": "app/src/main/java/com/lagradost/cloudstream3/ui/settings/extensions/ExtensionsViewModel.kt",
+    "classification": "manual merge",
+    "current_blob": "5b497693ccd1121a8753eed6950ba1bb965ce4bf",
+    "note": "AdiXtream integration, compatibility/security tests or prerequisite from earlier upstream."
+  },
+  {
+    "path": "app/src/main/java/com/lagradost/cloudstream3/ui/settings/extensions/RepoAdapter.kt",
+    "classification": "manual merge",
+    "current_blob": "4365cad0edb60322408286fe863cbb1e24b0e9d8",
+    "note": "AdiXtream integration, compatibility/security tests or prerequisite from earlier upstream."
+  },
+  {
+    "path": "app/src/main/java/com/lagradost/cloudstream3/ui/setup/SetupFragmentExtensions.kt",
+    "classification": "manual merge",
+    "current_blob": "da7d01b778fe5567a2fcbd7d538a5f16ac610fe9",
+    "note": "AdiXtream integration, compatibility/security tests or prerequisite from earlier upstream."
+  },
+  {
+    "path": "app/src/main/java/com/lagradost/cloudstream3/ui/subtitles/ChromecastSubtitlesFragment.kt",
+    "classification": "manual merge",
+    "adi": [
+      "100644",
+      "95ef264f87910f06759b85c1884ed8db074b7e10"
+    ],
+    "baseline": [
+      "100644",
+      "ab64e99936da1568e81555270e3d706951b3e3d2"
+    ],
+    "upstream": [
+      "100644",
+      "0e203989fa81b9d6e19bbebec5c209d3b77ae022"
+    ],
+    "current_blob": "0e203989fa81b9d6e19bbebec5c209d3b77ae022",
+    "note": "Fork diverged; upstream diff ported onto the AdiXtream file."
+  },
+  {
+    "path": "app/src/main/java/com/lagradost/cloudstream3/ui/subtitles/SubtitlesFragment.kt",
+    "classification": "manual merge",
+    "adi": [
+      "100644",
+      "860cb4fcbe0bef55246ce1c83e4c25ee0115e7a1"
+    ],
+    "baseline": [
+      "100644",
+      "bf77ef24767966079463a1c583496f750e4d9243"
+    ],
+    "upstream": [
+      "100644",
+      "dd363fc10bebe4f82876c241b454161068064d57"
+    ],
+    "current_blob": "9b48ee3356ffb5143c7524d5bddc93805d5c044c",
+    "note": "Fork diverged; upstream diff ported onto the AdiXtream file."
+  },
+  {
+    "path": "app/src/main/java/com/lagradost/cloudstream3/utils/AppContextUtils.kt",
+    "classification": "manual merge",
+    "adi": [
+      "100644",
+      "c9278b33582a279ee8440fa72117556f527c28ca"
+    ],
+    "baseline": [
+      "100644",
+      "8d322fd040449fdd271c17d2223c934be53ed481"
+    ],
+    "upstream": [
+      "100644",
+      "e0661721ac3e2f0f3ade2862681f565cd5b583c9"
+    ],
+    "current_blob": "6823d14ea6f2348f1939378455884734e875e4a6",
+    "note": "Fork diverged; upstream diff ported onto the AdiXtream file."
+  },
+  {
+    "path": "app/src/main/java/com/lagradost/cloudstream3/utils/InAppUpdater.kt",
+    "classification": "manual merge",
+    "current_blob": "f88f931df53a0e25a41c54302b926a28d838bb3b",
+    "note": "AdiXtream integration, compatibility/security tests or prerequisite from earlier upstream."
+  },
+  {
+    "path": "app/src/main/java/com/lagradost/cloudstream3/utils/videoskip/AnimeSkip.kt",
+    "classification": "manual merge",
+    "adi": [
+      "100644",
+      "853b1697693416d373436e7417c1f914457431d6"
+    ],
+    "baseline": [
+      "100644",
+      "df9d56217fd2391c3811d9166081932c97ffc6ba"
+    ],
+    "upstream": [
+      "100644",
+      "687f746e3a2e0296fc77f5609b6460cb3d57711c"
+    ],
+    "current_blob": "c866b769348e070e51cf0e7c1eaf3ffbc744281e",
+    "note": "Fork diverged; upstream diff ported onto the AdiXtream file."
+  },
+  {
+    "path": "app/src/main/res/layout/fragment_home.xml",
+    "classification": "manual merge",
+    "adi": [
+      "100644",
+      "ad22159ff124c44909eee211cf85bb6b30adefae"
+    ],
+    "baseline": [
+      "100644",
+      "8d78c01b3e703ce17b5e86c325c42ddc8f72eb71"
+    ],
+    "upstream": [
+      "100644",
+      "dc1635392c6e854f836afbe691c31fd8494adae5"
+    ],
+    "current_blob": "4355b58617fa0728cfea623d8218560550f0f047",
+    "note": "Fork diverged; upstream diff ported onto the AdiXtream file."
+  },
+  {
+    "path": "app/src/main/res/layout/fragment_home_tv.xml",
+    "classification": "manual merge",
+    "adi": [
+      "100644",
+      "d1d5c9e3bd95a42181f34e5ab7596726a8b04ac2"
+    ],
+    "baseline": [
+      "100644",
+      "d50c4c2e40c43a2f51673cea78c407488db0fc4f"
+    ],
+    "upstream": [
+      "100644",
+      "f8559ab14d340bc74caae6933a87e108fc0aaa2a"
+    ],
+    "current_blob": "f8559ab14d340bc74caae6933a87e108fc0aaa2a",
+    "note": "Fork diverged; upstream diff ported onto the AdiXtream file."
+  },
+  {
+    "path": "app/src/main/res/layout/player_custom_layout.xml",
+    "classification": "manual merge",
+    "current_blob": "2b6e0024c6b6d11df524b19689b5a451e6ed9107",
+    "note": "AdiXtream integration, compatibility/security tests or prerequisite from earlier upstream."
+  },
+  {
+    "path": "app/src/main/res/layout/player_custom_layout_tv.xml",
+    "classification": "manual merge",
+    "current_blob": "20f2e65acea0fc32330de4ef504befa5e932abf6",
+    "note": "AdiXtream integration, compatibility/security tests or prerequisite from earlier upstream."
+  },
+  {
+    "path": "app/src/main/res/layout/trailer_custom_layout.xml",
+    "classification": "manual merge",
+    "current_blob": "cf079825969f7025e7d22995d851f4e9ff7b8f73",
+    "note": "AdiXtream integration, compatibility/security tests or prerequisite from earlier upstream."
+  },
+  {
+    "path": "app/src/main/res/navigation/mobile_navigation.xml",
+    "classification": "manual merge",
+    "adi": [
+      "100644",
+      "27f186a00743fb46dd659d6f6602ec40a15dacab"
+    ],
+    "baseline": [
+      "100644",
+      "27f186a00743fb46dd659d6f6602ec40a15dacab"
+    ],
+    "upstream": [
+      "100644",
+      "a65e3706dbd4b9a588e86f8ef257efaf5fd85858"
+    ],
+    "current_blob": "2671ba36a7938e0e7da565c3c0448076c485140c",
+    "note": "Originally identical to baseline; upstream port then adapted to preserve AdiXtream integration."
+  },
+  {
+    "path": "app/src/main/res/values-b+in/strings.xml",
+    "classification": "manual merge",
+    "adi": [
+      "100644",
+      "072a55f86d9070c39df697da72b970712776983b"
+    ],
+    "baseline": [
+      "100644",
+      "7d6475f31e7d2243e2e19b513f0e4e4af40e74cf"
+    ],
+    "upstream": [
+      "100644",
+      "e9df06fc45debbe50170f7265cfd686b1da7696b"
+    ],
+    "current_blob": "b90538585c51917fdb2a3b040b8d218157ab7538",
+    "note": "Fork diverged; upstream diff ported onto the AdiXtream file."
+  },
+  {
+    "path": "app/src/main/res/values/donottranslate-strings.xml",
+    "classification": "manual merge",
+    "adi": [
+      "100644",
+      "97785757f78409d10e1d99b62e864fbe4c139ff0"
+    ],
+    "baseline": [
+      "100644",
+      "bb222918c7cb05ddb5b3eaef52e2bc0b532358e8"
+    ],
+    "upstream": [
+      "100644",
+      "a1334f0b19224b360f58a1c360b48e4601ce8e66"
+    ],
+    "current_blob": "08c8c15d83f287fd341b9dee25875e00448cbd05",
+    "note": "Fork diverged; upstream diff ported onto the AdiXtream file."
+  },
+  {
+    "path": "app/src/main/res/values/strings.xml",
+    "classification": "manual merge",
+    "adi": [
+      "100644",
+      "80453f787f6fcc37f6932db7bb886e21a58d0e10"
+    ],
+    "baseline": [
+      "100644",
+      "7d530b59f6e409e216516471880e4022a8d98a0a"
+    ],
+    "upstream": [
+      "100644",
+      "66eb3533c4c4448186f5719d697f54e40d96a9ea"
+    ],
+    "current_blob": "0d47e5ba86e5b6b7876cfe1b57b9b2c53f6475f3",
+    "note": "Fork diverged; upstream diff ported onto the AdiXtream file."
+  },
+  {
+    "path": "app/src/main/res/values/styles.xml",
+    "classification": "manual merge",
+    "adi": [
+      "100644",
+      "9fafc473add3a42231533cfc01aa24e4aed89811"
+    ],
+    "baseline": [
+      "100644",
+      "a63b472644552e61f82ccc449d9fa74662c6cbe0"
+    ],
+    "upstream": [
+      "100644",
+      "a5f8492dc9d959689cce1d02c2aa23420f21be0f"
+    ],
+    "current_blob": "d43647ad5f86d63057ae73e678ba029b0de7f2df",
+    "note": "Fork diverged; upstream diff ported onto the AdiXtream file."
+  },
+  {
+    "path": "app/src/main/res/xml/settings_ui.xml",
+    "classification": "manual merge",
+    "current_blob": "276881c713b19ef511117f0d150be1a37e165fb2",
+    "note": "AdiXtream integration, compatibility/security tests or prerequisite from earlier upstream."
+  },
+  {
+    "path": "library/api/jvm/library.api",
+    "classification": "manual merge",
+    "adi": [
+      "100644",
+      "ba03db6218a6bbe1cd3236a74ff71a4db7755798"
+    ],
+    "baseline": [
+      "100644",
+      "195cd49fe5540994b6c071e29fa6dcf86d3fefbb"
+    ],
+    "upstream": [
+      "100644",
+      "389c8e83f320bb7682f031995bfae6b87ecfa8ec"
+    ],
+    "current_blob": "05a766cec1b7d2c6ab7d6ccddb621225cc527f7c",
+    "note": "Fork diverged; upstream diff ported onto the AdiXtream file."
+  },
+  {
+    "path": "library/src/commonMain/kotlin/com/lagradost/cloudstream3/utils/ExtractorApi.kt",
+    "classification": "manual merge",
+    "adi": [
+      "100644",
+      "163059a97bde4352be1b67d3e826817f79f25c78"
+    ],
+    "baseline": [
+      "100644",
+      "e09ebbc8b0efff864f59a0760331087ff50dd15c"
+    ],
+    "upstream": [
+      "100644",
+      "faf498024adc29e6f8c0282a2ed87513912a11c1"
+    ],
+    "current_blob": "719b9f426c1f7b0898f9a577c039ec429c4ff86a",
+    "note": "Fork diverged; upstream diff ported onto the AdiXtream file."
+  },
+  {
+    "path": "settings.gradle.kts",
+    "classification": "manual merge",
+    "adi": [
+      "100644",
+      "73bf5a1958bc13667d551b382778d1d5fc6b8315"
+    ],
+    "baseline": [
+      "100644",
+      "73bf5a1958bc13667d551b382778d1d5fc6b8315"
+    ],
+    "upstream": [
+      "100644",
+      "dd92448b069fc3627498c212e854297eebf9c593"
+    ],
+    "current_blob": "a4f2778e412737dadca13d9f3bbd576c8357b00b",
+    "note": "Originally identical to baseline; upstream port then adapted to preserve AdiXtream integration."
+  },
+  {
+    "path": "app/src/main/java/com/lagradost/cloudstream3/CampaignPopupManager.kt",
+    "classification": "protected / intentionally retained",
+    "current_blob": "27c7c5b1ecd18dd04aa4d0516eee9140186a9c3a",
+    "note": "Protected AdiXtream source retained byte-for-byte."
+  },
+  {
+    "path": "app/src/main/java/com/lagradost/cloudstream3/PremiumDialogManager.kt",
+    "classification": "protected / intentionally retained",
+    "current_blob": "ecf3202ba979706fea99afe4f568ea7bb1b6cff1",
+    "note": "Protected AdiXtream source retained byte-for-byte."
+  },
+  {
+    "path": "app/src/main/java/com/lagradost/cloudstream3/RepoProtector.kt",
+    "classification": "protected / intentionally retained",
+    "current_blob": "e84e08db66d03cd538fbdd6e9188a91cf54bc673",
+    "note": "Protected AdiXtream source retained byte-for-byte."
+  },
+  {
+    "path": "app/src/main/java/com/lagradost/cloudstream3/SplashActivity.kt",
+    "classification": "protected / intentionally retained",
+    "current_blob": "759e0761485300d13d60e12d111b0707d9c19196",
+    "note": "Protected AdiXtream source retained byte-for-byte."
+  },
+  {
+    "path": "app/src/main/java/com/lagradost/cloudstream3/ui/settings/SettingsFragment.kt",
+    "classification": "protected / intentionally retained",
+    "current_blob": "ccb14b7dad378c7823ed18aebf69f4c0838f0532",
+    "note": "Protected AdiXtream source retained byte-for-byte."
+  },
+  {
+    "path": "app/src/main/java/com/lagradost/cloudstream3/ui/settings/SettingsUpdates.kt",
+    "classification": "protected / intentionally retained",
+    "current_blob": "a70137ca5fae79d554f80168fb103f4dc7cf8b41",
+    "note": "Protected AdiXtream source retained byte-for-byte."
+  },
+  {
+    "path": "app/src/main/res/values-b+bn/strings.xml",
+    "classification": "protected / intentionally retained",
+    "adi": [
+      "100644",
+      "87aa8e7eb04d47c7b496be2c8d4484fa130d0f42"
+    ],
+    "baseline": [
+      "100644",
+      "b6edbd1cdf1cce0bb00205f6ae83a6b1a2b894ca"
+    ],
+    "upstream": [
+      "100644",
+      "39ca9396eaca9f90618e45fe2768fe50692d1005"
+    ],
+    "current_blob": "87aa8e7eb04d47c7b496be2c8d4484fa130d0f42",
+    "note": "Translation/fastlane outside packaged en/id/in locale and AdiXtream branding scope; original retained or upstream-only addition omitted."
+  },
+  {
+    "path": "app/src/main/res/values-b+cs/strings.xml",
+    "classification": "protected / intentionally retained",
+    "adi": [
+      "100644",
+      "3f767553456702fd576735717b29e2bf77dea978"
+    ],
+    "baseline": [
+      "100644",
+      "e03da1d6fef0fd99e4fdafd92e1eab459eec394f"
+    ],
+    "upstream": [
+      "100644",
+      "a441d894a8d621171ab1b012daaec670c3ab344a"
+    ],
+    "current_blob": "3f767553456702fd576735717b29e2bf77dea978",
+    "note": "Translation/fastlane outside packaged en/id/in locale and AdiXtream branding scope; original retained or upstream-only addition omitted."
+  },
+  {
+    "path": "app/src/main/res/values-b+de/strings.xml",
+    "classification": "protected / intentionally retained",
+    "adi": [
+      "100644",
+      "8989ce795e8205b5ef981b57c5d06a368e8a84ff"
+    ],
+    "baseline": [
+      "100644",
+      "e674fafd6725b3d48bbaba47e7d150176fdd25bb"
+    ],
+    "upstream": [
+      "100644",
+      "f00db9ab4cd12dc48d36526b94e5133525366a3a"
+    ],
+    "current_blob": "8989ce795e8205b5ef981b57c5d06a368e8a84ff",
+    "note": "Translation/fastlane outside packaged en/id/in locale and AdiXtream branding scope; original retained or upstream-only addition omitted."
+  },
+  {
+    "path": "app/src/main/res/values-b+es/strings.xml",
+    "classification": "protected / intentionally retained",
+    "adi": [
+      "100644",
+      "5e59477cef511a7c51dba37882994a84fe8cc5ab"
+    ],
+    "baseline": [
+      "100644",
+      "1287c7c09872872fbabed3849aff07e3853dbe53"
+    ],
+    "upstream": [
+      "100644",
+      "df6b181f1669f93243126366f2db9fb9a20f0dbd"
+    ],
+    "current_blob": "5e59477cef511a7c51dba37882994a84fe8cc5ab",
+    "note": "Translation/fastlane outside packaged en/id/in locale and AdiXtream branding scope; original retained or upstream-only addition omitted."
+  },
+  {
+    "path": "app/src/main/res/values-b+fr/strings.xml",
+    "classification": "protected / intentionally retained",
+    "adi": [
+      "100644",
+      "f39de53f7f010b3f60cf00bb3750c25ffe6c0277"
+    ],
+    "baseline": [
+      "100644",
+      "bf401b20ad03a3f38a32ae2267030a451edc2285"
+    ],
+    "upstream": [
+      "100644",
+      "bcfb3608a0abdf44e3737bff6df2001f40a5777d"
+    ],
+    "current_blob": "f39de53f7f010b3f60cf00bb3750c25ffe6c0277",
+    "note": "Translation/fastlane outside packaged en/id/in locale and AdiXtream branding scope; original retained or upstream-only addition omitted."
+  },
+  {
+    "path": "app/src/main/res/values-b+it/strings.xml",
+    "classification": "protected / intentionally retained",
+    "adi": [
+      "100644",
+      "e75b4eb8c0408d1b93a6804461fe0f7912e4e35c"
+    ],
+    "baseline": [
+      "100644",
+      "2672f39b1d7e55014b2afa21e66a1f094b36679e"
+    ],
+    "upstream": [
+      "100644",
+      "2211ec1dda8794b4539e8ee2bc7bbc666884ccff"
+    ],
+    "current_blob": "e75b4eb8c0408d1b93a6804461fe0f7912e4e35c",
+    "note": "Translation/fastlane outside packaged en/id/in locale and AdiXtream branding scope; original retained or upstream-only addition omitted."
+  },
+  {
+    "path": "app/src/main/res/values-b+ja/strings.xml",
+    "classification": "protected / intentionally retained",
+    "adi": [
+      "100644",
+      "0b66ca8b2ec18bd80226d1eacd6e98f64d7672c5"
+    ],
+    "baseline": [
+      "100644",
+      "c5e6272b2d2723e40e38adf7a3412b93f3243b91"
+    ],
+    "upstream": [
+      "100644",
+      "c7bdb4ef0998c792a6a2176c0b0a603c7d3cde22"
+    ],
+    "current_blob": "0b66ca8b2ec18bd80226d1eacd6e98f64d7672c5",
+    "note": "Translation/fastlane outside packaged en/id/in locale and AdiXtream branding scope; original retained or upstream-only addition omitted."
+  },
+  {
+    "path": "app/src/main/res/values-b+ko/strings.xml",
+    "classification": "protected / intentionally retained",
+    "adi": [
+      "100644",
+      "90504ec95d9835b111106e8f1e9898e00e419df0"
+    ],
+    "baseline": [
+      "100644",
+      "4feeabe33825388b06d79d6ed8e257de605f0352"
+    ],
+    "upstream": [
+      "100644",
+      "3059bc3bedece9a34c599a23e261970fab988630"
+    ],
+    "current_blob": "90504ec95d9835b111106e8f1e9898e00e419df0",
+    "note": "Translation/fastlane outside packaged en/id/in locale and AdiXtream branding scope; original retained or upstream-only addition omitted."
+  },
+  {
+    "path": "app/src/main/res/values-b+lv/strings.xml",
+    "classification": "protected / intentionally retained",
+    "adi": [
+      "100644",
+      "18d3177f56355f0bdbe5ed20ce9e88cc1964c049"
+    ],
+    "baseline": [
+      "100644",
+      "531b5420b1a68929c4715e5d9bc877b226e572ef"
+    ],
+    "upstream": [
+      "100644",
+      "a8ecaa68ae935f508ae6ce2d51ae45377bf550f3"
+    ],
+    "current_blob": "18d3177f56355f0bdbe5ed20ce9e88cc1964c049",
+    "note": "Translation/fastlane outside packaged en/id/in locale and AdiXtream branding scope; original retained or upstream-only addition omitted."
+  },
+  {
+    "path": "app/src/main/res/values-b+mk/strings.xml",
+    "classification": "protected / intentionally retained",
+    "adi": [
+      "100644",
+      "6998c49dbecffa36922818e14be5248967ad5c09"
+    ],
+    "baseline": [
+      "100644",
+      "4e37afdeac495b6155b1b9df194b742770dc6528"
+    ],
+    "upstream": [
+      "100644",
+      "64068ee29d4fae96ffbea4c74a06e607ea40c812"
+    ],
+    "current_blob": "6998c49dbecffa36922818e14be5248967ad5c09",
+    "note": "Translation/fastlane outside packaged en/id/in locale and AdiXtream branding scope; original retained or upstream-only addition omitted."
+  },
+  {
+    "path": "app/src/main/res/values-b+pl/strings.xml",
+    "classification": "protected / intentionally retained",
+    "adi": [
+      "100644",
+      "fc167da5a58e45b2b075db7688fc7e3a52c9b05b"
+    ],
+    "baseline": [
+      "100644",
+      "418a4a2ca9ca16d14ea02b338e8ca8ef0ccfc6aa"
+    ],
+    "upstream": [
+      "100644",
+      "99adc74ee3cb84a332f5d724f0c5a7442a8bfc16"
+    ],
+    "current_blob": "fc167da5a58e45b2b075db7688fc7e3a52c9b05b",
+    "note": "Translation/fastlane outside packaged en/id/in locale and AdiXtream branding scope; original retained or upstream-only addition omitted."
+  },
+  {
+    "path": "app/src/main/res/values-b+pt+BR/strings.xml",
+    "classification": "protected / intentionally retained",
+    "adi": [
+      "100644",
+      "58d59870892483e90bbacd797b2a387d27faa7af"
+    ],
+    "baseline": [
+      "100644",
+      "455478b5a7010e90e009b4907300c3b18b3ed81f"
+    ],
+    "upstream": [
+      "100644",
+      "97c5f9e4c0241c2bbc1f72e47e9a8ad85c0b4feb"
+    ],
+    "current_blob": "58d59870892483e90bbacd797b2a387d27faa7af",
+    "note": "Translation/fastlane outside packaged en/id/in locale and AdiXtream branding scope; original retained or upstream-only addition omitted."
+  },
+  {
+    "path": "app/src/main/res/values-b+ru/strings.xml",
+    "classification": "protected / intentionally retained",
+    "adi": [
+      "100644",
+      "9f6b53aa75fd5a30f88dd3c261e1fc032282018c"
+    ],
+    "baseline": [
+      "100644",
+      "38e576baafdfede167dd7c5358d83ea82163b064"
+    ],
+    "upstream": [
+      "100644",
+      "7a174483f4a39b1ac9115df5961cce2a33af5f82"
+    ],
+    "current_blob": "9f6b53aa75fd5a30f88dd3c261e1fc032282018c",
+    "note": "Translation/fastlane outside packaged en/id/in locale and AdiXtream branding scope; original retained or upstream-only addition omitted."
+  },
+  {
+    "path": "app/src/main/res/values-b+so/strings.xml",
+    "classification": "protected / intentionally retained",
+    "adi": [
+      "100644",
+      "09499af0038e299349c7c824d2ae907f8cd26a0b"
+    ],
+    "baseline": [
+      "100644",
+      "0eb7873112f2f8d856e6398e431933e8f257ec32"
+    ],
+    "upstream": [
+      "100644",
+      "8a8f290952463751d7a628bb12a38146d0b68903"
+    ],
+    "current_blob": "09499af0038e299349c7c824d2ae907f8cd26a0b",
+    "note": "Translation/fastlane outside packaged en/id/in locale and AdiXtream branding scope; original retained or upstream-only addition omitted."
+  },
+  {
+    "path": "app/src/main/res/values-b+sq/strings.xml",
+    "classification": "protected / intentionally retained",
+    "adi": null,
+    "baseline": [
+      "100644",
+      "828066eadab65c4cb3f2b298dfae259ff8dca44e"
+    ],
+    "upstream": [
+      "100644",
+      "d083809bbb3239c14d3ae01a959d09880a7a00da"
+    ],
+    "current_blob": null,
+    "note": "Translation/fastlane outside packaged en/id/in locale and AdiXtream branding scope; original retained or upstream-only addition omitted."
+  },
+  {
+    "path": "app/src/main/res/values-b+sv/strings.xml",
+    "classification": "protected / intentionally retained",
+    "adi": [
+      "100644",
+      "ddc7636b1ed55d694ad472515045e24678551e16"
+    ],
+    "baseline": [
+      "100644",
+      "0740e0b8d613a538cf039abaac0051cdad8311da"
+    ],
+    "upstream": [
+      "100644",
+      "d4ac2674387f05fe05b7c2adb64a3b75f51d5f74"
+    ],
+    "current_blob": "ddc7636b1ed55d694ad472515045e24678551e16",
+    "note": "Translation/fastlane outside packaged en/id/in locale and AdiXtream branding scope; original retained or upstream-only addition omitted."
+  },
+  {
+    "path": "app/src/main/res/values-b+tr/strings.xml",
+    "classification": "protected / intentionally retained",
+    "adi": [
+      "100644",
+      "273a3140c8c7f0b888c1e099c5d4dcf5744e1142"
+    ],
+    "baseline": [
+      "100644",
+      "e4a2dbc3702a5fdb66f8d19718de4c3cee117da1"
+    ],
+    "upstream": [
+      "100644",
+      "c7e535c8d8e0a843f045c377c7912fe085b642f8"
+    ],
+    "current_blob": "273a3140c8c7f0b888c1e099c5d4dcf5744e1142",
+    "note": "Translation/fastlane outside packaged en/id/in locale and AdiXtream branding scope; original retained or upstream-only addition omitted."
+  },
+  {
+    "path": "app/src/main/res/values-b+uk/strings.xml",
+    "classification": "protected / intentionally retained",
+    "adi": [
+      "100644",
+      "b97c16a7e28c63a818ba35900b66cc7d3f0aa161"
+    ],
+    "baseline": [
+      "100644",
+      "56e5a916e224724a0e888e9ace004023adf0a9bb"
+    ],
+    "upstream": [
+      "100644",
+      "9b1bf5eb656959e515f464a74a7ebb6e4544342d"
+    ],
+    "current_blob": "b97c16a7e28c63a818ba35900b66cc7d3f0aa161",
+    "note": "Translation/fastlane outside packaged en/id/in locale and AdiXtream branding scope; original retained or upstream-only addition omitted."
+  },
+  {
+    "path": "app/src/main/res/values-b+vi/strings.xml",
+    "classification": "protected / intentionally retained",
+    "adi": [
+      "100644",
+      "a4804c9d45182f59b664ba3ed1781ba958a81b68"
+    ],
+    "baseline": [
+      "100644",
+      "3e2a93fb4138a7cc0be2d1236b47f3eeb8802095"
+    ],
+    "upstream": [
+      "100644",
+      "e6ffba1306948770cedd1e3a629635e322842eea"
+    ],
+    "current_blob": "a4804c9d45182f59b664ba3ed1781ba958a81b68",
+    "note": "Translation/fastlane outside packaged en/id/in locale and AdiXtream branding scope; original retained or upstream-only addition omitted."
+  },
+  {
+    "path": "app/src/main/res/values-b+zh/strings.xml",
+    "classification": "protected / intentionally retained",
+    "adi": [
+      "100644",
+      "e8e02d51f4f43a5c2592e8086089ccb0e18994a4"
+    ],
+    "baseline": [
+      "100644",
+      "dc7eab451b8f6d5a7f8134bc772f3743035f9fcf"
+    ],
+    "upstream": [
+      "100644",
+      "67e627004d27f6a65c5d00b2fd19bf446be03f68"
+    ],
+    "current_blob": "e8e02d51f4f43a5c2592e8086089ccb0e18994a4",
+    "note": "Translation/fastlane outside packaged en/id/in locale and AdiXtream branding scope; original retained or upstream-only addition omitted."
+  },
+  {
+    "path": "app/src/main/res/values-lo/strings.xml",
+    "classification": "protected / intentionally retained",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "c1a3daa020dbc1e06d9a3a7f1c298e6e745e06f4"
+    ],
+    "current_blob": null,
+    "note": "Translation/fastlane outside packaged en/id/in locale and AdiXtream branding scope; original retained or upstream-only addition omitted."
+  },
+  {
+    "path": "fastlane/metadata/android/lo-LA/changelogs/2.txt",
+    "classification": "protected / intentionally retained",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "a9c33c045f54051156665164fe674af9b8c5eb0d"
+    ],
+    "current_blob": null,
+    "note": "Translation/fastlane outside packaged en/id/in locale and AdiXtream branding scope; original retained or upstream-only addition omitted."
+  },
+  {
+    "path": "fastlane/metadata/android/lo-LA/full_description.txt",
+    "classification": "protected / intentionally retained",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "6c1396482e71fb1e66060cd68eff17da162284a5"
+    ],
+    "current_blob": null,
+    "note": "Translation/fastlane outside packaged en/id/in locale and AdiXtream branding scope; original retained or upstream-only addition omitted."
+  },
+  {
+    "path": "fastlane/metadata/android/lo-LA/short_description.txt",
+    "classification": "protected / intentionally retained",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "507aa8a7069577ee38b6cbe3c4a4782cbc60ddfc"
+    ],
+    "current_blob": null,
+    "note": "Translation/fastlane outside packaged en/id/in locale and AdiXtream branding scope; original retained or upstream-only addition omitted."
+  },
+  {
+    "path": "fastlane/metadata/android/lo-LA/title.txt",
+    "classification": "protected / intentionally retained",
+    "adi": null,
+    "baseline": null,
+    "upstream": [
+      "100644",
+      "dde89d58fcfd010444c885477c12288748464537"
+    ],
+    "current_blob": null,
+    "note": "Translation/fastlane outside packaged en/id/in locale and AdiXtream branding scope; original retained or upstream-only addition omitted."
+  }
+]

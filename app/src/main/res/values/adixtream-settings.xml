@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="adi_subscription_title">Aktivasi dan Langganan</string>
+    <string name="adi_subscription_summary">Status, Aktivasi, Promo, Langganan</string>
+    <string name="adi_internal_repositories">Repository internal Free dan Premium</string>
+</resources>

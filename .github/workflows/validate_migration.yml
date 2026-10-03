@@ -1,0 +1,94 @@
+name: Validate AdiXtream migration
+
+on:
+  pull_request:
+    branches: [master]
+    paths-ignore: ['docs/**']
+  push:
+    branches: [migration/cloudstream-2026-09-compose-premium]
+    paths-ignore: ['docs/**']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: migration-validation-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+        with:
+          cmdline-tools-version: '13114758'
+          packages: 'platform-tools platforms;android-37.0 build-tools;36.0.0'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-read-only: false
+      - name: Offline compatibility and credential checks
+        run: |
+          python3 scripts/verify_migration.py
+          python3 scripts/scan_credentials.py
+      - name: Clean build, tests and lint without production secrets
+        run: ./gradlew clean :app:assembleStableDebug :app:testStableDebugUnitTest :library:jvmTest :app:lintStableDebug --continue --no-configuration-cache --stacktrace
+      - name: Verify missing release credentials fail closed
+        run: |
+          if ./gradlew :app:verifyReleaseConfiguration --no-configuration-cache > "$RUNNER_TEMP/release-gate.log" 2>&1; then
+            echo "Release validation unexpectedly accepted missing configuration"
+            exit 1
+          fi
+          python3 - <<'PY'
+          import os
+          from pathlib import Path
+          text = (Path(os.environ['RUNNER_TEMP']) / 'release-gate.log').read_text()
+          assert 'Release configuration missing:' in text, 'Unexpected release gate failure'
+          assert 'KEYSTORE_PATH' in text and 'SIMKL_CLIENT_SECRET' in text
+          print('PASS: release validation rejects missing configuration without signing.')
+          PY
+      - name: Enable emulator acceleration
+        run: sudo chmod 0666 /dev/kvm
+      - name: Offline phone and TV layout smoke tests
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_2
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          script: bash scripts/run_settings_smoke.sh
+      - name: Upload phone and TV screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: migration-settings-screenshots
+          path: migration-ui/
+          if-no-files-found: warn
+          retention-days: 14
+      - name: Upload verification reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: migration-reports
+          path: |
+            app/build/reports/
+            library/build/reports/
+            app/build/outputs/androidTest-results/
+          retention-days: 14
+      - name: Upload isolated debug APK
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: AdiXtream-migration-debug
+          path: app/build/outputs/apk/stable/debug/*.apk
+          retention-days: 14

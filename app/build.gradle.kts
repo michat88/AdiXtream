@@ -9,9 +9,32 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.dokka)
     alias(libs.plugins.kotlin.serialization)
+    alias(libs.plugins.compose.multiplatform)
+    alias(libs.plugins.compose.compiler)
 }
 
 val javaTarget = JvmTarget.fromTarget(libs.versions.jvmTarget.get())
+
+// Do not silently sign a customer update with another identity, or build an empty
+// production backend configuration. Debug builds can be tested without secrets.
+val verifyReleaseConfiguration = tasks.register("verifyReleaseConfiguration") {
+    notCompatibleWithConfigurationCache("Signing configuration is validated from the current environment, without caching secret inputs.")
+    doLast {
+        val required = listOf("KEYSTORE_PATH", "ALIAS", "KEY_STORE_PASSWORD", "KEY_PASSWORD",
+            "XOR_SECRET_KEY", "PREMIUM_REPO_ENCODED", "FREE_REPO_ENCODED", "FIREBASE_URL_ENCODED",
+            "SIMKL_CLIENT_ID", "SIMKL_CLIENT_SECRET", "ANILIST_CLIENT_SECRET", "OPENSUBTITLES_API_KEY")
+        val local = gradleLocalProperties(rootDir, project.providers)
+        val missing = required.filter { name ->
+            val value = if (name in listOf("KEYSTORE_PATH", "ALIAS", "KEY_STORE_PASSWORD", "KEY_PASSWORD"))
+                System.getenv(name) else System.getenv(name) ?: local.getProperty(name)
+            value.isNullOrBlank()
+        }
+        check(missing.isEmpty()) { "Release configuration missing: ${missing.joinToString()}. Supply existing repository secrets; values are never logged." }
+        check(file(System.getenv("KEYSTORE_PATH")).isFile) { "Existing release keystore is unavailable." }
+    }
+}
+tasks.matching { it.name == "preStableReleaseBuild" || it.name == "validateSigningStableRelease" }
+    .configureEach { dependsOn(verifyReleaseConfiguration) }
 
 abstract class GenerateGitHashTask : DefaultTask() {
 
@@ -117,9 +140,9 @@ android {
         create("release") {
             val envKeystorePath = System.getenv("KEYSTORE_PATH")
             storeFile = if (envKeystorePath != null) file(envKeystorePath) else file("keystore.jks")
-            storePassword = System.getenv("KEY_STORE_PASSWORD") ?: "161105"
-            keyAlias = System.getenv("ALIAS") ?: "adixtream"
-            keyPassword = System.getenv("KEY_PASSWORD") ?: "161105"
+            storePassword = System.getenv("KEY_STORE_PASSWORD")
+            keyAlias = System.getenv("ALIAS")
+            keyPassword = System.getenv("KEY_PASSWORD")
         }
     }
 
@@ -152,7 +175,7 @@ android {
         // ===== AdiXtream: rahasia repo terenkripsi XOR =====
         val xorSecretKey = (localProperties.getProperty("XOR_SECRET_KEY")
             ?: System.getenv("XOR_SECRET_KEY")
-            ?: "DefaultKeyAman").trim()
+            ?: "").trim()
 
         val premiumRepo = (localProperties.getProperty("PREMIUM_REPO_ENCODED")
             ?: System.getenv("PREMIUM_REPO_ENCODED")
@@ -179,17 +202,14 @@ android {
         // ===== AdiXtream: versi aplikasi untuk UI =====
         buildConfigField("String", "APP_VERSION", "\"$versionName\"")
 
-        // ===== AdiXtream: kunci SIMKL di-hardcode =====
-        buildConfigField(
-            "String",
-            "SIMKL_CLIENT_ID",
-            "\"db13c9a72e036f717c3a85b13cdeb31fa884c8f4991e43695f7b6477374e35b8\""
-        )
-        buildConfigField(
-            "String",
-            "SIMKL_CLIENT_SECRET",
-            "\"d8cf8e1b79bae9b2f77f0347d6384a62f1a8d802abdd73d9aa52bf6a848532ba\""
-        )
+        // SIMKL client_id is public; client_secret is injected, never stored here.
+        // BuildConfig values can still be extracted from a distributed APK.
+        for (name in listOf("SIMKL_CLIENT_ID", "SIMKL_CLIENT_SECRET", "ANILIST_CLIENT_SECRET", "OPENSUBTITLES_API_KEY")) {
+            val value = System.getenv(name) ?: localProperties.getProperty(name).orEmpty()
+            val escaped = value.replace("\\", "\\\\").replace("\"", "\\\"")
+                .replace("\n", "\\n").replace("\r", "\\r")
+            buildConfigField("String", name, "\"$escaped\"")
+        }
         buildConfigField(
             "String",
             "MAL_KEY",
@@ -268,6 +288,7 @@ dependencies {
     // Testing
     testImplementation(libs.junit)
     testImplementation(libs.json)
+    testImplementation(libs.kotlinx.coroutines.test)
     androidTestImplementation(libs.core)
     androidTestImplementation(libs.espresso.core)
     androidTestImplementation(libs.ext.junit)
@@ -342,6 +363,10 @@ dependencies {
     implementation(libs.work.runtime.ktx)
     implementation(libs.nicehttp)
 
+    implementation(libs.bundles.compose)
+    implementation(libs.activity.compose)
+    implementation(libs.kotlinx.io.core)
+    implementation(project(":shared"))
     implementation(project(":library"))
 }
 

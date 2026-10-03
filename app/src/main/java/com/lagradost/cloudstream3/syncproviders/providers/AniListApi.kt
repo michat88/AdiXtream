@@ -1,5 +1,6 @@
 package com.lagradost.cloudstream3.syncproviders.providers
 
+import com.lagradost.cloudstream3.BuildConfig
 import android.net.Uri
 import androidx.annotation.StringRes
 import com.fasterxml.jackson.annotation.JsonProperty
@@ -41,7 +42,7 @@ class AniListApi : SyncAPI() {
 
     // --- MODIFIKASI ADIXTREAM (DIPERTAHANKAN): Konfigurasi Client hardcoded ---
     val key = "33370"
-    private val secret = "H8Lt1PrYHLCWrpzQln4FremNk1JLvgJpbUyt8Nr1"
+    private val secret = BuildConfig.ANILIST_CLIENT_SECRET
 
     override val redirectUrlIdentifier = "anilistlogin"
     override var requireLibraryRefresh = true
@@ -53,9 +54,11 @@ class AniListApi : SyncAPI() {
 
     // --- MODIFIKASI ADIXTREAM (DIPERTAHANKAN): Authorization Code Flow ---
     override fun loginRequest(): AuthLoginPage? =
-        AuthLoginPage("https://anilist.co/api/v2/oauth/authorize?client_id=$key&response_type=code&redirect_uri=$APP_STRING://$redirectUrlIdentifier")
+        if (secret.isBlank()) null else
+            AuthLoginPage("https://anilist.co/api/v2/oauth/authorize?client_id=$key&response_type=code&redirect_uri=$APP_STRING://$redirectUrlIdentifier")
 
     override suspend fun login(redirectUrl: String, payload: String?): AuthToken? {
+        if (secret.isBlank()) return null
         val uri = Uri.parse(redirectUrl)
         val code = uri.getQueryParameter("code") ?: throw ErrorLoadingException("No code found")
 

@@ -7,6 +7,7 @@ import com.lagradost.cloudstream3.CloudStreamApp.Companion.context
 import com.lagradost.cloudstream3.CloudStreamApp.Companion.getKey
 import com.lagradost.cloudstream3.CloudStreamApp.Companion.setKey
 import com.lagradost.cloudstream3.R
+import com.lagradost.cloudstream3.PremiumManager
 import com.lagradost.cloudstream3.amap
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.mvvm.logError
@@ -97,8 +98,16 @@ data class PluginWrapper(
 
 object RepositoryManager {
     const val ONLINE_PLUGINS_FOLDER = "Extensions"
-    val PREBUILT_REPOSITORIES: Array<RepositoryData> by lazy {
-        getKey<Array<RepositoryData>>("PREBUILT_REPOSITORIES") ?: emptyArray()
+    val PREBUILT_REPOSITORIES: Array<RepositoryData>
+        get() = (getKey<Array<RepositoryData>>("PREBUILT_REPOSITORIES") ?: emptyArray())
+            .filter { isAllowedRepository(it.url) }.toTypedArray()
+
+    fun isAllowedRepository(url: String): Boolean {
+        val appContext = context ?: return false
+        val subscription = PremiumManager.getLocalSubscription(appContext)
+        return InternalRepositoryPolicy.allows(url, PremiumManager.FREE_REPO_URL,
+            PremiumManager.PREMIUM_REPO_URL,
+            subscription.isPremium && subscription.expiresAt > System.currentTimeMillis())
     }
     private val GH_REGEX =
         Regex("^https://raw.githubusercontent.com/([A-Za-z0-9-]+)/([A-Za-z0-9_.-]+)/(.*)$")
@@ -129,36 +138,10 @@ object RepositoryManager {
         return "https://cdn.jsdelivr.net/gh/$user/$repo@$rest"
     }
 
-    suspend fun parseRepoUrl(url: String): String? {
-        val fixedUrl = url.trim()
-        return if (fixedUrl.contains("^https?://".toRegex())) {
-            fixedUrl
-        } else if (fixedUrl.contains("^(cloudstreamrepo://)|(https://cs\\.repo/\\??)".toRegex())) {
-            fixedUrl.replace("^(cloudstreamrepo://)|(https://cs\\.repo/\\??)".toRegex(), "").let {
-                return@let if (!it.contains("^https?://".toRegex()))
-                    "https://${it}"
-                else fixedUrl
-            }
-        } else if (fixedUrl.matches("^[a-zA-Z0-9!_-]+$".toRegex())) {
-            safeAsync {
-                if (fixedUrl.startsWith("!")) {
-                    val response = app.get("https://py.md/${fixedUrl.removePrefix("!")}", allowRedirects = false)
-                    val url = response.headers["Location"] ?: return@safeAsync null
-                    if (url.startsWith("https://py.md/404")) return@safeAsync null
-                    if (url.removeSuffix("/") == "https://py.md") return@safeAsync null
-                    return@safeAsync url
-                } else {
-                    val response = app.get("https://cutt.ly/${fixedUrl}", allowRedirects = false)
-                    val url = response.headers["Location"] ?: return@safeAsync null
-                    if (url.startsWith("https://cutt.ly/404")) return@safeAsync null
-                    if (url.removeSuffix("/") == "https://cutt.ly") return@safeAsync null
-                    return@safeAsync url
-                }
-            }
-        } else null
-    }
+    suspend fun parseRepoUrl(url: String): String? = url.trim().takeIf(::isAllowedRepository)
 
     suspend fun parseRepository(url: String): Repository? {
+        if (!isAllowedRepository(url)) return null
         return safeAsync {
             // Take manifestVersion and such into account later
             app.get(convertRawGitUrl(url), cacheTime = 5, cacheUnit = TimeUnit.MINUTES)
@@ -246,6 +229,7 @@ object RepositoryManager {
     // Don't want to read before we write in another thread
     private val repoLock = Mutex()
     suspend fun addRepository(repository: RepositoryData) {
+        require(isAllowedRepository(repository.url)) { "Only configured internal repositories are supported." }
         repoLock.withLock {
             val currentRepos = getRepositories()
             // No duplicates

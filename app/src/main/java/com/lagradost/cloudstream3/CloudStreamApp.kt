@@ -71,6 +71,7 @@ class CloudStreamApp : Application(), SingletonImageLoader.Factory {
 
     override fun onCreate() {
         super.onCreate()
+        com.lagradost.cloudstream3.ui.settings.AdiXtreamSettingsMigration.migrate(this)
         // If we want to initialize Coil as early as possible, maybe when
         // loading an image or GIF in a splash screen activity.
         // buildImageLoader(applicationContext)
@@ -170,11 +171,11 @@ class CloudStreamApp : Application(), SingletonImageLoader.Factory {
         }
 
         /** Will fall back to WebView if in TV or emulator layout. */
-        fun openBrowser(url: String, activity: FragmentActivity?) {
+        fun openBrowser(url: String, activity: Activity?) {
             openBrowser(
                 url,
                 isLayout(TV or EMULATOR),
-                activity?.supportFragmentManager?.fragments?.lastOrNull()
+                (activity as? FragmentActivity)?.supportFragmentManager?.fragments?.lastOrNull()
             )
         }
     }

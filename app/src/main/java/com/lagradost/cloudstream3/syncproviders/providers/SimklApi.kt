@@ -987,6 +987,7 @@ class SimklApi : SyncAPI() {
     }
 
     override fun loginRequest(): AuthLoginPage? {
+        if (CLIENT_ID.isBlank() || CLIENT_SECRET.isBlank()) return null
         val lastLoginState = BigInteger(130, SecureRandom()).toString(32)
         val url = "https://simkl.com/oauth/authorize?response_type=code&client_id=$CLIENT_ID&redirect_uri=$APP_STRING://$redirectUrlIdentifier&state=$lastLoginState"
         return AuthLoginPage(
@@ -1094,6 +1095,7 @@ class SimklApi : SyncAPI() {
     }
 
     override suspend fun pinRequest(): AuthPinData? {
+        if (CLIENT_ID.isBlank()) return null
         val pinAuthResp = app.get(
             "$mainUrl/oauth/pin?client_id=$CLIENT_ID&redirect_uri=$APP_STRING://$redirectUrlIdentifier"
         ).parsedSafe<PinAuthResponse>() ?: return null
@@ -1116,6 +1118,7 @@ class SimklApi : SyncAPI() {
     }
 
     override suspend fun login(redirectUrl: String, payload: String?): AuthToken? {
+        if (CLIENT_ID.isBlank() || CLIENT_SECRET.isBlank()) return null
         val uri = redirectUrl.toUri()
         val state = uri.getQueryParameter("state")
         // Ensure consistent state

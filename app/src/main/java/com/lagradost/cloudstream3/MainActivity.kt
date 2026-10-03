@@ -178,6 +178,7 @@ import com.lagradost.cloudstream3.utils.USER_SELECTED_HOMEPAGE_API
 import com.lagradost.cloudstream3.utils.setText
 import com.lagradost.cloudstream3.utils.setTextHtml
 import com.lagradost.cloudstream3.utils.txt
+import com.lagradost.cloudstream4.theme.CloudStreamTheme
 import com.lagradost.safefile.SafeFile
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -284,7 +285,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                         }
                     } else if (str.startsWith("https://cs.repo")) {
                         val realUrl = "https://" + str.substringAfter("?")
-                        println("Repository url: $realUrl")
+                        if (!RepositoryManager.isAllowedRepository(realUrl)) return false
                         loadRepository(realUrl)
                         return true
                     } else if (str.contains(APP_STRING)) {
@@ -1033,6 +1034,9 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
         }
 
         binding?.apply {
+            composeView.setContent {
+                CloudStreamTheme { MainActivityScreen.Content() }
+            }
             fixSystemBarsPadding(navView, heightResId = R.dimen.nav_view_height, padTop = false, overlayCutout = false)
             fixSystemBarsPadding(navRailView, widthResId = R.dimen.nav_rail_view_width, padRight = false, padTop = false)
         }
@@ -1104,7 +1108,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                             val repoData = RepositoryData(parsedRepo.iconUrl ?: "", parsedRepo.name, targetRepoUrl)
                             RepositoryManager.addRepository(repoData)
                             isRepoChanged = true 
-                            Log.d(TAG, "Repo berhasil disinkronkan ke: $targetRepoUrl")
+                            Log.d(TAG, "Repository internal berhasil disinkronkan")
                         }
                     } catch (e: Exception) { logError(e) }
                 }

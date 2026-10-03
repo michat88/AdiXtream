@@ -99,6 +99,7 @@ import com.lagradost.cloudstream3.ui.settings.Globals.isLayout
 import com.lagradost.cloudstream3.ui.subtitles.SUBTITLE_AUTO_SELECT_KEY
 import com.lagradost.cloudstream3.ui.subtitles.SubtitlesFragment
 import com.lagradost.cloudstream3.ui.subtitles.SubtitlesFragment.Companion.getAutoSelectLanguageTagIETF
+import com.lagradost.cloudstream3.ui.subtitles.SubtitlesFragmentDialog2
 import com.lagradost.cloudstream3.utils.AppContextUtils.getShortSeasonText
 import com.lagradost.cloudstream3.utils.AppContextUtils.html
 import com.lagradost.cloudstream3.utils.AppContextUtils.sortSubs
@@ -1043,7 +1044,7 @@ class GeneratorPlayer : FullScreenPlayer() {
 
                 binding.subtitleSettingsBtt.setOnClickListener {
                     safe {
-                        val subtitlesFragment = SubtitlesFragment()
+                        val subtitlesFragment = SubtitlesFragmentDialog2()
                         subtitlesFragment.systemBarsAddPadding = true
                         subtitlesFragment.show(this.parentFragmentManager, "SubtitleSettings")
                     }
@@ -2218,6 +2219,14 @@ class GeneratorPlayer : FullScreenPlayer() {
                 viewModel.langFilterList = langFromPrefMedia?.mapNotNull {
                     fromTagToEnglishLanguageName(it)?.lowercase() ?: return@mapNotNull null
                 } ?: listOf()
+            }
+
+            // Set up TV clock visibility
+            if (isLayout(TV)) {
+                val showTvClock = settingsManager.getBoolean(ctx.getString(R.string.tv_layout_clock_key), false)
+                playerBinding?.playerVideoClock?.isVisible = showTvClock
+            } else {
+                playerBinding?.playerVideoClock?.isVisible = false
             }
         }
 

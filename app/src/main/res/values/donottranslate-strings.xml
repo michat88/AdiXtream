@@ -135,19 +135,10 @@
     <string name="show_media_info_key">show_media_info</string>
     <string name="prefer_title_limit_key">prefer_title_limit</string>
 
-    <string name="legal_notice_text">Any legal issues regarding the content accessed through this application
-        should be directed to the actual file hosts and providers.
-
-        AdiXtream comes with a built-in custom repository for extension plugins to access various third-party websites. 
-        However, AdiXtream does not host, upload, or manage any of the media, videos, or films found through these extensions.
-        The application acts strictly as a client and aggregator that scrapes publicly accessible websites.
-
-        It is the responsibility of the user to ensure that their use of the app and its embedded plugins complies with local laws.
-        Use AdiXtream at your own risk.
-    </string>
 
     <plurals name="episodes">
         <item quantity="one">@string/episode</item>
         <item quantity="other">@string/episodes</item>
     </plurals>
+    <string name="tv_layout_clock_key">tv_layout_clock_key</string>
 </resources>

@@ -17,5 +17,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "CloudStream"
-include(":app", ":library", ":docs")
+rootProject.name = "AdiXtream"
+include(":app", ":shared", ":library", ":docs", ":desktopApp")

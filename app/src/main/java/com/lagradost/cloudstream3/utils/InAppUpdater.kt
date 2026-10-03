@@ -13,6 +13,7 @@ import com.lagradost.cloudstream3.BuildConfig
 import com.lagradost.cloudstream3.CommonActivity.showToast
 import com.lagradost.cloudstream3.R
 import com.lagradost.cloudstream3.app
+import com.lagradost.cloudstream3.ui.settings.AdiXtreamUpdatePolicy
 import com.lagradost.cloudstream3.mvvm.safe
 import com.lagradost.cloudstream3.services.PackageInstallerService
 import com.lagradost.cloudstream3.utils.AppContextUtils.setDefaultFocus
@@ -209,7 +210,7 @@ object InAppUpdater {
         }
 
         val update = getAppUpdate(installPrerelease)
-        if (!update.shouldUpdate || update.updateURL == null) {
+        if (!update.shouldUpdate || update.updateURL == null || !AdiXtreamUpdatePolicy.allowsDownload(update.updateURL)) {
             return false
         }
 
