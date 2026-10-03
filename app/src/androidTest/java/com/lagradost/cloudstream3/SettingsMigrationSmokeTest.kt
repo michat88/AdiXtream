@@ -1,5 +1,6 @@
 package com.lagradost.cloudstream3
 
+import android.util.Xml
 import android.content.ClipboardManager
 import android.content.Context
 import android.content.pm.ActivityInfo
@@ -69,7 +70,7 @@ class SettingsMigrationSmokeTest {
             openSettings(scenario)
             capture("tv-settings-top")
             verifyMenuAndOpenSubscription()
-            val copy = findVisible("Salin") ?: error("Missing copy action")
+            val copy = findVisible("Salin", scroll = true) ?: error("Missing copy action")
             val button = clickable(copy)
             assertTrue("TV copy button accepts input focus", button.performAction(AccessibilityNodeInfo.ACTION_FOCUS))
             instrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_CENTER)
@@ -128,8 +129,8 @@ class SettingsMigrationSmokeTest {
     private fun verifySubscription(prefix: String) {
         assertNotNull(findVisible("Gratis"))
         val expectedId = PremiumManager.getDeviceId(context)
-        assertNotNull("Existing device ID displayed", findVisible(expectedId))
-        val copy = findVisible("Salin") ?: error("Copy action missing")
+        assertNotNull("Existing device ID displayed", findVisible(expectedId, scroll = true))
+        val copy = findVisible("Salin", scroll = true) ?: error("Copy action missing")
         assertTrue(clickable(copy).performAction(AccessibilityNodeInfo.ACTION_CLICK))
         awaitText("ID Disalin")
         instrumentation.runOnMainSync {
@@ -154,6 +155,7 @@ class SettingsMigrationSmokeTest {
 
     private fun nodes(root: AccessibilityNodeInfo?): List<AccessibilityNodeInfo> = buildList {
         if (root != null) {
+            root.refresh()
             add(root)
             for (i in 0 until root.childCount) addAll(nodes(root.getChild(i)))
         }
@@ -179,9 +181,11 @@ class SettingsMigrationSmokeTest {
 
     private fun swipeContent(node: AccessibilityNodeInfo, backward: Boolean) {
         val bounds = Rect().also(node::getBoundsInScreen)
+        val window = Rect().also { automation.rootInActiveWindow?.getBoundsInScreen(it) }
+        check(bounds.intersect(window)) { "Scrollable content must intersect its window" }
         val x = bounds.exactCenterX()
-        val start = bounds.top + bounds.height() * if (backward) 0.35f else 0.7f
-        val end = bounds.top + bounds.height() * if (backward) 0.7f else 0.35f
+        val start = bounds.top + bounds.height() * (if (backward) 0.4f else 0.65f)
+        val end = bounds.top + bounds.height() * (if (backward) 0.65f else 0.4f)
         val downTime = SystemClock.uptimeMillis()
         fun event(action: Int, y: Float) {
             val motion = MotionEvent.obtain(downTime, SystemClock.uptimeMillis(), action, x, y, 0)
@@ -190,10 +194,13 @@ class SettingsMigrationSmokeTest {
             motion.recycle()
         }
         event(MotionEvent.ACTION_DOWN, start)
-        for (step in 1..12) {
-            SystemClock.sleep(16)
-            event(MotionEvent.ACTION_MOVE, start + (end - start) * step / 12f)
+        for (step in 1..20) {
+            SystemClock.sleep(30)
+            event(MotionEvent.ACTION_MOVE, start + (end - start) * step / 20f)
         }
+        // End with a stationary pointer: a fling can skip whole preference rows.
+        SystemClock.sleep(200)
+        event(MotionEvent.ACTION_MOVE, end)
         event(MotionEvent.ACTION_UP, end)
     }
 
@@ -224,5 +231,22 @@ class SettingsMigrationSmokeTest {
         }
         shell("mkdir -p /sdcard/Download/AdiXtream-migration-ui")
         shell("screencap -p /sdcard/Download/AdiXtream-migration-ui/$name.png")
+        // Test-only hierarchy contains isolated emulator state, never production credentials.
+        val hierarchy = java.io.File(context.cacheDir, "$name.xml")
+        hierarchy.outputStream().use { output ->
+            val xml = Xml.newSerializer().apply { setOutput(output, "UTF-8"); startDocument("UTF-8", true) }
+            xml.startTag(null, "hierarchy")
+            for (node in nodes(automation.rootInActiveWindow)) {
+                xml.startTag(null, "node")
+                xml.attribute(null, "text", node.text?.toString().orEmpty())
+                xml.attribute(null, "visible", node.isVisibleToUser.toString())
+                xml.attribute(null, "scrollable", node.isScrollable.toString())
+                xml.attribute(null, "bounds", Rect().also(node::getBoundsInScreen).toShortString())
+                xml.endTag(null, "node")
+            }
+            xml.endTag(null, "hierarchy"); xml.endDocument()
+        }
+        // run-as reads only this debuggable test package; shell writes shared evidence.
+        shell("sh -c 'run-as ${context.packageName} cat ${hierarchy.absolutePath} > /sdcard/Download/AdiXtream-migration-ui/$name.xml'")
     }
 }
