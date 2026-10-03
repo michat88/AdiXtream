@@ -6,6 +6,8 @@ on:
     branches:
       - master
       - main
+      # Owner-approved signed candidate validation; artifact only, never a release.
+      - migration/cloudstream-2026-09-compose-premium
 
 jobs:
   build:
@@ -33,13 +35,19 @@ jobs:
           SIGNING_KEY: ${{ secrets.SIGNING_KEY }}
         run: |
           test -n "$SIGNING_KEY" || { echo "SIGNING_KEY is required"; exit 1; }
+          umask 077
           printf '%s' "$SIGNING_KEY" | base64 -d > app/release.keystore
 
       - name: Izinkan Gradle
         run: chmod +x gradlew
 
       - name: Mulai Proses Build
-        run: ./gradlew assembleRelease --no-configuration-cache
+        run: |
+          if [ "$GITHUB_REF_NAME" = "migration/cloudstream-2026-09-compose-premium" ]; then
+            ./gradlew :app:assembleStableRelease --no-configuration-cache
+          else
+            ./gradlew assembleRelease --no-configuration-cache
+          fi
         env:
           KEYSTORE_PATH: release.keystore
           ALIAS: ${{ secrets.ALIAS }}
@@ -60,6 +68,10 @@ jobs:
       - name: Upload APK ke GitHub
         uses: actions/upload-artifact@v4
         with:
-          name: AdiXtream-Release
+          name: ${{ github.ref_name == 'migration/cloudstream-2026-09-compose-premium' && 'AdiXtream-signed-candidate' || 'AdiXtream-Release' }}
           # Mencari semua file apk di dalam folder output (termasuk folder stable)
           path: app/build/outputs/apk/**/*.apk
+
+      - name: Bersihkan file keystore sementara
+        if: always()
+        run: rm -f app/release.keystore
