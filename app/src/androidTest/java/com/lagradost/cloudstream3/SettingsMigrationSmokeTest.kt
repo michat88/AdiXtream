@@ -73,6 +73,7 @@ class SettingsMigrationSmokeTest {
             openSettings(scenario)
             capture("tv-settings-top")
             verifyMenuAndOpenSubscription()
+            capture("tv-subscription-hero")
             val copy = findVisible("Salin", scroll = true) ?: error("Missing copy action")
             val button = clickable(copy)
             assertTrue("TV copy button accepts input focus", button.performAction(AccessibilityNodeInfo.ACTION_FOCUS))
@@ -140,13 +141,14 @@ class SettingsMigrationSmokeTest {
             ?: findVisible("Aktivasi dan Langganan", scroll = true, backward = true)
             ?: error("Missing subscription entry")
         assertTrue(clickable(subscription).performAction(AccessibilityNodeInfo.ACTION_CLICK))
-        awaitText("Status Langganan")
+        awaitText("ADIXTREAM")
     }
 
     private fun layout() = PreferenceManager.getDefaultSharedPreferences(context).getInt("app_layout_key", -1)
 
     private fun verifySubscription(prefix: String) {
-        assertNotNull(findVisible("Gratis"))
+        capture("$prefix-subscription-hero")
+        assertNotNull(findVisible("Gratis", scroll = true))
         val expectedId = PremiumManager.getDeviceId(context)
         assertNotNull("Existing device ID displayed", findVisible(expectedId, scroll = true))
         val copy = findVisible("Salin", scroll = true) ?: error("Copy action missing")

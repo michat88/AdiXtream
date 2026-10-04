@@ -65,6 +65,22 @@ jobs:
           FIREBASE_URL_ENCODED: ${{ secrets.FIREBASE_URL_ENCODED }}
           # ===================================================================
 
+      - name: Verify release APK identity and signature
+        run: |
+          python3 - <<'PYVERIFY'
+          import os, subprocess
+          from pathlib import Path
+          build_tools = Path(os.environ['ANDROID_HOME']) / 'build-tools' / '36.0.0'
+          apks = list(Path('app/build/outputs/apk').glob('**/*release*.apk'))
+          assert apks, 'No release APK generated'
+          for apk in apks:
+              subprocess.run([str(build_tools / 'apksigner'), 'verify', str(apk)], check=True)
+              metadata = subprocess.check_output([str(build_tools / 'aapt'), 'dump', 'badging', str(apk)], text=True)
+              assert "package: name='com.adixtream.app'" in metadata, 'Unexpected application ID'
+              assert 'application-debuggable' not in metadata, 'Debuggable APK must not be delivered'
+          print(f'PASS: {len(apks)} signed, non-debuggable release APK(s); package com.adixtream.app')
+          PYVERIFY
+
       - name: Upload APK ke GitHub
         uses: actions/upload-artifact@v4
         with:
