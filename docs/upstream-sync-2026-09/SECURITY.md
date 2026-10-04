@@ -1,6 +1,6 @@
 # Configuration and signing
 
-No GitHub repository secret values were queried. No keystore, certificate or
+No GitHub repository secret values were queried. No production keystore, certificate or
 signing secret was created, replaced or rotated. The production application ID
 remains `com.adixtream.app`; debug builds retain the existing `.debug` suffix.
 
@@ -22,7 +22,7 @@ variables retain their existing XOR/BuildConfig/RepoProtector injection format.
 
 The additional workflow secret names are `SIMKL_CLIENT_ID` and
 `SIMKL_CLIENT_SECRET`. The owner must configure the **existing** SIMKL app values
-if these names are not present. Availability was not queried. No fabricated
+if these names are not present. The signed candidate presence check reports both names missing. No fabricated
 credentials or new registrations are supplied. Debug builds permit missing
 credentials for offline tests; browser/PIN login returns unavailable when the
 required config is absent. Existing token/account storage is unchanged.
@@ -40,7 +40,8 @@ and OpenSubtitles application API key. Both now use BuildConfig injected from
 or ignored local.properties for local builds). Production validation requires
 these existing values as well, to avoid silently breaking account/subtitle access.
 Account IDs, stored tokens, callback schemes and auth flows have not changed.
-Their availability in repository settings was not queried. The owner must add
+The signed candidate presence check reports both names missing; no values were
+queried from repository settings. The owner must add
 the existing values under the documented names if absent, without posting them
 in chat. These injected values are also extractable from an APK.
 
@@ -71,5 +72,10 @@ Do not change the live registration or silently migrate stored users as part of
 this upstream port. A planned PKCE/auth migration, tested with the owner's app
 registration and existing account upgrade fixtures, is follow-up hardening.
 
-No login/activation/promo request, Firebase mutation, or signing operation against
-the production service has been used for migration testing.
+No login/activation/promo request or Firebase mutation has been used for migration
+testing. Following the owner's APK trial request, commit `170b4234` enables the
+existing signed APK workflow on the migration branch, using existing secret names.
+Only Actions handles their values. The decoded keystore is created with umask 077
+and removed in an always-run cleanup step. No release publication step exists.
+A missing release configuration still fails closed; no signing identity fallback
+or fabricated credential is introduced. Actual candidate status is in VALIDATION.md.

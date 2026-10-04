@@ -1,8 +1,9 @@
 # AdiXtream CloudStream migration
 
 The implementation is on `migration/cloudstream-2026-09-compose-premium` for a
-[Draft PR #1](https://github.com/michat88/AdiXtream/pull/1). No master/main write, merge, force push, public release, production
-signing operation or production activation/promo request has been performed.
+[Draft PR #1](https://github.com/michat88/AdiXtream/pull/1). No master/main write, merge, force push, public release or production
+activation/promo request has been performed. The existing signed APK workflow is
+also being used for an owner-approved migration candidate artifact, never a release.
 
 ## Pinned sources and review inventory
 
@@ -73,8 +74,9 @@ internal repository injection and CloudStream credits remain.
 Production application ID is `com.adixtream.app`. VersionCode 90 and versionName
 4.8.3 are unchanged; debug retains the existing `.debug` suffix and is isolated
 from customer installs. Production signing still uses the owner's existing
-keystore/alias from Actions secrets. No key/certificate/alias was generated,
-changed, retrieved or rotated.
+keystore/alias from Actions secrets. No production key/certificate/alias was generated,
+changed or rotated. The candidate workflow consumes the existing Actions secrets
+inside its runner; no values are retrieved into the assistant output.
 
 The same encrypted `premium_secure_data`, fallback `premium_fallback_prefs`,
 `is_premium_user`, `premium_expiry_date`, obfuscated fallback keys and Device ID
@@ -111,3 +113,27 @@ secrets, performs a clean build, unit/library tests, lint and isolated emulator
 smoke tests, and uploads reports/debug artifacts. It does not sign with the
 production key or create a release. Keep the PR Draft until the owner reviews
 these results and the remaining signed upgrade/device checks.
+
+The owner's APK trial request requires a signed production-key release artifact.
+Debug artifacts are validation evidence only. A signed candidate build is attempted through `.github/workflows/buat_apk.yml`. The
+migration branch runs `:app:assembleStableRelease`; main/master behavior is retained.
+The output is named `AdiXtream-signed-candidate` and remains an Actions artifact.
+The decoded keystore is restricted to the runner and removed in an always-run
+cleanup step. See VALIDATION.md for the actual result and any missing config names.
+
+## Premium dark subscription redesign (2026-10-04)
+
+Commit `d6d32b82` scopes an AdiXtream charcoal/red theme to the subscription screen,
+adds a gradient status hero with active/free/expired badges, activation and subscribe
+shortcuts, outlined device-ID panel, full-width form actions, responsive price cards,
+and the existing QRIS/admin contact. Feedback fades and lazy-list scrolling are
+lightweight; no animation loops, new design dependency or external brand assets.
+TV focus outlines, normal font sizes and a scrollable max-width layout are retained.
+PremiumManager and all licensing/storage/backend contracts are unchanged by this
+visual refresh. Prices remain Rp 10.000 / 30.000 / 50.000 for 1 / 6 / 12 months.
+
+The owner now explicitly requests a signed release APK only. See
+[SIGNED_CANDIDATE.md](SIGNED_CANDIDATE.md) for the actual release blocker and exact
+configuration names. No debug artifact is offered as that deliverable. The signed
+workflow verifies APK signature, production package and non-debuggable manifest
+before upload. It still uses the original signing identity and creates no release.

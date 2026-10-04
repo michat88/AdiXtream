@@ -1,6 +1,58 @@
 # Validation evidence
 
-## Completed verification
+## Final visual-refresh validation
+
+Run [37182941681](https://github.com/michat88/AdiXtream/actions/runs/37182941681)
+at `99c3e1bee96be76c002cd515c53ea3b00bcb4830` passed. Production source is identical
+to `299db626`; only the test action selectors changed. Parsed artifact reports:
+
+| Task / check | Result |
+| --- | --- |
+| `clean` + `:app:assembleStableDebug` | PASS |
+| Compose/shared Kotlin compilation and Android resources/manifest | PASS |
+| `:app:checkStableDebugDuplicateClasses` | PASS |
+| `:app:testStableDebugUnitTest` | PASS: 15 tests, 0 failures/skips |
+| `:library:jvmTest` | PASS: 476 tests, 0 failures/skips |
+| `:app:lintStableDebug` | PASS: 0 errors, 657 warnings, 2 hints |
+| `:app:connectedStableDebugAndroidTest` (isolated smoke class) | PASS: 2 tests, 0 failures/errors/skips, 134.595 s |
+| Phone portrait/landscape | PASS |
+| TV layout, D-pad copy/focus, activation and subscribe shortcuts | PASS |
+| Missing-release-configuration guard | PASS (rejects missing names) |
+| `:app:assembleStableRelease` in signed run 37182939927 | BLOCKED: four missing account/service configurations |
+| Signed APK signature/package/debuggable verification | NOT RUN: no release APK generated |
+| Release install/run and old-customer install-over | NOT RUN: no signed APK |
+
+[Reports](https://github.com/michat88/AdiXtream/actions/runs/37182941681/artifacts/11295379702)
+and [screenshots](https://github.com/michat88/AdiXtream/actions/runs/37182941681/artifacts/11295434535)
+were downloaded and parsed. Selected screenshots are retained in this repository.
+The emulator used a debug package only for internal offline tests; it is not offered
+as the owner's signed-release deliverable. Real Android TV, production integrations
+and customer upgrade data remain unverified. See [SIGNED_CANDIDATE.md](SIGNED_CANDIDATE.md).
+
+
+## Latest completed validation before the visual refresh
+
+Run [37155826673](https://github.com/michat88/AdiXtream/actions/runs/37155826673)
+at `170b42347904b3c31e8fcbcd05ea21abff2d7f27` completed successfully. Parsed reports:
+15 app unit tests and 476 library tests, no failures/skips; lint 0 errors,
+657 warnings and 2 hints; two Android instrumentation tests, no failures/errors/skips.
+Both phone portrait/landscape and TV-layout/D-pad smoke methods passed. This was
+an Android 15 Pixel 2 AVD with IPv4/IPv6 outbound traffic blocked, empty production
+configuration, and no activation/promo request. It is not a physical TV or signed
+production install-over test.
+
+Signed candidate run [37155824433](https://github.com/michat88/AdiXtream/actions/runs/37155824433)
+on the same source was BLOCKED at `:app:verifyReleaseConfiguration`. Only these
+required names were missing: `SIMKL_CLIENT_ID`, `SIMKL_CLIENT_SECRET`,
+`ANILIST_CLIENT_SECRET`, `OPENSUBTITLES_API_KEY`. Existing keystore decode and
+always-run cleanup succeeded; no signed APK was generated. The owner must configure
+existing values directly in Actions secrets, never in chat/source. The guard is
+retained and no signing identity is substituted.
+
+The later visual refresh is verified separately at 99c3e1be above; this historical
+170b4234 result does not establish the redesigned UI by itself.
+
+## Earlier completed verification
 
 CI run [36464083767](https://github.com/michat88/AdiXtream/actions/runs/36464083767)
 at `a5851175453e05572ff2ea4c82bd72f386867b27` completed the following:
@@ -51,7 +103,7 @@ so the emulator failure can be diagnosed from fresh logs, without claiming it pa
 | `python scripts/verify_migration.py --report` | PASS: 115/115 contracts |
 | `python scripts/scan_credentials.py` | PASS: no findings in tracked current source |
 | Gitleaks 8.30.1 current tracked tree, redacted | PASS: 0 findings |
-| Gitleaks 8.30.1 new commits `0864e972..26ac6746`, redacted | PASS: 0 findings |
+| Gitleaks 8.30.1 new commits `0864e972..99c3e1be`, redacted | PASS: 0 findings |
 | `git diff --check` | PASS |
 | Full upstream path/commit audit | 298 paths and 45 commits covered |
 
@@ -78,10 +130,11 @@ account login, real updater installation, playback/subtitles/casting/downloads,
 backup/restore and setup end-to-end. Existing source contracts and offline tests
 cover parts of these areas; they do not establish end-to-end success.
 
-A production signed APK/upgrade test is not run: the production keystore and old
-installed customer state are intentionally not accessed here. The additional
-SIMKL/AniList/OpenSubtitles secret names are wired but their presence in repository
-settings is unknown; absent values block the production build/login integration.
+A signed candidate build is now attempted through the existing Actions workflow
+using existing signing/configuration secrets; no secret value is read back into
+the assistant output. A signed install-over on old customer state remains unrun.
+The additional SIMKL/AniList/OpenSubtitles secret names are wired; missing values
+fail the candidate build rather than producing a misconfigured production APK.
 No fake values, production backend test writes, public APK release or stable release
 were created. Debug artifacts are isolated test builds and cannot replace a
 production customer installation.
@@ -90,9 +143,9 @@ production customer installation.
 
 | Area | Evidence / remaining check |
 | --- | --- |
-| MainActivity startup / Settings HP portrait and landscape | PASS on Android 15 AVD in phonePortraitAndLandscape at e761ba3a |
-| Settings TV and remote D-pad | Menu/build-stamp reachability, D-pad center copy and focus movement passed at e761ba3a; complete TV method still failed capture bounds; physical TV untested |
-| Subscription status / copy / forms | Compiles; fake-service unit tests pass; phone portrait/landscape status, copy and empty-code guards PASS at e761ba3a |
+| MainActivity startup / Settings HP portrait and landscape | PASS on Android 15 AVD at 99c3e1be, including visual refresh |
+| Settings TV and remote D-pad | Complete TV-layout method PASS at 170b4234, including menu/build-stamp, D-pad center copy/focus; refreshed UI also PASS at 99c3e1be; physical TV untested |
+| Subscription status / copy / forms | Compiles; fake-service unit tests pass; phone portrait/landscape status, copy and empty-code guards PASS at 99c3e1be |
 | Active/expired customer license and Device ID | Original algorithm/store/migration source contracts pass; signed customer install-over not run |
 | Old offline unlock migration | Original method and startup call retained; no production Firebase request made |
 | Activation / promo | Existing API and validation retained; loading/duplicate/error/timeout unit tests pass; no production code submitted |
@@ -101,7 +154,7 @@ production customer installation.
 | Player / subtitle / HLS | Android build plus subtitle-selection and library/M3U8 tests pass; real media playback/casting untested |
 | Search / account / download / backup / setup | Upstream changes compile and existing storage contracts retained; end-to-end device/network checks untested |
 | Splash | Original source/layout retained; the smoke harness launches MainActivity directly, so Splash runtime is not covered |
-| Production signing | Existing secret/keystore wiring retained; no production key access, signing or certificate comparison performed |
+| Production signing | Existing secret/keystore wiring retained; candidate workflow attempted at 170b4234, result below; comparison with an old APK certificate still not performed |
 
 Screenshots demonstrate actual emulator rendering. The `f4b6fafc` plans image
 also shows the existing public QRIS image loaded; it does not establish payment
@@ -124,9 +177,8 @@ at `e0acdc320e642890a76b98dce89f8077a0380746`:
 Commit `f5f03f25` grants only the isolated test app's notification permission before
 launch, captures a screenshot on test failure, and allows reverse scroll from the
 build stamp to the subscription entry. Production app behavior/permissions did
-not change. A follow-up run verifies the corrected harness. CI now deduplicates
-push/PR runs and skips documentation-only changes; final documentation commits
-therefore share the verified production source tree.
+not change. A follow-up run verifies the corrected harness. CI deduplicates push/PR runs. PR filters compare the entire PR diff, so
+documentation-only updates require an explicit skip marker after source validation.
 
 Run [37118067765](https://github.com/michat88/AdiXtream/actions/runs/37118067765)
 at `f5f03f25` again passed clean build/unit tests/lint and release fail-closed checks.
@@ -183,14 +235,58 @@ Commit `6618eab5` adds a bounded three-second event/cache settling wait, retaini
 the same required focus change and saving a screenshot before the assertion.
 This diagnosis remains subject to the follow-up result; it is not a TV pass yet.
 
-## Debug APK for owner trial
+## Owner deliverable: signed release only
 
-[26ac6746 debug APK ZIP](https://github.com/michat88/AdiXtream/actions/runs/37137549829/artifacts/11278454635)
-contains the installable `.apk`; extract the ZIP on Android and install that file.
-The artifact expires at 2026-10-04 16:37 UTC (2026-10-05 01:37 WIT). This is
-`com.adixtream.app.debug`, separate from the production app and its customer data.
-It is suitable for Settings/navigation/local UI trial. Repository/backend/account
-credentials are absent: it cannot validate live Free/Premium content, activation,
-promo or customer upgrade. Do not treat it as a production upgrade candidate.
-The direct file transfer from the execution environment was rejected; the
-GitHub artifact link is the available download, with no public release created.
+The owner explicitly requires a production-key signed release APK. Debug artifacts
+remain internal validation evidence and are not the requested deliverable. No
+signed artifact exists while release configuration validation is blocked.
+The candidate workflow now also requires `apksigner verify`, the exact production
+package ID, and absence of the debuggable flag before uploading any release APK.
+
+Run 37154655663 at `6618eab5` was **CANCELLED** during emulator startup when the
+following documentation commit triggered a PR run. Its clean build, unit tests and
+lint passed, but no emulator result exists. A progress update initially misstated
+this as all tests passed; that statement was corrected immediately after checking
+the job conclusion and absent test reports. Only actual test reports count here.
+PR path filters compare the whole PR diff, so docs-only commits can still start PR
+runs. Final evidence-only commits use `[skip ci]` after completed source validation.
+
+Run 37155172151 at `4241c0c2` passed core build/tests/lint, but the smoke launcher
+failed with `adb: unable to connect for root: closed` before instrumentation.
+Commit `170b4234` bounds retries around adbd restart and verifies root UID before
+installing outbound IPv4/IPv6 firewall rules. It also enables the owner-approved
+signed candidate artifact workflow on this branch. Neither run above is a UI PASS.
+
+## Premium dark UI and signed release request, 2026-10-04
+
+- `d6d32b82`: original AdiXtream charcoal/red subscription cards, status hero,
+  responsive prices, prominent activation/subscribe CTAs, feedback transitions,
+  QRIS failure message; release artifact signature/package/debuggable checks.
+- `299db626`: CTA destination focus transfer for TV and instrumentation coverage
+  for activation input focus and navigation to subscription/contact.
+- Run 37182080242 at d6d32b82 was superseded/cancelled by the focus fix. It is not
+  counted as a passing validation. Push duplicates cancelled by concurrency are
+  also not counted as validation passes.
+- Signed runs [37182078086](https://github.com/michat88/AdiXtream/actions/runs/37182078086)
+  and [37182351728](https://github.com/michat88/AdiXtream/actions/runs/37182351728)
+  failed the same release configuration guard: SIMKL_CLIENT_ID,
+  SIMKL_CLIENT_SECRET, ANILIST_CLIENT_SECRET, OPENSUBTITLES_API_KEY missing.
+  Existing keystore decode and cleanup succeeded. Signature verification, artifact
+  upload and release installation were not reached; no signed APK exists.
+- Do not fabricate credentials, relax the production configuration guard, substitute
+  a signing key or distribute the validation debug APK as a release candidate.
+- Release configuration can be supplied directly in repository Actions secrets.
+  After configuration, rerun the failed signed workflow job for the reviewed source.
+  A successful build is still followed by the signature/package/non-debuggable checks;
+  signed install-over/runtime on an old customer installation remains a separate test.
+
+Run [37182355161](https://github.com/michat88/AdiXtream/actions/runs/37182355161)
+at `299db626` passed clean build, Compose/shared compilation, all 15 app and 476
+library tests, lint (0 errors, 657 warnings, 2 hints), and fail-closed release checks.
+Instrumentation XML: 2 tests, 1 failure, 0 errors/skips. `tvLayoutAndDpad` PASS,
+including both hero shortcuts and activation-input focus. `phonePortraitAndLandscape`
+FAIL: the substring selector for “Aktifkan” found descriptive hero text instead of
+the disabled form action. Retained hierarchy confirms that text was still visible.
+Commit `99c3e1be` changes action lookups to exact labels and retains the empty-code
+assertion. It changes no production source. A follow-up validates the corrected
+phone selector; this run is not counted as an overall instrumentation PASS.

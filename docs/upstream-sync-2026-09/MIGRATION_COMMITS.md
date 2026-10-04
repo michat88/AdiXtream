@@ -17,5 +17,10 @@ No checkpoint was rewritten. All commits extend the migration branch; master is 
 | [`e761ba3a`](https://github.com/michat88/AdiXtream/commit/e761ba3a65b6925171e56c66e8b7d9ef519a3076) | test(android): bound scroll gestures and retain accessibility evidence |
 | [`26ac6746`](https://github.com/michat88/AdiXtream/commit/26ac674616f9993e8bd5bc781a336c064b0652a9) | test(android): isolate emulator network and measure rotated display accurately |
 | [`6618eab5`](https://github.com/michat88/AdiXtream/commit/6618eab552a03fbde5190a98b74b2d0d6a88ad55) | test(android): await asynchronous Compose focus traversal on TV |
+| [`4241c0c2`](https://github.com/michat88/AdiXtream/commit/4241c0c2ee7724437fe36eb56ea2d8874c0a629f) | docs: preserve emulator evidence and publish debug trial instructions |
+| [`170b4234`](https://github.com/michat88/AdiXtream/commit/170b42347904b3c31e8fcbcd05ea21abff2d7f27) | ci: validate signed migration candidate without publishing a release |
+| [`d6d32b82`](https://github.com/michat88/AdiXtream/commit/d6d32b8266b74fe3abab71e0c9708000ae8a4f69) | feat(settings): redesign subscription with premium dark cards and clear actions |
+| [`299db626`](https://github.com/michat88/AdiXtream/commit/299db626f5d5c4e69e8ff837ad3e4407bc601dab) | fix(settings): transfer TV focus when subscription shortcuts navigate |
+| [`99c3e1be`](https://github.com/michat88/AdiXtream/commit/99c3e1bee96be76c002cd515c53ea3b00bcb4830) | test(settings): match activation actions independently of descriptive copy |
 
-Later documentation/evidence-only commits are visible in the [Draft PR commit list](https://github.com/michat88/AdiXtream/pull/1/commits).
+Final evidence-only commits are visible in the [Draft PR commit list](https://github.com/michat88/AdiXtream/pull/1/commits).

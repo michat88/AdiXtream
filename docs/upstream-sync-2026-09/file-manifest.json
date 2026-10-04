@@ -14,7 +14,7 @@
   {
     "path": "app/src/androidTest/java/com/lagradost/cloudstream3/SettingsMigrationSmokeTest.kt",
     "classification": "added",
-    "current_blob": "44370cdff97178a9d2c932fa1e3d4223325ae70b",
+    "current_blob": "8effca86e00345c4f7f3c93c0372c28d38ee30ce",
     "note": "AdiXtream integration, compatibility/security tests or prerequisite from earlier upstream."
   },
   {
@@ -224,7 +224,7 @@
   {
     "path": "app/src/main/java/com/lagradost/cloudstream3/ui/settings/SettingsSubscriptionScreen.kt",
     "classification": "added",
-    "current_blob": "9e0106a2c9705118d06f6354b5534dc0994d32ea",
+    "current_blob": "fbbea9228565f8f155bbf92f3959964ebc7d9404",
     "note": "AdiXtream integration, compatibility/security tests or prerequisite from earlier upstream."
   },
   {
@@ -3296,7 +3296,7 @@
   {
     "path": ".github/workflows/buat_apk.yml",
     "classification": "manual merge",
-    "current_blob": "38a5ea8e06634f1968434dc0de65a7fd24b7cc85",
+    "current_blob": "95bd6b95670b965feb77585c23d5312286141247",
     "note": "AdiXtream integration, compatibility/security tests or prerequisite from earlier upstream."
   },
   {
