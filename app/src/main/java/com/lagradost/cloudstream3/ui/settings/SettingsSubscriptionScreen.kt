@@ -18,6 +18,8 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
@@ -92,6 +94,8 @@ object SettingsSubscriptionScreen : Screen {
         val context = LocalContext.current
         val listState = rememberLazyListState()
         val scope = rememberCoroutineScope()
+        val activationFocus = remember { FocusRequester() }
+        val plansFocus = remember { FocusRequester() }
         var activationCode by remember { mutableStateOf("") }
         var promoCode by remember { mutableStateOf("") }
         var copied by remember { mutableStateOf(false) }
@@ -147,11 +151,19 @@ object SettingsSubscriptionScreen : Screen {
                                 if (state.expiresAt > 0) Text("Masa aktif: ${DateFormat.getDateInstance(DateFormat.LONG).format(Date(state.expiresAt))}")
                                 FlowRow(horizontalArrangement = Arrangement.spacedBy(12.dp),
                                     verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                    Button(onClick = { scope.launch { listState.animateScrollToItem(3) } },
+                                    Button(onClick = { scope.launch {
+                                        listState.animateScrollToItem(3)
+                                        withFrameNanos { }
+                                        activationFocus.requestFocus()
+                                    } },
                                         colors = premiumButtonColors(), modifier = Modifier.heightIn(min = 52.dp).focusOutline()) {
                                         Text("Aktivasi kode", fontWeight = FontWeight.Bold)
                                     }
-                                    OutlinedButton(onClick = { scope.launch { listState.animateScrollToItem(5) } },
+                                    OutlinedButton(onClick = { scope.launch {
+                                        listState.animateScrollToItem(5)
+                                        withFrameNanos { }
+                                        plansFocus.requestFocus()
+                                    } },
                                         modifier = Modifier.heightIn(min = 52.dp).focusOutline()) {
                                         Text("Berlangganan")
                                     }
@@ -195,7 +207,7 @@ object SettingsSubscriptionScreen : Screen {
                     item(key = "activation") {
                         CodeSection("Aktivasi", "Sudah punya kode? Aktifkan akses Anda di sini.",
                             "Kode aktivasi", "Aktifkan", activationCode, !state.loading,
-                            { activationCode = it }, { submit(activationCode, false) })
+                            { activationCode = it }, { submit(activationCode, false) }, activationFocus)
                     }
                     item(key = "promo") {
                         CodeSection("Kode Promo", "Klaim penawaran dengan kode promo yang Anda miliki.",
@@ -220,7 +232,7 @@ object SettingsSubscriptionScreen : Screen {
                                 }
                             }
                             Button(onClick = { CloudStreamApp.openBrowser("https://t.me/michat88") },
-                                colors = premiumButtonColors(), modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp).focusOutline()) {
+                                colors = premiumButtonColors(), modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp).focusRequester(plansFocus).focusOutline()) {
                                 Text("Berlangganan · Hubungi admin", fontWeight = FontWeight.Bold)
                             }
                             Text("Hubungi admin · @michat88", color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -272,12 +284,13 @@ object SettingsSubscriptionScreen : Screen {
     }
 
     @Composable private fun CodeSection(title: String, subtitle: String, label: String, action: String,
-                                       code: String, enabled: Boolean, onChange: (String) -> Unit, onSubmit: () -> Unit) {
+                                       code: String, enabled: Boolean, onChange: (String) -> Unit, onSubmit: () -> Unit,
+                                       inputFocus: FocusRequester? = null) {
         Section(title, subtitle) {
             OutlinedTextField(value = code, onValueChange = onChange, enabled = enabled,
                 label = { Text(label) }, singleLine = true, shape = RoundedCornerShape(12.dp),
                 keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Characters, imeAction = ImeAction.Done),
-                modifier = Modifier.fillMaxWidth().focusOutline())
+                modifier = Modifier.fillMaxWidth().then(if (inputFocus != null) Modifier.focusRequester(inputFocus) else Modifier).focusOutline())
             Button(onClick = onSubmit, enabled = enabled && code.isNotBlank(), colors = premiumButtonColors(),
                 modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp).focusOutline()) {
                 Text(action, fontWeight = FontWeight.Bold)

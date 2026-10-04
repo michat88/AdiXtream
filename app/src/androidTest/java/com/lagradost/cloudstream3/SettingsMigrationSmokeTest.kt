@@ -106,6 +106,27 @@ class SettingsMigrationSmokeTest {
             capture("tv-subscription-promo")
             findVisible("Hubungi admin", scroll = true) ?: error("Plan/contact not reachable on TV")
             capture("tv-subscription-plans")
+            val activateShortcut = findVisible("Aktivasi kode", scroll = true, backward = true)
+                ?: error("Activation shortcut unreachable")
+            assertTrue(clickable(activateShortcut).performAction(AccessibilityNodeInfo.ACTION_CLICK))
+            awaitText("Kode aktivasi")
+            var inputFocused = false
+            repeat(30) {
+                val focused = automation.rootInActiveWindow?.findFocus(AccessibilityNodeInfo.FOCUS_INPUT)
+                if (focused?.isEditable == true) inputFocused = true
+                if (!inputFocused) SystemClock.sleep(100)
+            }
+            assertTrue("Activation shortcut transfers remote focus to code input", inputFocused)
+            scenario.onActivity { host ->
+                (host.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager)
+                    .hideSoftInputFromWindow(host.window.decorView.windowToken, 0)
+            }
+            instrumentation.waitForIdleSync()
+            val plansShortcut = findVisible("Berlangganan", scroll = true, backward = true, exact = true)
+                ?: error("Subscription shortcut unreachable")
+            assertTrue(clickable(plansShortcut).performAction(AccessibilityNodeInfo.ACTION_CLICK))
+            awaitText("Berlangganan · Hubungi admin")
+            capture("tv-subscription-shortcut")
         }
     }
 
@@ -182,10 +203,10 @@ class SettingsMigrationSmokeTest {
         }
     }
 
-    private fun findVisible(text: String, scroll: Boolean = false, backward: Boolean = false): AccessibilityNodeInfo? {
+    private fun findVisible(text: String, scroll: Boolean = false, backward: Boolean = false, exact: Boolean = false): AccessibilityNodeInfo? {
         repeat(if (scroll) 24 else 1) {
             val all = nodes(automation.rootInActiveWindow)
-            all.firstOrNull { it.isVisibleToUser && it.text?.toString()?.contains(text) == true }?.let { return it }
+            all.firstOrNull { it.isVisibleToUser && (if (exact) it.text?.toString() == text else it.text?.toString()?.contains(text) == true) }?.let { return it }
             if (!scroll) return null
             // TV also has a scrollable navigation rail. Scroll the main content,
             // and use overlapping swipes so short cards cannot be skipped.
