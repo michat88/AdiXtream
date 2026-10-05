@@ -9,6 +9,8 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.dokka)
     alias(libs.plugins.kotlin.serialization)
+    alias(libs.plugins.compose.multiplatform)
+    alias(libs.plugins.compose.compiler)
 }
 
 val javaTarget = JvmTarget.fromTarget(libs.versions.jvmTarget.get())
@@ -135,8 +137,8 @@ android {
         applicationId = "com.adixtream.app"
         minSdk = libs.versions.minSdk.get().toInt()
         targetSdk = libs.versions.targetSdk.get().toInt()
-        versionCode = 90          // AdiXtream: naikkan manual tiap rilis
-        versionName = "4.8.3"     // AdiXtream: versi fork, bukan versi upstream
+        versionCode = 91          // AdiXtream: naikkan manual tiap rilis
+        versionName = "4.8.4"     // AdiXtream: versi fork, bukan versi upstream
 
         manifestPlaceholders["target_sdk_version"] = libs.versions.targetSdk.get()
 
@@ -342,7 +344,13 @@ dependencies {
     implementation(libs.work.runtime.ktx)
     implementation(libs.nicehttp)
 
+    implementation(libs.bundles.compose)
+    implementation(libs.activity.compose)
+    implementation(libs.lifecycle.runtime.compose)
+    implementation(libs.kotlinx.io.core) // Logcat parser
+
     implementation(project(":library"))
+    implementation(project(":shared"))
 }
 
 tasks.register<Jar>("androidSourcesJar") {
