@@ -71,6 +71,13 @@ class CloudStreamApp : Application(), SingletonImageLoader.Factory {
 
     override fun onCreate() {
         super.onCreate()
+        val preferences = androidx.preference.PreferenceManager.getDefaultSharedPreferences(this)
+        val stableDnsKey = getString(R.string.dns_key)
+        if (!preferences.contains(stableDnsKey)) {
+            val oldKey = getString(R.string.dns_pref)
+            val oldDns = preferences.all[oldKey] as? Int
+            if (oldDns != null) preferences.edit().putInt(stableDnsKey, oldDns).apply()
+        }
         // If we want to initialize Coil as early as possible, maybe when
         // loading an image or GIF in a splash screen activity.
         // buildImageLoader(applicationContext)
@@ -170,11 +177,11 @@ class CloudStreamApp : Application(), SingletonImageLoader.Factory {
         }
 
         /** Will fall back to WebView if in TV or emulator layout. */
-        fun openBrowser(url: String, activity: FragmentActivity?) {
+        fun openBrowser(url: String, activity: Activity?) {
             openBrowser(
                 url,
                 isLayout(TV or EMULATOR),
-                activity?.supportFragmentManager?.fragments?.lastOrNull()
+                (activity as? FragmentActivity)?.supportFragmentManager?.fragments?.lastOrNull()
             )
         }
     }
