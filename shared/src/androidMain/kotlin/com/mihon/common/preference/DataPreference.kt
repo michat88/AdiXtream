@@ -5,6 +5,7 @@ import android.content.SharedPreferences.Editor
 import androidx.core.content.edit
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.conflate
@@ -13,9 +14,10 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.stateIn
 
-sealed class AndroidPreference<T>(
+
+sealed class DataPreference<T>(
     private val preferences: SharedPreferences,
-    private val keyFlow: Flow<String?>,
+    private val keyFlow: MutableSharedFlow<String?>,
     private val key: String,
     private val defaultValue: T,
 ) : PreferenceData<T> {
@@ -40,6 +42,7 @@ sealed class AndroidPreference<T>(
 
     override fun set(value: T) {
         preferences.edit(action = write(key, value))
+        keyFlow.tryEmit(key)
     }
 
     override fun isSet(): Boolean {
@@ -70,10 +73,10 @@ sealed class AndroidPreference<T>(
 
     class StringPrimitive(
         preferences: SharedPreferences,
-        keyFlow: Flow<String?>,
+        keyFlow: MutableSharedFlow<String?>,
         key: String,
         defaultValue: String,
-    ) : AndroidPreference<String>(preferences, keyFlow, key, defaultValue) {
+    ) : DataPreference<String>(preferences, keyFlow, key, defaultValue) {
         override fun read(
             preferences: SharedPreferences,
             key: String,
@@ -89,10 +92,10 @@ sealed class AndroidPreference<T>(
 
     class LongPrimitive(
         preferences: SharedPreferences,
-        keyFlow: Flow<String?>,
+        keyFlow: MutableSharedFlow<String?>,
         key: String,
         defaultValue: Long,
-    ) : AndroidPreference<Long>(preferences, keyFlow, key, defaultValue) {
+    ) : DataPreference<Long>(preferences, keyFlow, key, defaultValue) {
         override fun read(preferences: SharedPreferences, key: String, defaultValue: Long): Long {
             return preferences.getLong(key, defaultValue)
         }
@@ -104,10 +107,10 @@ sealed class AndroidPreference<T>(
 
     class IntPrimitive(
         preferences: SharedPreferences,
-        keyFlow: Flow<String?>,
+        keyFlow: MutableSharedFlow<String?>,
         key: String,
         defaultValue: Int,
-    ) : AndroidPreference<Int>(preferences, keyFlow, key, defaultValue) {
+    ) : DataPreference<Int>(preferences, keyFlow, key, defaultValue) {
         override fun read(preferences: SharedPreferences, key: String, defaultValue: Int): Int {
             return preferences.getInt(key, defaultValue)
         }
@@ -119,10 +122,10 @@ sealed class AndroidPreference<T>(
 
     class FloatPrimitive(
         preferences: SharedPreferences,
-        keyFlow: Flow<String?>,
+        keyFlow: MutableSharedFlow<String?>,
         key: String,
         defaultValue: Float,
-    ) : AndroidPreference<Float>(preferences, keyFlow, key, defaultValue) {
+    ) : DataPreference<Float>(preferences, keyFlow, key, defaultValue) {
         override fun read(preferences: SharedPreferences, key: String, defaultValue: Float): Float {
             return preferences.getFloat(key, defaultValue)
         }
@@ -134,10 +137,10 @@ sealed class AndroidPreference<T>(
 
     class BooleanPrimitive(
         preferences: SharedPreferences,
-        keyFlow: Flow<String?>,
+        keyFlow: MutableSharedFlow<String?>,
         key: String,
         defaultValue: Boolean,
-    ) : AndroidPreference<Boolean>(preferences, keyFlow, key, defaultValue) {
+    ) : DataPreference<Boolean>(preferences, keyFlow, key, defaultValue) {
         override fun read(
             preferences: SharedPreferences,
             key: String,
@@ -153,10 +156,10 @@ sealed class AndroidPreference<T>(
 
     class StringSetPrimitive(
         preferences: SharedPreferences,
-        keyFlow: Flow<String?>,
+        keyFlow: MutableSharedFlow<String?>,
         key: String,
         defaultValue: Set<String>,
-    ) : AndroidPreference<Set<String>>(preferences, keyFlow, key, defaultValue) {
+    ) : DataPreference<Set<String>>(preferences, keyFlow, key, defaultValue) {
         override fun read(
             preferences: SharedPreferences,
             key: String,
@@ -172,12 +175,12 @@ sealed class AndroidPreference<T>(
 
     class ObjectAsString<T>(
         preferences: SharedPreferences,
-        keyFlow: Flow<String?>,
+        keyFlow: MutableSharedFlow<String?>,
         key: String,
         defaultValue: T,
         private val serializer: (T) -> String,
         private val deserializer: (String) -> T,
-    ) : AndroidPreference<T>(preferences, keyFlow, key, defaultValue) {
+    ) : DataPreference<T>(preferences, keyFlow, key, defaultValue) {
         override fun read(preferences: SharedPreferences, key: String, defaultValue: T): T {
             return try {
                 preferences.getString(key, null)?.let(deserializer) ?: defaultValue
@@ -193,12 +196,12 @@ sealed class AndroidPreference<T>(
 
     class ObjectAsInt<T>(
         preferences: SharedPreferences,
-        keyFlow: Flow<String?>,
+        keyFlow: MutableSharedFlow<String?>,
         key: String,
         defaultValue: T,
         private val serializer: (T) -> Int,
         private val deserializer: (Int) -> T,
-    ) : AndroidPreference<T>(preferences, keyFlow, key, defaultValue) {
+    ) : DataPreference<T>(preferences, keyFlow, key, defaultValue) {
         override fun read(preferences: SharedPreferences, key: String, defaultValue: T): T {
             return try {
                 if (preferences.contains(key)) preferences.getInt(key, 0).let(deserializer) else defaultValue
@@ -214,12 +217,12 @@ sealed class AndroidPreference<T>(
 
     class ObjectSetAsStringSet<T>(
         preferences: SharedPreferences,
-        keyFlow: Flow<String?>,
+        keyFlow: MutableSharedFlow<String?>,
         key: String,
         defaultValue: Set<T>,
         private val serializer: (T) -> String,
         private val deserializer: (String) -> T?,
-    ) : AndroidPreference<Set<T>>(preferences, keyFlow, key, defaultValue) {
+    ) : DataPreference<Set<T>>(preferences, keyFlow, key, defaultValue) {
         override fun read(preferences: SharedPreferences, key: String, defaultValue: Set<T>): Set<T> {
             return try {
                 preferences.getStringSet(key, null)?.mapNotNull(deserializer)?.toSet() ?: defaultValue
