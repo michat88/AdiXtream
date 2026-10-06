@@ -288,90 +288,16 @@ class ExtensionsFragment : BaseFragment<FragmentExtensionsBinding>(
             })
         }
 
-        val addRepositoryClick = View.OnClickListener {
-            val ctx = context ?: return@OnClickListener
-            val binding = AddRepoInputBinding.inflate(LayoutInflater.from(ctx), null, false)
-            val builder =
-                AlertDialog.Builder(ctx, R.style.AlertDialogCustom)
-                    .setView(binding.root)
-
-            val dialog = builder.create()
-            dialog.show()
-            (activity?.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager)?.primaryClip?.getItemAt(
-                0
-            )?.text?.toString()?.let { copiedText ->
-                if (copiedText.contains(RepoAdapter.SHAREABLE_REPO_SEPARATOR)) {
-                    val (name, url) = copiedText.split(
-                        RepoAdapter.SHAREABLE_REPO_SEPARATOR,
-                        limit = 2
-                    )
-                    binding.repoUrlInput.setText(url.trim())
-                    binding.repoNameInput.setText(name.trim())
-                } else {
-                    binding.repoUrlInput.setText(copiedText)
-                }
-            }
-
-            binding.applyBtt.setOnClickListener secondListener@{
-                val name = binding.repoNameInput.text?.toString()
-                val urlInput = binding.repoUrlInput.text?.toString()
-                if (urlInput.isNullOrEmpty()) {
-                    showToast(R.string.error_invalid_url, Toast.LENGTH_SHORT)
-                    return@secondListener
-                }
-                binding.applyBtt.showProgress()
-                ioSafe {
-                    try {
-                        val url = RepositoryManager.parseRepoUrl(urlInput)
-                        if (url.isNullOrBlank()) {
-                            showToast(R.string.error_invalid_data, Toast.LENGTH_SHORT)
-                            return@ioSafe
-                        }
-                        val repository = RepositoryManager.parseRepository(url)
-
-                        if (repository == null) {
-                            showToast(R.string.no_repository_found_error, Toast.LENGTH_LONG)
-                            return@ioSafe
-                        }
-
-                        val fixedName = if (!name.isNullOrBlank()) name
-                        else repository.name
-                        val newRepo = RepositoryData(repository.iconUrl, fixedName, url)
-                        RepositoryManager.addRepository(newRepo)
-                        extensionViewModel.loadStats()
-                        extensionViewModel.loadRepositories()
-
-                        dialog.dismissSafe(activity)
-
-                        val plugins = RepositoryManager.getRepoPlugins(newRepo)
-                        if (plugins.isNullOrEmpty()) {
-                            showToast(R.string.no_plugins_found_error, Toast.LENGTH_LONG)
-                            return@ioSafe
-                        }
-
-                        this@ExtensionsFragment.activity?.addRepositoryDialog(
-                            newRepo
-                        )
-                    } finally {
-                        binding.applyBtt.hideProgress()
-                    }
-                }
-            }
-            binding.cancelBtt.setOnClickListener {
-                dialog.dismissSafe(activity)
-            }
-        }
-
         val isTv = isLayout(TV)
         binding.apply {
-            addRepoButton.isGone = isTv
-            addRepoButtonImageviewHolder.isVisible = isTv
+            addRepoButton.isGone = true
+            addRepoButtonImageviewHolder.isVisible = false
 
             pluginStorageAppbar.isFocusableInTouchMode = isTv
-            addRepoButtonImageview.isFocusableInTouchMode = isTv
+            addRepoButtonImageview.isFocusable = false
 
-            addRepoButton.setOnClickListener(addRepositoryClick)
-            addRepoButtonImageview.setOnClickListener(addRepositoryClick)
+            addRepoButton.setOnClickListener(null)
+            addRepoButtonImageview.setOnClickListener(null)
         }
         reloadRepositories()
     }
