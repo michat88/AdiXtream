@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="adi_activation_subscription">Activation &amp; Subscription</string>
+    <string name="adi_subscription_intro">Manage your Premium access and subscription.</string>
+    <string name="adi_back">Back</string>
+    <string name="adi_account_status">Subscription status</string>
+    <string name="adi_device_id">Device ID</string>
+    <string name="adi_id_copied">Device ID copied</string>
+    <string name="adi_activation_code">Activation code</string>
+    <string name="adi_code_hint">Enter your activation code</string>
+    <string name="adi_activate">Activate / Unlock</string>
+    <string name="adi_claim_promo">Redeem promo code</string>
+    <string name="adi_claim">Redeem</string>
+    <string name="adi_contact_admin">Contact admin</string>
+    <string name="adi_admin_tv">Contact the admin from your phone via Telegram: %1$s</string>
+    <string name="adi_choose_plan">Choose a plan</string>
+    <string name="adi_one_month">1 month</string>
+    <string name="adi_six_months">6 months</string>
+    <string name="adi_one_year">1 year</string>
+    <string name="adi_payment_help">Choose a plan, pay with QRIS, then contact the admin to receive an activation code.</string>
+    <string name="adi_scan_payment">Scan QRIS to pay</string>
+    <string name="adi_enlarge_qr">Enlarge payment QR</string>
+    <string name="adi_premium_active">Premium active · Expires %1$s</string>
+    <string name="adi_premium_inactive">Premium inactive</string>
+    <string name="adi_verifying">Verifying…</string>
+    <string name="adi_code_required">Enter a code first</string>
+    <string name="adi_activated">Premium activated</string>
+    <string name="adi_restart_info">Valid until %1$s. The app will restart to refresh your repositories.</string>
+    <string name="adi_internal_repos">Free Repo and Premium Repo only</string>
+    <string name="adi_support_saweria">Support AdiXtream through Saweria</string>
+    <string name="adi_request_timeout">No response yet. Check your subscription status before retrying.</string>
+</resources>
