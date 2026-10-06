@@ -31,7 +31,7 @@ jobs:
         run: chmod +x gradlew
 
       - name: Mulai Proses Build
-        run: ./gradlew assembleRelease
+        run: ./gradlew clean :app:assembleStableRelease
         env:
           KEYSTORE_PATH: release.keystore
           ALIAS: ${{ secrets.ALIAS }}
@@ -45,9 +45,23 @@ jobs:
           FIREBASE_URL_ENCODED: ${{ secrets.FIREBASE_URL_ENCODED }}
           # ===================================================================
 
+      - name: Verify Signed Stable APK
+        shell: bash
+        run: |
+          set -euo pipefail
+          apk_count=0
+          verifier="$(find "$ANDROID_HOME/build-tools" -name apksigner -type f | sort -V | tail -n 1)"
+          test -n "$verifier"
+          while IFS= read -r -d '' apk; do
+            "$verifier" verify "$apk"
+            apk_count=$((apk_count + 1))
+          done < <(find app/build/outputs/apk/stable/release -name '*.apk' -type f -print0)
+          test "$apk_count" -gt 0
+
       - name: Upload APK ke GitHub
         uses: actions/upload-artifact@v4
         with:
           name: AdiXtream-Release
+          if-no-files-found: error
           # Mencari semua file apk di dalam folder output (termasuk folder stable)
-          path: app/build/outputs/apk/**/*.apk
+          path: app/build/outputs/apk/stable/release/*.apk

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="compressor">Kompresor</string>
+    <string name="compressor_setting">Kompresor rentang dinamis</string>
+    <string name="compressor_setting_summary">Tampilkan kontrol kompresor di pemutar (menyeimbangkan suara keras dan pelan)</string>
+    <string name="compressor_on">Aktif</string>
+    <string name="compressor_on_format">Aktif · %1$d dB / +%2$d dB</string>
+    <string name="compressor_off">Nonaktif</string>
+    <string name="compressor_preset_light">Ringan</string>
+    <string name="compressor_preset_dialog">Perjelas dialog</string>
+    <string name="compressor_preset_heavy">Kuat</string>
+    <string name="compressor_threshold_label">Ambang: %d dB</string>
+    <string name="compressor_makeup_label">Penguatan: +%d dB</string>
+    <string name="compressor_threshold_hint">Suara di atas %d dB dipelankan</string>
+    <string name="compressor_makeup_hint">Menaikkan volume keseluruhan sebesar +%d dB</string>
+</resources>
