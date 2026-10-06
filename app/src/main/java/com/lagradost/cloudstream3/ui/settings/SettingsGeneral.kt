@@ -113,14 +113,7 @@ class SettingsGeneral : BasePreferenceFragmentCompat() {
             }
         }
 
-        // --- MODIFIKASI ADIXTREAM: Menyembunyikan Kategori Tautan Bawaan CS3 ---
-        getPref(R.string.pref_category_links)?.isVisible = false
-        getPref(R.string.github)?.isVisible = false
-        getPref(R.string.lightnovel)?.isVisible = false
-        getPref(R.string.anim)?.isVisible = false
-        getPref(R.string.discord)?.isVisible = false
-        getPref(R.string.cs3wiki)?.isVisible = false
-        // ---------------------------------------------------------------------
+
 
         fun getCurrent(): MutableList<CustomSite> {
             return getKey<Array<CustomSite>>(USER_PROVIDER_API)?.toMutableList()
@@ -221,6 +214,15 @@ class SettingsGeneral : BasePreferenceFragmentCompat() {
         hideKeyboard()
         setPreferencesFromResource(R.xml.settings_general, rootKey)
         val settingsManager = PreferenceManager.getDefaultSharedPreferences(requireContext())
+
+        // --- MODIFIKASI ADIXTREAM: Menyembunyikan Kategori Tautan Bawaan CS3 ---
+        getPref(R.string.pref_category_links)?.isVisible = false
+        getPref(R.string.github)?.isVisible = false
+        getPref(R.string.lightnovel)?.isVisible = false
+        getPref(R.string.anim)?.isVisible = false
+        getPref(R.string.discord)?.isVisible = false
+        getPref(R.string.cs3wiki)?.isVisible = false
+        // ---------------------------------------------------------------------
 
 
         getPref(R.string.locale_key)?.setOnPreferenceClickListener { pref ->

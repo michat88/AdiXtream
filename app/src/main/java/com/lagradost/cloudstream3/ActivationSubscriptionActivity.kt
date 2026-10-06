@@ -89,7 +89,7 @@ class ActivationSubscriptionActivity : AppCompatActivity() {
         val cards = LinearLayout(this).apply {
             orientation = if (wide) LinearLayout.HORIZONTAL else LinearLayout.VERTICAL
             gravity = Gravity.TOP
-            baselineAligned = false
+            isBaselineAligned = false
         }
         root.addView(cards)
         val plans = card()
