@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="adi_activation_subscription">Aktivasi &amp; Langganan</string>
+    <string name="adi_subscription_intro">Kelola akses Premium dan langganan Anda.</string>
+    <string name="adi_back">Kembali</string>
+    <string name="adi_account_status">Status langganan</string>
+    <string name="adi_device_id">Device ID</string>
+    <string name="adi_id_copied">Device ID disalin</string>
+    <string name="adi_activation_code">Kode aktivasi</string>
+    <string name="adi_code_hint">Masukkan kode aktivasi</string>
+    <string name="adi_activate">Aktivasi / Unlock</string>
+    <string name="adi_claim_promo">Klaim kode promo</string>
+    <string name="adi_claim">Klaim</string>
+    <string name="adi_contact_admin">Hubungi admin</string>
+    <string name="adi_admin_tv">Hubungi admin dari HP melalui Telegram: %1$s</string>
+    <string name="adi_choose_plan">Pilih paket</string>
+    <string name="adi_one_month">1 bulan</string>
+    <string name="adi_six_months">6 bulan</string>
+    <string name="adi_one_year">1 tahun</string>
+    <string name="adi_payment_help">Pilih paket, bayar melalui QRIS, lalu hubungi admin untuk mendapatkan kode aktivasi.</string>
+    <string name="adi_scan_payment">Pindai QRIS untuk membayar</string>
+    <string name="adi_enlarge_qr">Perbesar QR pembayaran</string>
+    <string name="adi_premium_active">Premium aktif · Berlaku hingga %1$s</string>
+    <string name="adi_premium_inactive">Premium tidak aktif</string>
+    <string name="adi_verifying">Memverifikasi…</string>
+    <string name="adi_code_required">Masukkan kode terlebih dahulu</string>
+    <string name="adi_activated">Premium diaktifkan</string>
+    <string name="adi_restart_info">Berlaku hingga %1$s. Aplikasi akan dimulai ulang untuk memuat repositori Anda.</string>
+    <string name="adi_internal_repos">Hanya Free Repo dan Premium Repo</string>
+    <string name="adi_support_saweria">Dukung AdiXtream melalui Saweria</string>
+    <string name="adi_request_timeout">Belum ada balasan. Periksa status langganan sebelum mencoba lagi.</string>
+</resources>
