@@ -206,6 +206,10 @@
             </intent-filter>
         </receiver>
 
+        <receiver
+            android:name=".receivers.PackageInstallerStatusReceiver"
+            android:exported="false" />
+
         <service
             android:name=".services.VideoDownloadService"
             android:enabled="true"
@@ -242,5 +246,10 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/provider_paths" />
         </provider>
+        <activity
+            android:name=".ActivationSubscriptionActivity"
+            android:exported="false"
+            android:label="@string/adi_activation_subscription"
+            android:windowSoftInputMode="adjustResize" />
     </application>
 </manifest>
