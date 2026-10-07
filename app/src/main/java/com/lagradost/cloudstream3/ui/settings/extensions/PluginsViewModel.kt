@@ -69,12 +69,18 @@ class PluginsViewModel : ViewModel() {
         const val TAG = "PLG"
 
         // Catalog visibility is independent of subscription. Paid actions still require it.
-        fun isPremiumLocked(context: Context, repository: RepositoryData): Boolean =
-            repository.url.isNotBlank() && repository.url == PremiumManager.PREMIUM_REPO_URL &&
-                !PremiumManager.isPremium(context)
+        fun isPremiumLocked(context: Context, repository: RepositoryData, pluginPath: String? = null): Boolean {
+            val premiumUrl = PremiumManager.PREMIUM_REPO_URL
+            if (premiumUrl.isBlank()) return false
+            // Local management omits repo metadata; its installed path retains the repo folder.
+            val premiumRepository = repository.url == premiumUrl
+            val installedPremiumPlugin = repository.url.isBlank() && pluginPath != null &&
+                File(pluginPath).parentFile == getPluginPath(context, "", premiumUrl).parentFile
+            return (premiumRepository || installedPremiumPlugin) && !PremiumManager.isPremium(context)
+        }
 
-        fun requirePluginAccess(activity: Activity, repository: RepositoryData): Boolean {
-            if (!isPremiumLocked(activity, repository)) return true
+        fun requirePluginAccess(activity: Activity, repository: RepositoryData, pluginPath: String? = null): Boolean {
+            if (!isPremiumLocked(activity, repository, pluginPath)) return true
             activity.runOnUiThread {
                 if (!activity.isFinishing && !activity.isDestroyed) {
                     AlertDialog.Builder(activity, R.style.AlertDialogCustom)

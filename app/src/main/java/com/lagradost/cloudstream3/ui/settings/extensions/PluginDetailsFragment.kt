@@ -101,7 +101,7 @@ class PluginDetailsFragment(val data: PluginViewData) : BaseBottomSheetDialogFra
                     actionSettings.isVisible = true
                     actionSettings.setOnClickListener {
                         val host = activity ?: return@setOnClickListener
-                        if (!PluginsViewModel.requirePluginAccess(host, data.pluginWrapper.repositoryData)) {
+                        if (!PluginsViewModel.requirePluginAccess(host, data.pluginWrapper.repositoryData, metadata.url)) {
                             return@setOnClickListener
                         }
                         try {

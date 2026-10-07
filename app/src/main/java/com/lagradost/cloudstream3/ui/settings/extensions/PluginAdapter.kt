@@ -76,7 +76,7 @@ class PluginAdapter(
 
         val metadata = item.pluginWrapper.plugin
         val disabled = metadata.status == PROVIDER_STATUS_DOWN
-        val premiumLocked = PluginsViewModel.isPremiumLocked(itemView.context, item.pluginWrapper.repositoryData)
+        val premiumLocked = PluginsViewModel.isPremiumLocked(itemView.context, item.pluginWrapper.repositoryData, metadata.url)
         val name = metadata.name.removeSuffix("Provider")
         val alpha = if (disabled) 0.6f else 1f
         val isLocal = !item.pluginWrapper.plugin.url.startsWith("http")
@@ -129,7 +129,7 @@ class PluginAdapter(
                 binding.actionSettings.isVisible = true
                 binding.actionSettings.setOnClickListener {
                     val activity = itemView.context.getActivity() ?: return@setOnClickListener
-                    if (!PluginsViewModel.requirePluginAccess(activity, item.pluginWrapper.repositoryData)) {
+                    if (!PluginsViewModel.requirePluginAccess(activity, item.pluginWrapper.repositoryData, metadata.url)) {
                         return@setOnClickListener
                     }
                     try {
