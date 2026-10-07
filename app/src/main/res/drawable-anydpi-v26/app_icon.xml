@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+    <background android:drawable="@android:color/transparent" />
+    <foreground>
+        <!-- Keep the complete neon frame inside the 66dp circular safe zone. -->
+        <inset android:inset="22.5%">
+            <bitmap
+                android:src="@drawable/app_icon_foreground"
+                android:gravity="fill"
+                android:filter="true" />
+        </inset>
+    </foreground>
+</adaptive-icon>
