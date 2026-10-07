@@ -616,15 +616,6 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
 
         val destinationId = item.itemId
 
-        // --- SECURITY GUARD ADIXTREAM (SATPAM MENU NAV RAIL/BOTTOM) ---
-        if (destinationId == R.id.navigation_settings_extensions || destinationId == R.id.navigation_settings_plugins) {
-            if (!PremiumManager.isPremium(this)) {
-                PremiumDialogManager.showPremiumUnlockDialog(this)
-                return false
-            }
-        }
-        // -------------------------------------------------------------
-
         if (navController.currentDestination?.id == destinationId) return false
 
         val targetView = when (destinationId) {
@@ -1385,18 +1376,6 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
         val navController = navHostFragment.navController
 
         navController.addOnDestinationChangedListener { _: NavController, navDestination: NavDestination, bundle: Bundle? ->
-            // --- SECURITY GUARD ADIXTREAM (SAFE GUARD AMAN KICK-OUT) ---
-            if (navDestination.id == R.id.navigation_settings_extensions || navDestination.id == R.id.navigation_settings_plugins) {
-                if (!PremiumManager.isPremium(this@MainActivity)) {
-                    PremiumDialogManager.showPremiumUnlockDialog(this@MainActivity)
-                    if (navController.previousBackStackEntry != null) {
-                        navController.popBackStack()
-                    }
-                    return@addOnDestinationChangedListener
-                }
-            }
-            // -------------------------------------------------------------
-
             updateNavBar(navDestination)
             if (navDestination.matchDestination(R.id.navigation_search) && !nextSearchQuery.isNullOrBlank()) {
                 bundle?.apply { this.putString(SearchFragment.SEARCH_QUERY, nextSearchQuery) }

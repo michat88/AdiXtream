@@ -76,6 +76,7 @@ class PluginAdapter(
 
         val metadata = item.pluginWrapper.plugin
         val disabled = metadata.status == PROVIDER_STATUS_DOWN
+        val premiumLocked = PluginsViewModel.isPremiumLocked(itemView.context, item.pluginWrapper.repositoryData)
         val name = metadata.name.removeSuffix("Provider")
         val alpha = if (disabled) 0.6f else 1f
         val isLocal = !item.pluginWrapper.plugin.url.startsWith("http")
@@ -90,9 +91,11 @@ class PluginAdapter(
             binding.repositoryNameText.text = ""
         }
 
-        val drawableInt = if (item.isDownloaded)
-            R.drawable.ic_baseline_delete_outline_24
-        else R.drawable.netflix_download
+        val drawableInt = when {
+            item.isDownloaded -> R.drawable.ic_baseline_delete_outline_24
+            premiumLocked -> R.drawable.video_locked
+            else -> R.drawable.netflix_download
+        }
 
         binding.nsfwMarker.isVisible = metadata.tvTypes?.contains(TvType.NSFW.name) ?: false
         binding.actionButton.setImageResource(drawableInt)
@@ -125,6 +128,10 @@ class PluginAdapter(
             if (plugin?.openSettings != null) {
                 binding.actionSettings.isVisible = true
                 binding.actionSettings.setOnClickListener {
+                    val activity = itemView.context.getActivity() ?: return@setOnClickListener
+                    if (!PluginsViewModel.requirePluginAccess(activity, item.pluginWrapper.repositoryData)) {
+                        return@setOnClickListener
+                    }
                     try {
                         plugin.openSettings?.invoke(itemView.context)
                     } catch (e: Throwable) {
@@ -196,11 +203,9 @@ class PluginAdapter(
             binding.extFilesize.isVisible = false
         }
 
+        val displayName = if (disabled) txt(R.string.single_plugin_disabled, name) else txt(name)
         binding.mainText.setText(
-            if (disabled) txt(
-                R.string.single_plugin_disabled,
-                name
-            ) else txt(name)
+            if (premiumLocked) txt(R.string.adi_plugin_premium_locked, displayName) else displayName
         )
 
         binding.subText.isGone = metadata.description.isNullOrBlank()

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="adi_plugin_premium_title">Plugin Premium</string>
+    <string name="adi_plugin_premium_required">Plugin ini tersedia untuk pelanggan Premium.</string>
+    <string name="adi_plugin_view_subscription">LIHAT LANGGANAN</string>
+    <string name="adi_plugin_premium_locked">%1$s · Premium 🔒</string>
+</resources>

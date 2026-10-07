@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="adi_plugin_premium_title">Premium plugin</string>
+    <string name="adi_plugin_premium_required">This plugin is available to Premium subscribers.</string>
+    <string name="adi_plugin_view_subscription">VIEW SUBSCRIPTION</string>
+    <string name="adi_plugin_premium_locked">%1$s · Premium 🔒</string>
+</resources>

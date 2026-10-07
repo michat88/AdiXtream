@@ -2,8 +2,10 @@ package com.lagradost.cloudstream3.ui.settings.extensions
 
 import android.app.Activity
 import android.content.Context
+import android.content.DialogInterface
 import android.util.Log
 import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
@@ -11,6 +13,8 @@ import androidx.lifecycle.viewModelScope
 import androidx.preference.PreferenceManager
 import com.lagradost.cloudstream3.CommonActivity.showToast
 import com.lagradost.cloudstream3.PROVIDER_STATUS_DOWN
+import com.lagradost.cloudstream3.PremiumManager
+import com.lagradost.cloudstream3.PremiumDialogManager
 import com.lagradost.cloudstream3.R
 import com.lagradost.cloudstream3.TvType
 import com.lagradost.cloudstream3.amap
@@ -20,6 +24,7 @@ import com.lagradost.cloudstream3.plugins.PluginManager.getPluginPath
 import com.lagradost.cloudstream3.plugins.PluginWrapper
 import com.lagradost.cloudstream3.plugins.RepositoryManager
 import com.lagradost.cloudstream3.utils.txt
+import com.lagradost.cloudstream3.utils.AppContextUtils.setDefaultFocus
 import com.lagradost.cloudstream3.utils.Coroutines.ioSafe
 import com.lagradost.cloudstream3.utils.Coroutines.main
 import com.lagradost.cloudstream3.utils.Coroutines.runOnMainThread
@@ -63,6 +68,28 @@ class PluginsViewModel : ViewModel() {
         private val repositoryCache: MutableMap<String, List<PluginWrapper>> = mutableMapOf()
         const val TAG = "PLG"
 
+        // Catalog visibility is independent of subscription. Paid actions still require it.
+        fun isPremiumLocked(context: Context, repository: RepositoryData): Boolean =
+            repository.url.isNotBlank() && repository.url == PremiumManager.PREMIUM_REPO_URL &&
+                !PremiumManager.isPremium(context)
+
+        fun requirePluginAccess(activity: Activity, repository: RepositoryData): Boolean {
+            if (!isPremiumLocked(activity, repository)) return true
+            activity.runOnUiThread {
+                if (!activity.isFinishing && !activity.isDestroyed) {
+                    AlertDialog.Builder(activity, R.style.AlertDialogCustom)
+                        .setTitle(R.string.adi_plugin_premium_title)
+                        .setMessage(R.string.adi_plugin_premium_required)
+                        .setNegativeButton(R.string.cancel, null)
+                        .setPositiveButton(R.string.adi_plugin_view_subscription) { _, _ ->
+                            PremiumDialogManager.showPremiumUnlockDialog(activity)
+                        }
+                        .show().setDefaultFocus(DialogInterface.BUTTON_POSITIVE)
+                }
+            }
+            return false
+        }
+
         private fun isDownloaded(
             context: Context,
             pluginName: String,
@@ -92,6 +119,7 @@ class PluginsViewModel : ViewModel() {
         fun downloadAll(activity: Activity?, repository: RepositoryData, viewModel: PluginsViewModel?) =
             ioSafe {
                 if (activity == null) return@ioSafe
+                if (!requirePluginAccess(activity, repository)) return@ioSafe
                 val plugins = getPlugins(repository)
 
                 plugins.filter { pluginWrapper ->
@@ -124,6 +152,8 @@ class PluginsViewModel : ViewModel() {
                         )
                     }
                 }.amap { (_, repo, metadata) ->
+                    // Recheck after loading metadata in case the subscription expired meanwhile.
+                    if (isPremiumLocked(activity, repo)) return@amap false
                     PluginManager.downloadPlugin(
                         activity,
                         metadata.url,
@@ -174,6 +204,7 @@ class PluginsViewModel : ViewModel() {
         val (success, message) = if (file.exists()) {
             PluginManager.deletePlugin(file) to R.string.plugin_deleted
         } else {
+            if (!requirePluginAccess(activity, repositoryData)) return@ioSafe
             val isEnabled = pluginWrapper.plugin.status != PROVIDER_STATUS_DOWN
             val message = if (isEnabled) R.string.plugin_loaded else R.string.plugin_downloaded
             PluginManager.downloadPlugin(
