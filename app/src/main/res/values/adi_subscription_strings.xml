@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+<?xml version='1.0' encoding='utf-8'?>
 <resources>
     <string name="adi_activation_subscription">Activation &amp; Subscription</string>
     <string name="adi_subscription_intro">Manage your Premium access and subscription.</string>
@@ -8,7 +8,7 @@
     <string name="adi_id_copied">Device ID copied</string>
     <string name="adi_activation_code">Activation code</string>
     <string name="adi_code_hint">Enter your activation code</string>
-    <string name="adi_activate">Activate / Unlock</string>
+    <string name="adi_activate">Activate Premium</string>
     <string name="adi_claim_promo">Redeem promo code</string>
     <string name="adi_claim">Redeem</string>
     <string name="adi_contact_admin">Contact admin</string>
@@ -22,11 +22,64 @@
     <string name="adi_enlarge_qr">Enlarge payment QR</string>
     <string name="adi_premium_active">Premium active · Expires %1$s</string>
     <string name="adi_premium_inactive">Premium inactive</string>
-    <string name="adi_verifying">Verifying…</string>
+    <string name="adi_verifying">Verifying code…</string>
     <string name="adi_code_required">Enter a code first</string>
-    <string name="adi_activated">Premium activated</string>
+    <string name="adi_activated">✓ Premium successfully activated</string>
     <string name="adi_restart_info">Valid until %1$s. The app will restart to refresh your repositories.</string>
     <string name="adi_internal_repos">Free Repo and Premium Repo only</string>
     <string name="adi_support_saweria">Support AdiXtream through Saweria</string>
-    <string name="adi_request_timeout">No response yet. Check your subscription status before retrying.</string>
+    <string name="adi_request_timeout">The server has not responded. Check your subscription status before trying again.</string>
+    <string name="adi_subscription_steps">Choose a plan → Pay → Contact admin → Receive code → Activate</string>
+    <string name="adi_copy_device">Copy Device ID</string>
+    <string name="adi_state_free">Premium inactive</string>
+    <string name="adi_state_active">Premium active</string>
+    <string name="adi_state_expired">Subscription expired</string>
+    <string name="adi_free_help">Enjoy Premium access by choosing a plan below.</string>
+    <string name="adi_active_help">Your Premium access is active. You can renew your subscription below.</string>
+    <string name="adi_expired_help">Your Premium access is inactive. Contact the admin to renew your subscription.</string>
+    <string name="adi_valid_until">Valid until: %1$s</string>
+    <string name="adi_expired_on">Expired on: %1$s</string>
+    <string name="adi_renew_now">Renew now</string>
+    <string name="adi_renew_subscription">Renew subscription</string>
+    <string name="adi_order_summary">Selected plan: %1$s\nTotal payment: %2$s</string>
+    <string name="adi_payment_summary">Plan: %1$s\nTotal: %2$s\nPayment method: QRIS</string>
+    <string name="adi_plan_server_note">Plan selection is for payment information only. Premium validity is confirmed by the server.</string>
+    <string name="adi_pay_qris">Pay with QRIS</string>
+    <string name="adi_admin_paid">Payment completed — Contact admin</string>
+    <string name="adi_admin_renew">Contact admin to renew</string>
+    <string name="adi_order_new">Hello Admin, I would like to subscribe to AdiXtream.\n\nPlan: %1$s\nPrice: %2$s\nDevice ID: %3$s\n\nI have completed the QRIS payment.</string>
+    <string name="adi_order_renew">Hello Admin, I would like to renew my AdiXtream subscription.\n\nPlan: %1$s\nPrice: %2$s\nDevice ID: %3$s\n\nI have completed the QRIS payment.</string>
+    <string name="adi_order_copied">Subscription details copied. Send this message to the admin.</string>
+    <string name="adi_continue_phone">Continue on your phone</string>
+    <string name="adi_admin_tv_order">Telegram: %1$s\nDevice ID: %2$s\nPlan: %3$s\nPrice: %4$s\n\nContact the admin on Telegram from your phone and send your Device ID, selected plan, and payment proof.</string>
+    <string name="adi_activation_title">Already received your activation code?</string>
+    <string name="adi_activation_renew_title">Activation / Renewal</string>
+    <string name="adi_activation_help">Enter the code provided by the admin after your payment is confirmed.</string>
+    <string name="adi_renew_code_hint">Enter activation / renewal code</string>
+    <string name="adi_restart_notice">The app will reload to apply your Premium access.</string>
+    <string name="adi_have_promo">Have a promo code?</string>
+    <string name="adi_promo_title">Promo code</string>
+    <string name="adi_promo_hint">Enter promo code</string>
+    <string name="adi_promo_required">Enter a promo code first.</string>
+    <string name="adi_promo_success">✓ Promo successfully redeemed</string>
+    <string name="adi_promo_extended">Your Premium subscription has been extended.</string>
+    <string name="adi_code_error">Unable to process the code</string>
+    <string name="adi_error_invalid">Invalid code. Check the code provided by the admin and try again.</string>
+    <string name="adi_error_device">Device not registered. Contact the admin and send your Device ID.</string>
+    <string name="adi_error_expired">Subscription expired. Contact the admin to renew your subscription.</string>
+    <string name="adi_error_network">Network error. Check your internet connection and try again.</string>
+    <string name="adi_error_blocked">Premium access is blocked. Contact the admin with your Device ID.</string>
+    <string name="adi_error_promo_used">This promo has already been redeemed. Check your subscription status.</string>
+    <string name="adi_error_promo_quota">This promo has reached its redemption limit.</string>
+    <string name="adi_error_promo_expired">This promo code has expired.</string>
+    <string name="adi_error_promo_inactive">This promo is currently inactive.</string>
+    <string name="adi_error_promo_invalid">Promo code not found. Check the promo code and try again.</string>
+    <string name="adi_error_server">The server could not complete the request. Check your subscription status before trying again.</string>
+    <string name="adi_qr_loading">Loading QRIS…</string>
+    <string name="adi_qr_error">Unable to load QRIS. Check your internet connection.</string>
+    <string name="adi_try_again">Try again</string>
+    <plurals name="adi_days_remaining">
+        <item quantity="one">Remaining: %1$d day</item>
+        <item quantity="other">Remaining: %1$d days</item>
+    </plurals>
 </resources>

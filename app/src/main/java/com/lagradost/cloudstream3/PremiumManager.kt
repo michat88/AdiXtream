@@ -234,6 +234,11 @@ object PremiumManager {
     }
 
     fun activatePromoWithCode(context: Context, code: String, deviceId: String, onResult: (Boolean, String) -> Unit) {
+        activatePromoWithCode(context, code, deviceId, restartOnSuccess = true, onResult = onResult)
+    }
+
+    // The subscription page owns its success dialog; legacy callers keep the original restart.
+    fun activatePromoWithCode(context: Context, code: String, deviceId: String, restartOnSuccess: Boolean, onResult: (Boolean, String) -> Unit) {
         val inputCode = code.trim().uppercase()
         if (inputCode.isEmpty()) {
             onResult(false, "Kode Promo kosong!")
@@ -333,6 +338,10 @@ object PremiumManager {
                     lastCheckTime = serverTime
                     
                     Handler(Looper.getMainLooper()).post { 
+                        if (!restartOnSuccess) {
+                            onResult(true, "Selamat! Promo Berhasil Diklaim.")
+                            return@post
+                        }
                         Toast.makeText(context, "Selamat! Promo Berhasil Diklaim.", Toast.LENGTH_LONG).show()
                         val intent = context.packageManager.getLaunchIntentForPackage(context.packageName)
                         context.startActivity(Intent.makeRestartActivityTask(intent?.component))
@@ -415,6 +424,47 @@ object PremiumManager {
         return if (date == 0L) "Gratis" else SimpleDateFormat("dd MMM yyyy", Locale.getDefault()).format(Date(date))
     }
     
+    /** Read-only presentation metadata. Never grants access or writes license/preferences. */
+    data class SubscriptionDisplayInfo(val expiresAt: Long, val serverTime: Long, val blocked: Boolean)
+
+    fun getCachedExpiryForDisplay(context: Context): Long {
+        var date = 0L
+        try {
+            date = decodeObfuscated(getBackupPrefs(context).getString("obf_exp", "") ?: "").toLongOrNull() ?: 0L
+        } catch (_: Exception) {}
+        if (date == 0L) {
+            try { date = getSecurePrefs(context)?.getLong(PREF_EXPIRY_DATE, 0L) ?: 0L }
+            catch (_: Exception) {}
+        }
+        return date
+    }
+
+    // Local deactivation clears expiry. Read the existing user record to display an
+    // expired subscription correctly; this GET does not activate, sync or migrate it.
+    fun loadSubscriptionInfoForDisplay(context: Context, onResult: (SubscriptionDisplayInfo?) -> Unit) {
+        val deviceId = getDeviceId(context)
+        CoroutineScope(Dispatchers.IO).launch {
+            var connection: HttpURLConnection? = null
+            val info = try {
+                connection = URL("${FIREBASE_BASE_URL}users/$deviceId.json").openConnection() as HttpURLConnection
+                connection.requestMethod = "GET"
+                connection.connectTimeout = 5000
+                connection.readTimeout = 5000
+                if (connection.responseCode == HttpURLConnection.HTTP_OK) {
+                    val response = connection.inputStream.bufferedReader().use { it.readText() }
+                    if (response == "null") null else {
+                        val json = JSONObject(response)
+                        SubscriptionDisplayInfo(parseExpiryTimestamp(json),
+                            connection.date.takeIf { it > 0L } ?: System.currentTimeMillis(),
+                            json.optString("status") == "banned")
+                    }
+                } else null
+            } catch (_: Exception) { null }
+            finally { connection?.disconnect() }
+            Handler(Looper.getMainLooper()).post { onResult(info) }
+        }
+    }
+
     private fun checkAndSyncWithServer(context: Context, deviceId: String) {
         CoroutineScope(Dispatchers.IO).launch {
             try {

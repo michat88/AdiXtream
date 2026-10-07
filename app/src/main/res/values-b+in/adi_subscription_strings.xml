@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+<?xml version='1.0' encoding='utf-8'?>
 <resources>
     <string name="adi_activation_subscription">Aktivasi &amp; Langganan</string>
     <string name="adi_subscription_intro">Kelola akses Premium dan langganan Anda.</string>
@@ -8,7 +8,7 @@
     <string name="adi_id_copied">Device ID disalin</string>
     <string name="adi_activation_code">Kode aktivasi</string>
     <string name="adi_code_hint">Masukkan kode aktivasi</string>
-    <string name="adi_activate">Aktivasi / Unlock</string>
+    <string name="adi_activate">Aktivasi Premium</string>
     <string name="adi_claim_promo">Klaim kode promo</string>
     <string name="adi_claim">Klaim</string>
     <string name="adi_contact_admin">Hubungi admin</string>
@@ -22,11 +22,64 @@
     <string name="adi_enlarge_qr">Perbesar QR pembayaran</string>
     <string name="adi_premium_active">Premium aktif · Berlaku hingga %1$s</string>
     <string name="adi_premium_inactive">Premium tidak aktif</string>
-    <string name="adi_verifying">Memverifikasi…</string>
+    <string name="adi_verifying">Memeriksa kode…</string>
     <string name="adi_code_required">Masukkan kode terlebih dahulu</string>
-    <string name="adi_activated">Premium diaktifkan</string>
+    <string name="adi_activated">✓ Premium berhasil diaktifkan</string>
     <string name="adi_restart_info">Berlaku hingga %1$s. Aplikasi akan dimulai ulang untuk memuat repositori Anda.</string>
     <string name="adi_internal_repos">Hanya Free Repo dan Premium Repo</string>
     <string name="adi_support_saweria">Dukung AdiXtream melalui Saweria</string>
-    <string name="adi_request_timeout">Belum ada balasan. Periksa status langganan sebelum mencoba lagi.</string>
+    <string name="adi_request_timeout">Server belum merespons. Periksa status langganan sebelum mencoba kembali.</string>
+    <string name="adi_subscription_steps">Pilih paket → Bayar → Hubungi admin → Dapat kode → Aktivasi</string>
+    <string name="adi_copy_device">Salin Device ID</string>
+    <string name="adi_state_free">Belum Premium</string>
+    <string name="adi_state_active">Premium Aktif</string>
+    <string name="adi_state_expired">Langganan Berakhir</string>
+    <string name="adi_free_help">Nikmati akses Premium dengan memilih paket di bawah.</string>
+    <string name="adi_active_help">Akses Premium Anda aktif. Anda dapat memperpanjang langganan di bawah.</string>
+    <string name="adi_expired_help">Akses Premium Anda sudah tidak aktif. Hubungi admin untuk memperpanjang langganan.</string>
+    <string name="adi_valid_until">Berlaku hingga: %1$s</string>
+    <string name="adi_expired_on">Berakhir pada: %1$s</string>
+    <string name="adi_renew_now">Perpanjang Sekarang</string>
+    <string name="adi_renew_subscription">Perpanjang Langganan</string>
+    <string name="adi_order_summary">Paket dipilih: %1$s\nTotal pembayaran: %2$s</string>
+    <string name="adi_payment_summary">Paket: %1$s\nTotal: %2$s\nMetode pembayaran: QRIS</string>
+    <string name="adi_plan_server_note">Pilihan paket hanya untuk informasi pembayaran. Masa berlaku Premium ditentukan oleh server.</string>
+    <string name="adi_pay_qris">Bayar melalui QRIS</string>
+    <string name="adi_admin_paid">Sudah bayar — Hubungi admin</string>
+    <string name="adi_admin_renew">Hubungi admin untuk perpanjangan</string>
+    <string name="adi_order_new">Halo Admin, saya ingin berlangganan AdiXtream.\n\nPaket: %1$s\nHarga: %2$s\nDevice ID: %3$s\n\nSaya sudah melakukan pembayaran QRIS.</string>
+    <string name="adi_order_renew">Halo Admin, saya ingin memperpanjang langganan AdiXtream.\n\nPaket: %1$s\nHarga: %2$s\nDevice ID: %3$s\n\nSaya sudah melakukan pembayaran QRIS.</string>
+    <string name="adi_order_copied">Detail langganan sudah disalin. Kirim pesan tersebut ke admin.</string>
+    <string name="adi_continue_phone">Lanjutkan melalui HP</string>
+    <string name="adi_admin_tv_order">Telegram: %1$s\nDevice ID: %2$s\nPaket: %3$s\nHarga: %4$s\n\nHubungi admin melalui Telegram dari HP. Kirim Device ID Anda, paket yang dipilih, dan bukti pembayaran.</string>
+    <string name="adi_activation_title">Sudah menerima kode aktivasi?</string>
+    <string name="adi_activation_renew_title">Aktivasi / Perpanjangan</string>
+    <string name="adi_activation_help">Masukkan kode dari admin setelah pembayaran Anda dikonfirmasi.</string>
+    <string name="adi_renew_code_hint">Masukkan kode aktivasi/perpanjangan</string>
+    <string name="adi_restart_notice">Aplikasi akan dimuat ulang untuk menerapkan akses Premium.</string>
+    <string name="adi_have_promo">Punya kode promo?</string>
+    <string name="adi_promo_title">Kode Promo</string>
+    <string name="adi_promo_hint">Masukkan kode promo</string>
+    <string name="adi_promo_required">Masukkan kode promo terlebih dahulu.</string>
+    <string name="adi_promo_success">✓ Promo berhasil diklaim</string>
+    <string name="adi_promo_extended">Premium Anda telah diperpanjang.</string>
+    <string name="adi_code_error">Kode belum berhasil diproses</string>
+    <string name="adi_error_invalid">Kode tidak valid. Periksa kembali kode yang diberikan admin.</string>
+    <string name="adi_error_device">Device belum terdaftar. Hubungi admin dan kirim Device ID Anda.</string>
+    <string name="adi_error_expired">Langganan sudah kedaluwarsa. Hubungi admin untuk memperpanjang langganan.</string>
+    <string name="adi_error_network">Kesalahan jaringan. Periksa koneksi internet lalu coba lagi.</string>
+    <string name="adi_error_blocked">Akses Premium diblokir. Hubungi admin dan kirim Device ID Anda.</string>
+    <string name="adi_error_promo_used">Promo sudah pernah diklaim. Periksa status langganan Anda.</string>
+    <string name="adi_error_promo_quota">Kuota promo sudah habis.</string>
+    <string name="adi_error_promo_expired">Kode promo sudah kedaluwarsa.</string>
+    <string name="adi_error_promo_inactive">Promo ini sedang tidak aktif.</string>
+    <string name="adi_error_promo_invalid">Kode promo tidak ditemukan. Periksa kembali kode promo Anda.</string>
+    <string name="adi_error_server">Server belum dapat menyelesaikan permintaan. Periksa status langganan sebelum mencoba kembali.</string>
+    <string name="adi_qr_loading">Memuat QRIS…</string>
+    <string name="adi_qr_error">Gagal memuat QRIS. Periksa koneksi internet.</string>
+    <string name="adi_try_again">Coba Lagi</string>
+    <plurals name="adi_days_remaining">
+        <item quantity="one">Sisa: %1$d hari</item>
+        <item quantity="other">Sisa: %1$d hari</item>
+    </plurals>
 </resources>
