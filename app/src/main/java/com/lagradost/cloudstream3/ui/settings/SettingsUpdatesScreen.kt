@@ -103,6 +103,14 @@ object SettingsUpdatesScreen : SearchableSettings {
                             }*/
                         }
                     ),
+                    // ADIXTREAM_PUBLIC_UI_DISABLED_BEGIN
+                    // ADI_HIDE_FROM_PUBLIC_UI: PRERELEASE
+                    // ============================================================
+                    // ADIXTREAM: HIDDEN FROM PUBLIC USER UI
+                    // Upstream feature intentionally retained for compatibility.
+                    // Do not delete. Re-enable only if explicitly requested.
+                    // ============================================================
+                    /*
                     Preference.PreferenceItem.TextPreference(
                         title = stringResource(R.string.install_prerelease),
                         icon = painterResource(R.drawable.mobile_code_24px),
@@ -111,6 +119,8 @@ object SettingsUpdatesScreen : SearchableSettings {
                             githubViewModel?.onAction(GithubAction.SearchForPrerelease)
                         }
                     ),
+                    */
+                    // ADIXTREAM_PUBLIC_UI_DISABLED_END
 
                     Preference.PreferenceItem.ListPreference(
                         title = stringResource(R.string.apk_installer_settings),
@@ -130,6 +140,15 @@ object SettingsUpdatesScreen : SearchableSettings {
                     )
                 )
             ),
+            // ADIXTREAM_PUBLIC_UI_DISABLED_BEGIN
+            // ADI_HIDE_FROM_PUBLIC_UI: BACKUP
+            // ============================================================
+            // ADIXTREAM: HIDDEN FROM PUBLIC USER UI
+            // Upstream feature intentionally retained for compatibility.
+            // Do not delete. Re-enable only if explicitly requested.
+            // ============================================================
+            // Public export is disabled because backup may contain internal repository configuration.
+            /*
             Preference.PreferenceGroup(
                 title = stringResource(R.string.pref_category_backup),
                 preferenceItems = persistentListOf(
@@ -168,6 +187,8 @@ object SettingsUpdatesScreen : SearchableSettings {
                     ),
                 )
             ),
+            */
+            // ADIXTREAM_PUBLIC_UI_DISABLED_END
             Preference.PreferenceGroup(
                 title = stringResource(R.string.pref_category_extensions),
                 preferenceItems = persistentListOf(
@@ -197,6 +218,14 @@ object SettingsUpdatesScreen : SearchableSettings {
                             }
                         }
                     ),
+                    // ADIXTREAM_PUBLIC_UI_DISABLED_BEGIN
+                    // ADI_HIDE_FROM_PUBLIC_UI: TEST_EXTENSIONS
+                    // ============================================================
+                    // ADIXTREAM: HIDDEN FROM PUBLIC USER UI
+                    // Upstream feature intentionally retained for compatibility.
+                    // Do not delete. Re-enable only if explicitly requested.
+                    // ============================================================
+                    /*
                     Preference.PreferenceItem.TextPreference(
                         title = stringResource(R.string.test_extensions),
                         subtitle = stringResource(R.string.test_extensions_summary),
@@ -204,8 +233,19 @@ object SettingsUpdatesScreen : SearchableSettings {
                         onClick = {
                             activity?.navigate(R.id.navigation_test_providers)
                         })
+                    */
+                    // ADIXTREAM_PUBLIC_UI_DISABLED_END
                 )
             ),
+            // ADIXTREAM_PUBLIC_UI_DISABLED_BEGIN
+            // ADI_HIDE_FROM_PUBLIC_UI: LOGCAT
+            // ADI_HIDE_FROM_PUBLIC_UI: REDO_SETUP
+            // ============================================================
+            // ADIXTREAM: HIDDEN FROM PUBLIC USER UI
+            // Upstream feature intentionally retained for compatibility.
+            // Do not delete. Re-enable only if explicitly requested.
+            // ============================================================
+            /*
             Preference.PreferenceGroup(
                 title = stringResource(R.string.pref_category_actions),
                 preferenceItems = persistentListOf(
@@ -225,6 +265,8 @@ object SettingsUpdatesScreen : SearchableSettings {
                     ),
                 )
             )
+            */
+            // ADIXTREAM_PUBLIC_UI_DISABLED_END
         )
     }
 }

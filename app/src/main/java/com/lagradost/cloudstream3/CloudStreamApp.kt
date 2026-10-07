@@ -17,6 +17,7 @@ import com.lagradost.cloudstream3.BuildConfig
 import com.lagradost.cloudstream3.mvvm.safe
 import com.lagradost.cloudstream3.mvvm.safeAsync
 import com.lagradost.cloudstream3.plugins.PluginManager
+import com.lagradost.cloudstream3.services.BackupWorkManager
 import com.lagradost.cloudstream3.ui.settings.Globals.EMULATOR
 import com.lagradost.cloudstream3.ui.settings.Globals.TV
 import com.lagradost.cloudstream3.ui.settings.Globals.isLayout
@@ -71,6 +72,9 @@ class CloudStreamApp : Application(), SingletonImageLoader.Factory {
 
     override fun onCreate() {
         super.onCreate()
+        // ADIXTREAM SECURITY: force backup OFF and cancel persisted work on every
+        // app start, without requiring the customer to open the settings screen.
+        BackupWorkManager.disableAutomaticBackup(this)
         val preferences = androidx.preference.PreferenceManager.getDefaultSharedPreferences(this)
         val stableDnsKey = getString(R.string.dns_key)
         if (!preferences.contains(stableDnsKey)) {
