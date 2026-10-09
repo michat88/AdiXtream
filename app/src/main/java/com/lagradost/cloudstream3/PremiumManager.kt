@@ -23,6 +23,10 @@ import kotlin.math.abs
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import com.lagradost.cloudstream3.utils.RepoProtector
 
 object PremiumManager {
@@ -78,24 +82,93 @@ object PremiumManager {
         }
     }
 
-    private fun saveLicenseLocally(context: Context, isPremium: Boolean, expiryDate: Long) {
+    private fun saveLicenseLocally(context: Context, isPremium: Boolean, expiryDate: Long): Boolean {
         // 1. Simpan ke EncryptedStorage jika bisa
-        getSecurePrefs(context)?.edit()?.apply {
+        val secureSaved = getSecurePrefs(context)?.edit()?.run {
             putBoolean(PREF_IS_PREMIUM, isPremium)
             putLong(PREF_EXPIRY_DATE, expiryDate)
             commit()
-        }
+        } == true
 
         // 2. Selalu simpan ke Fallback Preferences (Sangat stabil & anti Android Keystore Crash)
         val obfuscatedState = encodeObfuscated(if (isPremium) "ACTIVE_VIP" else "INACTIVE")
         val obfuscatedExp = encodeObfuscated(expiryDate.toString())
 
-        getBackupPrefs(context).edit().apply {
+        val fallbackSaved = getBackupPrefs(context).edit().run {
             putString("obf_state", obfuscatedState)
             putString("obf_exp", obfuscatedExp)
             commit()
         }
+        return secureSaved || fallbackSaved
     }
+
+    // ADIXTREAM: missing entitlement is UNKNOWN, never an implicit stored FREE.
+    // Existing keys, encoding, migration and activation flows are unchanged.
+    enum class StartupEntitlement { PREMIUM, FREE, EXPIRED, BANNED, UNKNOWN }
+    private val entitlementRecoveryLock = Mutex()
+
+    private fun hasStoredEntitlement(context: Context): Boolean {
+        val secureHasState = try {
+            getSecurePrefs(context)?.contains(PREF_IS_PREMIUM) == true
+        } catch (_: Exception) { false }
+        return secureHasState || getBackupPrefs(context).contains("obf_state") ||
+            PreferenceManager.getDefaultSharedPreferences(context).contains(PREF_IS_PREMIUM)
+    }
+
+    /** Await this before selecting a repository. Recovery never writes to Firebase. */
+    suspend fun resolveEntitlementForStartup(context: Context): StartupEntitlement =
+        withContext(Dispatchers.IO) {
+            entitlementRecoveryLock.withLock {
+                // Normal upgrades retain the local-first path, without a blocking GET.
+                if (hasStoredEntitlement(context)) {
+                    return@withLock if (isPremium(context)) StartupEntitlement.PREMIUM
+                        else StartupEntitlement.FREE
+                }
+
+                var connection: HttpURLConnection? = null
+                try {
+                    connection = URL("${FIREBASE_BASE_URL}users/${getDeviceId(context)}.json")
+                        .openConnection() as HttpURLConnection
+                    connection.requestMethod = "GET"
+                    connection.connectTimeout = 5000
+                    connection.readTimeout = 5000
+                    if (connection.responseCode != HttpURLConnection.HTTP_OK) {
+                        return@withLock StartupEntitlement.UNKNOWN
+                    }
+
+                    val response = connection.inputStream.bufferedReader().use { it.readText() }.trim()
+                    val json = if (response == "null") null else JSONObject(response)
+                    val expiry = json?.let { parseExpiryTimestamp(it) } ?: 0L
+                    val serverTime = connection.date
+                    val result = when {
+                        json == null -> StartupEntitlement.FREE
+                        json.optString("status") == "banned" -> StartupEntitlement.BANNED
+                        json.optString("status") != "aktif" || expiry <= 0L -> StartupEntitlement.FREE
+                        // A missing server clock must never grant Premium from the device clock.
+                        serverTime <= 0L -> StartupEntitlement.UNKNOWN
+                        expiry <= serverTime -> StartupEntitlement.EXPIRED
+                        else -> StartupEntitlement.PREMIUM
+                    }
+
+                    // Timeout, transport/parse failure or missing server time never stores FREE.
+                    if (result == StartupEntitlement.UNKNOWN) return@withLock result
+                    val storedExpiry = if (result == StartupEntitlement.PREMIUM ||
+                        result == StartupEntitlement.EXPIRED) expiry else 0L
+                    if (!saveLicenseLocally(context, result == StartupEntitlement.PREMIUM, storedExpiry)) {
+                        return@withLock StartupEntitlement.UNKNOWN
+                    }
+                    if (result == StartupEntitlement.PREMIUM) lastCheckTime = System.currentTimeMillis()
+                    result
+                } catch (cancelled: CancellationException) {
+                    throw cancelled
+                } catch (_: Exception) {
+                    // Keep UNKNOWN recoverable; do not log URLs, response bodies or codes.
+                    StartupEntitlement.UNKNOWN
+                } finally {
+                    connection?.disconnect()
+                }
+            }
+        }
 
     private fun getIsoTime(timeMillis: Long): String {
         val sdf = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US)

@@ -200,6 +200,7 @@ import com.lagradost.cloudstream3.PremiumManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.isActive
 // -----------------------
 
 class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCallback {
@@ -1081,54 +1082,90 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
         if (PluginManager.checkSafeModeFile()) {
             safe { showToast(R.string.safe_mode_file, Toast.LENGTH_LONG) }
         } else if (lastError == null) {
-            // === ADIXTREAM MOD: LOGIKA REPOSITORY & UPDATE ===
-            // (BUG DIPERBAIKI: Hapus ioSafe yang membungkus lifecycleScope)
+            // ADIXTREAM: entitlement resolution precedes repository selection on mobile and TV.
+            fun showBootstrapRetry(premium: Boolean) {
+                runOnUiThread {
+                    if (!isFinishing && !isDestroyed) {
+                        AlertDialog.Builder(this, R.style.AlertDialogCustom)
+                            .setTitle(if (premium) R.string.adi_state_active else R.string.adi_account_status)
+                            .setMessage(R.string.adi_error_network)
+                            .setNegativeButton(R.string.cancel, null)
+                            .setPositiveButton(R.string.reload_error) { _, _ -> recreate() }
+                            .show().setDefaultFocus()
+                    }
+                }
+            }
+
             lifecycleScope.launch(Dispatchers.IO) {
-                val isPremium = PremiumManager.isPremium(this@MainActivity)
+                val entitlement = PremiumManager.resolveEntitlementForStartup(this@MainActivity)
+                Log.d(TAG, "ENTITLEMENT_RECOVERY=$entitlement")
+                if (entitlement == PremiumManager.StartupEntitlement.UNKNOWN) {
+                    // No authoritative decision: do not persist or bootstrap a Free repository.
+                    showBootstrapRetry(false)
+                    mainPluginsLoadedEvent.invoke(false)
+                    return@launch
+                }
+                val isPremium = entitlement == PremiumManager.StartupEntitlement.PREMIUM
                 val targetRepoUrl = if (isPremium) PremiumManager.PREMIUM_REPO_URL else PremiumManager.FREE_REPO_URL
-                
                 val currentRepos = RepositoryManager.getRepositories()
                 val hasTargetRepo = currentRepos.any { it.url == targetRepoUrl }
                 val hasInvalidRepos = currentRepos.any { it.url != targetRepoUrl }
-                
                 var isRepoChanged = false
 
                 if (!hasTargetRepo || hasInvalidRepos) {
-                    Log.d(TAG, "Status Repo tidak sinkron. Melakukan penyesuaian otomatis...")
-
-                    try {
-                        APIHolder.allProviders.clear() 
-                        val pluginDir1 = File(this@MainActivity.filesDir, "plugins")
-                        val pluginDir2 = File(this@MainActivity.filesDir, "Plugins")
-                        if (pluginDir1.exists()) pluginDir1.deleteRecursively() 
-                        if (pluginDir2.exists()) pluginDir2.deleteRecursively()
-                    } catch (e: Exception) { 
-                        logError(e) 
-                    }
-
-                    currentRepos.forEach { repo ->
-                        RepositoryManager.removeRepository(this@MainActivity, repo)
-                    }
-                    try {
-                        val parsedRepo = RepositoryManager.parseRepository(targetRepoUrl)
-                        if (parsedRepo != null) {
-                            val repoData = RepositoryData(parsedRepo.iconUrl ?: "", parsedRepo.name, targetRepoUrl)
-                            RepositoryManager.addRepository(repoData)
-                            isRepoChanged = true 
-                            Log.d(TAG, "Repo berhasil disinkronkan ke: $targetRepoUrl")
+                    // Validate BEFORE removing repositories or their plugin/provider caches.
+                    val parsedRepo = try {
+                        kotlinx.coroutines.withTimeoutOrNull(10_000L) {
+                            RepositoryManager.parseRepository(targetRepoUrl)
                         }
-                    } catch (e: Exception) { logError(e) }
+                    } catch (cancelled: kotlinx.coroutines.CancellationException) {
+                        throw cancelled
+                    } catch (_: Exception) { null }
+
+                    if (parsedRepo == null) {
+                        Log.w(TAG, "REPO_BOOTSTRAP=FAILED")
+                        showBootstrapRetry(isPremium)
+                        // Keep every existing cache intact, but do not load a mismatched repo.
+                        // Premium remains Premium; retry never substitutes/persists Free.
+                        mainPluginsLoadedEvent.invoke(false)
+                        return@launch
+                    } else {
+                        // Keep an existing target cache; remove only repositories being replaced.
+                        currentRepos.filter { it.url != targetRepoUrl }.forEach { repo ->
+                            RepositoryManager.removeRepository(this@MainActivity, repo)
+                        }
+                        RepositoryManager.addRepository(
+                            RepositoryData(parsedRepo.iconUrl ?: "", parsedRepo.name, targetRepoUrl)
+                        )
+                        isRepoChanged = true
+                        Log.d(TAG, "REPO_BOOTSTRAP=VALIDATED")
+                    }
                 }
 
-                kotlinx.coroutines.delay(2000) // Memberi jeda 2 detik untuk stabilitas UI
+                val targetPluginDirectory = PluginManager.getPluginPath(this@MainActivity, "", targetRepoUrl).parentFile
+                fun hasTargetPlugins(): Boolean = PluginManager.getPluginsOnline().any {
+                    val file = File(it.filePath)
+                    file.parentFile == targetPluginDirectory && file.isFile
+                }
 
-                if (isRepoChanged) {
+                if (isRepoChanged || !hasTargetPlugins()) {
+                    // Also retry an interrupted initial download when the repo entry already exists.
+                    val download = PluginsViewModel.downloadAll(
+                        this@MainActivity, RepositoryData("", "", targetRepoUrl), null
+                    )
                     try {
-                        Log.d(TAG, "Mengunduh plugin dari Repo Baru...")
-                        PluginsViewModel.downloadAll(this@MainActivity, RepositoryData("", "", targetRepoUrl), null)
-                        PluginManager.___DO_NOT_CALL_FROM_A_PLUGIN_loadAllOnlinePlugins(this@MainActivity)
-                        PluginManager.___DO_NOT_CALL_FROM_A_PLUGIN_loadAllLocalPlugins(this@MainActivity, false)
-                    } catch (e: Exception) { logError(e) }
+                        download.join()
+                    } finally {
+                        if (!isActive) download.cancel()
+                    }
+                    if (!hasTargetPlugins()) {
+                        Log.w(TAG, "REPO_BOOTSTRAP=PLUGIN_DOWNLOAD_FAILED")
+                        showBootstrapRetry(isPremium)
+                        mainPluginsLoadedEvent.invoke(false)
+                        return@launch
+                    }
+                    PluginManager.___DO_NOT_CALL_FROM_A_PLUGIN_loadAllOnlinePlugins(this@MainActivity)
+                    PluginManager.___DO_NOT_CALL_FROM_A_PLUGIN_loadAllLocalPlugins(this@MainActivity, false)
                 } else {
                     if (settingsManager.getBoolean(getString(R.string.auto_update_plugins_key), true)) {
                         PluginManager.___DO_NOT_CALL_FROM_A_PLUGIN_updateAllOnlinePluginsAndLoadThem(this@MainActivity)
