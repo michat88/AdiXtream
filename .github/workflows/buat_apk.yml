@@ -31,7 +31,7 @@ jobs:
         run: chmod +x gradlew
 
       - name: Mulai Proses Build
-        run: ./gradlew clean :app:assembleStableRelease :app:testStableReleaseUnitTest :app:lintStableRelease
+        run: ./gradlew -Pandroid.onlyEnableUnitTestForTheTestedBuildType=false clean :app:assembleStableRelease :app:testStableReleaseUnitTest :app:lintStableRelease
         env:
           KEYSTORE_PATH: release.keystore
           ALIAS: ${{ secrets.ALIAS }}
@@ -51,9 +51,26 @@ jobs:
           set -euo pipefail
           apk_count=0
           verifier="$(find "$ANDROID_HOME/build-tools" -name apksigner -type f | sort -V | tail -n 1)"
+          badging="$(find "$ANDROID_HOME/build-tools" -name aapt -type f | sort -V | tail -n 1)"
           test -n "$verifier"
+          test -n "$badging"
+          previous_apk="$RUNNER_TEMP/AdiXtream-4.8.4.apk"
+          curl --fail --location --retry 3 --output "$previous_apk" \
+            https://github.com/michat88/AdiXtream/releases/download/v4.8.4/AdiXtream-4.8.4.apk
+          previous_signers="$("$verifier" verify --print-certs "$previous_apk" | sed -n '/^Signer #[0-9][0-9]* certificate SHA-256 digest:/p' | sort)"
+          previous_package="$("$badging" dump badging "$previous_apk" | sed -n "s/^package: name='\([^']*\)'.*/\1/p")"
+          previous_code="$("$badging" dump badging "$previous_apk" | sed -n "s/^package:.*versionCode='\([^']*\)'.*/\1/p")"
+          test -n "$previous_signers"
+          test "$previous_package" = com.adixtream.app
           while IFS= read -r -d '' apk; do
             "$verifier" verify "$apk"
+            current_signers="$("$verifier" verify --print-certs "$apk" | sed -n '/^Signer #[0-9][0-9]* certificate SHA-256 digest:/p' | sort)"
+            current_package="$("$badging" dump badging "$apk" | sed -n "s/^package: name='\([^']*\)'.*/\1/p")"
+            current_code="$("$badging" dump badging "$apk" | sed -n "s/^package:.*versionCode='\([^']*\)'.*/\1/p")"
+            test "$current_signers" = "$previous_signers"
+            test "$current_package" = "$previous_package"
+            test "$current_code" -gt "$previous_code"
+            echo "Existing-user package/version/signing compatibility: PASS"
             apk_count=$((apk_count + 1))
           done < <(find app/build/outputs/apk/stable/release -name '*.apk' -type f -print0)
           test "$apk_count" -gt 0
@@ -65,3 +82,13 @@ jobs:
           if-no-files-found: error
           # Mencari semua file apk di dalam folder output (termasuk folder stable)
           path: app/build/outputs/apk/stable/release/*.apk
+
+      - name: Upload Validation Reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: AdiXtream-Validation
+          if-no-files-found: error
+          path: |
+            app/build/reports/tests/testStableReleaseUnitTest/
+            app/build/test-results/testStableReleaseUnitTest/
+            app/build/reports/lint-results-stableRelease.*
