@@ -422,13 +422,13 @@ object SettingsFragmentScreen : Screen {
         val detail = remember(context, refresh) {
             val active = PremiumManager.isPremium(context)
             val id = PremiumManager.getDeviceId(context)
-            val state = if (active) context.getString(R.string.adi_premium_active, PremiumManager.getExpiryDateString(context))
-                else context.getString(R.string.adi_premium_inactive)
-            id to state
+            val expiry = if (active) PremiumManager.getExpiryDateString(context) else ""
+            Triple(id, active, expiry)
         }
         TextPreferenceWidget(
-            title = detail.second,
-            subtitle = context.getString(R.string.adi_device_id) + ": " + detail.first,
+            title = if (detail.second) stringResource(R.string.adi_premium_active, detail.third)
+                else stringResource(R.string.adi_premium_inactive),
+            subtitle = stringResource(R.string.adi_device_id) + ": " + detail.first,
             icon = painterResource(R.drawable.copy_all_24px),
             onPreferenceClick = {
                 clipboardHelper(txt(R.string.adi_device_id), detail.first)

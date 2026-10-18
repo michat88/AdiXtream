@@ -3,6 +3,7 @@ package com.lagradost.cloudstream3
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
+import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.provider.Settings
@@ -60,7 +61,12 @@ object PremiumManager {
         } catch (e: Exception) {
             Log.e("PremiumManager", "EncryptedSharedPreferences Corrupt! Auto-resetting Encrypted file: ${e.message}")
             try {
-                context.deleteSharedPreferences("premium_secure_data")
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                    context.deleteSharedPreferences("premium_secure_data")
+                } else {
+                    context.getSharedPreferences("premium_secure_data", Context.MODE_PRIVATE)
+                        .edit().clear().commit()
+                }
             } catch (_: Exception) {}
             null
         }
