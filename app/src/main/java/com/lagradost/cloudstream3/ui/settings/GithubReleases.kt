@@ -1,13 +1,14 @@
 package com.lagradost.cloudstream3.ui.settings
 
-import androidx.compose.runtime.Immutable
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.app
+import com.lagradost.cloudstream4.viewmodels.GithubFile
+import com.lagradost.cloudstream4.viewmodels.GithubRepository
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlin.jvm.Throws
+import java.io.FileNotFoundException
 
-object GithubReleases {
+object GithubReleases : GithubRepository {
     @Serializable
     private data class GithubAsset(
         @JsonProperty("name") @SerialName("name") val name: String,
@@ -41,27 +42,15 @@ object GithubReleases {
         @JsonProperty("object") @SerialName("object") val githubObject: GithubObject,
     )
 
-    /** GitHub file update package */
-    @Immutable
-    data class GithubFile(
-        /** File digest, sha:xxx */
-        val digest: String?,
-        /** File url for download */
-        val downloadUrl: String,
-        /** Filename without the extension */
-        val displayName: String,
-        /** Changelog, aka the commit message */
-        val changeLog: String,
-        /** Name of the tag, aka unique release name like vX.X.X or pre-release */
-        val tagName: String,
-        /** Unique node id */
-        val nodeId: String,
-    )
+    const val APK_USERNAME = "michat88"
+    const val APK_REPOSITORY = "AdiXtream"
+    const val APK_PRERELEASE = "pre-release"
+    const val APK_CONTENT_TYPE = "application/vnd.android.package-archive"
 
     private val defaultHeaders = mapOf("Accept" to "application/vnd.github.v3+json")
 
     @Throws
-    suspend fun getShaFromTag(
+    override suspend fun getSha(
         userName: String,
         repository: String,
         tag: String,
@@ -73,20 +62,20 @@ object GithubReleases {
     }
 
     @Throws
-    suspend fun getLatestReleaseFile(
+    override suspend fun getRelease(
         userName: String,
         repository: String,
         prerelease: Boolean,
         prereleaseTag: String,
         contentType: String,
-    ): GithubFile? {
+    ): GithubFile {
         val selected: Pair<GithubRelease, GithubAsset> = if (prerelease) {
             val release = app.get(
                 "https://api.github.com/repos/$userName/$repository/releases/tags/$prereleaseTag",
                 headers = defaultHeaders
             ).parsed<GithubRelease>()
             val asset = release.assets.firstOrNull { it.contentType == contentType && it.name.endsWith(".apk", true) }
-                ?: return null
+                ?: throw FileNotFoundException()
             release to asset
         } else {
             // Same releases-list and numeric APK version selection used by existing AdiXtream.
@@ -98,7 +87,7 @@ object GithubReleases {
                 release.assets.filter {
                     it.contentType == contentType && it.name.endsWith(".apk", true) && versionParts(it.name) != null
                 }.map { release to it }
-            }.maxWithOrNull { a, b -> compareVersions(a.second.name, b.second.name) } ?: return null
+            }.maxWithOrNull { a, b -> compareVersions(a.second.name, b.second.name) } ?: throw FileNotFoundException()
         }
         val (latestRelease, foundAsset) = selected
 
@@ -126,5 +115,5 @@ object GithubReleases {
         return 0
     }
 
-    fun isNewerVersion(candidate: String, current: String): Boolean = compareVersions(candidate, current) > 0
+    override fun isNewerVersion(candidate: String, current: String): Boolean = compareVersions(candidate, current) > 0
 }

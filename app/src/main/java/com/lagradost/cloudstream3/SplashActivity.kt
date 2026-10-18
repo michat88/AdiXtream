@@ -9,7 +9,7 @@ import android.os.Bundle
 import android.view.View
 import android.widget.VideoView
 import androidx.appcompat.app.AppCompatActivity
-import com.lagradost.cloudstream3.ui.account.AccountSelectActivity
+import com.lagradost.cloudstream3.ui.account.AccountSelectActivity2
 
 class SplashActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -48,7 +48,7 @@ class SplashActivity : AppCompatActivity() {
 
         // Pindah halaman saat video tamat
         videoView.setOnCompletionListener {
-            val intent = Intent(this, AccountSelectActivity::class.java)
+            val intent = Intent(this, AccountSelectActivity2::class.java)
             startActivity(intent)
             finish()
         }

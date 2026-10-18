@@ -31,7 +31,7 @@ jobs:
         run: chmod +x gradlew
 
       - name: Mulai Proses Build
-        run: ./gradlew clean :app:assembleStableRelease
+        run: ./gradlew clean :app:assembleStableRelease :app:testStableReleaseUnitTest :app:lintStableRelease
         env:
           KEYSTORE_PATH: release.keystore
           ALIAS: ${{ secrets.ALIAS }}

@@ -221,7 +221,8 @@ object SettingsGeneralScreen : SearchableSettings {
                         entries = integerArrayResource(R.array.dns_pref_values).zip(
                             stringArrayResource(R.array.dns_pref)
                         ).toMap(),
-                        onValueChanged = {
+                        onValueChanged = { newValue ->
+                            settings.general.dns.set(newValue) // Must set the value before initClient is called
                             (CloudStreamApp.context)?.let { ctx ->
                                 app.initClient(ctx, ignoreSSL = false)
                             }

@@ -1,4 +1,4 @@
-package com.lagradost.cloudstream3.ui.settings
+package com.lagradost.cloudstream4.viewmodels
 
 import androidx.compose.runtime.Immutable
 import androidx.lifecycle.ViewModel
@@ -13,7 +13,6 @@ import com.lagradost.cloudstream4.state.StateContainer
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import java.io.FileNotFoundException
 
 @Immutable
 data class GithubState(
@@ -27,7 +26,7 @@ sealed class GithubUpdateDialogState {
     object Loading : GithubUpdateDialogState()
     object NoUpdateFound : GithubUpdateDialogState()
     data class UpdateFound(
-        val file: GithubReleases.GithubFile,
+        val file: GithubFile,
         val newSha: String?,
         val oldSha: String?,
     ) : GithubUpdateDialogState()
@@ -40,21 +39,33 @@ data class GithubDialog(
     val state: GithubUpdateDialogState,
 )
 
+/** GitHub file update package */
+@Immutable
+data class GithubFile(
+    /** File digest, sha:xxx */
+    val digest: String?,
+    /** File url for download */
+    val downloadUrl: String,
+    /** Filename without the extension */
+    val displayName: String,
+    /** Changelog, aka the commit message */
+    val changeLog: String,
+    /** Name of the tag, aka unique release name like vX.X.X or pre-release */
+    val tagName: String,
+    /** Unique node id */
+    val nodeId: String,
+)
+
 @Immutable
 sealed class GithubAction {
     object AutoSearchForUpdate : GithubAction()
     object SearchForUpdate : GithubAction()
     object SearchForPrerelease : GithubAction()
     object Dismiss : GithubAction()
-    data class SkipThisUpdate(val file: GithubReleases.GithubFile) : GithubAction()
-    data class Update(val file: GithubReleases.GithubFile) : GithubAction()
-    data class SkipUpdate(val file: GithubReleases.GithubFile) : GithubAction()
+    data class SkipThisUpdate(val file: GithubFile) : GithubAction()
+    data class Update(val file: GithubFile) : GithubAction()
+    data class SkipUpdate(val file: GithubFile) : GithubAction()
 }
-
-const val APK_USERNAME = "michat88"
-const val APK_REPOSITORY = "AdiXtream"
-const val APK_PRERELEASE = "pre-release"
-const val APK_CONTENT_TYPE = "application/vnd.android.package-archive"
 
 interface AppUpdater {
     @Throws
@@ -66,21 +77,42 @@ interface AppUpdater {
     )
 }
 
+interface GithubRepository {
+    /** Product-specific version ordering without depending on the Android app. */
+    fun isNewerVersion(candidate: String, current: String): Boolean
+
+    @Throws
+    suspend fun getRelease(
+        userName: String,
+        repository: String,
+        prerelease: Boolean,
+        prereleaseTag: String,
+        contentType: String,
+    ): GithubFile
+
+    @Throws
+    suspend fun getSha(
+        userName: String,
+        repository: String,
+        tag: String,
+    ): String
+}
+
 /** The digest pair to verify that a file is correctly downloaded */
 data class DigestPair(
-    val algorithm : String,
-    val digest : ByteArray,
+    val algorithm: String,
+    val digest: ByteArray,
 ) {
     companion object {
         // "sha256:XXXX" or "sha256-XXXX" -> "sha256", bytearray(XXXX)
-        fun parse(digestPair: String?) : DigestPair? {
-            if(digestPair == null) return null
+        fun parse(digestPair: String?): DigestPair? {
+            if (digestPair == null) return null
 
             var split = digestPair.split(":", limit = 2)
-            if(split.size != 2) {
+            if (split.size != 2) {
                 split = digestPair.split("-", limit = 2)
             }
-            if(split.size != 2) {
+            if (split.size != 2) {
                 return null
             }
 
@@ -133,6 +165,7 @@ class GithubViewModel(
     val buildSha: String,
     val settings: AppSettings,
     val updater: AppUpdater,
+    val repository: GithubRepository,
 ) : ViewModel(), StateContainer<GithubState> by DefaultStateContainer(GithubState()),
     ActionHandler<GithubAction> {
     private val updateDispatcher = SingleActiveQuery(Dispatchers.IO)
@@ -239,7 +272,11 @@ class GithubViewModel(
         var oldSha: String? = null
         var newSha: String? = null
         if (prerelease) {
-            val sha = getSha(remotePrereleaseTag)
+            val sha = repository.getSha(
+                tag = remotePrereleaseTag,
+                userName = remoteUserName,
+                repository = remoteRepository,
+            )
             oldSha = buildSha.take(7)
             newSha = sha.take(7)
 
@@ -252,10 +289,16 @@ class GithubViewModel(
             }
         }
 
-        val release = getRelease(prerelease)
+        val release = repository.getRelease(
+            prerelease = prerelease,
+            userName = remoteUserName,
+            repository = remoteRepository,
+            prereleaseTag = remotePrereleaseTag,
+            contentType = remoteContentType
+        )
 
         // If on stable, only check that the display name matches
-        if (!prerelease && !GithubReleases.isNewerVersion(release.displayName, versionName)) {
+        if (!prerelease && !repository.isNewerVersion(release.displayName, versionName)) {
             updateState {
                 copy(dialog = baseDialog.copy(state = GithubUpdateDialogState.NoUpdateFound))
             }
@@ -282,22 +325,4 @@ class GithubViewModel(
             )
         }
     }
-
-    @Throws
-    private suspend fun getRelease(prerelease: Boolean) =
-        GithubReleases.getLatestReleaseFile(
-            prerelease = prerelease,
-            userName = remoteUserName,
-            repository = remoteRepository,
-            prereleaseTag = remotePrereleaseTag,
-            contentType = remoteContentType
-        ) ?: throw FileNotFoundException()
-
-    @Throws
-    private suspend fun getSha(tag: String) =
-        GithubReleases.getShaFromTag(
-            tag = tag,
-            userName = remoteUserName,
-            repository = remoteRepository,
-        )
 }

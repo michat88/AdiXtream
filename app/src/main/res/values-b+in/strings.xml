@@ -763,4 +763,7 @@
     <string name="start_paused_settings">Memulai video yang sedang dijeda</string>
     <string name="start_paused_settings_des">Kurangi stres saat memilih sumber informasi</string>
     <string name="background">Latar Belakang</string>
+    <string name="edit_profile_image_url">URL</string>
+    <string name="edit_profile_image_picker">Pilih gambar</string>
+    <string name="edit_profile_image_default">Gambar bawaan</string>
 </resources>
