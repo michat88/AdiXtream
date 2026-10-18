@@ -31,7 +31,7 @@ jobs:
         run: chmod +x gradlew
 
       - name: Mulai Proses Build
-        run: ./gradlew -Pandroid.onlyEnableUnitTestForTheTestedBuildType=false clean :app:assembleStableRelease :app:testStableReleaseUnitTest :app:lintStableRelease
+        run: ./gradlew -Pandroid.onlyEnableUnitTestForTheTestedBuildType=false clean :app:assembleStableRelease :app:testStableReleaseUnitTest
         env:
           KEYSTORE_PATH: release.keystore
           ALIAS: ${{ secrets.ALIAS }}
@@ -83,7 +83,28 @@ jobs:
           # Mencari semua file apk di dalam folder output (termasuk folder stable)
           path: app/build/outputs/apk/stable/release/*.apk
 
+      - name: Validate Release Lint
+        run: ./gradlew -Pandroid.onlyEnableUnitTestForTheTestedBuildType=false :app:lintStableRelease
+
+      - name: Summarize Validation Results
+        if: always()
+        shell: python
+        run: |
+          import glob
+          import xml.etree.ElementTree as ET
+          for path in glob.glob('app/build/test-results/testStableReleaseUnitTest/TEST-*.xml'):
+              suite = ET.parse(path).getroot()
+              print('TEST SUITE', suite.get('name'), 'tests=' + suite.get('tests', '?'),
+                    'failures=' + suite.get('failures', '?'), 'errors=' + suite.get('errors', '?'))
+          for path in glob.glob('app/build/reports/lint-results-stableRelease.xml'):
+              for issue in ET.parse(path).getroot().findall('issue'):
+                  if issue.get('severity') in ('Error', 'Fatal'):
+                      location = issue.find('location')
+                      print('LINT ERROR', issue.get('id'), location.get('file'),
+                            'line=' + location.get('line', '?'), issue.get('message'))
+
       - name: Upload Validation Reports
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: AdiXtream-Validation
