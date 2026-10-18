@@ -31,6 +31,7 @@ jobs:
         run: chmod +x gradlew
 
       - name: Mulai Proses Build
+        id: signed_build
         run: ./gradlew -Pandroid.onlyEnableUnitTestForTheTestedBuildType=false clean :app:assembleStableRelease :app:testStableReleaseUnitTest
         env:
           KEYSTORE_PATH: release.keystore
@@ -61,21 +62,41 @@ jobs:
           previous_package="$("$badging" dump badging "$previous_apk" | sed -n "s/^package: name='\([^']*\)'.*/\1/p")"
           previous_code="$("$badging" dump badging "$previous_apk" | sed -n "s/^package:.*versionCode='\([^']*\)'.*/\1/p")"
           test -n "$previous_signers"
-          test "$previous_package" = com.adixtream.app
+          if test "$previous_package" != com.adixtream.app; then
+            echo "Previous production APK package identity does not match the preserved applicationId."
+            exit 1
+          fi
+          compatibility_failed=0
           while IFS= read -r -d '' apk; do
             "$verifier" verify "$apk"
             current_signers="$("$verifier" verify --print-certs "$apk" | sed -n '/^Signer #[0-9][0-9]* certificate SHA-256 digest:/p' | sort)"
             current_package="$("$badging" dump badging "$apk" | sed -n "s/^package: name='\([^']*\)'.*/\1/p")"
             current_code="$("$badging" dump badging "$apk" | sed -n "s/^package:.*versionCode='\([^']*\)'.*/\1/p")"
-            test "$current_signers" = "$previous_signers"
-            test "$current_package" = "$previous_package"
-            test "$current_code" -gt "$previous_code"
-            echo "Existing-user package/version/signing compatibility: PASS"
+            if test "$current_signers" = "$previous_signers"; then
+              echo "Existing-user signing certificate compatibility: PASS"
+            else
+              echo "Existing-user signing certificate compatibility: FAIL"
+              compatibility_failed=1
+            fi
+            if test "$current_package" = "$previous_package"; then
+              echo "Existing-user package identity compatibility: PASS"
+            else
+              echo "Existing-user package identity compatibility: FAIL"
+              compatibility_failed=1
+            fi
+            if test "$current_code" -gt "$previous_code"; then
+              echo "Existing-user versionCode ordering: PASS"
+            else
+              echo "Existing-user versionCode ordering: FAIL"
+              compatibility_failed=1
+            fi
             apk_count=$((apk_count + 1))
           done < <(find app/build/outputs/apk/stable/release -name '*.apk' -type f -print0)
           test "$apk_count" -gt 0
+          test "$compatibility_failed" -eq 0
 
       - name: Upload APK ke GitHub
+        if: ${{ !cancelled() && steps.signed_build.outcome == 'success' }}
         uses: actions/upload-artifact@v4
         with:
           name: AdiXtream-Release
@@ -84,6 +105,7 @@ jobs:
           path: app/build/outputs/apk/stable/release/*.apk
 
       - name: Validate Release Lint
+        if: ${{ !cancelled() && steps.signed_build.outcome == 'success' }}
         run: ./gradlew -Pandroid.onlyEnableUnitTestForTheTestedBuildType=false :app:lintStableRelease
 
       - name: Summarize Validation Results
