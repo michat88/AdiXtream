@@ -58,7 +58,7 @@ jobs:
           previous_apk="$RUNNER_TEMP/AdiXtream-4.8.4.apk"
           curl --fail --location --retry 3 --output "$previous_apk" \
             https://github.com/michat88/AdiXtream/releases/download/v4.8.4/AdiXtream-4.8.4.apk
-          previous_signers="$("$verifier" verify --print-certs "$previous_apk" | sed -n '/^Signer #[0-9][0-9]* certificate SHA-256 digest:/p' | sort)"
+          previous_signers="$("$verifier" verify --print-certs "$previous_apk" | sed -n 's/^.*certificate SHA-256 digest: //p' | sort -u)"
           previous_package="$("$badging" dump badging "$previous_apk" | sed -n "s/^package: name='\([^']*\)'.*/\1/p")"
           previous_code="$("$badging" dump badging "$previous_apk" | sed -n "s/^package:.*versionCode='\([^']*\)'.*/\1/p")"
           test -n "$previous_signers"
@@ -69,7 +69,7 @@ jobs:
           compatibility_failed=0
           while IFS= read -r -d '' apk; do
             "$verifier" verify "$apk"
-            current_signers="$("$verifier" verify --print-certs "$apk" | sed -n '/^Signer #[0-9][0-9]* certificate SHA-256 digest:/p' | sort)"
+            current_signers="$("$verifier" verify --print-certs "$apk" | sed -n 's/^.*certificate SHA-256 digest: //p' | sort -u)"
             current_package="$("$badging" dump badging "$apk" | sed -n "s/^package: name='\([^']*\)'.*/\1/p")"
             current_code="$("$badging" dump badging "$apk" | sed -n "s/^package:.*versionCode='\([^']*\)'.*/\1/p")"
             if test "$current_signers" = "$previous_signers"; then
