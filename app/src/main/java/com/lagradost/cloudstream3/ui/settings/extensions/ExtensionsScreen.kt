@@ -215,6 +215,9 @@ fun Preview() {
 
 private fun Plugin.repositoryData() = RepositoryData("", source?.repositoryUrl.orEmpty())
 
+internal fun ExtensionsState.handlesExtensionsBack(hasSearchQuery: Boolean): Boolean =
+    searchPlugins && (pluginFilter.repository == null || hasSearchQuery)
+
 object ExtensionsScreen : Screen {
     @Composable
     override fun Content() {
@@ -482,17 +485,16 @@ object ExtensionsScreen : Screen {
             lazyRepoState
         }
 
-        val navigateBack = LocalBackPress.current
-        BackHandler(enabled = state.searchPlugins) {
-            if (state.pluginFilter.repository != null && textState.text.isEmpty()) {
-                navigateBack?.invoke()
-            } else {
-                textState.clearText()
-                val repository = state.pluginFilter.repository
-                onAction(Search(""))
-                if (repository != null) onAction(SelectRepository(repository))
-                else onAction(ClearPluginSearch)
-            }
+        // Only intercept a back press that this screen can consume. At the
+        // repository root, leave the callback disabled so both the toolbar
+        // and system/TV back reach the parent navigation without redispatching
+        // into this same enabled callback (which caused infinite recursion).
+        BackHandler(enabled = state.handlesExtensionsBack(textState.text.isNotEmpty())) {
+            textState.clearText()
+            val repository = state.pluginFilter.repository
+            onAction(Search(""))
+            if (repository != null) onAction(SelectRepository(repository))
+            else onAction(ClearPluginSearch)
         }
 
         /** Fab scrolling, this works but is currently a bit too fast IMPO */
