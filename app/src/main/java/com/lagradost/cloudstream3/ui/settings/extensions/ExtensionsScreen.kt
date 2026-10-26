@@ -222,6 +222,7 @@ object ExtensionsScreen : Screen {
     @Composable
     override fun Content() {
         val settings = rememberAppSettings()
+        val entitlement by rememberPluginEntitlementSnapshot()
         val viewModel =
             viewModel<ExtensionsViewModel2> {
                 ExtensionsViewModel2(
@@ -259,7 +260,7 @@ object ExtensionsScreen : Screen {
                     PluginsViewModel.requirePluginAccess(currentActivity, plugin.repositoryData(), plugin.downloadLocation))) {
                 viewModel.onAction(action)
             }
-        }, highLightState = highLight)
+        }, highLightState = highLight, entitlement = entitlement)
     }
 
     @Composable
@@ -267,6 +268,7 @@ object ExtensionsScreen : Screen {
         state: ExtensionsState,
         onAction: (ExtensionsAction) -> Unit,
         highLightState: MutableState<Uuid?> = remember { mutableStateOf(null) },
+        entitlement: PluginEntitlementSnapshot = PluginEntitlementSnapshot(),
     ) {
         val (topFocusRequester, bottomFocusRequester) = remember { FocusRequester.createRefs() }
         val fabExpanded = remember { mutableStateOf(true) }
@@ -307,6 +309,7 @@ object ExtensionsScreen : Screen {
                     state = state,
                     onAction = onAction,
                     highLightState = highLightState,
+                    entitlement = entitlement,
                     fabExpanded = fabExpanded,
                     focusRequester = bottomFocusRequester,
                     topBarFocusRequester = topFocusRequester
@@ -470,6 +473,7 @@ object ExtensionsScreen : Screen {
         state: ExtensionsState,
         onAction: (ExtensionsAction) -> Unit,
         highLightState: MutableState<Uuid?>,
+        entitlement: PluginEntitlementSnapshot,
         fabExpanded: MutableState<Boolean>,
         topBarFocusRequester: FocusRequester,
         focusRequester: FocusRequester,
@@ -588,6 +592,9 @@ object ExtensionsScreen : Screen {
                     ) {
                         Plugin(
                             plugin = plugin,
+                            premiumLocked = entitlement.isLocked(
+                                plugin.source?.repositoryUrl.orEmpty(), plugin.downloadLocation
+                            ),
                             onAction = onAction,
                             modifier = Modifier
                                 .animateItem()
@@ -784,6 +791,7 @@ object ExtensionsScreen : Screen {
     @Composable
     fun Plugin(
         plugin: Plugin,
+        premiumLocked: Boolean,
         onAction: (ExtensionsAction) -> Unit,
         modifier: Modifier,
         onClick: (() -> Unit)?,
@@ -792,9 +800,6 @@ object ExtensionsScreen : Screen {
         var extendedDialog by remember { mutableStateOf(false) }
         val isTv = isLayout(TV)
         val isPluginDisabledByAuthor = plugin.info.status == PROVIDER_STATUS_DOWN
-        val premiumLocked = PluginsViewModel.isPremiumLocked(
-            LocalContext.current, plugin.repositoryData(), plugin.downloadLocation
-        )
 
         if (extendedDialog) {
             val dismissFocusRequester = remember { FocusRequester() }
@@ -1000,6 +1005,7 @@ object ExtensionsScreen : Screen {
             widget = {
                 PluginWidget(
                     plugin = plugin,
+                    premiumLocked = premiumLocked,
                     onAction = onAction,
                     returnFocusRequester = backgroundFocusRequester,
                     modifier = Modifier
@@ -1016,6 +1022,7 @@ object ExtensionsScreen : Screen {
     @Composable
     fun PluginWidget(
         plugin: Plugin,
+        premiumLocked: Boolean,
         onAction: (ExtensionsAction) -> Unit,
         modifier: Modifier,
         returnFocusRequester: FocusRequester,
@@ -1056,9 +1063,6 @@ object ExtensionsScreen : Screen {
 
         val isPluginDisabledByAuthor = plugin.info.status == PROVIDER_STATUS_DOWN
         val isDownloadDisabled = isPluginDisabledByAuthor || plugin.source == null
-        val premiumLocked = PluginsViewModel.isPremiumLocked(
-            LocalContext.current, plugin.repositoryData(), plugin.downloadLocation
-        )
         Row(
             modifier = modifier
         ) {
