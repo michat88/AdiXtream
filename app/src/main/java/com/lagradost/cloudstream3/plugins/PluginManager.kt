@@ -590,11 +590,12 @@ object PluginManager {
     /**
      * @return True if successful, false if not
      * */
-    private suspend fun loadPlugin(context: Context, file: File, data: PluginData): Boolean {
+    internal suspend fun loadPlugin(context: Context, file: File, data: PluginData): Boolean {
         val fileName = file.nameWithoutExtension
         val filePath = file.absolutePath
         currentlyLoading = fileName
-        Log.i(TAG, "Loading plugin: $data")
+        // PluginData contains its download URL; never expose that through the new UI loader.
+        Log.i(TAG, "Loading plugin: $fileName")
 
         return try {
             // In case of Android 14+ then

@@ -1173,10 +1173,8 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                         PluginManager.___DO_NOT_CALL_FROM_A_PLUGIN_loadAllOnlinePlugins(this@MainActivity)
                     }
 
-                    val autoDownloadPlugin = AutoDownloadMode.getEnum(settingsManager.getInt(getString(R.string.auto_download_plugins_key), 0)) ?: AutoDownloadMode.Disable
-                    if (autoDownloadPlugin != AutoDownloadMode.Disable) {
-                        PluginManager.___DO_NOT_CALL_FROM_A_PLUGIN_downloadNotExistingPluginsAndLoad(this@MainActivity, autoDownloadPlugin)
-                    }
+                    // Upstream retired ongoing automatic catalog downloads. AdiXtream's
+                    // awaited initial entitlement/repository bootstrap above remains required.
                     PluginManager.___DO_NOT_CALL_FROM_A_PLUGIN_loadAllLocalPlugins(this@MainActivity, false)
                 }
 

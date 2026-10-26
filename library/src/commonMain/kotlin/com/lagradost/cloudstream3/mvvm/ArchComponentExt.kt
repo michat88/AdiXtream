@@ -133,7 +133,7 @@ fun Throwable.getAllMessages(): String {
 }
 
 fun Throwable.getStackTracePretty(showMessage: Boolean = true): String {
-    val prefix = if (showMessage) this.localizedMessage?.let { "\n$it" } ?: "" else ""
+    val prefix = if (showMessage) this.localizedMessage?.let { "$it\n" } ?: "" else ""
     return prefix + this.stackTrace.joinToString(
         separator = "\n"
     ) {

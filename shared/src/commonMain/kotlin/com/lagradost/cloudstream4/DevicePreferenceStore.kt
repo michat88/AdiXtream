@@ -34,6 +34,7 @@ class AppSettings internal constructor(
 
 class PluginPreferences(preferences: PreferenceStore) {
     val autoUpdate = preferences.getBoolean("auto_update_plugins", true)
+    /** Upstream retired ongoing auto-download; preserve this existing storage key. */
     val autoDownload = preferences.getInt("auto_download_plugins_key2", 0)
 }
 

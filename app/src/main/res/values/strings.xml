@@ -799,4 +799,5 @@
         It is the responsibility of the user to ensure that their use of the app and its embedded plugins complies with local laws.
         Use AdiXtream at your own risk.
     </string>
+    <string name="installed_plugins">Installed plugins</string>
 </resources>

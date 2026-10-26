@@ -538,7 +538,8 @@ object AppContextUtils {
             val data = RepositoryData(
                 repo.iconUrl ?: "",
                 repo.name,
-                url
+                url,
+                repo.description
             )
             RepositoryManager.addRepository(data)
             main {

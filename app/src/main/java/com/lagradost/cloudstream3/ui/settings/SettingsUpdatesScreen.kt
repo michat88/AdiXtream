@@ -21,6 +21,7 @@ import com.lagradost.cloudstream3.MainActivityScreen
 import com.lagradost.cloudstream3.R
 import com.lagradost.cloudstream3.mvvm.logError
 import com.lagradost.cloudstream3.plugins.PluginManager
+import com.lagradost.cloudstream3.services.BackupWorkManager
 import com.lagradost.cloudstream3.utils.BackupUtils
 import com.lagradost.cloudstream3.utils.BackupUtils.restorePrompt
 import com.lagradost.cloudstream3.utils.Coroutines.ioSafe
@@ -166,7 +167,15 @@ object SettingsUpdatesScreen : SearchableSettings {
                         entries = integerArrayResource(R.array.periodic_work_values).zip(
                             stringArrayResource(R.array.periodic_work_names)
                         ).toMap(),
-                        preference = settings.backup.frequency
+                        preference = settings.backup.frequency,
+                        onValueChanged = { value ->
+                            // AdiXtream's worker forces OFF and cancels existing requests.
+                            BackupWorkManager.enqueuePeriodicWork(
+                                CloudStreamApp.context,
+                                value.toLong()
+                            )
+                            return@ListPreference true
+                        }
                     ),
                     Preference.PreferenceItem.TextPreference(
                         title = stringResource(R.string.backup_path_title),
@@ -199,6 +208,8 @@ object SettingsUpdatesScreen : SearchableSettings {
                         preference = settings.plugins.autoUpdate,
                     ),
 
+                    /* Upstream retired ongoing catalog downloads. Initial AdiXtream
+                       bootstrap remains separate and awaited.
                     Preference.PreferenceItem.ListPreference(
                         title = stringResource(R.string.automatic_plugin_download),
                         subtitle = "%s\n" + stringResource(R.string.automatic_plugin_download_summary),
@@ -207,6 +218,7 @@ object SettingsUpdatesScreen : SearchableSettings {
                             .zip(stringArrayResource((R.array.auto_download_plugin))).toMap(),
                         preference = settings.plugins.autoDownload
                     ),
+                    */
                     Preference.PreferenceItem.TextPreference(
                         title = stringResource(R.string.update_plugins),
                         subtitle = stringResource(R.string.update_plugins_manually),
