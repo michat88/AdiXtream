@@ -150,7 +150,8 @@ internal fun parseServerPremiumLicense(
         val json = JSONObject(body)
         val status = json.optString("status")
         if (status == "banned") {
-            PremiumLicense(PremiumLicenseState.BANNED, previous?.expiresAt ?: 0L)
+            val expiry = if (json.has("expired_at")) compatiblePremiumExpiry(json.get("expired_at")) else null
+            PremiumLicense(PremiumLicenseState.BANNED, expiry ?: previous?.expiresAt ?: 0L)
         } else if (status != "aktif") {
             null
         } else {

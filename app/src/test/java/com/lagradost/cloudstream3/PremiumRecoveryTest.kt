@@ -303,6 +303,11 @@ class PremiumRecoveryTest {
         assertEquals(PremiumLicenseState.BANNED, result.state)
         assertEquals(now + day, result.expiresAt)
         assertFalse(result.grantsPremium(now))
+        val withServerExpiry = parseServerPremiumLicense(
+            "{\"status\":\"banned\",\"expired_at\":1900086400000}", now, null
+        )!!
+        assertEquals(now + day, withServerExpiry.expiresAt)
+        assertFalse(withServerExpiry.grantsPremium(now))
     }
 
     @Test fun `expired authoritative result preserves expiry rather than clearing history`() {
