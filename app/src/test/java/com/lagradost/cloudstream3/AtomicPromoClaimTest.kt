@@ -82,7 +82,7 @@ class AtomicPromoClaimTest {
         assertEquals(now, fixture.getLong("now"))
         t.user = fixture.getJSONObject("user"); t.promo = fixture.getJSONObject("promo")
         client(t).submit(device, "ALPHA")
-        assertTrue(t.writes.single().similar(fixture.getJSONObject("patch")))
+        assertEquals(fixture.getJSONObject("patch").toString(), t.writes.single().toString())
     }
 
     @Test fun `failure before commit never consumes a marker or changes local license`() = runBlocking {
