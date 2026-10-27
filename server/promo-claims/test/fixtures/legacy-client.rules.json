@@ -1,0 +1,33 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "users": {
+      "$device_id": {
+        ".read": "true",
+        "status": {
+          ".write": "!data.exists() && newData.val() == 'aktif'"
+        },
+        "last_update": {
+          ".write": "true",
+          ".validate": "newData.isString()"
+        },
+        "expired_at": {
+          ".write": "true",
+          ".validate": "newData.isNumber()"
+        },
+        "redeemed_promos": {
+          "$promo_code": {
+            ".write": "!data.exists() && newData.val() == true && root.child('promo_codes').child($promo_code).exists() && root.child('promo_codes').child($promo_code).child('valid_until').val() > now && root.child('promo_codes').child($promo_code).child('used_count').val() < root.child('promo_codes').child($promo_code).child('max_quota').val() && root.child('promo_codes').child($promo_code).child('status').val() == 'aktif'"
+          }
+        }
+      }
+    },
+    "promo_codes": {
+      ".read": "true",
+      "$promo_code": {
+        ".write": "data.exists() && data.child('status').val() == 'aktif' && newData.child('used_count').val() == data.child('used_count').val() + 1 && newData.child('days').val() == data.child('days').val() && newData.child('max_quota').val() == data.child('max_quota').val() && newData.child('valid_until').val() == data.child('valid_until').val() && newData.child('status').val() == data.child('status').val()"
+      }
+    }
+  }
+}

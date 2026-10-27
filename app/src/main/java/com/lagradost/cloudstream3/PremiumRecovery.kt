@@ -67,6 +67,13 @@ internal class PremiumRecovery(
         store(license).persisted
     }
 
+    /** Capture before a promo verification GET; a newer local decision wins. */
+    fun readRevision(): Long = synchronized(guard) { generation }
+
+    fun recordIfUnchanged(license: PremiumLicense, readRevision: Long): Boolean = synchronized(guard) {
+        if (generation != readRevision) false else store(license).persisted
+    }
+
     private fun store(license: PremiumLicense): PremiumRecoveryResult {
         generation++
         val version = maxOf(nowMillis(), (current?.version ?: 0L) + 1L)

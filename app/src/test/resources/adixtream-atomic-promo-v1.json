@@ -1,0 +1,33 @@
+{
+  "now": 1793102400000,
+  "deviceId": "11111111",
+  "promoCode": "ALPHA",
+  "user": {
+    "status": "aktif",
+    "expired_at": 1793966400000,
+    "account_type": "premium",
+    "code": "SYNTHETIC-NOT-A-CREDENTIAL",
+    "extend_count": 2,
+    "custom": {
+      "retain": true
+    }
+  },
+  "promo": {
+    "status": "aktif",
+    "days": 3,
+    "used_count": 0,
+    "max_quota": 10,
+    "valid_until": 1794830400000,
+    "expired_at": 1794830400000
+  },
+  "patch": {
+    "users/11111111/redeemed_promos/ALPHA": true,
+    "promo_codes/ALPHA/used_count": 1,
+    "users/11111111/expired_at": {
+      ".sv": {
+        "increment": 259200000
+      }
+    },
+    "users/11111111/last_update": "2026-10-27T12:00:00.000Z"
+  }
+}

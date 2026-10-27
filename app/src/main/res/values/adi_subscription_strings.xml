@@ -82,4 +82,9 @@
         <item quantity="one">Remaining: %1$d day</item>
         <item quantity="other">Remaining: %1$d days</item>
     </plurals>
+    <string name="adi_promo_recorded_review">This promo is already recorded on your device. Check the expiry date; if the bonus is missing, contact the admin.</string>
+    <string name="adi_promo_result_unknown">The promo result could not be confirmed. Your existing subscription is retained. Reconnect and check the subscription status before retrying.</string>
+    <string name="adi_promo_in_progress">Another promo claim is still being checked. Please wait.</string>
+    <string name="adi_promo_data_review">The promo or subscription data needs to be checked by the admin. No new claim was sent.</string>
+    <string name="adi_promo_request_denied">The server rejected the promo update. No partial claim was saved by this request. Check with the admin before retrying.</string>
 </resources>

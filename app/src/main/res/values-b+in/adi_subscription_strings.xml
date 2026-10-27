@@ -82,4 +82,9 @@
         <item quantity="one">Sisa: %1$d hari</item>
         <item quantity="other">Sisa: %1$d hari</item>
     </plurals>
+    <string name="adi_promo_recorded_review">Promo ini sudah tercatat pada perangkat Anda. Periksa tanggal berakhir; jika bonus belum masuk, hubungi admin.</string>
+    <string name="adi_promo_result_unknown">Hasil klaim promo belum dapat dipastikan. Langganan sebelumnya tetap tersimpan. Sambungkan internet dan periksa status langganan sebelum mencoba kembali.</string>
+    <string name="adi_promo_in_progress">Klaim promo lain masih diperiksa. Harap tunggu.</string>
+    <string name="adi_promo_data_review">Data promo atau langganan perlu diperiksa admin. Klaim baru belum dikirim.</string>
+    <string name="adi_promo_request_denied">Server menolak pembaruan promo. Permintaan ini tidak menyimpan klaim sebagian. Hubungi admin sebelum mencoba kembali.</string>
 </resources>

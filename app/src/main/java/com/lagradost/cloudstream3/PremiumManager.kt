@@ -37,6 +37,7 @@ object PremiumManager {
     private const val PREF_LICENSE_STATE = "premium_license_state"
     private val recoveryScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     @Volatile private var recoveryInstance: PremiumRecovery? = null
+    @Volatile private var promoInstance: AtomicPromoClaim? = null
 
     val PREMIUM_REPO_URL = RepoProtector.decode(RepoProtector.PREMIUM_REPO_ENCODED)
     val FREE_REPO_URL = RepoProtector.decode(RepoProtector.FREE_REPO_ENCODED)
@@ -330,125 +331,55 @@ object PremiumManager {
         activatePromoWithCode(context, code, deviceId, restartOnSuccess = true, onResult = onResult)
     }
 
-    // The subscription page owns its success dialog; legacy callers keep the original restart.
-    fun activatePromoWithCode(context: Context, code: String, deviceId: String, restartOnSuccess: Boolean, onResult: (Boolean, String) -> Unit) {
-        val inputCode = code.trim().uppercase()
-        if (inputCode.isEmpty()) {
-            onResult(false, "Kode Promo kosong!")
-            return
+    private fun promoClaims(context: Context): AtomicPromoClaim = promoInstance ?: synchronized(this) {
+        promoInstance ?: run {
+            val appContext = context.applicationContext
+            AtomicPromoClaim(
+                scope = recoveryScope,
+                transport = AtomicPromoRestTransport(FIREBASE_BASE_URL),
+                readRevision = { recovery(appContext).readRevision() },
+                applyLicense = { license, revision ->
+                    recovery(appContext).recordIfUnchanged(license.copy(
+                        receivedAtElapsed = if (license.serverTime > 0L) SystemClock.elapsedRealtime() else 0L
+                    ), revision)
+                },
+            ).also { promoInstance = it }
         }
+    }
 
-        CoroutineScope(Dispatchers.IO).launch {
-            try {
-                val promoUrl = URL("${FIREBASE_BASE_URL}promo_codes/$inputCode.json")
-                val promoConn = promoUrl.openConnection() as HttpURLConnection
-                promoConn.requestMethod = "GET"
-
-                if (promoConn.responseCode != HttpURLConnection.HTTP_OK) {
-                    Handler(Looper.getMainLooper()).post { onResult(false, "Server Promo sibuk.") }
-                    return@launch
-                }
-
-                val promoRes = promoConn.inputStream.bufferedReader().use { it.readText() }
-                if (promoRes == "null") {
-                    Handler(Looper.getMainLooper()).post { onResult(false, "Kode Promo tidak ditemukan!") }
-                    return@launch
-                }
-
-                val jsonPromo = JSONObject(promoRes)
-                val promoValidUntil = parseExpiryTimestamp(jsonPromo)
-                
-                val serverTime = if (promoConn.date > 0) promoConn.date else System.currentTimeMillis()
-                
-                if (promoConn.date > 0) validateDeviceTime(context, serverTime)
-
-                if (jsonPromo.optString("status") != "aktif") {
-                    Handler(Looper.getMainLooper()).post { onResult(false, "Promo tidak aktif!") }
-                    return@launch
-                }
-                if (jsonPromo.optInt("used_count") >= jsonPromo.optInt("max_quota")) {
-                    Handler(Looper.getMainLooper()).post { onResult(false, "Kuota promo habis!") }
-                    return@launch
-                }
-                if (serverTime > promoValidUntil && promoValidUntil > 0L) {
-                    Handler(Looper.getMainLooper()).post { onResult(false, "Promo sudah kadaluarsa!") }
-                    return@launch
-                }
-
-                val markUrl = URL("${FIREBASE_BASE_URL}users/$deviceId/redeemed_promos/$inputCode.json")
-                val markConn = markUrl.openConnection() as HttpURLConnection
-                markConn.requestMethod = "PUT"
-                markConn.setRequestProperty("Content-Type", "application/json")
-                markConn.doOutput = true
-                markConn.outputStream.use { it.write("true".toByteArray(Charsets.UTF_8)) }
-
-                if (markConn.responseCode != HttpURLConnection.HTTP_OK) {
-                    Handler(Looper.getMainLooper()).post { onResult(false, "Gagal! Promo sudah pernah diklaim.") }
-                    return@launch
-                }
-
-                val updatePromoUrl = URL("${FIREBASE_BASE_URL}promo_codes/$inputCode.json")
-                val updatePromoConn = updatePromoUrl.openConnection() as HttpURLConnection
-                updatePromoConn.requestMethod = "POST"
-                updatePromoConn.setRequestProperty("X-HTTP-Method-Override", "PATCH")
-                updatePromoConn.setRequestProperty("Content-Type", "application/json")
-                updatePromoConn.doOutput = true
-                val promoPatch = JSONObject().apply { put("used_count", jsonPromo.optInt("used_count") + 1) }.toString()
-                updatePromoConn.outputStream.use { it.write(promoPatch.toByteArray(Charsets.UTF_8)) }
-                updatePromoConn.responseCode
-
-                val userUrl = URL("${FIREBASE_BASE_URL}users/$deviceId.json")
-                val userConn = userUrl.openConnection() as HttpURLConnection
-                var baseTimestamp = if (userConn.date > 0) userConn.date else System.currentTimeMillis()
-
-                if (userConn.responseCode == HttpURLConnection.HTTP_OK) {
-                     val userRes = userConn.inputStream.bufferedReader().use { it.readText() }
-                     if (userRes != "null") {
-                         val dbExp = parseExpiryTimestamp(JSONObject(userRes))
-                         if (dbExp > baseTimestamp) baseTimestamp = dbExp 
-                     }
-                }
-                
-                val newExpiredTimestamp = baseTimestamp + (jsonPromo.optInt("days") * 24L * 60L * 60L * 1000L)
-
-                val updateUserUrl = URL("${FIREBASE_BASE_URL}users/$deviceId.json")
-                val updateUserConn = updateUserUrl.openConnection() as HttpURLConnection
-                updateUserConn.requestMethod = "POST"
-                updateUserConn.setRequestProperty("X-HTTP-Method-Override", "PATCH")
-                updateUserConn.setRequestProperty("Content-Type", "application/json")
-                updateUserConn.doOutput = true
-                
-                val userPatch = JSONObject().apply {
-                    put("expired_at", newExpiredTimestamp)
-                    put("last_update", getIsoTime(serverTime))
-                }.toString()
-                
-                updateUserConn.outputStream.use { it.write(userPatch.toByteArray(Charsets.UTF_8)) }
-                
-                val finalUserRes = updateUserConn.responseCode
-                if (finalUserRes == HttpURLConnection.HTTP_OK) {
-                    if (!saveLicenseLocally(context, true, newExpiredTimestamp, serverTime)) {
-                        Handler(Looper.getMainLooper()).post {
-                            onResult(false, context.getString(R.string.adi_license_restore_retry))
-                        }
-                        return@launch
-                    }
-                    
-                    Handler(Looper.getMainLooper()).post { 
-                        if (!restartOnSuccess) {
-                            onResult(true, "Selamat! Promo Berhasil Diklaim.")
-                            return@post
-                        }
-                        Toast.makeText(context, "Selamat! Promo Berhasil Diklaim.", Toast.LENGTH_LONG).show()
-                        val intent = context.packageManager.getLaunchIntentForPackage(context.packageName)
-                        context.startActivity(Intent.makeRestartActivityTask(intent?.component))
+    // Both the subscription page and legacy callers use the same atomic operation.
+    fun activatePromoWithCode(context: Context, code: String, deviceId: String, restartOnSuccess: Boolean, onResult: (Boolean, String) -> Unit) {
+        val appContext = context.applicationContext
+        recoveryScope.launch {
+            val status = try { promoClaims(appContext).submit(deviceId, code).status }
+                catch (cancelled: CancellationException) { throw cancelled }
+                catch (_: Exception) { AtomicPromoStatus.NETWORK }
+            val message = when (status) {
+                AtomicPromoStatus.APPLIED -> "Selamat! Promo Berhasil Diklaim."
+                AtomicPromoStatus.ALREADY_RECORDED -> appContext.getString(R.string.adi_promo_recorded_review)
+                AtomicPromoStatus.BANNED -> "Device ini telah di-banned!"
+                AtomicPromoStatus.NOT_FOUND -> "Kode Promo tidak ditemukan!"
+                AtomicPromoStatus.INACTIVE -> "Promo tidak aktif!"
+                AtomicPromoStatus.EXPIRED -> "Promo sudah kadaluarsa!"
+                AtomicPromoStatus.FULL -> "Kuota promo habis!"
+                AtomicPromoStatus.INVALID -> "Kode Promo tidak valid!"
+                AtomicPromoStatus.NETWORK -> "Kesalahan Jaringan"
+                AtomicPromoStatus.UNKNOWN -> appContext.getString(R.string.adi_promo_result_unknown)
+                AtomicPromoStatus.BUSY -> appContext.getString(R.string.adi_promo_in_progress)
+                AtomicPromoStatus.LOCAL_SYNC -> appContext.getString(R.string.adi_license_restore_retry)
+                AtomicPromoStatus.DATA_INVALID -> appContext.getString(R.string.adi_promo_data_review)
+                AtomicPromoStatus.DENIED -> appContext.getString(R.string.adi_promo_request_denied)
+            }
+            Handler(Looper.getMainLooper()).post {
+                val success = status == AtomicPromoStatus.APPLIED
+                if (success && restartOnSuccess) {
+                    Toast.makeText(appContext, message, Toast.LENGTH_LONG).show()
+                    val component = appContext.packageManager.getLaunchIntentForPackage(appContext.packageName)?.component
+                    if (component != null) {
+                        appContext.startActivity(Intent.makeRestartActivityTask(component))
                         Runtime.getRuntime().exit(0)
-                    }
-                } else {
-                    Handler(Looper.getMainLooper()).post { onResult(false, "Gagal Sinkronisasi User (Error $finalUserRes)") }
-                }
-            } catch (e: Exception) {
-                Handler(Looper.getMainLooper()).post { onResult(false, "Timeout/Kesalahan Jaringan") }
+                    } else onResult(true, message)
+                } else onResult(success, message)
             }
         }
     }

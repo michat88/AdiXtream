@@ -41,6 +41,30 @@ class PremiumRecoveryTest {
     private fun premium(expiry: Long = now + day, version: Long = 0L) =
         PremiumLicense(PremiumLicenseState.PREMIUM, expiry, version)
 
+    @Test fun `late promo verification cannot overwrite a newer ban or renewal`() {
+        for (newer in listOf(PremiumLicense(PremiumLicenseState.BANNED, now + day), premium(now + 60 * day))) {
+            val disk = Disk(premium()); val manager = recovery(disk) { null }
+            val revision = manager.readRevision()
+            assertTrue(manager.record(newer))
+            assertFalse(manager.recordIfUnchanged(premium(now + 14 * day), revision))
+            assertEquals(newer.state, manager.cached()!!.state)
+            assertEquals(newer.expiresAt, manager.cached()!!.expiresAt)
+            assertEquals(1, disk.writes.get())
+        }
+    }
+
+    @Test fun `current promo verification invalidates earlier recovery reads`() = runBlocking {
+        val started = CompletableDeferred<Unit>(); val release = CompletableDeferred<Unit>()
+        val disk = Disk(premium()); val manager = recovery(disk) {
+            started.complete(Unit); release.await(); premium()
+        }
+        val oldRead = async { manager.refresh(force = true) }; started.await()
+        assertTrue(manager.recordIfUnchanged(premium(now + 14 * day), manager.readRevision()))
+        release.complete(Unit); oldRead.await()
+        assertEquals(now + 14 * day, disk.license!!.expiresAt)
+        assertEquals(1, disk.writes.get())
+    }
+
     @Test fun `expired cache recovers a server renewal without clearing it first`() = runBlocking {
         val old = premium(now - day)
         val disk = Disk(old)

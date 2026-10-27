@@ -35,7 +35,8 @@ process.on('SIGINT', stop); process.on('SIGTERM', stop);
       await delay(100);
     }
     if (!ready) throw new Error('EMULATOR_START_TIMEOUT');
-    tests = spawn(process.execPath, ['--test', path.join(__dirname, 'emulator.test.cjs')],
+    tests = spawn(process.execPath, ['--test', '--test-concurrency=1',
+      path.join(__dirname, 'atomic-client.test.cjs'), path.join(__dirname, 'emulator.test.cjs')],
       { stdio: 'inherit', env: { ...process.env, ADIXTREAM_TEST_PORT: '19002', ADIXTREAM_TEST_NS: 'demo-adixtream-promo-v1' } });
     process.exitCode = await new Promise((resolve, reject) => { tests.once('exit', code => resolve(code ?? 1)); tests.once('error', reject); });
   } catch { console.error('EMULATOR_TEST_RUN_FAILED'); process.exitCode = 1; }

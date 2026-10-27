@@ -582,7 +582,9 @@ class ActivationSubscriptionActivity : AppCompatActivity() {
                     outcome.value = ActivationOutcome(false, "UI_TIMEOUT", promo)
                 }
             }
-            handler.postDelayed(timeout, 30_000L)
+            // Promo work has a bounded transport and an application-owned shared result.
+            // Do not release this screen for an overlapping claim while it is still running.
+            if (!promo) handler.postDelayed(timeout, 30_000L)
             val result: (Boolean, String) -> Unit = callback@{ success, message ->
                 if (generation != token) return@callback
                 generation++

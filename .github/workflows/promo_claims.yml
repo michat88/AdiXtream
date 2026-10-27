@@ -6,6 +6,9 @@ on:
     paths:
       - 'server/promo-claims/**'
       - 'app/src/test/resources/adixtream-promo-contract-v1.json'
+      - 'app/src/test/resources/adixtream-atomic-promo-v1.json'
+      - 'app/src/main/java/com/lagradost/cloudstream3/AtomicPromo*.kt'
+      - 'app/src/test/java/com/lagradost/cloudstream3/AtomicPromo*.kt'
       - '.github/workflows/promo_claims.yml'
   workflow_dispatch:
 

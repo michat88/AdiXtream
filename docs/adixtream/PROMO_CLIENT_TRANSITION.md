@@ -1,7 +1,9 @@
 # Promo client preparation and ownership gate
 
 Status: prepared for integration, not enabled in the active consumer UI.
-The existing automatic Premium recovery and legacy promo route are unchanged.
+The prepared owner/receipt client remains inactive. The active compatible promo
+route now has a separate [atomic consistency fix](ATOMIC_PROMO_COMPATIBILITY.md);
+automatic Premium recovery and the existing identity contract are preserved.
 No production URL, verifier, new login flow, owner binding, Firebase rule or data
 migration is added by this stage.
 
