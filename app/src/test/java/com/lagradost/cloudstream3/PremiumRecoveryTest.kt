@@ -286,6 +286,18 @@ class PremiumRecoveryTest {
         assertNull(parseServerPremiumLicense("{\"status\":\"aktif\",\"expired_at\":1900086400000}", 0L, null))
     }
 
+    @Test fun `oversized legacy numeric expiry keeps Android long saturation compatibility`() {
+        for (expiry in listOf("9223372036854775807000", "1.0e30", "9223372036854775807")) {
+            val result = parseServerPremiumLicense("{\"status\":\"aktif\",\"expired_at\":$expiry}", now, null)!!
+            assertEquals(Long.MAX_VALUE, result.expiresAt)
+            assertTrue(result.grantsPremium(now))
+        }
+    }
+
+    @Test fun `out of range numeric strings stay unresolved without being overwritten`() {
+        assertNull(parseServerPremiumLicense("{\"status\":\"aktif\",\"expired_at\":\"9223372036854775807000\"}", now, premium()))
+    }
+
     @Test fun `ban is authoritative and preserves display expiry`() {
         val result = parseServerPremiumLicense("{\"status\":\"banned\"}", now, premium())!!
         assertEquals(PremiumLicenseState.BANNED, result.state)

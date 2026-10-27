@@ -171,7 +171,12 @@ internal fun parseServerPremiumLicense(
 
 private fun compatiblePremiumExpiry(value: Any): Long? {
     val number = when (value) {
-        is Number -> try { BigDecimal(value.toString()).longValueExact() } catch (_: Exception) { return null }
+        is Number -> try {
+            val numeric = BigDecimal(value.toString())
+            // Legacy Android JSON reads oversized numeric expiries as Double; toLong()
+            // saturated them to Long.MAX_VALUE. Retain that read-only compatibility.
+            if (numeric > BigDecimal.valueOf(Long.MAX_VALUE)) Long.MAX_VALUE else numeric.longValueExact()
+        } catch (_: Exception) { return null }
         is String -> value.toLongOrNull() ?: run {
             for (pattern in arrayOf("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", "yyyy-MM-dd'T'HH:mm:ss'Z'")) {
                 val parser = SimpleDateFormat(pattern, Locale.US).apply {
