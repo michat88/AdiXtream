@@ -40,6 +40,8 @@ import androidx.core.view.marginStart
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.NavController
 import androidx.navigation.NavDestination
 import androidx.navigation.NavDestination.Companion.hierarchy
@@ -201,6 +203,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.isActive
+import kotlinx.coroutines.flow.collect
 // -----------------------
 
 class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCallback {
@@ -522,8 +525,25 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
         override fun onSessionResuming(session: Session, s: String) {}
     }
 
+    private var bootstrappedPremiumTier: Boolean? = null
+    private var awaitingEntitlementRecovery = false
+    private var entitlementRecreateRequested = false
+
+    private fun reconcileRecoveredPremiumTier() {
+        val loadedTier = bootstrappedPremiumTier
+        val recovered = awaitingEntitlementRecovery && PremiumManager.hasResolvedEntitlement(this)
+        val changedTier = loadedTier != null && loadedTier != PremiumManager.isPremium(this)
+        if (!entitlementRecreateRequested && !isFinishing && !isDestroyed &&
+            (recovered || changedTier)) {
+            // Re-enter the existing validated/awaited bootstrap, without killing the process.
+            entitlementRecreateRequested = true
+            recreate()
+        }
+    }
+
     override fun onResume() {
         super.onResume()
+        PremiumManager.refreshEntitlement(this)
         afterPluginsLoadedEvent += ::onAllPluginsLoaded
         setActivityInstance(this)
         try {
@@ -952,6 +972,20 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
         setNavigationBarColorCompat(R.attr.primaryGrayBackground)
         updateLocale()
         super.onCreate(savedInstanceState)
+
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                launch {
+                    while (isActive) {
+                        PremiumManager.refreshEntitlement(this@MainActivity)
+                        kotlinx.coroutines.delay(5 * 60 * 1000L)
+                    }
+                }
+                PremiumManager.entitlementChanges(this@MainActivity).collect {
+                    reconcileRecoveredPremiumTier()
+                }
+            }
+        }
         
         try {
             if (isCastApiAvailable()) {
@@ -1101,6 +1135,10 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                 Log.d(TAG, "ENTITLEMENT_RECOVERY=$entitlement")
                 if (entitlement == PremiumManager.StartupEntitlement.UNKNOWN) {
                     // No authoritative decision: do not persist or bootstrap a Free repository.
+                    kotlinx.coroutines.withContext(Dispatchers.Main) {
+                        awaitingEntitlementRecovery = true
+                        reconcileRecoveredPremiumTier()
+                    }
                     showBootstrapRetry(false)
                     mainPluginsLoadedEvent.invoke(false)
                     return@launch
@@ -1192,6 +1230,12 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                     provider.hasMainPage && (isAdultEnabled || !provider.supportedTypes.contains(com.lagradost.cloudstream3.TvType.NSFW))
                 }
                 
+                kotlinx.coroutines.withContext(Dispatchers.Main) {
+                    bootstrappedPremiumTier = isPremium
+                    reconcileRecoveredPremiumTier()
+                }
+                if (entitlementRecreateRequested) return@launch
+
                 val currentSelected = DataStoreHelper.currentHomePage
 
                 if (currentSelected == null || availableProviders.none { it.name == currentSelected }) {

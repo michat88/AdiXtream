@@ -3,9 +3,9 @@ package com.lagradost.cloudstream3
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
-import android.os.Build
 import android.os.Handler
 import android.os.Looper
+import android.os.SystemClock
 import android.provider.Settings
 import android.util.Base64
 import android.util.Log
@@ -26,14 +26,17 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.withContext
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.StateFlow
 import com.lagradost.cloudstream3.utils.RepoProtector
 
 object PremiumManager {
     private const val PREF_IS_PREMIUM = "is_premium_user"
     private const val PREF_EXPIRY_DATE = "premium_expiry_date"
-    private var lastCheckTime = 0L
+    private const val PREF_SNAPSHOT_VERSION = "premium_snapshot_version"
+    private const val PREF_LICENSE_STATE = "premium_license_state"
+    private val recoveryScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    @Volatile private var recoveryInstance: PremiumRecovery? = null
 
     val PREMIUM_REPO_URL = RepoProtector.decode(RepoProtector.PREMIUM_REPO_ENCODED)
     val FREE_REPO_URL = RepoProtector.decode(RepoProtector.FREE_REPO_ENCODED)
@@ -44,7 +47,7 @@ object PremiumManager {
         return abs(androidId.hashCode()).toString().take(8)
     }
 
-    // Handled Try-Catch: Hapus file terenkripsi jika corrupt (AEADBadTagException)
+    // Preserve existing encrypted data when Keystore is temporarily unavailable.
     private fun getSecurePrefs(context: Context): SharedPreferences? {
         return try {
             val masterKey = MasterKey.Builder(context)
@@ -58,16 +61,9 @@ object PremiumManager {
                 EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
                 EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
             )
-        } catch (e: Exception) {
-            Log.e("PremiumManager", "EncryptedSharedPreferences Corrupt! Auto-resetting Encrypted file: ${e.message}")
-            try {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                    context.deleteSharedPreferences("premium_secure_data")
-                } else {
-                    context.getSharedPreferences("premium_secure_data", Context.MODE_PRIVATE)
-                        .edit().clear().commit()
-                }
-            } catch (_: Exception) {}
+        } catch (_: Exception) {
+            // A temporary Keystore failure is not permission to delete a customer's license.
+            Log.w("PremiumManager", "Secure license storage unavailable; retaining existing data")
             null
         }
     }
@@ -88,93 +84,121 @@ object PremiumManager {
         }
     }
 
-    private fun saveLicenseLocally(context: Context, isPremium: Boolean, expiryDate: Long): Boolean {
-        // 1. Simpan ke EncryptedStorage jika bisa
-        val secureSaved = getSecurePrefs(context)?.edit()?.run {
-            putBoolean(PREF_IS_PREMIUM, isPremium)
-            putLong(PREF_EXPIRY_DATE, expiryDate)
-            commit()
-        } == true
-
-        // 2. Selalu simpan ke Fallback Preferences (Sangat stabil & anti Android Keystore Crash)
-        val obfuscatedState = encodeObfuscated(if (isPremium) "ACTIVE_VIP" else "INACTIVE")
-        val obfuscatedExp = encodeObfuscated(expiryDate.toString())
-
-        val fallbackSaved = getBackupPrefs(context).edit().run {
-            putString("obf_state", obfuscatedState)
-            putString("obf_exp", obfuscatedExp)
-            commit()
+    private fun readLicense(context: Context): PremiumLicense? {
+        fun license(premium: Boolean, expiry: Long, version: Long, state: String?): PremiumLicense {
+            val storedState = PremiumLicenseState.entries.firstOrNull { it.name == state }
+                ?: if (premium) PremiumLicenseState.PREMIUM
+                else if (expiry > 0L) PremiumLicenseState.EXPIRED else PremiumLicenseState.FREE
+            return PremiumLicense(storedState, expiry, version)
         }
+        val secure = try {
+            getSecurePrefs(context)?.takeIf { it.contains(PREF_IS_PREMIUM) }?.let {
+                license(it.getBoolean(PREF_IS_PREMIUM, false), it.getLong(PREF_EXPIRY_DATE, 0L),
+                    it.getLong(PREF_SNAPSHOT_VERSION, 0L), it.getString(PREF_LICENSE_STATE, null))
+            }
+        } catch (_: Exception) { null }
+        val fallback = try {
+            val prefs = getBackupPrefs(context)
+            val state = decodeObfuscated(prefs.getString("obf_state", "") ?: "")
+            val expiry = decodeObfuscated(prefs.getString("obf_exp", "") ?: "").toLongOrNull()
+            if (state !in setOf("ACTIVE_VIP", "INACTIVE") || expiry == null) null else {
+                license(state == "ACTIVE_VIP", expiry, prefs.getLong(PREF_SNAPSHOT_VERSION, 0L),
+                    prefs.getString(PREF_LICENSE_STATE, null))
+            }
+        } catch (_: Exception) { null }
+        val legacy = try {
+            PreferenceManager.getDefaultSharedPreferences(context).takeIf { it.contains(PREF_IS_PREMIUM) }?.let {
+                license(it.getBoolean(PREF_IS_PREMIUM, false), it.getLong(PREF_EXPIRY_DATE, 0L), 0L, null)
+            }
+        } catch (_: Exception) { null }
+        return newestPremiumLicense(secure, fallback, legacy)
+    }
+
+    private fun persistLicense(context: Context, license: PremiumLicense): Boolean {
+        val premium = license.state == PremiumLicenseState.PREMIUM
+        val secureSaved = try {
+            getSecurePrefs(context)?.edit()?.run {
+                putBoolean(PREF_IS_PREMIUM, premium)
+                putLong(PREF_EXPIRY_DATE, license.expiresAt)
+                putLong(PREF_SNAPSHOT_VERSION, license.version)
+                putString(PREF_LICENSE_STATE, license.state.name)
+                commit()
+            } == true
+        } catch (_: Exception) { false }
+        val fallbackSaved = try {
+            getBackupPrefs(context).edit().run {
+                putString("obf_state", encodeObfuscated(if (premium) "ACTIVE_VIP" else "INACTIVE"))
+                putString("obf_exp", encodeObfuscated(license.expiresAt.toString()))
+                putLong(PREF_SNAPSHOT_VERSION, license.version)
+                putString(PREF_LICENSE_STATE, license.state.name)
+                commit()
+            }
+        } catch (_: Exception) { false }
         return secureSaved || fallbackSaved
     }
 
-    // ADIXTREAM: missing entitlement is UNKNOWN, never an implicit stored FREE.
-    // Existing keys, encoding, migration and activation flows are unchanged.
-    enum class StartupEntitlement { PREMIUM, FREE, EXPIRED, BANNED, UNKNOWN }
-    private val entitlementRecoveryLock = Mutex()
-
-    private fun hasStoredEntitlement(context: Context): Boolean {
-        val secureHasState = try {
-            getSecurePrefs(context)?.contains(PREF_IS_PREMIUM) == true
-        } catch (_: Exception) { false }
-        return secureHasState || getBackupPrefs(context).contains("obf_state") ||
-            PreferenceManager.getDefaultSharedPreferences(context).contains(PREF_IS_PREMIUM)
+    private fun recovery(context: Context): PremiumRecovery = recoveryInstance ?: synchronized(this) {
+        recoveryInstance ?: run {
+            val appContext = context.applicationContext
+            PremiumRecovery(
+                scope = recoveryScope,
+                load = { readLicense(appContext) },
+                save = { persistLicense(appContext, it) },
+                fetch = { fetchLicense(appContext) },
+                nowMillis = System::currentTimeMillis,
+                elapsedMillis = SystemClock::elapsedRealtime,
+            ).also { recoveryInstance = it }
+        }
     }
 
-    /** Await this before selecting a repository. Recovery never writes to Firebase. */
-    suspend fun resolveEntitlementForStartup(context: Context): StartupEntitlement =
-        withContext(Dispatchers.IO) {
-            entitlementRecoveryLock.withLock {
-                // Normal upgrades retain the local-first path, without a blocking GET.
-                if (hasStoredEntitlement(context)) {
-                    return@withLock if (isPremium(context)) StartupEntitlement.PREMIUM
-                        else StartupEntitlement.FREE
-                }
+    private suspend fun fetchLicense(context: Context): PremiumLicense? {
+        var connection: HttpURLConnection? = null
+        return try {
+            connection = URL("${FIREBASE_BASE_URL}users/${getDeviceId(context)}.json")
+                .openConnection() as HttpURLConnection
+            connection.requestMethod = "GET"
+            connection.connectTimeout = 5000
+            connection.readTimeout = 5000
+            if (connection.responseCode != HttpURLConnection.HTTP_OK) return null
+            val body = connection.inputStream.bufferedReader().use { it.readText() }
+            val serverTime = connection.date
+            parseServerPremiumLicense(body, serverTime, recoveryInstance?.cached())?.copy(
+                serverTime = serverTime, receivedAtElapsed = SystemClock.elapsedRealtime()
+            )
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (_: Exception) {
+            // Never expose the endpoint, activation code, response body or exception URL.
+            null
+        } finally { connection?.disconnect() }
+    }
 
-                var connection: HttpURLConnection? = null
-                try {
-                    connection = URL("${FIREBASE_BASE_URL}users/${getDeviceId(context)}.json")
-                        .openConnection() as HttpURLConnection
-                    connection.requestMethod = "GET"
-                    connection.connectTimeout = 5000
-                    connection.readTimeout = 5000
-                    if (connection.responseCode != HttpURLConnection.HTTP_OK) {
-                        return@withLock StartupEntitlement.UNKNOWN
-                    }
+    private fun saveLicenseLocally(context: Context, isPremium: Boolean, expiryDate: Long, serverTime: Long = 0L): Boolean =
+        recovery(context).record(PremiumLicense(
+            if (isPremium) PremiumLicenseState.PREMIUM else PremiumLicenseState.FREE,
+            expiryDate, serverTime = serverTime,
+            receivedAtElapsed = if (serverTime > 0L) SystemClock.elapsedRealtime() else 0L,
+        ))
 
-                    val response = connection.inputStream.bufferedReader().use { it.readText() }.trim()
-                    val json = if (response == "null") null else JSONObject(response)
-                    val expiry = json?.let { parseExpiryTimestamp(it) } ?: 0L
-                    val serverTime = connection.date
-                    val result = when {
-                        json == null -> StartupEntitlement.FREE
-                        json.optString("status") == "banned" -> StartupEntitlement.BANNED
-                        json.optString("status") != "aktif" || expiry <= 0L -> StartupEntitlement.FREE
-                        // A missing server clock must never grant Premium from the device clock.
-                        serverTime <= 0L -> StartupEntitlement.UNKNOWN
-                        expiry <= serverTime -> StartupEntitlement.EXPIRED
-                        else -> StartupEntitlement.PREMIUM
-                    }
+    enum class StartupEntitlement { PREMIUM, FREE, EXPIRED, BANNED, UNKNOWN }
 
-                    // Timeout, transport/parse failure or missing server time never stores FREE.
-                    if (result == StartupEntitlement.UNKNOWN) return@withLock result
-                    val storedExpiry = if (result == StartupEntitlement.PREMIUM ||
-                        result == StartupEntitlement.EXPIRED) expiry else 0L
-                    if (!saveLicenseLocally(context, result == StartupEntitlement.PREMIUM, storedExpiry)) {
-                        return@withLock StartupEntitlement.UNKNOWN
-                    }
-                    if (result == StartupEntitlement.PREMIUM) lastCheckTime = System.currentTimeMillis()
-                    result
-                } catch (cancelled: CancellationException) {
-                    throw cancelled
-                } catch (_: Exception) {
-                    // Keep UNKNOWN recoverable; do not log URLs, response bodies or codes.
-                    StartupEntitlement.UNKNOWN
-                } finally {
-                    connection?.disconnect()
-                }
-            }
-        }
+    internal fun entitlementChanges(context: Context): StateFlow<PremiumLicense?> = recovery(context).changes
+
+    internal fun hasResolvedEntitlement(context: Context): Boolean = recovery(context).hasResolvedLicense()
+
+    fun refreshEntitlement(context: Context) { recovery(context).requestRefresh() }
+
+    /** Await before repository selection. Automatic recovery only reads server data. */
+    suspend fun resolveEntitlementForStartup(context: Context): StartupEntitlement = withContext(Dispatchers.IO) {
+        val manager = recovery(context)
+        val result = manager.resolveStartup()
+        val license = result.license
+        if (license == null || !result.persisted) return@withContext StartupEntitlement.UNKNOWN
+        manager.requestRefresh()
+        if (license.state == PremiumLicenseState.PREMIUM && !license.grantsPremium(manager.currentTimeMillis())) {
+            StartupEntitlement.EXPIRED
+        } else StartupEntitlement.valueOf(license.state.name)
+    }
 
     private fun getIsoTime(timeMillis: Long): String {
         val sdf = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US)
@@ -225,38 +249,24 @@ object PremiumManager {
     }
 
     fun checkAndMigrateOldOfflineUser(context: Context) {
-        val oldPrefs = PreferenceManager.getDefaultSharedPreferences(context)
-        val wasPremium = oldPrefs.getBoolean(PREF_IS_PREMIUM, false)
-        val oldExpiryDate = oldPrefs.getLong(PREF_EXPIRY_DATE, 0L)
-
-        if (wasPremium && oldExpiryDate > System.currentTimeMillis()) {
-            saveLicenseLocally(context, true, oldExpiryDate)
-
-            oldPrefs.edit()
-                .remove(PREF_IS_PREMIUM)
-                .remove(PREF_EXPIRY_DATE)
-                .apply()
-
-            val deviceId = getDeviceId(context)
-            CoroutineScope(Dispatchers.IO).launch {
-                try {
-                    val url = URL("${FIREBASE_BASE_URL}users/$deviceId.json")
-                    val connection = url.openConnection() as HttpURLConnection
-                    connection.requestMethod = "POST"
-                    connection.setRequestProperty("X-HTTP-Method-Override", "PATCH")
-                    connection.setRequestProperty("Content-Type", "application/json")
-                    connection.doOutput = true
-
-                    val jsonPayload = JSONObject().apply {
-                        put("status", "aktif")
-                        put("expired_at", oldExpiryDate)
-                        put("last_update", getIsoTime(System.currentTimeMillis()))
-                    }.toString()
-
-                    connection.outputStream.use { it.write(jsonPayload.toByteArray(Charsets.UTF_8)) }
-                    connection.responseCode
-                } catch (e: Exception) { }
+        try {
+            val oldPrefs = PreferenceManager.getDefaultSharedPreferences(context)
+            if (!oldPrefs.contains(PREF_IS_PREMIUM)) return
+            // Versioned secure/fallback writes take precedence over any surviving legacy keys.
+            val manager = recovery(context)
+            val legacy = manager.cached() ?: return
+            if (legacy.version > 0L) return
+            val oldPremium = oldPrefs.getBoolean(PREF_IS_PREMIUM, false)
+            val oldExpiry = oldPrefs.getLong(PREF_EXPIRY_DATE, 0L)
+            val migrated = if (oldPremium && oldExpiry > System.currentTimeMillis()) {
+                PremiumLicense(PremiumLicenseState.PREMIUM, oldExpiry)
+            } else legacy
+            if (manager.record(migrated)) {
+                oldPrefs.edit().remove(PREF_IS_PREMIUM).remove(PREF_EXPIRY_DATE).commit()
             }
+            // Never PATCH an old offline expiry over a newer renewal or ban on the server.
+        } catch (_: Exception) {
+            // Keep the old keys intact when their storage cannot be read or migrated.
         }
     }
 
@@ -293,8 +303,12 @@ object PremiumManager {
                             if (connection.date > 0) validateDeviceTime(context, serverTime)
 
                             if (serverTime < dbExpired) {
-                                saveLicenseLocally(context, true, dbExpired)
-                                lastCheckTime = serverTime
+                                if (!saveLicenseLocally(context, true, dbExpired, serverTime)) {
+                                    Handler(Looper.getMainLooper()).post {
+                                        onResult(false, context.getString(R.string.adi_license_restore_retry))
+                                    }
+                                    return@launch
+                                }
                                 Handler(Looper.getMainLooper()).post { onResult(true, "Aktivasi Berhasil") }
                             } else {
                                 Handler(Looper.getMainLooper()).post { onResult(false, "Masa aktif kadaluarsa!") }
@@ -413,8 +427,12 @@ object PremiumManager {
                 
                 val finalUserRes = updateUserConn.responseCode
                 if (finalUserRes == HttpURLConnection.HTTP_OK) {
-                    saveLicenseLocally(context, true, newExpiredTimestamp)
-                    lastCheckTime = serverTime
+                    if (!saveLicenseLocally(context, true, newExpiredTimestamp, serverTime)) {
+                        Handler(Looper.getMainLooper()).post {
+                            onResult(false, context.getString(R.string.adi_license_restore_retry))
+                        }
+                        return@launch
+                    }
                     
                     Handler(Looper.getMainLooper()).post { 
                         if (!restartOnSuccess) {
@@ -436,178 +454,35 @@ object PremiumManager {
     }
 
     fun isPremium(context: Context): Boolean {
-        var isPrem = false
-        var expDate = 0L
-
-        // 1. Coba baca dari Encrypted preferences
-        try {
-            val secure = getSecurePrefs(context)
-            if (secure != null) {
-                isPrem = secure.getBoolean(PREF_IS_PREMIUM, false)
-                expDate = secure.getLong(PREF_EXPIRY_DATE, 0L)
-            }
-        } catch (e: Exception) {
-            isPrem = false
-        }
-
-        // 2. Jika Encrypted gagal/kosong, fallback baca dari Obfuscated Backup Preferences
-        if (!isPrem) {
-            try {
-                val backup = getBackupPrefs(context)
-                val rawState = decodeObfuscated(backup.getString("obf_state", "") ?: "")
-                val rawExp = decodeObfuscated(backup.getString("obf_exp", "") ?: "")
-                
-                isPrem = rawState == "ACTIVE_VIP"
-                expDate = rawExp.toLongOrNull() ?: 0L
-
-                // Jika backup valid, sinkronkan kembali ke Encrypted Storage
-                if (isPrem && expDate > System.currentTimeMillis()) {
-                    saveLicenseLocally(context, true, expDate)
-                }
-            } catch (e: Exception) { }
-        }
-
-        Log.d("PremiumDebug", "isPremium: stored=$isPrem, exp=$expDate, now=${System.currentTimeMillis()}")
-
-        if (isPrem) {
-            if (System.currentTimeMillis() > expDate) {
-                deactivatePremium(context) 
-                return false
-            }
-            if (System.currentTimeMillis() - lastCheckTime > 5 * 60 * 1000) {
-                checkAndSyncWithServer(context, getDeviceId(context))
-            }
-            return true
-        }
-        return false
+        val manager = recovery(context)
+        manager.requestRefresh()
+        return manager.cached()?.grantsPremium(manager.currentTimeMillis()) == true
     }
 
     fun deactivatePremium(context: Context) {
         saveLicenseLocally(context, false, 0L)
     }
-    
+
     fun getExpiryDateString(context: Context): String {
-        var date = 0L
-        try {
-            val backup = getBackupPrefs(context)
-            val rawExp = decodeObfuscated(backup.getString("obf_exp", "") ?: "")
-            date = rawExp.toLongOrNull() ?: 0L
-        } catch (_: Exception) {}
-
-        if (date == 0L) {
-            try {
-                date = getSecurePrefs(context)?.getLong(PREF_EXPIRY_DATE, 0L) ?: 0L
-            } catch (_: Exception) {}
-        }
-
-        return if (date == 0L) "Gratis" else SimpleDateFormat("dd MMM yyyy", Locale.getDefault()).format(Date(date))
+        val expiry = getCachedExpiryForDisplay(context)
+        return if (expiry == 0L) "Gratis" else SimpleDateFormat("dd MMM yyyy", Locale.getDefault()).format(Date(expiry))
     }
-    
+
     /** Read-only presentation metadata. Never grants access or writes license/preferences. */
     data class SubscriptionDisplayInfo(val expiresAt: Long, val serverTime: Long, val blocked: Boolean)
 
-    fun getCachedExpiryForDisplay(context: Context): Long {
-        var date = 0L
-        try {
-            date = decodeObfuscated(getBackupPrefs(context).getString("obf_exp", "") ?: "").toLongOrNull() ?: 0L
-        } catch (_: Exception) {}
-        if (date == 0L) {
-            try { date = getSecurePrefs(context)?.getLong(PREF_EXPIRY_DATE, 0L) ?: 0L }
-            catch (_: Exception) {}
-        }
-        return date
-    }
+    fun getCachedExpiryForDisplay(context: Context): Long = recovery(context).cached()?.expiresAt ?: 0L
 
-    // Local deactivation clears expiry. Read the existing user record to display an
-    // expired subscription correctly; this GET does not activate, sync or migrate it.
+    // Share the authoritative recovery GET with startup and foreground refresh.
     fun loadSubscriptionInfoForDisplay(context: Context, onResult: (SubscriptionDisplayInfo?) -> Unit) {
-        val deviceId = getDeviceId(context)
         CoroutineScope(Dispatchers.IO).launch {
-            var connection: HttpURLConnection? = null
-            val info = try {
-                connection = URL("${FIREBASE_BASE_URL}users/$deviceId.json").openConnection() as HttpURLConnection
-                connection.requestMethod = "GET"
-                connection.connectTimeout = 5000
-                connection.readTimeout = 5000
-                if (connection.responseCode == HttpURLConnection.HTTP_OK) {
-                    val response = connection.inputStream.bufferedReader().use { it.readText() }
-                    if (response == "null") null else {
-                        val json = JSONObject(response)
-                        SubscriptionDisplayInfo(parseExpiryTimestamp(json),
-                            connection.date.takeIf { it > 0L } ?: System.currentTimeMillis(),
-                            json.optString("status") == "banned")
-                    }
-                } else null
-            } catch (_: Exception) { null }
-            finally { connection?.disconnect() }
+            val manager = recovery(context)
+            val result = manager.refresh(force = true)
+            val info = result.license?.let {
+                SubscriptionDisplayInfo(it.expiresAt, manager.currentTimeMillis(), it.state == PremiumLicenseState.BANNED)
+            }
             Handler(Looper.getMainLooper()).post { onResult(info) }
         }
     }
 
-    private fun checkAndSyncWithServer(context: Context, deviceId: String) {
-        CoroutineScope(Dispatchers.IO).launch {
-            try {
-                val url = URL("${FIREBASE_BASE_URL}users/$deviceId.json")
-                val connection = url.openConnection() as HttpURLConnection
-                if (connection.responseCode == HttpURLConnection.HTTP_OK) {
-                    val response = connection.inputStream.bufferedReader().use { it.readText() }
-                    if (response == "null") {
-                        registerUserToServer(context, deviceId)
-                    } else {
-                        val json = JSONObject(response)
-                        val dbStatus = json.optString("status", "")
-                        val dbExpired = parseExpiryTimestamp(json)
-                        
-                        val serverTime = if (connection.date > 0) connection.date else System.currentTimeMillis()
-                        
-                        if (connection.date > 0) validateDeviceTime(context, serverTime)
-
-                        val wasPremium = isPremium(context)
-                        val isBanned = dbStatus == "banned"
-                        val isExpired = dbStatus == "aktif" && dbExpired > 0L && serverTime > dbExpired
-                       
-                        if (isBanned || isExpired) {
-                            if (wasPremium) {
-                                deactivatePremium(context) 
-                                Handler(Looper.getMainLooper()).post {
-                                    val pesan = if (isBanned) "⛔ AKSES DICABUT ADMIN!" else "⚠️ Masa Aktif Habis."
-                                    Toast.makeText(context, pesan, Toast.LENGTH_LONG).show()
-                                    val intent = context.packageManager.getLaunchIntentForPackage(context.packageName)
-                                    context.startActivity(Intent.makeRestartActivityTask(intent?.component))
-                                    Runtime.getRuntime().exit(0)
-                                }
-                            }
-                        } else if (dbStatus == "aktif" && dbExpired > 0L) {
-                            saveLicenseLocally(context, true, dbExpired)
-                            lastCheckTime = serverTime
-                        }
-                    }
-                }
-            } catch (e: Exception) { }
-        }
-    }
-
-    private fun registerUserToServer(context: Context, deviceId: String) {
-        try {
-            val url = URL("${FIREBASE_BASE_URL}users/$deviceId.json")
-            val connection = url.openConnection() as HttpURLConnection
-            connection.requestMethod = "POST"
-            connection.setRequestProperty("X-HTTP-Method-Override", "PATCH")
-            connection.setRequestProperty("Content-Type", "application/json")
-            connection.doOutput = true
-            
-            val serverTime = if (connection.date > 0) connection.date else System.currentTimeMillis()
-            
-            if (connection.date > 0) validateDeviceTime(context, serverTime)
-
-            val jsonPayload = JSONObject().apply {
-                put("status", "aktif")
-                put("created_at", getIsoTime(serverTime))
-                put("last_update", getIsoTime(serverTime))
-            }.toString()
-            
-            connection.outputStream.use { it.write(jsonPayload.toByteArray(Charsets.UTF_8)) }
-            connection.responseCode
-        } catch (e: Exception) { }
-    }
 }

@@ -800,4 +800,5 @@
         Use AdiXtream at your own risk.
     </string>
     <string name="installed_plugins">Installed plugins</string>
+    <string name="adi_license_restore_retry">Langganan ditemukan di server. Pemulihan lokal belum tersimpan; coba lagi tanpa membeli ulang.</string>
 </resources>
