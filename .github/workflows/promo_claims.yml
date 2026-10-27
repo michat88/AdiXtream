@@ -1,0 +1,40 @@
+name: Promo Claim Server Validation
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - 'server/promo-claims/**'
+      - '.github/workflows/promo_claims.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: server/promo-claims
+    env:
+      ADIXTREAM_TEST_EMULATOR_JAR: ${{ runner.temp }}/firebase-database-emulator-v4.11.2.jar
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Unit and HTTP validation
+        run: npm test
+      - name: Download pinned Realtime Database Emulator
+        run: >-
+          curl --fail --location --retry 3
+          --output "$ADIXTREAM_TEST_EMULATOR_JAR"
+          https://storage.googleapis.com/firebase-preview-drop/emulator/firebase-database-emulator-v4.11.2.jar
+      - name: Transactions, process interruption and private receipt validation
+        run: npm run test:emulator
