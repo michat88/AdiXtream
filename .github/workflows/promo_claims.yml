@@ -19,7 +19,7 @@ jobs:
       run:
         working-directory: server/promo-claims
     env:
-      ADIXTREAM_TEST_EMULATOR_JAR: ${{ runner.temp }}/firebase-database-emulator-v4.11.2.jar
+      ADIXTREAM_TEST_EMULATOR_JAR: /tmp/adixtream-firebase-database-emulator-v4.11.2.jar
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
