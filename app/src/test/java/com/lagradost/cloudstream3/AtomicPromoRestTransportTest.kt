@@ -66,6 +66,17 @@ class AtomicPromoRestTransportTest {
         assertEquals(1, calls.get())
     }
 
+    @Test fun `503 with immediate retry hint cannot replay a mutating request`() = runBlocking {
+        val calls = AtomicInteger()
+        server.createContext("/") {
+            it.requestBody.use { body -> body.readBytes() }; calls.incrementAndGet()
+            it.responseHeaders.set("Retry-After", "0")
+            it.reply(503, "{}")
+        }
+        assertEquals(503, AtomicPromoRestTransport(base).commit("{\"synthetic\":true}").status)
+        assertEquals(1, calls.get())
+    }
+
     @Test fun `stalled body terminates within the bounded network deadline`() = runBlocking {
         val release = CountDownLatch(1)
         server.createContext("/") {

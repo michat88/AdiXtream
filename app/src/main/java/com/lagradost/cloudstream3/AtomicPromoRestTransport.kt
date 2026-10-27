@@ -4,7 +4,8 @@ import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
-import okhttp3.RequestBody.Companion.toRequestBody
+import okhttp3.RequestBody
+import okio.BufferedSink
 import java.io.IOException
 import java.util.concurrent.TimeUnit
 
@@ -40,9 +41,17 @@ internal class AtomicPromoRestTransport(baseUrl: String) : AtomicPromoTransport 
         val url = base.newBuilder().addPathSegments(path).build()
         val request = Request.Builder().url(url).header("Cache-Control", "no-cache")
         if (patch != null) {
+            val bytes = patch.toByteArray(Charsets.UTF_8)
+            val body = object : RequestBody() {
+                override fun contentType() = "application/json; charset=utf-8".toMediaType()
+                override fun contentLength() = bytes.size.toLong()
+                // retryOnConnectionFailure(false) alone does not stop 503/Retry-After: 0.
+                override fun isOneShot() = true
+                override fun writeTo(sink: BufferedSink) { sink.write(bytes) }
+            }
             // POST override remains compatible with the app's existing REST mechanism.
             request.header("X-HTTP-Method-Override", "PATCH")
-                .post(patch.toRequestBody("application/json; charset=utf-8".toMediaType()))
+                .post(body)
         }
         return client.newCall(request.build()).execute().use { response ->
             val body = response.body ?: throw IOException("PROMO_RESPONSE_MISSING")

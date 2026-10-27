@@ -32,6 +32,8 @@ does not cancel persistence. The screen no longer releases its promo busy state
 on the old arbitrary 30-second UI timer. Each actual REST exchange has a 6-second
 call deadline, 5-second connect/read/write limits, no automatic network retries,
 no redirects, no cache, no Admin credential and a bounded response body.
+Mutation bodies are explicitly one-shot: OkHttp's connection-retry setting alone
+does not prevent an HTTP 503 with `Retry-After: 0` from replaying a request.
 
 ## Compatibility and limits
 
