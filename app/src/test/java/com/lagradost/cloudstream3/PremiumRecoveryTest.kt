@@ -298,6 +298,32 @@ class PremiumRecoveryTest {
         assertNull(parseServerPremiumLicense("{\"status\":\"aktif\",\"expired_at\":\"9223372036854775807000\"}", now, premium()))
     }
 
+    @Test fun `legacy promo record without status recovers active and expired subscription`() {
+        val active = parseServerPremiumLicense(
+            "{\"expired_at\":1900086400000,\"redeemed_promos\":{\"SYNTHETIC\":true}}", now, null
+        )!!
+        assertTrue(active.grantsPremium(now))
+        val expired = parseServerPremiumLicense(
+            "{\"expired_at\":1899913600000,\"redeemed_promos\":{\"SYNTHETIC\":true}}", now, null
+        )!!
+        assertEquals(PremiumLicenseState.EXPIRED, expired.state)
+        assertEquals(now - day, expired.expiresAt)
+    }
+
+    @Test fun `legacy compatibility never overrides explicit ban unknown status or invalid claim markers`() {
+        for (body in listOf(
+            "{\"expired_at\":1900086400000}",
+            "{\"expired_at\":1900086400000,\"redeemed_promos\":{\"SYNTHETIC\":false}}",
+            "{\"expired_at\":1900086400000,\"redeemed_promos\":{\"SYNTHETIC\":\"true\"}}",
+            "{\"status\":\"unexpected\",\"expired_at\":1900086400000,\"redeemed_promos\":{\"SYNTHETIC\":true}}"
+        )) assertNull(parseServerPremiumLicense(body, now, null))
+        val banned = parseServerPremiumLicense(
+            "{\"status\":\"banned\",\"expired_at\":1900086400000,\"redeemed_promos\":{\"SYNTHETIC\":true}}", now, null
+        )!!
+        assertEquals(PremiumLicenseState.BANNED, banned.state)
+        assertFalse(banned.grantsPremium(now))
+    }
+
     @Test fun `ban is authoritative and preserves display expiry`() {
         val result = parseServerPremiumLicense("{\"status\":\"banned\"}", now, premium())!!
         assertEquals(PremiumLicenseState.BANNED, result.state)

@@ -149,10 +149,15 @@ internal fun parseServerPremiumLicense(
     } else {
         val json = JSONObject(body)
         val status = json.optString("status")
+        // Legacy promo writes created expiry + claim markers without an initial status.
+        // Recognize that existing shape without PATCHing/backfilling the server record.
+        val markers = json.optJSONObject("redeemed_promos")
+        val legacyPromo = !json.has("status") && markers != null &&
+            markers.keys().asSequence().any { markers.opt(it) == true }
         if (status == "banned") {
             val expiry = if (json.has("expired_at")) compatiblePremiumExpiry(json.get("expired_at")) else null
             PremiumLicense(PremiumLicenseState.BANNED, expiry ?: previous?.expiresAt ?: 0L)
-        } else if (status != "aktif") {
+        } else if (status != "aktif" && !legacyPromo) {
             null
         } else {
             val expiry = if (json.has("expired_at")) compatiblePremiumExpiry(json.get("expired_at")) else {
