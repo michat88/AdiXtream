@@ -17,7 +17,10 @@ function createEmulatorDatabase({ port, namespace, timeoutMs = 10000, maxBytes =
     const timer = setTimeout(() => controller.abort(), timeoutMs);
     let response;
     try {
-      response = await fetch(url, { method, headers: { Authorization: 'Bearer owner', 'Content-Type': 'application/json', ...headers },
+      const target = new URL(url);
+      // Root CAS must retain priorities on unrelated objects and primitives.
+      if (method === 'GET') target.searchParams.set('format', 'export');
+      response = await fetch(target, { method, headers: { Authorization: 'Bearer owner', 'Content-Type': 'application/json', ...headers },
         ...(body === undefined ? {} : { body }), signal: controller.signal, redirect: 'error' });
       const chunks = [];
       let bytes = 0;

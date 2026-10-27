@@ -6,6 +6,13 @@ const { parseExact, stringifyExact, integer, timestamp } = require('../src/exact
 const { NOW, A, B, ownerA, ownerB, fixture, body, clone, memoryDb, firstCasBarrier, number } = require('./helpers.cjs');
 const client = (db, extra = {}) => createClaimService({ db, clock: () => NOW, backoff: async () => {}, ...extra });
 const rejects = (promise, code) => assert.rejects(promise, e => e.code === code);
+const REPAIRS = '_adixtream_admin_promo_repairs_v1';
+function recordRepair(f, promo = 'ALPHA') {
+  f[REPAIRS] = { [A]: { [promo]: { version: 1, kind: 'LEGACY_PROMO_REPAIR',
+    acknowledgement: 'BONUS_NOT_PREVIOUSLY_CREDITED', bonusDays: 3,
+    expiryBefore: NOW + 7 * DAY, expiryAfter: NOW + 10 * DAY,
+    usedBefore: 0, usedAfter: 1, quotaDelta: 1, appliedAt: NOW } } };
+}
 async function unchanged(db, fn) {
   const before = stringifyExact(db.get());
   await fn();
@@ -85,6 +92,67 @@ test('legacy true marker without a receipt requires reconciliation', async () =>
   const f = fixture(); f.users[A].redeemed_promos = { ALPHA: true };
   const db = memoryDb(f);
   await unchanged(db, () => rejects(client(db).claim(ownerA, body()), 'LEGACY_RECONCILIATION_REQUIRED'));
+});
+test('Admin correction blocks claim and receipt retry without inventing a server grant', async () => {
+  const f = fixture(); recordRepair(f); f.users[A].redeemed_promos = { ALPHA: true };
+  const db = memoryDb(f);
+  await unchanged(db, async () => {
+    await rejects(client(db).claim(ownerA, body()), 'LEGACY_RECONCILIATION_REQUIRED');
+    await rejects(client(db).lookup(ownerA, body()), 'LEGACY_RECONCILIATION_REQUIRED');
+  });
+  assert.equal(db.writes, 0);
+});
+test('Admin correction survives marker removal, quota reset and user recreation', async () => {
+  const f = fixture(); recordRepair(f); const db = memoryDb(f);
+  for (const change of [
+    root => { root.users[A].redeemed_promos = {}; },
+    root => { root.promo_codes.ALPHA.used_count = 0; },
+    root => { root.users[A] = fixture().users[A]; },
+  ]) {
+    db.mutate(change);
+    await unchanged(db, () => rejects(client(db).claim(ownerA, body()), 'LEGACY_RECONCILIATION_REQUIRED'));
+  }
+  assert.equal(db.writes, 0);
+});
+test('a different repaired promo does not block an eligible new promo', async () => {
+  const f = fixture(); recordRepair(f, 'BETA'); const db = memoryDb(f);
+  assert.equal((await client(db).claim(ownerA, body())).outcome, 'APPLIED');
+  assert.equal(stringifyExact(db.get()[REPAIRS]), stringifyExact(clone(f)[REPAIRS]));
+});
+test('malformed repair evidence never becomes permission to grant again', async () => {
+  for (const evidence of [false, 'invalid', {}, { version: 999 }]) {
+    const f = fixture(); f[REPAIRS] = { [A]: { ALPHA: evidence } }; const db = memoryDb(f);
+    await unchanged(db, () => rejects(client(db).claim(ownerA, body()), 'LEGACY_RECONCILIATION_REQUIRED'));
+    assert.equal(db.writes, 0);
+  }
+});
+test('concurrent Admin correction is rechecked after root CAS conflict', async () => {
+  const db = memoryDb();
+  db.beforeCas = () => { db.beforeCas = null; db.mutate(root => { recordRepair(root); root.users[A].expired_at = number(root.users[A].expired_at) + 3 * DAY; }); };
+  await rejects(client(db).claim(ownerA, body()), 'LEGACY_RECONCILIATION_REQUIRED');
+  assert.equal(db.conflicts, 1); assert.equal(db.writes, 0);
+  assert.equal(number(db.get().users[A].expired_at), NOW + 13 * DAY);
+  assert.equal(number(db.get().promo_codes.ALPHA.used_count), 0);
+  assert.equal(db.get()[LEDGER], undefined);
+});
+test('existing server receipt still replays without a new bonus when repair evidence exists', async () => {
+  const db = memoryDb(); const first = await client(db).claim(ownerA, body());
+  db.mutate(root => { recordRepair(root); root.users[A].status = 'banned'; });
+  const before = stringifyExact(db.get());
+  const replay = await client(db).claim(ownerA, body());
+  assert.equal(replay.operationId, first.operationId); assert.equal(replay.currentEntitlement.state, 'BANNED');
+  assert.equal(stringifyExact(db.get()), before); assert.equal(db.writes, 1);
+});
+test('repair receipts do not bypass ownership validation', async () => {
+  const f = fixture(); recordRepair(f); const db = memoryDb(f);
+  await unchanged(db, () => rejects(client(db).lookup(ownerB, body()), 'OWNERSHIP_REQUIRED'));
+  assert.equal(db.writes, 0);
+});
+test('priority-wrapped target expiry fails closed instead of discarding its metadata', async () => {
+  const f = fixture(); f.users[A].expired_at = { '.value': NOW + 10 * DAY, '.priority': 2 };
+  const db = memoryDb(f);
+  await unchanged(db, () => rejects(client(db).claim(ownerA, body()), 'DATA_RECONCILIATION_REQUIRED'));
+  assert.equal(db.writes, 0);
 });
 test('legacy false or string markers are not silently granted again', async () => {
   for (const marker of [false, 'true']) {

@@ -60,6 +60,57 @@ test('real RTDB atomic grant preserves unrelated stored data and publishes one r
   assert.equal(stringifyExact(end.unrelated), stringifyExact(before.unrelated));
   assert.equal(stringifyExact(end.users[B]), stringifyExact(before.users[B]));
 });
+test('real root CAS preserves Firebase object and primitive priorities', async () => {
+  const f = fixture();
+  f.users[A]['.priority'] = 5;
+  f.promo_codes.ALPHA['.priority'] = 'campaign-order';
+  f.unrelated['.priority'] = 9;
+  f.unrelated.orderedValue = { '.value': 'unchanged', '.priority': 7 };
+  await seed(f);
+  const before = await state(); await client().claim(ownerA, body()); const after = await state();
+  assert.equal(number(after.users[A]['.priority']), number(before.users[A]['.priority']));
+  assert.equal(after.promo_codes.ALPHA['.priority'], before.promo_codes.ALPHA['.priority']);
+  assert.equal(number(after.unrelated['.priority']), number(before.unrelated['.priority']));
+  assert.equal(stringifyExact(after.unrelated.orderedValue), stringifyExact(before.unrelated.orderedValue));
+  assert.equal(stringifyExact(after.unrelated.huge), stringifyExact(before.unrelated.huge));
+  assert.equal(number(after.users[A].expired_at), NOW + 13 * DAY);
+});
+test('Admin correction evidence blocks regrant after legacy marker loss and user recreation', async () => {
+  const f = fixture(), repairs = '_adixtream_admin_promo_repairs_v1';
+  f[repairs] = { [A]: { ALPHA: { version: 1, kind: 'LEGACY_PROMO_REPAIR',
+    acknowledgement: 'BONUS_NOT_PREVIOUSLY_CREDITED', bonusDays: 3,
+    expiryBefore: NOW + 7 * DAY, expiryAfter: NOW + 10 * DAY,
+    usedBefore: 0, usedAfter: 1, quotaDelta: 1, appliedAt: NOW } } };
+  await seed(f);
+  const before = stringifyExact(await state());
+  await assert.rejects(client().claim(ownerA, body()), e => e.code === 'LEGACY_RECONCILIATION_REQUIRED');
+  await assert.rejects(client().lookup(ownerA, body()), e => e.code === 'LEGACY_RECONCILIATION_REQUIRED');
+  assert.equal(stringifyExact(await state()), before);
+  await mutate(root => { delete root.users[A]; });
+  await mutate(root => { root.users[A] = fixture().users[A]; root.promo_codes.ALPHA.used_count = 0; });
+  await assert.rejects(client().claim(ownerA, body()), e => e.code === 'LEGACY_RECONCILIATION_REQUIRED');
+  assert.equal(stringifyExact((await state())[repairs]), stringifyExact(parseExact(before)[repairs]));
+  assert.equal((await state())[LEDGER], undefined);
+});
+test('concurrent Admin repair during server claim cannot produce a second grant', async () => {
+  let first = true;
+  const adapter = wrapped(async () => {
+    if (!first) return; first = false;
+    await mutate(root => {
+      root.users[A].expired_at = NOW + 13 * DAY;
+      root.promo_codes.ALPHA.used_count = 1;
+      root._adixtream_admin_promo_repairs_v1 = { [A]: { ALPHA: {
+        version: 1, kind: 'LEGACY_PROMO_REPAIR', bonusDays: 3,
+        expiryBefore: NOW + 10 * DAY, expiryAfter: NOW + 13 * DAY,
+        usedBefore: 0, usedAfter: 1, quotaDelta: 1, appliedAt: NOW,
+        acknowledgement: 'BONUS_NOT_PREVIOUSLY_CREDITED' } } };
+    });
+  });
+  await assert.rejects(client(adapter).claim(ownerA, body()), e => e.code === 'LEGACY_RECONCILIATION_REQUIRED');
+  const root = await state(); assert.equal(adapter.conflicts, 1);
+  assert.equal(number(root.users[A].expired_at), NOW + 13 * DAY);
+  assert.equal(number(root.promo_codes.ALPHA.used_count), 1); assert.equal(root[LEDGER], undefined);
+});
 test('real RTDB last quota race grants only one owner', async () => {
   const f = fixture(); f.promo_codes.ALPHA.max_quota = 1; await seed(f);
   const adapter = wrapped(firstCasBarrier(2)), s = client(adapter);

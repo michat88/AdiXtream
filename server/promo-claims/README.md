@@ -8,8 +8,9 @@ command. Its only database transport constructs a loopback URL and requires a
 
 ## Purpose
 
-The existing consumer marks a promo, increments its counter and extends expiry
-in separate REST requests. This core instead commits the marker, counter, user
+The active 4.8.7 consumer already writes the marker, counter and expiry in one
+compatible multi-location PATCH. It still uses the legacy public rules. This
+inactive server core additionally commits the marker, counter, user
 expiry/revision and private receipt in one conditional write. It preserves the
 existing `users` and `promo_codes` locations; the new private ledger is
 `_adixtream_claims_v1` at their common ancestor.
@@ -126,6 +127,13 @@ verification**. Replaying an old receipt for a now-banned user returns current
   user/promo if operators preserve the ledger. A deleted user cannot be silently
   recreated by a claim. Retention/administrative deletion policy is still a
   production gate; do not delete the ledger to reset a campaign.
+- Admin 2.0.2 correction evidence under `_adixtream_admin_promo_repairs_v1`
+  also blocks a new grant for the recorded device/code, even if its legacy
+  marker is removed or the customer record is recreated. Receipt lookup returns
+  `LEGACY_RECONCILIATION_REQUIRED` for those pairs; it does not invent a server
+  operation, revision or new bonus. Malformed recorded evidence blocks rather
+  than granting again. A real existing server receipt can still replay with the
+  current entitlement. Preserve both ledgers during backups and cleanup.
 - Existing fields, activation codes, preference names and device IDs are not
   rewritten. Successful claim updates only the relevant marker, counter, expiry,
   revision, last_update, date aliases and private receipt/request map.
@@ -140,6 +148,13 @@ verification**. Replaying an old receipt for a now-banned user returns current
   without IEEE-754 rounding. Large/decimal values elsewhere in the root do not
   block a claim or change silently. An unsafe **target** expiry requires
   reconciliation and is not clamped, added to or normalized in place.
+- Root reads request `format=export`, retaining Firebase priorities on both
+  objects and primitive values. Unsupported priority-wrapped business fields
+  fail closed instead of dropping their metadata during a claim.
+
+The current writer inventory and the unresolved production gates are recorded
+in [SERVER_CUTOVER_STATUS.md](../../docs/adixtream/SERVER_CUTOVER_STATUS.md).
+Passing emulator tests does not activate this service or close the legacy rules.
 
 ## Remaining gates before any live use
 

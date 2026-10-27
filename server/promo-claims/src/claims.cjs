@@ -6,6 +6,7 @@ const { fail, safeError } = require('./errors.cjs');
 const { record, own, table, integer, timestamp } = require('./exact-json.cjs');
 const DAY = 86400000;
 const LEDGER = '_adixtream_claims_v1';
+const REPAIR_LEDGER = '_adixtream_admin_promo_repairs_v1';
 const hash = text => createHash('sha256').update(text).digest('hex');
 
 function canonical(body) {
@@ -77,6 +78,13 @@ function response(receipt, user, now, outcome) {
       revision: integer(receipt.revision), appliedAt: timestamp(receipt.appliedAt) },
     currentEntitlement: currentEntitlement(user, now) };
 }
+function rejectRepairedPair(root, input) {
+  // Admin receipts survive marker removal, quota resets and user recreation.
+  // Any recorded pair blocks a fresh grant, including malformed evidence that
+  // needs operator review. Never turn an Admin repair into a server receipt.
+  const repairs = table(table(root, REPAIR_LEDGER), input.deviceId);
+  if (Object.hasOwn(repairs, input.promoCode)) fail('LEGACY_RECONCILIATION_REQUIRED');
+}
 function decide(root, owner, input, now, operationId) {
   const s = readState(root, owner, input);
   const requestEntry = receipt => ({ fingerprint: s.fingerprint, operationId: receipt.operationId });
@@ -85,6 +93,7 @@ function decide(root, owner, input, now, operationId) {
       requests: { ...s.requests, [s.requestKey]: requestEntry(s.receipt) } } };
     return { next, result: response(s.receipt, s.user, now, 'REPLAYED') };
   }
+  rejectRepairedPair(root, input);
   const status = userStatus(s.user);
   if (status === 'BANNED') fail('BANNED');
   if (status !== 'ACTIVE') fail('DATA_RECONCILIATION_REQUIRED');
@@ -147,7 +156,10 @@ function createClaimService({ db, clock = Date.now, maxAttempts = 8, backoff = a
       let snapshot;
       try { snapshot = await db.read(); } catch (e) { throw safeError(e); }
       const s = readState(snapshot.root, owner, input), now = serverNow(clock);
-      if (!s.receipt) fail('UNKNOWN_RESULT');
+      if (!s.receipt) {
+        rejectRepairedPair(snapshot.root, input);
+        fail('UNKNOWN_RESULT');
+      }
       return response(s.receipt, s.user, now, 'REPLAYED');
     },
   };

@@ -18,7 +18,10 @@ test('transport preserves exact JSON and requires ETag on read and conditional P
   const text = '{"large":9223372036854775808,"decimal":0.1234567890123456789}';
   let put = false;
   const db = await setup(t, (req, res) => {
-    assert.equal(req.url, '/.json?ns=demo-transport-test'); assert.equal(req.headers.authorization, 'Bearer owner');
+    const url = new URL(req.url, 'http://127.0.0.1');
+    assert.equal(url.pathname, '/.json'); assert.equal(url.searchParams.get('ns'), 'demo-transport-test');
+    assert.equal(url.searchParams.get('format'), req.method === 'GET' ? 'export' : null);
+    assert.equal(req.headers.authorization, 'Bearer owner');
     if (req.method === 'GET') { assert.equal(req.headers['x-firebase-etag'], 'true'); res.setHeader('etag', '"ETAG-1"'); res.end(text); }
     else {
       put = true; assert.equal(req.headers['if-match'], '"ETAG-1"');
