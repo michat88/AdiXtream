@@ -5,6 +5,7 @@ on:
     branches: [master]
     paths:
       - 'server/promo-claims/**'
+      - 'app/src/test/resources/adixtream-promo-contract-v1.json'
       - '.github/workflows/promo_claims.yml'
   workflow_dispatch:
 

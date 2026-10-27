@@ -1,0 +1,39 @@
+{
+  "request": {
+    "contractVersion": 1,
+    "deviceId": "11111111",
+    "promoCode": "ALPHA",
+    "idempotencyKey": "request_0000000001"
+  },
+  "responses": [
+    {
+      "name": "applied",
+      "httpStatus": 200,
+      "body": {
+        "contractVersion": 1,
+        "operationId": "11111111-2222-4333-8444-555555555555",
+        "outcome": "APPLIED",
+        "serverTime": 1793102400000,
+        "retryable": false,
+        "receipt": { "bonusDays": 3, "expiresAt": 1794225600000, "revision": 6, "appliedAt": 1793102400000 },
+        "currentEntitlement": { "state": "PREMIUM", "expiresAt": 1794225600000, "revision": 6 }
+      }
+    },
+    {
+      "name": "replayed_banned",
+      "httpStatus": 200,
+      "body": {
+        "contractVersion": 1,
+        "operationId": "11111111-2222-4333-8444-555555555555",
+        "outcome": "REPLAYED",
+        "serverTime": 1793102400000,
+        "retryable": false,
+        "receipt": { "bonusDays": 3, "expiresAt": 1794225600000, "revision": 6, "appliedAt": 1793102400000 },
+        "currentEntitlement": { "state": "BANNED", "expiresAt": 1794225600000, "revision": 6 }
+      }
+    },
+    { "name": "unknown", "httpStatus": 503, "body": { "contractVersion": 1, "outcome": "UNKNOWN_RESULT", "retryable": true } },
+    { "name": "ownership", "httpStatus": 403, "body": { "contractVersion": 1, "outcome": "OWNERSHIP_REQUIRED", "retryable": false } },
+    { "name": "legacy", "httpStatus": 409, "body": { "contractVersion": 1, "outcome": "LEGACY_RECONCILIATION_REQUIRED", "retryable": false } }
+  ]
+}

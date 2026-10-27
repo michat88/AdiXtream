@@ -77,3 +77,25 @@ test('verifier exceptions never leak credentials, URLs or exception messages', a
   assert.deepEqual(r.result, { contractVersion: 1, outcome: 'TEMPORARY_UNAVAILABLE', retryable: true });
   assert.equal(db.reads, 0);
 });
+test('Android shared contract fixtures match actual server responses including current ban', async t => {
+  const fs = require('node:fs'), path = require('node:path');
+  const contract = JSON.parse(fs.readFileSync(path.join(__dirname, '../../../app/src/test/resources/adixtream-promo-contract-v1.json'), 'utf8'));
+  const sample = name => contract.responses.find(x => x.name === name);
+  const { db, base } = await server(t, verifier);
+  const absent = await post(base, contract.request, { path: '/v1/promo/receipt' });
+  assert.equal(absent.response.status, sample('unknown').httpStatus);
+  assert.deepEqual(absent.result, sample('unknown').body);
+  const claimed = await post(base, contract.request);
+  assert.equal(claimed.response.status, sample('applied').httpStatus);
+  assert.deepEqual({ ...claimed.result, operationId: sample('applied').body.operationId }, sample('applied').body);
+  db.mutate(f => { f.users['11111111'].status = 'banned'; });
+  const banned = await post(base, contract.request);
+  assert.deepEqual({ ...banned.result, operationId: sample('replayed_banned').body.operationId }, sample('replayed_banned').body);
+  const otherOwner = await post(base, contract.request, { headers: { Authorization: 'Bearer SYNTHETIC-B' } });
+  assert.equal(otherOwner.response.status, sample('ownership').httpStatus);
+  assert.deepEqual(otherOwner.result, sample('ownership').body);
+  db.mutate(f => { f.users['11111111'].status = 'aktif'; delete f._adixtream_claims_v1; });
+  const legacy = await post(base, contract.request);
+  assert.equal(legacy.response.status, sample('legacy').httpStatus);
+  assert.deepEqual(legacy.result, sample('legacy').body);
+});
