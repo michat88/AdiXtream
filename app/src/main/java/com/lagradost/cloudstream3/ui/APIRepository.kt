@@ -1,7 +1,5 @@
 package com.lagradost.cloudstream3.ui
 
-import com.lagradost.cloudstream3.CloudStreamApp
-import com.lagradost.cloudstream3.plugins.PluginManager
 import com.lagradost.cloudstream3.APIHolder.unixTime
 import com.lagradost.cloudstream3.APIHolder.unixTimeMS
 import com.lagradost.cloudstream3.DubStatus
@@ -84,16 +82,8 @@ class APIRepository(val api: MainAPI) {
     val hasQuickSearch = api.hasQuickSearch
     val vpnStatus = api.vpnStatus
 
-    private fun requirePluginAccess() {
-        val context = CloudStreamApp.context ?: return
-        if (!PluginManager.isPluginAccessAllowed(context, api.sourcePlugin)) {
-            throw ErrorLoadingException("Premium entitlement required")
-        }
-    }
-
     suspend fun load(url: String): Resource<LoadResponse> {
         return safeApiCall {
-            requirePluginAccess()
             withTimeout(getTimeout(api.loadTimeoutMs)) {
                 if (isInvalidData(url)) throw ErrorLoadingException()
                 val fixedUrl = api.fixUrl(url)
@@ -135,7 +125,6 @@ class APIRepository(val api: MainAPI) {
             return Resource.Success(newSearchResponseList(emptyList()))
 
         return safeApiCall {
-            requirePluginAccess()
             withTimeout(getTimeout(api.searchTimeoutMs)) {
                 (api.search(query, page)
                     ?: throw ErrorLoadingException())
@@ -149,7 +138,6 @@ class APIRepository(val api: MainAPI) {
             return Resource.Success(newSearchResponseList(emptyList()))
 
         return safeApiCall {
-            requirePluginAccess()
             withTimeout(getTimeout(api.quickSearchTimeoutMs)) {
                 newSearchResponseList(
                     api.quickSearch(query) ?: throw ErrorLoadingException(),
@@ -167,7 +155,6 @@ class APIRepository(val api: MainAPI) {
 
     suspend fun getMainPage(page: Int, nameIndex: Int? = null): Resource<List<HomePageResponse?>> {
         return safeApiCall {
-            requirePluginAccess()
             withTimeout(getTimeout(api.getMainPageTimeoutMs)) {
                 api.lastHomepageRequest = unixTimeMS
 
@@ -210,7 +197,6 @@ class APIRepository(val api: MainAPI) {
 
     suspend fun extractorVerifierJob(extractorData: String?) {
         safeApiCall {
-            requirePluginAccess()
             api.extractorVerifierJob(extractorData)
         }
     }
@@ -223,7 +209,6 @@ class APIRepository(val api: MainAPI) {
     ): Boolean {
         if (isInvalidData(data)) return false // this makes providers cleaner
         return try {
-            requirePluginAccess()
             withTimeout(getTimeout(api.loadLinksTimeoutMs)) {
                 api.loadLinks(data, isCasting, subtitleCallback, callback)
             }
