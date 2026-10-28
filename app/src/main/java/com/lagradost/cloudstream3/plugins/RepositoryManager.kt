@@ -9,21 +9,22 @@ import com.lagradost.cloudstream3.CloudStreamApp.Companion.setKey
 import com.lagradost.cloudstream3.R
 import com.lagradost.cloudstream3.amap
 import com.lagradost.cloudstream3.app
-import com.lagradost.cloudstream3.mvvm.logError
-import com.lagradost.cloudstream3.mvvm.safe
 import com.lagradost.cloudstream3.mvvm.safeAsync
 import com.lagradost.cloudstream3.plugins.PluginManager.getPluginSanitizedFileName
 import com.lagradost.cloudstream3.plugins.PluginManager.unloadPlugin
 import com.lagradost.cloudstream3.ui.settings.extensions.REPOSITORIES_KEY
 import com.lagradost.cloudstream3.ui.settings.extensions.RepositoryData
+import com.lagradost.cloudstream3.utils.DataStore.getSharedPrefs
+import com.lagradost.cloudstream3.utils.AppUtils.toJsonLiteral
+import android.util.Log
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import java.io.File
-import java.nio.file.AtomicMoveNotSupportedException
-import java.nio.file.Files
-import java.nio.file.StandardCopyOption
 import java.security.MessageDigest
 import java.util.concurrent.TimeUnit
 
@@ -159,21 +160,27 @@ object RepositoryManager {
     }
 
     suspend fun parseRepository(url: String): Repository? {
-        return safeAsync {
-            // Take manifestVersion and such into account later
+        return try {
             app.get(convertRawGitUrl(url), cacheTime = 15, cacheUnit = TimeUnit.MINUTES)
                 .parsedSafe<Repository>()
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (_: Exception) {
+            Log.w("RepositoryManager", "Unable to read internal extension catalog")
+            null
         }
     }
 
-    private suspend fun parsePlugins(pluginUrls: String): List<SitePlugin> {
+    private suspend fun parsePlugins(pluginUrls: String): List<SitePlugin>? {
         // Take manifestVersion and such into account later
         return try {
             app.get(convertRawGitUrl(pluginUrls), cacheTime = 15, cacheUnit = TimeUnit.MINUTES)
                 .parsed<Array<SitePlugin>>().toList()
-        } catch (t: Throwable) {
-            logError(t)
-            emptyList()
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (_: Exception) {
+            Log.w("RepositoryManager", "Unable to read internal extension list")
+            null
         }
     }
 
@@ -182,65 +189,128 @@ object RepositoryManager {
      */
     suspend fun getRepoPlugins(repositoryData: RepositoryData): List<PluginWrapper>? {
         val repo = parseRepository(repositoryData.url) ?: return null
-        val list = repo.pluginLists.amap { url ->
-            parsePlugins(url).map {
-                PluginWrapper(repo, repositoryData, it)
-            }
-        }.flatten()
-        return list
+        if (repo.pluginLists.isEmpty() || repo.pluginLists.size > 10) return null
+        val lists = repo.pluginLists.amap { parsePlugins(it) }
+        // A failed list is not an empty successful catalog or a completed bootstrap.
+        if (lists.any { it == null }) return null
+        return lists.filterNotNull().flatten().map { PluginWrapper(repo, repositoryData, it) }
     }
 
-    suspend fun downloadPluginToFile(
-        context: Context,
-        pluginUrl: String,
-        file: File,
-        expectedFileHash: String?
+    internal suspend fun downloadPluginToTemp(
+        context: Context, pluginUrl: String, expectedFileHash: String?,
     ): File? {
-        return safeAsync {
-            val parentDir = file.parentFile ?: return@safeAsync null
-            parentDir.mkdirs()
-
-            // Prevent corrupting the plugin file if the operation fails
-            val tempFile = File.createTempFile(file.name, ".tmp", context.cacheDir)
-
-            val body = app.get(convertRawGitUrl(pluginUrl)).okhttpResponse.body
-
-            body.byteStream().use { body ->
-                tempFile.outputStream().use { fileSteam ->
-                    body.copyTo(fileSteam)
-                }
+        val tempFile = File.createTempFile("extension-", ".tmp", context.cacheDir)
+        var complete = false
+        try {
+            app.get(convertRawGitUrl(pluginUrl)).okhttpResponse.body.use { body ->
+                body.byteStream().use { input -> tempFile.outputStream().use { input.copyTo(it) } }
             }
+            currentCoroutineContext().ensureActive()
+            check(expectedFileHash == null || sha256(tempFile) == expectedFileHash) { "Extension integrity check failed" }
+            complete = true
+            return tempFile
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (_: Exception) {
+            Log.w("RepositoryManager", "Unable to download extension")
+            return null
+        } finally { if (!complete) tempFile.delete() }
+    }
 
-            if (expectedFileHash != null) {
-                val downloadHash = sha256(tempFile)
-                if (expectedFileHash != downloadHash) {
-                    tempFile.delete()
-                    throw IllegalStateException("Extension hash mismatch when validating '${file.name}'! Expected: '$expectedFileHash', got: '$downloadHash'.")
-                }
-            }
-
-            // We prefer the operation to be atomic
-            try {
-                Files.move(
-                    tempFile.toPath(),
-                    file.toPath(),
-                    StandardCopyOption.REPLACE_EXISTING,
-                    StandardCopyOption.ATOMIC_MOVE
-                )
-            } catch (_: AtomicMoveNotSupportedException) {
-                Files.move(
-                    tempFile.toPath(),
-                    file.toPath(),
-                    StandardCopyOption.REPLACE_EXISTING
-                )
-            }
-
+    // Keep the existing public helper signature compatible with plugins using it.
+    suspend fun downloadPluginToFile(
+        context: Context, pluginUrl: String, file: File, expectedFileHash: String?,
+    ): File? {
+        if (!PluginManager.isPluginAccessAllowed(context, file.absolutePath)) return null
+        val staged = downloadPluginToTemp(context, pluginUrl, expectedFileHash) ?: return null
+        return try {
+            currentCoroutineContext().ensureActive()
+            if (!PluginManager.isPluginAccessAllowed(context, file.absolutePath)) return null
+            file.parentFile?.mkdirs()
+            movePluginFile(staged, file)
             file
-        }
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (_: Exception) {
+            Log.w("RepositoryManager", "Unable to store extension")
+            null
+        } finally { staged.delete() }
     }
 
     fun getRepositories(): Array<RepositoryData> {
         return getKey<Array<RepositoryData>>(REPOSITORIES_KEY) ?: emptyArray()
+    }
+
+    private fun bootstrapKey(url: String): String = "adi_repo_bootstrap_v1/" +
+        MessageDigest.getInstance("SHA-256").digest(url.toByteArray()).joinToString("") { "%02x".format(it) }
+
+    internal fun bootstrapProgress(url: String): BootstrapProgress? = getKey(bootstrapKey(url))
+
+    private fun writeBootstrapProgress(context: Context, url: String, progress: BootstrapProgress) {
+        check(context.getSharedPrefs().edit().putString(bootstrapKey(url), progress.toJsonLiteral()).commit()) {
+            "Unable to save extension bootstrap progress"
+        }
+    }
+
+    internal fun rememberEstablishedRepository(context: Context, url: String) {
+        // Pre-journal installs cannot distinguish old manual deletions from partial downloads.
+        // Preserve those choices; only known interrupted initial installs are automatically resumed.
+        if (bootstrapProgress(url) == null) writeBootstrapProgress(context, url, BootstrapProgress(emptyList(), complete = true))
+    }
+
+    internal suspend fun bootstrapRepository(context: Context, target: String, replacing: Boolean): Boolean {
+        val catalog = kotlinx.coroutines.withTimeoutOrNull(10_000L) {
+            getRepoPlugins(RepositoryData("", "", target))
+        }
+            ?.filter { it.plugin.status != com.lagradost.cloudstream3.PROVIDER_STATUS_DOWN }
+            ?.distinctBy { it.plugin.internalName } ?: return false
+        if (catalog.isEmpty()) return false
+        val byName = catalog.associateBy { it.plugin.internalName }
+        val allowed = {
+            val expected = if (com.lagradost.cloudstream3.PremiumManager.isPremium(context))
+                com.lagradost.cloudstream3.PremiumManager.PREMIUM_REPO_URL
+            else com.lagradost.cloudstream3.PremiumManager.FREE_REPO_URL
+            target.isNotBlank() && target == expected
+        }
+        return RepositoryBootstrap(
+            read = { bootstrapProgress(target) },
+            write = { writeBootstrapProgress(context, target, it) },
+        ).prepare(
+            catalog = byName.keys.toList(),
+            replacingRepository = replacing,
+            allowed = allowed,
+            ensurePlugin = { name ->
+                val metadata = byName.getValue(name).plugin
+                val file = PluginManager.getPluginPath(context, name, target)
+                val data = PluginData(name, metadata.url, true, file.absolutePath, PLUGIN_VERSION_NOT_SET)
+                val cached = file.isFile && (metadata.fileHash == null || sha256(file) == metadata.fileHash)
+                if (cached && PluginManager.loadPlugin(context, file, data)) true else {
+                    val staged = downloadPluginToTemp(context, metadata.url, metadata.fileHash)
+                    if (staged == null) false else try {
+                        allowed() && PluginManager.installPlugin(context, staged, file, data, load = true)
+                    } finally { staged.delete() }
+                }
+            },
+            commit = {
+                // Recheck after every awaited download. Never substitute Free on network failure.
+                if (!allowed()) false else {
+                    val repo = catalog.first().repository
+                    val previous = repoLock.withLock {
+                        if (!allowed()) return@withLock null
+                        val previous = getRepositories()
+                        val targetData = arrayOf(RepositoryData(repo.iconUrl, repo.name, target, repo.description))
+                        if (!context.getSharedPrefs().edit()
+                                .putString(REPOSITORIES_KEY, targetData.toJsonLiteral()).commit()) return@withLock null
+                        previous
+                    }
+                    if (previous == null) false else {
+                        // Target files and initializers are ready before old cache removal starts.
+                        previous.filter { it.url != target }.forEach { removeRepository(context, it) }
+                        true
+                    }
+                }
+            },
+        )
     }
 
     // Don't want to read before we write in another thread
@@ -291,11 +361,13 @@ object RepositoryManager {
 
         // Unload all plugins, not using deletePlugin since we
         // delete all data and files in deleteRepositoryData
-        safe {
+        try {
             file.listFiles { plugin: File ->
                 unloadPlugin(plugin.absolutePath)
                 false
             }
+        } catch (_: Exception) {
+            Log.w("RepositoryManager", "Unable to release replaced extensions")
         }
 
         PluginManager.deleteRepositoryData(file.absolutePath)

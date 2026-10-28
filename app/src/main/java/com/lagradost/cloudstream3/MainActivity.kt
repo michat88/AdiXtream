@@ -289,7 +289,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                         }
                     } else if (str.startsWith("https://cs.repo")) {
                         val realUrl = "https://" + str.substringAfter("?")
-                        println("Repository url: $realUrl")
+                        Log.d(TAG, "Internal repository link received")
                         loadRepository(realUrl)
                         return true
                     } else if (str.contains(APP_STRING)) {
@@ -697,6 +697,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                                             lang = custom.lang
                                             mainUrl = custom.url.trimEnd('/')
                                             canBeOverridden = false
+                                            sourcePlugin = it.sourcePlugin
                                         }
                                     )
                                 }
@@ -981,7 +982,10 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                         kotlinx.coroutines.delay(5 * 60 * 1000L)
                     }
                 }
-                PremiumManager.entitlementChanges(this@MainActivity).collect {
+                PremiumManager.entitlementEvents(this@MainActivity).collect {
+                    kotlinx.coroutines.withContext(Dispatchers.IO) {
+                        PluginManager.unloadUnauthorizedPlugins(this@MainActivity)
+                    }
                     reconcileRecoveredPremiumTier()
                 }
             }
@@ -1145,89 +1149,66 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
                 }
                 val isPremium = entitlement == PremiumManager.StartupEntitlement.PREMIUM
                 val targetRepoUrl = if (isPremium) PremiumManager.PREMIUM_REPO_URL else PremiumManager.FREE_REPO_URL
+                PluginManager.unloadUnauthorizedPlugins(this@MainActivity)
                 val currentRepos = RepositoryManager.getRepositories()
-                val hasTargetRepo = currentRepos.any { it.url == targetRepoUrl }
-                val hasInvalidRepos = currentRepos.any { it.url != targetRepoUrl }
-                var isRepoChanged = false
-
-                if (!hasTargetRepo || hasInvalidRepos) {
-                    // Validate BEFORE removing repositories or their plugin/provider caches.
-                    val parsedRepo = try {
-                        kotlinx.coroutines.withTimeoutOrNull(10_000L) {
-                            RepositoryManager.parseRepository(targetRepoUrl)
-                        }
-                    } catch (cancelled: kotlinx.coroutines.CancellationException) {
-                        throw cancelled
-                    } catch (_: Exception) { null }
-
-                    if (parsedRepo == null) {
-                        Log.w(TAG, "REPO_BOOTSTRAP=FAILED")
-                        showBootstrapRetry(isPremium)
-                        // Keep every existing cache intact, but do not load a mismatched repo.
-                        // Premium remains Premium; retry never substitutes/persists Free.
-                        mainPluginsLoadedEvent.invoke(false)
-                        return@launch
-                    } else {
-                        // Keep an existing target cache; remove only repositories being replaced.
-                        currentRepos.filter { it.url != targetRepoUrl }.forEach { repo ->
-                            RepositoryManager.removeRepository(this@MainActivity, repo)
-                        }
-                        RepositoryManager.addRepository(
-                            RepositoryData(parsedRepo.iconUrl ?: "", parsedRepo.name, targetRepoUrl)
-                        )
-                        isRepoChanged = true
-                        Log.d(TAG, "REPO_BOOTSTRAP=VALIDATED")
-                    }
-                }
-
+                val needsSwitch = currentRepos.none { it.url == targetRepoUrl } ||
+                    currentRepos.any { it.url != targetRepoUrl }
                 val targetPluginDirectory = PluginManager.getPluginPath(this@MainActivity, "", targetRepoUrl).parentFile
-                fun hasTargetPlugins(): Boolean = PluginManager.getPluginsOnline().any {
+                val hasTargetPlugins = PluginManager.getPluginsOnline().any {
                     val file = File(it.filePath)
                     file.parentFile == targetPluginDirectory && file.isFile
                 }
-
-                if (isRepoChanged || !hasTargetPlugins()) {
-                    // Also retry an interrupted initial download when the repo entry already exists.
-                    val download = PluginsViewModel.downloadAll(
-                        this@MainActivity, RepositoryData("", "", targetRepoUrl), null
-                    )
-                    try {
-                        download.join()
-                    } finally {
-                        if (!isActive) download.cancel()
+                val progress = RepositoryManager.bootstrapProgress(targetRepoUrl)
+                val needsBootstrap = needsSwitch || !hasTargetPlugins || progress?.complete == false
+                if (needsBootstrap) {
+                    val ready = try {
+                        RepositoryManager.bootstrapRepository(
+                            this@MainActivity, targetRepoUrl,
+                            replacing = needsSwitch || (!hasTargetPlugins && progress?.complete != false)
+                        )
+                    } catch (cancelled: kotlinx.coroutines.CancellationException) {
+                        throw cancelled
+                    } catch (_: Exception) {
+                        false
                     }
-                    if (!hasTargetPlugins()) {
-                        Log.w(TAG, "REPO_BOOTSTRAP=PLUGIN_DOWNLOAD_FAILED")
-                        showBootstrapRetry(isPremium)
+                    if (!ready) {
+                        kotlinx.coroutines.withContext(Dispatchers.Main) {
+                            if (isPremium != PremiumManager.isPremium(this@MainActivity)) {
+                                bootstrappedPremiumTier = isPremium
+                                reconcileRecoveredPremiumTier()
+                            }
+                        }
+                        Log.w(TAG, "REPO_BOOTSTRAP=INCOMPLETE")
+                        if (!entitlementRecreateRequested) showBootstrapRetry(isPremium)
                         mainPluginsLoadedEvent.invoke(false)
                         return@launch
                     }
                     PluginManager.___DO_NOT_CALL_FROM_A_PLUGIN_loadAllOnlinePlugins(this@MainActivity)
-                    PluginManager.___DO_NOT_CALL_FROM_A_PLUGIN_loadAllLocalPlugins(this@MainActivity, false)
                 } else {
+                    // Existing pre-journal installs retain deliberate plugin deletions.
+                    RepositoryManager.rememberEstablishedRepository(this@MainActivity, targetRepoUrl)
                     if (settingsManager.getBoolean(getString(R.string.auto_update_plugins_key), true)) {
                         PluginManager.___DO_NOT_CALL_FROM_A_PLUGIN_updateAllOnlinePluginsAndLoadThem(this@MainActivity)
                     } else {
                         PluginManager.___DO_NOT_CALL_FROM_A_PLUGIN_loadAllOnlinePlugins(this@MainActivity)
                     }
-
-                    // Upstream retired ongoing automatic catalog downloads. AdiXtream's
-                    // awaited initial entitlement/repository bootstrap above remains required.
-                    PluginManager.___DO_NOT_CALL_FROM_A_PLUGIN_loadAllLocalPlugins(this@MainActivity, false)
                 }
+                PluginManager.___DO_NOT_CALL_FROM_A_PLUGIN_loadAllLocalPlugins(this@MainActivity, false)
 
                 val isAdultEnabled = settingsManager.getBoolean(getString(R.string.enable_nsfw_on_providers_key), false)
 
                 kotlinx.coroutines.withTimeoutOrNull(15_000L) {
                     while (APIHolder.allProviders.none { provider -> 
-                        provider.hasMainPage && (isAdultEnabled || !provider.supportedTypes.contains(com.lagradost.cloudstream3.TvType.NSFW)) 
+                        provider.hasMainPage && PluginManager.isPluginAccessAllowed(this@MainActivity, provider.sourcePlugin) &&
+                            (isAdultEnabled || !provider.supportedTypes.contains(com.lagradost.cloudstream3.TvType.NSFW))
                     }) {
                         kotlinx.coroutines.delay(500)
                     }
                 }
 
                 val availableProviders = APIHolder.allProviders.filter { provider ->
-                    provider.hasMainPage && (isAdultEnabled || !provider.supportedTypes.contains(com.lagradost.cloudstream3.TvType.NSFW))
+                    provider.hasMainPage && PluginManager.isPluginAccessAllowed(this@MainActivity, provider.sourcePlugin) &&
+                            (isAdultEnabled || !provider.supportedTypes.contains(com.lagradost.cloudstream3.TvType.NSFW))
                 }
                 
                 kotlinx.coroutines.withContext(Dispatchers.Main) {

@@ -185,6 +185,10 @@ object PremiumManager {
 
     internal fun entitlementChanges(context: Context): StateFlow<PremiumLicense?> = recovery(context).changes
 
+    internal fun entitlementEvents(context: Context) = recovery(context).let { manager ->
+        premiumEntitlementEvents(manager.changes, manager::currentTimeMillis)
+    }
+
     internal fun hasResolvedEntitlement(context: Context): Boolean = recovery(context).hasResolvedLicense()
 
     fun refreshEntitlement(context: Context) { recovery(context).requestRefresh() }

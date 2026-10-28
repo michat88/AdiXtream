@@ -5,8 +5,12 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.async
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.transformLatest
 import org.json.JSONObject
 import java.math.BigDecimal
 import java.text.ParsePosition
@@ -27,6 +31,27 @@ internal data class PremiumLicense(
 }
 
 internal data class PremiumRecoveryResult(val license: PremiumLicense?, val persisted: Boolean)
+
+/** Expiry is an access event, not a fabricated server FREE decision or a preference migration. */
+@OptIn(ExperimentalCoroutinesApi::class)
+internal fun premiumEntitlementEvents(
+    licenses: Flow<PremiumLicense?>,
+    nowMillis: () -> Long,
+    wait: suspend (Long) -> Unit = { delay(it) },
+): Flow<Unit> = licenses.transformLatest { license ->
+    emit(Unit)
+    if (license?.grantsPremium(nowMillis()) == true) {
+        while (true) {
+            val remaining = license.expiresAt - nowMillis()
+            if (remaining <= 0L) {
+                emit(Unit)
+                break
+            }
+            // Recheck the authoritative clock even if the wall clock changes while foregrounded.
+            wait(remaining.coerceAtMost(5 * 60 * 1000L))
+        }
+    }
+}
 
 /** One application-scoped recovery. Reads never erase an expired license or start nested GETs. */
 internal class PremiumRecovery(

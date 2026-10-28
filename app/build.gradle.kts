@@ -137,8 +137,8 @@ android {
         applicationId = "com.adixtream.app"
         minSdk = libs.versions.minSdk.get().toInt()
         targetSdk = libs.versions.targetSdk.get().toInt()
-        versionCode = 94          // AdiXtream: naikkan manual tiap rilis
-        versionName = "4.8.7"     // AdiXtream: versi fork, bukan versi upstream
+        versionCode = 95          // AdiXtream: naikkan manual tiap rilis
+        versionName = "4.8.8"     // AdiXtream: versi fork, bukan versi upstream
 
         manifestPlaceholders["target_sdk_version"] = libs.versions.targetSdk.get()
 

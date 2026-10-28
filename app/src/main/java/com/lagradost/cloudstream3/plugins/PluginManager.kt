@@ -35,16 +35,16 @@ import com.lagradost.cloudstream3.MainActivity.Companion.lastError
 import com.lagradost.cloudstream3.PROVIDER_STATUS_DOWN
 import com.lagradost.cloudstream3.PROVIDER_STATUS_OK
 import com.lagradost.cloudstream3.R
+import com.lagradost.cloudstream3.PremiumManager
 import com.lagradost.cloudstream3.TvType
 import com.lagradost.cloudstream3.actions.VideoClickAction
 import com.lagradost.cloudstream3.actions.VideoClickActionHolder
 import com.lagradost.cloudstream3.amap
-import com.lagradost.cloudstream3.mvvm.debugPrint
 import com.lagradost.cloudstream3.mvvm.logError
 import com.lagradost.cloudstream3.mvvm.safe
 import com.lagradost.cloudstream3.plugins.RepositoryManager.ONLINE_PLUGINS_FOLDER
 import com.lagradost.cloudstream3.plugins.RepositoryManager.PREBUILT_REPOSITORIES
-import com.lagradost.cloudstream3.plugins.RepositoryManager.downloadPluginToFile
+import com.lagradost.cloudstream3.plugins.RepositoryManager.downloadPluginToTemp
 import com.lagradost.cloudstream3.plugins.RepositoryManager.getRepoPlugins
 import com.lagradost.cloudstream3.plugins.RepositoryManager.sha256
 import com.lagradost.cloudstream3.ui.settings.extensions.REPOSITORIES_KEY
@@ -59,12 +59,17 @@ import com.lagradost.cloudstream3.utils.downloader.DownloadFileManagement.saniti
 import com.lagradost.cloudstream3.utils.extractorApis
 import com.lagradost.cloudstream3.utils.txt
 import dalvik.system.PathClassLoader
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import java.io.File
 import java.io.InputStreamReader
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.AtomicLong
 
 // Different keys for local and not since local can be removed at any time without app knowing, hence the local are getting rebuilt on every app start
 const val PLUGINS_KEY = "PLUGINS_KEY"
@@ -116,6 +121,11 @@ object PluginManager {
     val lock = Mutex()
 
     const val TAG = "PluginManager"
+    private val lifecycleGuard = Any()
+    private val installLocks = ConcurrentHashMap<String, Mutex>()
+    private val loadLocks = ConcurrentHashMap<String, Mutex>()
+    private val lifecycleVersions = ConcurrentHashMap<String, AtomicLong>()
+    private val unloading = mutableSetOf<String>()
 
     private var hasCreatedNotChanel = false
 
@@ -139,7 +149,7 @@ object PluginManager {
         if (data == null) return
         lock.withLock {
             if (data.isOnline) {
-                val plugins = getPluginsOnline().filter { it.url != data.url }
+                val plugins = getPluginsOnline().filter { it.filePath != data.filePath }
                 setKey(PLUGINS_KEY, plugins)
             } else {
                 val plugins = getPluginsLocal().filter { it.filePath != data.filePath }
@@ -154,8 +164,10 @@ object PluginManager {
                 !it.filePath.contains(repositoryPath)
             }
             val file = File(repositoryPath)
-            safe {
+            try {
                 if (file.exists()) file.deleteRecursively()
+            } catch (_: Exception) {
+                Log.w(TAG, "Unable to clear replaced extension cache")
             }
             setKey(PLUGINS_KEY, plugins)
         }
@@ -169,7 +181,7 @@ object PluginManager {
         File("${context.filesDir}/${ONLINE_PLUGINS_FOLDER}").listFiles()?.forEach { repo ->
             repo.listFiles { file -> file.name == "oat" && file.isDirectory }?.forEach { file ->
                 val success = file.deleteRecursively()
-                Log.i(TAG, "Deleted oat directory: ${file.absolutePath} Success=$success")
+                Log.i(TAG, "Cleared extension optimization cache: $success")
             }
         }
     }
@@ -216,7 +228,7 @@ object PluginManager {
                 PluginData(name, null, false, file.absolutePath, PLUGIN_VERSION_NOT_SET)
             )
         } else {
-            Log.i(TAG, "Skipping invalid plugin file: $file")
+            Log.i(TAG, "Skipping invalid extension file")
         }
     }
 
@@ -296,9 +308,7 @@ object PluginManager {
                 }
         }.flatten().distinctBy { it.onlineData.plugin.url }
 
-        debugPrint {
-            "Outdated plugins: ${outdatedPlugins.filter { it.isOutdated }}"
-        }
+        Log.d(TAG, "Outdated extension count: ${outdatedPlugins.count { it.isOutdated }}")
 
         val updatedPlugins = mutableListOf<String>()
 
@@ -590,145 +600,148 @@ object PluginManager {
     /**
      * @return True if successful, false if not
      * */
-    internal suspend fun loadPlugin(context: Context, file: File, data: PluginData): Boolean {
-        val fileName = file.nameWithoutExtension
+    internal fun isPluginAccessAllowed(context: Context, path: String?): Boolean {
+        val premiumUrl = PremiumManager.PREMIUM_REPO_URL
+        val premiumDirectory = if (premiumUrl.isBlank()) null else getPluginPath(context, "", premiumUrl).parentFile
+        return allowsPluginPath(path, premiumDirectory) { PremiumManager.isPremium(context) }
+    }
+
+    internal fun unloadUnauthorizedPlugins(context: Context) {
+        val paths = synchronized(plugins) { plugins.keys.toList() }
+        paths.filterNot { isPluginAccessAllowed(context, it) }.forEach(::unloadPlugin)
+    }
+
+    internal suspend fun loadPlugin(context: Context, file: File, data: PluginData): Boolean =
+        loadLocks.getOrPut(file.absolutePath) { Mutex() }.withLock { loadPluginLocked(context, file, data) }
+
+    private suspend fun loadPluginLocked(context: Context, file: File, data: PluginData): Boolean {
+        currentCoroutineContext().ensureActive()
         val filePath = file.absolutePath
-        currentlyLoading = fileName
-        // PluginData contains its download URL; never expose that through the new UI loader.
-        Log.i(TAG, "Loading plugin: $fileName")
-
+        val revision = lifecycleVersions.getOrPut(filePath) { AtomicLong() }
+        val version = revision.get()
+        val allowed = {
+            isPluginAccessAllowed(context, filePath) && revision.get() == version &&
+                synchronized(lifecycleGuard) { filePath !in unloading }
+        }
         return try {
-            // In case of Android 14+ then
-            try {
-                // Set the file as read-only and log if it fails
-                if (!file.setReadOnly()) {
-                    Log.e(TAG, "Failed to set read-only on plugin file: ${file.name}")
-                }
-            } catch (t: Throwable) {
-                Log.e(TAG, "Failed to set dex as read-only")
-                logError(t)
-            }
-
-            val loader = PathClassLoader(filePath, context.classLoader)
-            var manifest: BasePlugin.Manifest
-            loader.getResourceAsStream("manifest.json").use { stream ->
-                if (stream == null) {
-                    Log.e(TAG, "Failed to load plugin  $fileName: No manifest found")
+            val initializedData = run {
+                if (!isPluginAccessAllowed(context, filePath)) {
+                    unloadPlugin(filePath)
                     return false
                 }
-                InputStreamReader(stream).use { reader ->
-                    manifest = parseJson<BasePlugin.Manifest>(reader.readText())
-                }
+                if (!allowed()) return false
+                if (synchronized(plugins) { plugins.containsKey(filePath) }) return true
+                currentlyLoading = file.nameWithoutExtension
+                try {
+                    check(file.isFile && file.setReadOnly()) { "Plugin file unavailable" }
+                    val loader = PathClassLoader(filePath, context.classLoader)
+                    val manifest = loader.getResourceAsStream("manifest.json").use { stream ->
+                        checkNotNull(stream) { "Plugin manifest missing" }
+                        InputStreamReader(stream).use { parseJson<BasePlugin.Manifest>(it.readText()) }
+                    }
+                    val instance = loader.loadClass(manifest.pluginClassName)
+                        .getDeclaredConstructor().newInstance() as BasePlugin
+                    instance.filename = filePath
+                    if (manifest.requiresResources) {
+                        val assets = AssetManager::class.java.getDeclaredConstructor().newInstance()
+                        AssetManager::class.java.getMethod("addAssetPath", String::class.java)
+                            .invoke(assets, filePath)
+                        @Suppress("DEPRECATION")
+                        (instance as? Plugin)?.resources = Resources(
+                            assets, context.resources.displayMetrics, context.resources.configuration
+                        )
+                    }
+                    val initialized = initializePluginTransaction(
+                        allowed = allowed,
+                        initialize = { if (instance is Plugin) instance.load(context) else instance.load() },
+                        publish = {
+                            synchronized(lifecycleGuard) {
+                                check(allowed()) { "Extension access changed during initialization" }
+                                synchronized(plugins) { plugins[filePath] = instance }
+                                synchronized(classLoaders) { classLoaders[loader] = instance }
+                                synchronized(urlPlugins) { urlPlugins[data.url ?: filePath] = instance }
+                            }
+                        },
+                        rollback = {
+                            try { instance.beforeUnload() } catch (_: Throwable) {
+                                Log.w(TAG, "Plugin cleanup failed")
+                            } finally { removePluginRegistrations(filePath, instance) }
+                        },
+                    )
+                    if (!initialized) return false
+                    data.copy(version = manifest.version ?: PLUGIN_VERSION_NOT_SET)
+                } finally { currentlyLoading = null }
             }
-
-            val name: String = manifest.name ?: "NO NAME".also {
-                Log.d(TAG, "No manifest name for ${data.internalName}")
-            }
-            val version: Int = manifest.version ?: PLUGIN_VERSION_NOT_SET.also {
-                Log.d(TAG, "No manifest version for ${data.internalName}")
-            }
-
-            @Suppress("UNCHECKED_CAST")
-            val pluginClass: Class<*> =
-                loader.loadClass(manifest.pluginClassName) as Class<out BasePlugin?>
-            val pluginInstance: BasePlugin =
-                pluginClass.getDeclaredConstructor().newInstance() as BasePlugin
-
-            // Sets with the proper version
-            setPluginData(data.copy(version = version))
-
-            if (plugins.containsKey(filePath)) {
-                Log.i(TAG, "Plugin with name $name already exists")
-                return true
-            }
-
-            pluginInstance.filename = file.absolutePath
-            if (manifest.requiresResources) {
-                Log.d(TAG, "Loading resources for ${data.internalName}")
-                // based on https://stackoverflow.com/questions/7483568/dynamic-resource-loading-from-other-apk
-                val assets = AssetManager::class.java.getDeclaredConstructor().newInstance()
-                val addAssetPath =
-                    AssetManager::class.java.getMethod("addAssetPath", String::class.java)
-                addAssetPath.invoke(assets, file.absolutePath)
-
-                @Suppress("DEPRECATION")
-                (pluginInstance as? Plugin)?.resources = Resources(
-                    assets,
-                    context.resources.displayMetrics,
-                    context.resources.configuration
-                )
-            }
-            synchronized(plugins) {
-                plugins[filePath] = pluginInstance
-            }
-            synchronized(classLoaders) {
-                classLoaders[loader] = pluginInstance
-            }
-            synchronized(urlPlugins) {
-                urlPlugins[data.url ?: filePath] = pluginInstance
-            }
-            if (pluginInstance is Plugin) {
-                pluginInstance.load(context)
-            } else {
-                pluginInstance.load()
-            }
-            Log.i(TAG, "Loaded plugin ${data.internalName} successfully")
-            currentlyLoading = null
-            true
-        } catch (e: Throwable) {
-            Log.e(TAG, "Failed to load $file: ${Log.getStackTraceString(e)}")
-            showToast(
-                // context.getActivity(), // we are not always on the main thread
-                context.getString(R.string.plugin_load_fail).format(fileName),
-                Toast.LENGTH_LONG
-            )
-            currentlyLoading = null
+            // A failed initializer never advances the stored plugin version.
+            setPluginData(initializedData)
+            currentCoroutineContext().ensureActive()
+            if (!allowed()) {
+                unloadPlugin(filePath)
+                false
+            } else true
+        } catch (cancelled: CancellationException) {
+            unloadPlugin(filePath)
+            throw cancelled
+        } catch (_: Throwable) {
+            unloadPlugin(filePath)
+            Log.w(TAG, "Unable to initialize extension")
+            showToast(context.getString(R.string.plugin_load_fail).format(data.internalName), Toast.LENGTH_LONG)
             false
         }
     }
 
     fun unloadPlugin(absolutePath: String) {
-        Log.i(TAG, "Unloading plugin: $absolutePath")
-        val plugin = plugins[absolutePath]
-        if (plugin == null) {
-            Log.w(TAG, "Couldn't find plugin $absolutePath")
-            return
+        val plugin = synchronized(lifecycleGuard) {
+            if (!unloading.add(absolutePath)) return
+            lifecycleVersions.getOrPut(absolutePath) { AtomicLong() }.incrementAndGet()
+            synchronized(plugins) { plugins.remove(absolutePath) }
         }
-
-        try {
-            plugin.beforeUnload()
-        } catch (e: Throwable) {
-            Log.e(TAG, "Failed to run beforeUnload $absolutePath: ${Log.getStackTraceString(e)}")
+        // Never hold lifecycleGuard while invoking extension code or taking provider-list locks.
+        try { plugin?.beforeUnload() } catch (_: Throwable) {
+            Log.w(TAG, "Plugin cleanup failed")
+        } finally {
+            try { removePluginRegistrations(absolutePath, plugin) }
+            finally { synchronized(lifecycleGuard) { unloading.remove(absolutePath) } }
         }
+    }
 
-        // remove all registered apis
-        APIHolder.apis.filter { api -> api.sourcePlugin == plugin.filename }.forEach {
-            removePluginMapping(it)
-        }
-
-        APIHolder.allProviders.withLock {
-            APIHolder.allProviders.removeAll { provider -> provider.sourcePlugin == plugin.filename }
-        }
-
-        extractorApis.withLock {
-            extractorApis.removeAll { provider -> provider.sourcePlugin == plugin.filename }
-        }
-
+    private fun removePluginRegistrations(path: String, plugin: BasePlugin?) {
+        APIHolder.apis.filter { it.sourcePlugin == path }.forEach(::removePluginMapping)
+        APIHolder.allProviders.withLock { APIHolder.allProviders.removeAll { it.sourcePlugin == path } }
+        extractorApis.withLock { extractorApis.removeAll { it.sourcePlugin == path } }
         VideoClickActionHolder.allVideoClickActions.withLock {
-            VideoClickActionHolder.allVideoClickActions.removeAll { action -> action.sourcePlugin == plugin.filename }
+            VideoClickActionHolder.allVideoClickActions.removeAll { it.sourcePlugin == path }
         }
+        if (plugin != null) {
+            synchronized(classLoaders) { classLoaders.values.removeIf { it == plugin } }
+            synchronized(urlPlugins) { urlPlugins.values.removeIf { it == plugin } }
+        }
+        synchronized(plugins) { plugins.remove(path) }
+    }
 
-        synchronized(classLoaders) {
-            classLoaders.values.removeIf { v -> v == plugin }
-        }
-
-        synchronized(plugins) {
-            plugins.remove(absolutePath)
-        }
-
-        synchronized(urlPlugins) {
-            urlPlugins.values.removeIf { v -> v == plugin }
-        }
+    /** Shared by initial bootstrap, automatic updates and the active Compose extension screen. */
+    internal suspend fun installPlugin(
+        context: Context, staged: File, file: File, data: PluginData, load: Boolean,
+    ): Boolean = installLocks.getOrPut(file.absolutePath) { Mutex() }.withLock {
+        val previous = (getPluginsOnline() + getPluginsLocal()).firstOrNull { it.filePath == file.absolutePath }
+        val wasLoaded = synchronized(lifecycleGuard) { plugins.containsKey(file.absolutePath) }
+        replacePluginFile(
+            staged = staged,
+            destination = file,
+            allowed = { isPluginAccessAllowed(context, file.absolutePath) },
+            activate = {
+                currentCoroutineContext().ensureActive()
+                unloadPlugin(file.absolutePath)
+                if (load) loadPlugin(context, file, data) else { setPluginData(data); true }
+            },
+            restore = {
+                unloadPlugin(file.absolutePath)
+                if (previous != null) {
+                    setPluginData(previous)
+                    if (wasLoaded && isPluginAccessAllowed(context, file.absolutePath)) loadPlugin(context, file, previous)
+                } else deletePluginData(data)
+            },
+        )
     }
 
     /**
@@ -775,34 +788,19 @@ object PluginManager {
         file: File,
         loadPlugin: Boolean,
     ): Boolean {
-        try {
-            Log.d(TAG, "Downloading plugin: $pluginUrl to ${file.absolutePath}")
-            // The plugin file needs to be salted with the repository url hash as to allow multiple repositories with the same internal plugin names
-            val newFile = downloadPluginToFile(activity, pluginUrl, file, pluginHash) ?: return false
-
-            val data = PluginData(
-                internalName,
-                pluginUrl,
-                true,
-                newFile.absolutePath,
-                PLUGIN_VERSION_NOT_SET
-            )
-
-            return if (loadPlugin) {
-                unloadPlugin(file.absolutePath)
-                loadPlugin(
-                    activity,
-                    newFile,
-                    data
-                )
-            } else {
-                setPluginData(data)
-                true
-            }
-        } catch (e: Exception) {
-            logError(e)
-            return false
-        }
+        if (!isPluginAccessAllowed(activity, file.absolutePath)) return false
+        val staged = downloadPluginToTemp(activity, pluginUrl, pluginHash) ?: return false
+        return try {
+            currentCoroutineContext().ensureActive()
+            installPlugin(activity, staged, file, PluginData(
+                internalName, pluginUrl, true, file.absolutePath, PLUGIN_VERSION_NOT_SET
+            ), loadPlugin)
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (_: Exception) {
+            Log.w(TAG, "Unable to install extension")
+            false
+        } finally { staged.delete() }
     }
 
     suspend fun deletePlugin(file: File): Boolean {
@@ -861,8 +859,6 @@ object PluginManager {
                 unloadPlugin(pluginData.savedData.filePath)
             } else {
                 val existingFile = File(pluginData.savedData.filePath)
-                if (existingFile.exists()) existingFile.delete()
-
                 if (downloadPlugin(
                         activity,
                         pluginData.onlineData.plugin.url,

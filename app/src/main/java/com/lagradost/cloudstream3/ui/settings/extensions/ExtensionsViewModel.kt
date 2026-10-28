@@ -38,6 +38,9 @@ data class RepositoryData(
         url = url,
         description = null
     )
+
+    // Metadata can be interpolated by legacy callers; the address is never diagnostic output.
+    override fun toString(): String = "RepositoryData(internal)"
 }
 
 const val REPOSITORIES_KEY = "REPOSITORIES_KEY"

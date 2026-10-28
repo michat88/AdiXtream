@@ -14,7 +14,6 @@ import com.lagradost.cloudstream3.plugins.PluginData
 import com.lagradost.cloudstream3.plugins.PluginManager
 import com.lagradost.cloudstream3.plugins.PluginManager.deletePlugin
 import com.lagradost.cloudstream3.plugins.PluginManager.getPluginPath
-import com.lagradost.cloudstream3.plugins.PluginManager.unloadPlugin
 import com.lagradost.cloudstream3.plugins.RepositoryManager.convertRawGitUrl
 import com.lagradost.cloudstream3.plugins.RepositoryManager.parseRepoUrl
 import com.lagradost.cloudstream3.plugins.SitePlugin
@@ -33,9 +32,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.withContext
 import java.io.File
-import java.nio.file.AtomicMoveNotSupportedException
-import java.nio.file.Files
-import java.nio.file.StandardCopyOption
 import java.util.concurrent.TimeUnit
 import kotlin.uuid.Uuid
 
@@ -210,6 +206,9 @@ object AndroidRepositoryManager : RepositoryManager {
          * Because if the file digest is correct, then why do we need to do a network connection?
          * */
         if (isFileDigest(file, source.digest)) {
+            check(PluginManager.loadPlugin(context, file, PluginData(
+                source.internalName, source.pluginUrl, true, file.absolutePath, PLUGIN_VERSION_NOT_SET
+            ))) { "Unable to initialize extension" }
             return@protectRepositoryErrors file.absolutePath
         }
 
@@ -231,29 +230,9 @@ object AndroidRepositoryManager : RepositoryManager {
 
         // Entitlement can expire while the network download is in progress.
         requirePluginAccess(source.repositoryUrl)
-        // Always load the plugin
-        unloadPlugin(file.absolutePath)
-
-        file.parentFile?.mkdirs() // make the directories as Files.move needs this to work
-
-        try {
-            Files.move(
-                tempFile.toPath(),
-                file.toPath(),
-                StandardCopyOption.REPLACE_EXISTING,
-                StandardCopyOption.ATOMIC_MOVE
-            )
-        } catch (_: AtomicMoveNotSupportedException) {
-            Files.move(
-                tempFile.toPath(),
-                file.toPath(),
-                StandardCopyOption.REPLACE_EXISTING
-            )
-        }
-
-        requirePluginAccess(source.repositoryUrl)
-        val result = PluginManager.loadPlugin(
+        val result = PluginManager.installPlugin(
             context = context,
+            staged = tempFile,
             file = file,
             data = PluginData(
                 internalName = source.internalName,
@@ -261,7 +240,8 @@ object AndroidRepositoryManager : RepositoryManager {
                 isOnline = true,
                 filePath = file.absolutePath,
                 version = PLUGIN_VERSION_NOT_SET
-            )
+            ),
+            load = true,
         )
         if (!result) {
             throw ErrorLoadingException("Unable to load plugin ${source.internalName}")
