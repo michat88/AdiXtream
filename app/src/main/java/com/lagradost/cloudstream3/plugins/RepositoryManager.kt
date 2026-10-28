@@ -255,7 +255,12 @@ object RepositoryManager {
     internal fun rememberEstablishedRepository(context: Context, url: String) {
         // Pre-journal installs cannot distinguish old manual deletions from partial downloads.
         // Preserve those choices; only known interrupted initial installs are automatically resumed.
-        if (bootstrapProgress(url) == null) writeBootstrapProgress(context, url, BootstrapProgress(emptyList(), complete = true))
+        try {
+            if (bootstrapProgress(url) == null) writeBootstrapProgress(context, url, BootstrapProgress(emptyList(), complete = true))
+        } catch (_: Exception) {
+            // Optional bookkeeping must not prevent an established working installation opening.
+            Log.w("RepositoryManager", "Unable to record established extension installation")
+        }
     }
 
     internal suspend fun bootstrapRepository(context: Context, target: String, replacing: Boolean): Boolean {
