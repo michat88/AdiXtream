@@ -1,6 +1,9 @@
 package com.lagradost.cloudstream3.ui.settings
 
 import android.content.Intent
+import androidx.compose.material3.Switch
+import androidx.compose.runtime.collectAsState as collectCaptureState
+import com.lagradost.cloudstream3.TemporaryScreenCapture
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -51,6 +54,7 @@ object SettingsGeneralScreen : SearchableSettings {
     @Composable
     override fun getPreferences(): List<Preference> {
         val settings = rememberAppSettings()
+        val captureAllowed by TemporaryScreenCapture.allowed.collectCaptureState()
 
         // TODO Refactor entirely to use a different file path selector ect like QuickNovel
         val selectFileSelector =
@@ -113,6 +117,12 @@ object SettingsGeneralScreen : SearchableSettings {
         }.sortedBy { fromTagToLanguageName(it) ?: it }
 
         return persistentListOf(
+            Preference.PreferenceItem.TextPreference(
+                title = stringResource(R.string.adi_capture_title),
+                subtitle = stringResource(R.string.adi_capture_description),
+                onClick = { TemporaryScreenCapture.setAllowed(!captureAllowed) },
+                widget = { Switch(checked = captureAllowed, onCheckedChange = TemporaryScreenCapture::setAllowed) },
+            ),
             Preference.PreferenceGroup(title = stringResource(R.string.extension_language), preferenceItems = persistentListOf(
                 Preference.PreferenceItem.ListPreference(
                     preference = settings.general.locale,
