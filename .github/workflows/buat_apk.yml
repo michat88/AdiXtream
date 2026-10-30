@@ -23,6 +23,13 @@ jobs:
           java-version: '17'
           cache: 'gradle'
 
+      - name: Verify locked Premium feature flags
+        shell: python
+        run: |
+          import re, pathlib
+          assert re.search(r'const val ENABLED\s*=\s*false', pathlib.Path('app/src/main/java/com/lagradost/cloudstream3/CentralPremiumApi.kt').read_text())
+          assert re.search(r'PRODUCTION_FIREBASE_ENABLED\s*=\s*false', pathlib.Path('server/premium-api/src/service.mjs').read_text())
+
       - name: Decode Keystore dari Secret
         run: |
           echo "${{ secrets.SIGNING_KEY }}" | base64 -d > app/release.keystore
@@ -95,14 +102,71 @@ jobs:
           test "$apk_count" -gt 0
           test "$compatibility_failed" -eq 0
 
+      - name: Collect internal signed APK metadata
+        shell: python
+        run: |
+          APK_GLOB='app/build/outputs/apk/stable/release/*.apk'
+          APK_NAME='AdiXtream-4.8.7-internal-test'
+          EXPECTED_PACKAGE='com.adixtream.app'
+          EXPECTED_CODE=94
+          EXPECTED_VERSION='4.8.7'
+          EXPECTED_CERT=None
+          VARIANT='stableRelease'
+          SIGNING_REFERENCE='Existing signed production v4.8.4 APK, verified by previous workflow step'
+          GOOGLE_NATIVE=False
+          import glob, hashlib, json, os, pathlib, re, shutil, subprocess
+          root = pathlib.Path('.')
+          sdk = pathlib.Path(os.environ['ANDROID_HOME']) / 'build-tools'
+          def tool(name):
+              paths = list(sdk.glob('*/' + name))
+              assert paths, 'Android verification tool missing: ' + name
+              return sorted(paths, key=lambda p: tuple(int(n) for n in re.findall(r'\d+', p.parent.name)))[-1]
+          aapt, signer = tool('aapt'), tool('apksigner')
+          out = root / 'internal-apks'
+          out.mkdir(exist_ok=True)
+          assert not list(out.glob('*.apk')), 'Output directory must be clean'
+          apks = sorted(root.glob(APK_GLOB))
+          assert apks, 'Release APK missing'
+          for index, apk in enumerate(apks):
+              signature = subprocess.check_output([str(signer), 'verify', '--verbose', '--print-certs', str(apk)], text=True)
+              certs = sorted(set(x.replace(':','').lower() for x in re.findall(r'certificate SHA-256 digest:\s*([0-9a-fA-F:]+)', signature)))
+              assert certs and all(len(x) == 64 for x in certs), 'Signing certificate unavailable'
+              badging = subprocess.check_output([str(aapt), 'dump', 'badging', str(apk)], text=True)
+              package = re.search(r"^package: name='([^']+)'", badging, re.M).group(1)
+              version_code = int(re.search(r"^package:.*versionCode='(\d+)'", badging, re.M).group(1))
+              version_name = re.search(r"^package:.*versionName='([^']+)'", badging, re.M).group(1)
+              assert package == EXPECTED_PACKAGE and version_code == EXPECTED_CODE and version_name == EXPECTED_VERSION, 'Manifest identity/version changed'
+              assert 'application-debuggable' not in badging, 'Debuggable APK is not allowed'
+              if EXPECTED_CERT:
+                  assert certs == [EXPECTED_CERT], 'Production certificate mismatch'
+              suffix = '' if len(apks) == 1 else '-' + str(index + 1)
+              target = out / (APK_NAME + suffix + '.apk')
+              shutil.copyfile(apk, target)
+              metadata = dict(file=target.name, repository=os.environ['GITHUB_REPOSITORY'], branch=os.environ['GITHUB_REF_NAME'],
+                  sourceCommit=subprocess.check_output(['git','rev-parse','HEAD'], text=True).strip(),
+                  versionName=version_name, versionCode=version_code, packageName=package, variant=VARIANT,
+                  sizeBytes=target.stat().st_size, sha256=hashlib.sha256(target.read_bytes()).hexdigest(),
+                  certificateSha256=certs, signed=True, debuggable=False, backendProductionLocked=True,
+                  signingCompatibilityReference=SIGNING_REFERENCE,
+                  runUrl=os.environ['GITHUB_SERVER_URL']+'/'+os.environ['GITHUB_REPOSITORY']+'/actions/runs/'+os.environ['GITHUB_RUN_ID'])
+              if GOOGLE_NATIVE:
+                  lists = list(root.glob('android/app/build/generated/autolinking/**/PackageList.java'))
+                  assert any('googlesignin' in p.read_text().lower() for p in lists), 'Native Google Sign-In package not linked'
+                  metadata['googleSignInNativeLinked'] = True
+              target.with_suffix('.metadata.json').write_text(json.dumps(metadata, indent=2)+'\n')
+              target.with_suffix('.sha256').write_text(metadata['sha256']+'  '+target.name+'\n')
+              print(json.dumps(metadata))
+              with open(os.environ['GITHUB_STEP_SUMMARY'],'a') as report:
+                  report.write('\nInternal signed release: '+target.name+'\nCommit: '+metadata['sourceCommit']+'\nSHA-256: '+metadata['sha256']+'\n')
+
       - name: Upload APK ke GitHub
-        if: ${{ !cancelled() && steps.signed_build.outcome == 'success' }}
         uses: actions/upload-artifact@v4
         with:
-          name: AdiXtream-Release
+          name: AdiXtream-4.8.7-Internal-Test
           if-no-files-found: error
           # Mencari semua file apk di dalam folder output (termasuk folder stable)
-          path: app/build/outputs/apk/stable/release/*.apk
+          path: internal-apks/
+          retention-days: 7
 
       - name: Validate Release Lint
         if: ${{ !cancelled() && steps.signed_build.outcome == 'success' }}
@@ -135,3 +199,7 @@ jobs:
             app/build/reports/tests/testStableReleaseUnitTest/
             app/build/test-results/testStableReleaseUnitTest/
             app/build/reports/lint-results-stableRelease.*
+
+      - name: Remove temporary signing material
+        if: always()
+        run: rm -f app/release.keystore
