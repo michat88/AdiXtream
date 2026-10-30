@@ -1,5 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<resources>
-    <string name="adi_capture_title">Izinkan Tangkapan Layar (Sementara)</string>
-    <string name="adi_capture_description">Mengizinkan screenshot dan perekaman layar selama sesi pengujian. Nonaktifkan kembali setelah pengujian selesai.</string>
-</resources>

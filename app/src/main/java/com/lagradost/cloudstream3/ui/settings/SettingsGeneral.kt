@@ -5,9 +5,6 @@ import android.net.Uri
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
-import android.view.WindowManager
-import androidx.preference.SwitchPreferenceCompat
-import com.lagradost.cloudstream3.TemporaryScreenCapture
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.edit
@@ -86,11 +83,6 @@ fun Pair<String, String>.nameNextToFlagEmoji(): String {
 }
 
 class SettingsGeneral : BasePreferenceFragmentCompat() {
-    override fun onResume() {
-        super.onResume()
-        findPreference<SwitchPreferenceCompat>(TemporaryScreenCapture.SETTING_KEY)?.isChecked = TemporaryScreenCapture.allowed.value
-    }
-
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         setUpToolbar(R.string.category_general)
@@ -128,7 +120,6 @@ class SettingsGeneral : BasePreferenceFragmentCompat() {
                 ?: mutableListOf()
         }
         fun showAdd() {
-            TemporaryScreenCapture.setAllowed(false)
             val providers = allProviders.distinctBy { it::class }.sortedBy { it.name }
             val context = activity
             context?.showDialog(
@@ -147,7 +138,7 @@ class SettingsGeneral : BasePreferenceFragmentCompat() {
                     AlertDialog.Builder(context, R.style.AlertDialogCustom)
                         .setView(binding.root)
 
-                val dialog = builder.create().also { it.window?.addFlags(WindowManager.LayoutParams.FLAG_SECURE) }
+                val dialog = builder.create()
                 dialog.show()
 
                 binding.text2.text = provider.name
@@ -191,7 +182,6 @@ class SettingsGeneral : BasePreferenceFragmentCompat() {
         }
 
         fun showAddOrDelete() {
-            TemporaryScreenCapture.setAllowed(false)
             val context = activity
 
             val binding : AddRemoveSitesBinding = AddRemoveSitesBinding.inflate(
@@ -202,7 +192,7 @@ class SettingsGeneral : BasePreferenceFragmentCompat() {
                 AlertDialog.Builder(context ?: return, R.style.AlertDialogCustom)
                     .setView(binding.root)
 
-            val dialog = builder.create().also { it.window?.addFlags(WindowManager.LayoutParams.FLAG_SECURE) }
+            val dialog = builder.create()
             dialog.show()
 
             binding.addSite.setOnClickListener {
@@ -223,14 +213,6 @@ class SettingsGeneral : BasePreferenceFragmentCompat() {
     override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
         hideKeyboard()
         setPreferencesFromResource(R.xml.settings_general, rootKey)
-        findPreference<SwitchPreferenceCompat>(TemporaryScreenCapture.SETTING_KEY)?.apply {
-            isPersistent = false
-            isChecked = TemporaryScreenCapture.allowed.value
-            setOnPreferenceChangeListener { _, value ->
-                TemporaryScreenCapture.setAllowed(value == true)
-                true
-            }
-        }
         val settingsManager = PreferenceManager.getDefaultSharedPreferences(requireContext())
 
         // --- MODIFIKASI ADIXTREAM: Menyembunyikan Kategori Tautan Bawaan CS3 ---

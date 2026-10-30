@@ -72,7 +72,6 @@ class CloudStreamApp : Application(), SingletonImageLoader.Factory {
 
     override fun onCreate() {
         super.onCreate()
-        TemporaryScreenCapture.initialize(this)
         // ADIXTREAM SECURITY: force backup OFF and cancel persisted work on every
         // app start, without requiring the customer to open the settings screen.
         BackupWorkManager.disableAutomaticBackup(this)
