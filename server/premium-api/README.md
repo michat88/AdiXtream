@@ -90,3 +90,16 @@ JSON/ETag transport with fault injection, NOT production and NOT a Firebase Emul
 end-to-end test. The legacy stage-12 test series is not repeated unchanged.
 No Android APK/device, production authentication or Cloudflare deployment is proven
 by these tests.
+
+Additional transport validation: set `FIREBASE_EMULATOR_JAR` to a local Database
+Emulator jar and run `npm run test:firebase`. The runner starts Java and tests in
+one local process environment, binds only 127.0.0.1:19185 and uses a fresh `demo-`
+namespace. Three integration tests exercise the real transport, Emergency reads,
+public-write denial, local D1 grants, ETag conflicts and bans. `Bearer owner` is an
+emulator-only test bypass and proves nothing about production administrator IAM.
+No production URL or production credential is accepted by this runner.
+
+New promo codes are limited to 1–10 uppercase characters/digits/underscore/hyphen
+to fit the existing native input. Each paid Admin decision requires a distinct
+order_ref per device; a unique D1 index prevents double grants under different
+request IDs for the same order. There is no automatic override of that guard.

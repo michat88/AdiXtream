@@ -5,7 +5,7 @@ const DAY=86400000,MAX=4102444800000;
 const own=(x,k)=>isRecord(x)&&Object.hasOwn(x,k)?x[k]:undefined;
 export const validDevice=id=>typeof id==='string'&&/^(?:\d{1,8}|-2147483)$/.test(id);
 const uuid=id=>typeof id==='string'&&/^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i.test(id);
-const promoCode=x=>typeof x==='string'&&/^[A-Z0-9_-]{1,64}$/.test(x);
+const promoCode=x=>typeof x==='string'&&/^[A-Z0-9_-]{1,10}$/.test(x);
 export async function digest(text){return [...new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(text)))].map(b=>b.toString(16).padStart(2,'0')).join('');}
 function exactKeys(body,keys){if(!body||typeof body!=='object'||Array.isArray(body)||Object.keys(body).length!==keys.length||keys.some(k=>!Object.hasOwn(body,k)))fail('REQUEST_INVALID',400);}
 export function canonical(kind,b){
@@ -50,7 +50,16 @@ export function createService({db,firebase,clock=Date.now}){
    if(state(user,now).state!=='PREMIUM')fail('ENTITLEMENT_INACTIVE',409);
   }
   if(kind!=='UNLOCK_CREATE'&&!isRecord(user))fail('CUSTOMER_NOT_FOUND',404);
-  if(isRecord(user)&&user.expired_at!==undefined){let before;try{before=timestamp(user.expired_at);}catch{fail('DATA_RECONCILIATION_REQUIRED',409);}const after=kind==='UNLOCK_ACTIVATE'?before:Math.max(before,now)+days*DAY;if(!Number.isSafeInteger(after)||after>MAX||after>now+5*366*DAY)fail('DATA_RECONCILIATION_REQUIRED',409);}
+  if(kind!=='UNLOCK_CREATE'&&state(user,now).state==='UNKNOWN')fail('DATA_RECONCILIATION_REQUIRED',409);
+  let before=0;try{
+   if(isRecord(user)){
+    if(user.expired_at!==undefined)before=timestamp(user.expired_at);
+    for(const key of ['revision',...(kind==='ADMIN_RENEWAL'?['extend_count']:[])])if(user[key]!==undefined&&(integer(user[key])<0||integer(user[key])>=Number.MAX_SAFE_INTEGER))fail('DATA_RECONCILIATION_REQUIRED',409);
+    for(const key of ['redeemed_promos','_premium_api_operations'])if(user[key]!==undefined&&!isRecord(user[key]))fail('DATA_RECONCILIATION_REQUIRED',409);
+   }
+  }catch{fail('DATA_RECONCILIATION_REQUIRED',409);}
+  const after=kind==='UNLOCK_ACTIVATE'?before:Math.max(before,now)+days*DAY;
+  if(!Number.isSafeInteger(after)||after>MAX||after>now+5*366*DAY)fail('DATA_RECONCILIATION_REQUIRED',409);
   const statements=[db.prepare(`INSERT INTO premium_v1_operations(request_id,actor_uid,actor_role,fingerprint,kind,device_id,promo_code,days,state,order_ref,created_at,updated_at) VALUES(?1,?2,?3,?4,?5,?6,?7,?8,'PENDING',?9,?10,?10)`).bind(b.request_id,p.uid,p.admin?'admin':'customer',fingerprint,kind,b.device_id,b.promo_code||null,days,b.order_ref||null,now),db.prepare('INSERT INTO premium_v1_account_locks(device_id,request_id) VALUES(?1,?2)').bind(b.device_id,b.request_id)];
   if(kind==='PROMO_CLAIM')statements.push(db.prepare(`UPDATE premium_v1_promos SET used_count=used_count+1,revision=revision+1 WHERE code=?1 AND status='aktif' AND valid_until>?2 AND days=?3 AND used_count<max_quota`).bind(b.promo_code,now,days),db.prepare(`INSERT INTO premium_v1_claims(promo_code,device_id,request_id) VALUES(?1,?2,CASE WHEN changes()=1 THEN ?3 ELSE NULL END)`).bind(b.promo_code,b.device_id,b.request_id));
   try{await db.batch(statements);}catch{
@@ -115,9 +124,10 @@ export function createService({db,firebase,clock=Date.now}){
   async history(p,id){admin(p);if(!validDevice(id))fail('REQUEST_INVALID',400);const r=await db.prepare('SELECT request_id,kind,state,days,actor_uid,order_ref,created_at,updated_at,last_error FROM premium_v1_operations WHERE device_id=?1 ORDER BY created_at DESC LIMIT 50').bind(id).all();return {contractVersion:2,operations:r.results};},
   async promos(p){admin(p);const r=await db.prepare('SELECT * FROM premium_v1_promos ORDER BY code LIMIT 100').all();return {contractVersion:2,promos:r.results};},
   async savePromo(p,b){admin(p);exactKeys(b,['request_id','code','days','max_quota','valid_until','status','expected_revision','order_ref']);if(!uuid(b.request_id)||!promoCode(b.code)||!Number.isInteger(b.days)||b.days<1||b.days>36500||!Number.isInteger(b.max_quota)||b.max_quota<0||b.max_quota>1000000||!Number.isSafeInteger(b.valid_until)||b.valid_until<=clock()||b.valid_until>MAX||!['aktif','paused'].includes(b.status)||!Number.isSafeInteger(b.expected_revision)||b.expected_revision<0||typeof b.order_ref!=='string'||!/^[-A-Za-z0-9_:]{1,100}$/.test(b.order_ref))fail('REQUEST_INVALID',400);
-   const fingerprint=await digest(JSON.stringify(b));const old=await one('SELECT * FROM premium_v1_operations WHERE request_id=?1',b.request_id);if(old){if(old.actor_uid!==p.uid||old.fingerprint!==fingerprint)fail('IDEMPOTENCY_CONFLICT',409);return {contractVersion:2,requestId:b.request_id,outcome:'REPLAYED'};}
+   const fingerprint=await digest(JSON.stringify(b));const old=await one('SELECT * FROM premium_v1_operations WHERE request_id=?1',b.request_id);if(old){if(old.actor_uid!==p.uid||old.fingerprint!==fingerprint)fail('IDEMPOTENCY_CONFLICT',409);return {contractVersion:2,requestId:b.request_id,outcome:'REPLAYED',receipt:JSON.parse(old.result_json)};}
+   const receipt={requestId:b.request_id,kind:'PROMO_UPSERT',actorUid:p.uid,appliedAt:clock()};
    const statement=b.expected_revision===0?db.prepare('INSERT INTO premium_v1_promos(code,days,max_quota,valid_until,status) VALUES(?1,?2,?3,?4,?5)').bind(b.code,b.days,b.max_quota,b.valid_until,b.status):db.prepare('UPDATE premium_v1_promos SET days=?2,max_quota=?3,valid_until=?4,status=?5,revision=revision+1 WHERE code=?1 AND revision=?6 AND used_count<=?3').bind(b.code,b.days,b.max_quota,b.valid_until,b.status,b.expected_revision);
-   try{await db.batch([statement,db.prepare(`INSERT INTO premium_v1_operations(request_id,actor_uid,actor_role,fingerprint,kind,device_id,days,state,order_ref,created_at,updated_at,result_json) VALUES(CASE WHEN changes()=1 THEN ?1 ELSE NULL END,?2,'admin',?3,'PROMO_UPSERT','',0,'COMPLETED',?4,?5,?5,'{}')`).bind(b.request_id,p.uid,fingerprint,b.order_ref,clock())]);}catch{const replay=await one('SELECT fingerprint,actor_uid FROM premium_v1_operations WHERE request_id=?1',b.request_id);if(replay?.fingerprint===fingerprint&&replay.actor_uid===p.uid)return {contractVersion:2,requestId:b.request_id,outcome:'REPLAYED'};fail('CONFLICT',409);}return {contractVersion:2,requestId:b.request_id,outcome:'APPLIED'};
+   try{await db.batch([statement,db.prepare(`INSERT INTO premium_v1_operations(request_id,actor_uid,actor_role,fingerprint,kind,device_id,days,state,order_ref,created_at,updated_at,result_json) VALUES(CASE WHEN changes()=1 THEN ?1 ELSE NULL END,?2,'admin',?3,'PROMO_UPSERT','',0,'COMPLETED',?4,?5,?5,?6)`).bind(b.request_id,p.uid,fingerprint,b.order_ref,clock(),JSON.stringify(receipt))]);}catch{const replay=await one('SELECT fingerprint,actor_uid,result_json FROM premium_v1_operations WHERE request_id=?1',b.request_id);if(replay?.fingerprint===fingerprint&&replay.actor_uid===p.uid)return {contractVersion:2,requestId:b.request_id,outcome:'REPLAYED',receipt:JSON.parse(replay.result_json)};fail('CONFLICT',409);}return {contractVersion:2,requestId:b.request_id,outcome:'APPLIED',receipt};
   }
  };
 }

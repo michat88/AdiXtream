@@ -1,1 +1,15 @@
-{"name":"adixtream-premium-api-integration","private":true,"type":"module","scripts":{"test":"node --test test/*.test.mjs"},"engines":{"node":">=24"},"devDependencies":{"miniflare":"4.20260730.0"}}
+{
+  "name": "adixtream-premium-api-integration",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test test/*.test.mjs",
+    "test:firebase": "node test/run-firebase.mjs"
+  },
+  "engines": {
+    "node": ">=24"
+  },
+  "devDependencies": {
+    "miniflare": "4.20260730.0"
+  }
+}

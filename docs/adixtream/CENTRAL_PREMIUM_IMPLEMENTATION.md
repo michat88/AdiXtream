@@ -110,14 +110,15 @@ production restore/correction requires a separate reviewed customer-specific pla
 
 ## Validation performed for this implementation
 
-- 18 Worker/real SQLite-D1 integration tests, including JWT signatures, nonadmin,
+- 22 Worker/real SQLite-D1 integration tests, including JWT signatures, nonadmin,
   expiry, concurrent claims, quota, idempotency, lost replies, stale ETags, D1
-  finalization loss, historical receipt/current ban and promo revision rollback.
+  finalization loss, historical receipt/current ban, promo revision rollback and
+  actual Worker module-graph startup in workerd.
 - 3 additional real Firebase Database Emulator + local D1 tests: Emergency legacy
   GET/public-write denial, backend promo/renewal preservation, CAS conflict and ban.
 - 43 JVM JUnit tests (11 new central-client tests + 32 existing PremiumRecovery).
   New native core compiled with Kotlin 2.4.0, coroutines 1.11.0 and org.json 20260522.
-- Admin has 97 targeted API/domain/service/security/UI/reconciliation tests passing.
+- Admin has 98 targeted API/domain/service/security/UI/reconciliation tests passing.
   Release artwork/config tests require assets not present in the partial local
   checkout and were not certified; release/build/signing files were not changed.
 
@@ -125,3 +126,8 @@ NOT VERIFIED: full Gradle Android build (no SDK), native Admin build/Google logi
 physical 4.8.5/4.8.7 devices, production Firebase auth/IAM/App Check/rules, live Worker
 source/configuration, Cloudflare deploy or D1 migration. No Actions build or release
 was triggered intentionally; source commits use [skip ci].
+
+New promo creation is capped at the existing native ten-character input limit.
+Paid Admin orders are unique per device/order_ref across renewal and code creation;
+a genuinely separate purchase needs a separate business reference. Reusing a lost
+request under a new ID cannot charge the same order into entitlement twice.

@@ -1,0 +1,16 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "users": {
+      "$device_id": {
+        ".read": true,
+        ".write": false
+      }
+    },
+    "promo_codes": {
+      ".read": true,
+      ".write": false
+    }
+  }
+}
