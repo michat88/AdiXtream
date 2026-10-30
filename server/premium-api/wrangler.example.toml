@@ -1,0 +1,11 @@
+# EXAMPLE ONLY. No deployment command or production database identifier is provided.
+name = "adixtream-premium-api"
+main = "src/index.mjs"
+compatibility_date = "2026-07-30"
+[vars]
+FIREBASE_PROJECT_ID = "adixtream-premium"
+PREMIUM_DATA_SCOPE = "locked"
+PREMIUM_SYNTHETIC_READS = "disabled"
+PREMIUM_SYNTHETIC_MUTATIONS = "disabled"
+# Preserve the existing TEST_DB binding to adixtream-premium-test in Cloudflare.
+# ADMIN_UID stays in server configuration. Never copy Firebase administrator secrets to apps.
