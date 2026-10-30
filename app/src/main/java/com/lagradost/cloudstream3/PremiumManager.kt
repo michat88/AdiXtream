@@ -37,7 +37,7 @@ object PremiumManager {
     private const val PREF_LICENSE_STATE = "premium_license_state"
     private val recoveryScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     @Volatile private var recoveryInstance: PremiumRecovery? = null
-    @Volatile private var promoInstance: AtomicPromoClaim? = null
+    @Volatile private var centralInstance: Pair<String, CentralPremiumCoordinator>? = null
 
     val PREMIUM_REPO_URL = RepoProtector.decode(RepoProtector.PREMIUM_REPO_ENCODED)
     val FREE_REPO_URL = RepoProtector.decode(RepoProtector.FREE_REPO_ENCODED)
@@ -153,6 +153,14 @@ object PremiumManager {
     }
 
     private suspend fun fetchLicense(context: Context): PremiumLicense? {
+        if (CentralPremiumFeature.ENABLED) {
+            return try {
+                CentralPremiumRuntime.client().current(getDeviceId(context))?.copy(
+                    receivedAtElapsed = SystemClock.elapsedRealtime()
+                )
+            } catch (cancelled: CancellationException) { throw cancelled }
+            catch (_: Exception) { null } // Keep cached rights; never fall back to public reads on this path.
+        }
         var connection: HttpURLConnection? = null
         return try {
             connection = URL("${FIREBASE_BASE_URL}users/${getDeviceId(context)}.json")
@@ -272,6 +280,10 @@ object PremiumManager {
     }
 
     fun activatePremiumWithCode(context: Context, code: String, deviceId: String, onResult: (Boolean, String) -> Unit) {
+        if (CentralPremiumFeature.ENABLED) {
+            activateCentral(context, "unlock", code, deviceId, false, onResult)
+            return
+        }
         val inputCode = code.trim().uppercase()
         if (inputCode.isEmpty()) {
             onResult(false, "Kode tidak boleh kosong!")
@@ -331,52 +343,66 @@ object PremiumManager {
         activatePromoWithCode(context, code, deviceId, restartOnSuccess = true, onResult = onResult)
     }
 
-    private fun promoClaims(context: Context): AtomicPromoClaim = promoInstance ?: synchronized(this) {
-        promoInstance ?: run {
-            val appContext = context.applicationContext
-            AtomicPromoClaim(
-                scope = recoveryScope,
-                transport = AtomicPromoRestTransport(FIREBASE_BASE_URL),
-                readRevision = { recovery(appContext).readRevision() },
-                applyLicense = { license, revision ->
-                    recovery(appContext).recordIfUnchanged(license.copy(
-                        receivedAtElapsed = if (license.serverTime > 0L) SystemClock.elapsedRealtime() else 0L
-                    ), revision)
-                },
-            ).also { promoInstance = it }
+    private fun centralClaims(context: Context): CentralPremiumCoordinator {
+        val client = CentralPremiumRuntime.client()
+        return synchronized(this) {
+            centralInstance?.takeIf { it.first == client.uid }?.second ?: run {
+                val app = context.applicationContext
+                CentralPremiumCoordinator(
+                    client, CentralPremiumIntentFileStore(app.noBackupFilesDir),
+                    readRevision = { recovery(app).readRevision() },
+                    applyLicense = { license, revision ->
+                        recovery(app).recordIfUnchanged(license.copy(
+                            receivedAtElapsed = SystemClock.elapsedRealtime()
+                        ), revision)
+                    },
+                ).also { centralInstance = client.uid to it }
+            }
         }
     }
 
-    // Both the subscription page and legacy callers use the same atomic operation.
+    // Emergency Rules prohibit legacy promo writes. No public-write fallback is permitted.
     fun activatePromoWithCode(context: Context, code: String, deviceId: String, restartOnSuccess: Boolean, onResult: (Boolean, String) -> Unit) {
-        val appContext = context.applicationContext
-        recoveryScope.launch {
-            val status = try { promoClaims(appContext).submit(deviceId, code).status }
-                catch (cancelled: CancellationException) { throw cancelled }
-                catch (_: Exception) { AtomicPromoStatus.NETWORK }
-            val message = when (status) {
-                AtomicPromoStatus.APPLIED -> "Selamat! Promo Berhasil Diklaim."
-                AtomicPromoStatus.ALREADY_RECORDED -> appContext.getString(R.string.adi_promo_recorded_review)
-                AtomicPromoStatus.BANNED -> "Device ini telah di-banned!"
-                AtomicPromoStatus.NOT_FOUND -> "Kode Promo tidak ditemukan!"
-                AtomicPromoStatus.INACTIVE -> "Promo tidak aktif!"
-                AtomicPromoStatus.EXPIRED -> "Promo sudah kadaluarsa!"
-                AtomicPromoStatus.FULL -> "Kuota promo habis!"
-                AtomicPromoStatus.INVALID -> "Kode Promo tidak valid!"
-                AtomicPromoStatus.NETWORK -> "Kesalahan Jaringan"
-                AtomicPromoStatus.UNKNOWN -> appContext.getString(R.string.adi_promo_result_unknown)
-                AtomicPromoStatus.BUSY -> appContext.getString(R.string.adi_promo_in_progress)
-                AtomicPromoStatus.LOCAL_SYNC -> appContext.getString(R.string.adi_license_restore_retry)
-                AtomicPromoStatus.DATA_INVALID -> appContext.getString(R.string.adi_promo_data_review)
-                AtomicPromoStatus.DENIED -> appContext.getString(R.string.adi_promo_request_denied)
-            }
+        if (!CentralPremiumFeature.ENABLED) {
             Handler(Looper.getMainLooper()).post {
-                val success = status == AtomicPromoStatus.APPLIED
+                onResult(false, "Klaim promo sementara memerlukan bantuan Admin. Hak Premium yang sudah aktif tetap disimpan.")
+            }
+            return
+        }
+        activateCentral(context, "promo", code, deviceId, restartOnSuccess, onResult)
+    }
+
+    private fun activateCentral(context: Context, kind: String, code: String, deviceId: String, restartOnSuccess: Boolean, onResult: (Boolean, String) -> Unit) {
+        val app = context.applicationContext
+        recoveryScope.launch {
+            var success = false
+            val message = try {
+                if (deviceId != getDeviceId(app)) throw CentralPremiumException("REQUEST_INVALID")
+                val result = centralClaims(app).submit(kind, deviceId, code.trim().uppercase(Locale.ROOT))
+                success = result.applied
+                when {
+                    result.pending -> "Hasil belum dapat dipastikan. Coba request yang sama; jangan meminta bonus ulang."
+                    result.state == PremiumLicenseState.BANNED -> "Device ini telah di-banned!"
+                    result.applied -> if (kind == "promo") "Selamat! Promo Berhasil Diklaim." else "Aktivasi Berhasil"
+                    else -> "Hak Premium belum aktif. Hubungi Admin dengan referensi transaksi."
+                }
+            } catch (cancelled: CancellationException) { throw cancelled }
+            catch (error: CentralPremiumException) {
+                when (error.code) {
+                    "OWNERSHIP_REQUIRED", "AUTH_REQUIRED", "FORBIDDEN" -> "Identitas pemilik belum terverifikasi. Hubungi Admin; lisensi tersimpan tidak dihapus."
+                    "PENDING_OPERATION" -> "Masih ada request tertunda. Selesaikan request yang sama melalui bantuan Admin."
+                    "REQUEST_INVALID" -> "Kode atau perangkat tidak valid."
+                    "REVIEW_REQUIRED" -> "Transaksi memerlukan pemeriksaan Admin. Jangan mengulang dengan request baru."
+                    "RATE_LIMITED" -> "Terlalu banyak permintaan. Tunggu sebelum mencoba lagi."
+                    else -> "Hasil belum diketahui. Request yang sama disimpan untuk pemeriksaan berikutnya."
+                }
+            } catch (_: Exception) { "Layanan belum siap. Lisensi tersimpan tidak dihapus; hubungi Admin." }
+            Handler(Looper.getMainLooper()).post {
                 if (success && restartOnSuccess) {
-                    Toast.makeText(appContext, message, Toast.LENGTH_LONG).show()
-                    val component = appContext.packageManager.getLaunchIntentForPackage(appContext.packageName)?.component
+                    Toast.makeText(app, message, Toast.LENGTH_LONG).show()
+                    val component = app.packageManager.getLaunchIntentForPackage(app.packageName)?.component
                     if (component != null) {
-                        appContext.startActivity(Intent.makeRestartActivityTask(component))
+                        app.startActivity(Intent.makeRestartActivityTask(component))
                         Runtime.getRuntime().exit(0)
                     } else onResult(true, message)
                 } else onResult(success, message)
