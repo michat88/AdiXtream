@@ -1,5 +1,8 @@
 # AdiXtream checkout sandbox
 
+Use the [Firebase checkout](firebase/README.md) for AdiXtream Sandbox.
+The Worker implementation below is retained for reference and regression tests.
+
 This separate Worker entry point exercises checkout without routing through the existing
 Premium Worker or writing to legacy Firebase RTDB. Its D1 entitlements are test data
 keyed by Firebase Auth UID. The current Android app does not use this Worker.

@@ -1,0 +1,15 @@
+{
+  "functions": {
+    "source": "functions",
+    "codebase": "checkout-sandbox",
+    "ignore": ["node_modules", ".git", "test", ".secret.local", ".env.local", "firebase-debug.log"]
+  },
+  "firestore": { "rules": "firestore.rules" },
+  "emulators": {
+    "auth": { "host": "127.0.0.1", "port": 19099 },
+    "firestore": { "host": "127.0.0.1", "port": 18080 },
+    "functions": { "host": "127.0.0.1", "port": 15001 },
+    "ui": { "enabled": false },
+    "singleProjectMode": true
+  }
+}
