@@ -1,0 +1,7 @@
+{
+  "name": "adixtream-supabase-checkout-tests",
+  "private": true,
+  "type": "module",
+  "scripts": {"test": "node --test *.test.mjs"},
+  "devDependencies": {"@electric-sql/pglite": "0.6.0"}
+}

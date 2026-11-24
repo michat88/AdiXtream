@@ -1,0 +1,4 @@
+project_id = "adixtream-checkout-sandbox"
+
+[functions.checkout-sandbox]
+verify_jwt = false

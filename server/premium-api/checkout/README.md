@@ -1,7 +1,8 @@
 # AdiXtream checkout sandbox
 
-Use the [Firebase checkout](firebase/README.md) for AdiXtream Sandbox.
-The Worker implementation below is retained for reference and regression tests.
+Use the [Supabase checkout](supabase/README.md) for the hosted AdiXtream Sandbox.
+The [Firebase checkout](firebase/README.md) can be exercised locally. The Worker
+implementation below is retained for reference and regression tests.
 
 This separate Worker entry point exercises checkout without routing through the existing
 Premium Worker or writing to legacy Firebase RTDB. Its D1 entitlements are test data
