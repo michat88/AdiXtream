@@ -1,5 +1,8 @@
 import { ApiError, fail } from './errors.mjs';
 
+export const SUPABASE_SANDBOX_URL = 'https://irompgoosrqjbmicyusa.supabase.co';
+const WEBHOOK_ROUTE = '/checkout/midtrans/webhook';
+const NOTIFICATION_URL = SUPABASE_SANDBOX_URL + '/functions/v1/checkout-sandbox' + WEBHOOK_ROUTE;
 const GATEWAY = 'https://api.sandbox.midtrans.com';
 const PLAN = Object.freeze({ id: 'premium-30d', days: 30, amount: 10_000, currency: 'IDR' });
 const QR_DURATION = 60;
@@ -63,7 +66,7 @@ function gateway(env, fetchImpl) {
     async function call(path, method, body) {
         const response = await fetchImpl(GATEWAY + path, {
             method,
-            headers,
+            headers: method === 'POST' ? { ...headers, 'X-Override-Notification': NOTIFICATION_URL } : headers,
             body: body && JSON.stringify(body),
             redirect: 'error',
             signal: AbortSignal.timeout(8000),
@@ -189,7 +192,7 @@ export function createSandboxCheckout({ db, verifyIdToken, fetchImpl = fetch, cl
             const now = clock();
             if (search || !['GET', 'POST'].includes(request.method)) fail('REQUEST_INVALID', 400);
 
-            if (pathname === '/checkout/midtrans/webhook' && request.method === 'POST') {
+            if (pathname === WEBHOOK_ROUTE && request.method === 'POST') {
                 const body = await readJson(request);
                 await verifyNotification(body, env.MIDTRANS_SANDBOX_SIGNATURE_SECRET);
                 const order = await db.byId(body.order_id);

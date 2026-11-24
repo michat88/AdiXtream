@@ -1,8 +1,7 @@
 import { createFirebaseVerifier } from "./auth.mjs";
-import { createSandboxCheckout } from "./checkout.mjs";
+import { createSandboxCheckout, SUPABASE_SANDBOX_URL } from "./checkout.mjs";
 import { createCheckoutStore } from "./store.mjs";
 
-const expectedUrl = "https://irompgoosrqjbmicyusa.supabase.co";
 const env = {
   MIDTRANS_SANDBOX_SERVER_KEY: Deno.env.get("MIDTRANS_SANDBOX_SERVER_KEY"),
   MIDTRANS_SANDBOX_SIGNATURE_SECRET: Deno.env.get("MIDTRANS_SANDBOX_SIGNATURE_SECRET"),
@@ -10,7 +9,7 @@ const env = {
 
 function initialization() {
   if (
-    Deno.env.get("SUPABASE_URL") !== expectedUrl ||
+    Deno.env.get("SUPABASE_URL") !== SUPABASE_SANDBOX_URL ||
     !env.MIDTRANS_SANDBOX_SERVER_KEY?.startsWith("SB-Mid-server-") ||
     !env.MIDTRANS_SANDBOX_SIGNATURE_SECRET
   ) return null;
@@ -19,7 +18,7 @@ function initialization() {
   if (typeof keys.default !== "string" || !keys.default.startsWith("sb_secret_")) return null;
 
   return createSandboxCheckout({
-    db: createCheckoutStore(expectedUrl, keys.default),
+    db: createCheckoutStore(SUPABASE_SANDBOX_URL, keys.default),
     verifyIdToken: createFirebaseVerifier(
       "adixtream-checkout-sandbox",
       Deno.env.get("FIREBASE_SANDBOX_WEB_API_KEY"),

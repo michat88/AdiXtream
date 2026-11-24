@@ -25,7 +25,9 @@ the authoritative payment status before updating Premium. These checks run
 inside the function, so Supabase's gateway-level JWT requirement is disabled for
 this one function.
 
-The Midtrans Sandbox Payment Notification URL is:
+The backend sets its Midtrans Sandbox Payment Notification URL per QRIS charge
+using `X-Override-Notification`. This setting applies to charges created by this
+function, so they can use the callback even if saving the dashboard default fails:
 
 ```text
 https://irompgoosrqjbmicyusa.supabase.co/functions/v1/checkout-sandbox/checkout/midtrans/webhook

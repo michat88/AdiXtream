@@ -53,6 +53,8 @@ function fixture() {
             assert.equal(options.redirect, 'error');
             assert.equal(options.headers.Authorization, 'Basic ' + btoa(env.MIDTRANS_SANDBOX_SERVER_KEY + ':'));
             if (url.endsWith('/charge')) {
+                assert.equal(options.headers['X-Override-Notification'],
+                    'https://irompgoosrqjbmicyusa.supabase.co/functions/v1/checkout-sandbox/checkout/midtrans/webhook');
                 chargeCount++;
                 const request = JSON.parse(options.body);
                 assert.equal(request.payment_type, 'qris');
@@ -70,6 +72,7 @@ function fixture() {
                 if (loseChargeResponse) throw new Error('synthetic lost response');
                 return Response.json(row);
             }
+            assert.equal(options.headers['X-Override-Notification'], undefined);
             const id = new URL(url).pathname.split('/')[2];
             const row = payments.get(id);
             return row ? Response.json(row) : Response.json({ status_code: '404' }, { status: 404 });
